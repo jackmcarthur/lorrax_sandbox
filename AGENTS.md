@@ -132,7 +132,7 @@ Never mutate a completed run. Make a variant.
 **A major checkpoint** is triggered by any of:
 - Completing a top-to-bottom code feature
 - ~5 commits of incremental work
-- A meaningful comparison result (pass/fail, new plot)
+- A novel comparison result (pass/fail, new plot)
 - Before ending a session
 
 **At each checkpoint, follow `skills/checkpoint/SKILL.md`.** In brief:
@@ -149,3 +149,16 @@ Reports replace STATUS.md as the human-readable orientation point. They should b
 2. Tail the failing step's output (10-30 lines).
 3. Record hypothesis, then make a variant to test it.
 4. Log concisely: command, tail of output, one sentence.
+
+---
+
+## Non-negotiable rules
+
+The following rules are bolded throughout this document. They are restated here because agents routinely forget them. **All of these must be followed in every session, without exception.**
+
+1. **Use the provided parsers for all output extraction.** Avoid ad-hoc parsing code; if novel but important, add new parsing code to the Skill. See `skills/compare/SKILL.md`.
+2. **Follow the checkpoint routine every ~5 commits/after minor milestones.** Pytest, commit, report, CHANGELOG. See `skills/checkpoint/SKILL.md`.
+3. **Report sandbox infrastructure errors in `KNOWN_SANDBOX_ERRORS.md` immediately** — before continuing your work.
+4. **Read `CHANGELOG.md` at the start of every session. Update it before ending every session.**
+5. **Read `sources/lorrax/AGENTS.md` before editing any LORRAX source code.**
+6. **Create a feature branch before modifying LORRAX source.** Never commit directly to `main`.

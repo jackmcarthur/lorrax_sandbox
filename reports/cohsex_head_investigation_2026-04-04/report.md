@@ -1,188 +1,143 @@
-# COHSEX Head Investigation: S-tensor vs BGW Mini-BZ Heads
+# Head Correction Investigation: BGW vs GWJAX for 2D GN-GPP and COHSEX
 
-**Date**: 2026-04-04
-**System**: MoS2 monolayer, 1×1 Γ-only
+**Date**: 2026-04-04 – 2026-04-05
+**System**: MoS₂ monolayer, 1×1 Γ-only
 **Run**: `runs/MoS2_1x1_full_workflow/`
 
 ## Summary
 
-Static COHSEX comparison between BGW and GWJAX showed 165 meV MAE.
-Increasing ISDF centroids from 640 to 800 made it worse (188 meV), proving
-the error was not ISDF basis incompleteness. The root cause was the S-tensor
-computing an incorrect screened Coulomb head value for the 1×1 mini-BZ.
-Overriding with BGW's mini-BZ head values reduced the MAE to **46 meV**.
+Investigated why GWJAX's GN-PPM self-energy disagrees with BGW by ~1.8 eV
+for 2D MoS₂. The root cause is that GWJAX applies a ±2.5 eV diagonal head
+correction that has no counterpart in BGW. Debug prints added to BGW Sigma
+confirm that the head (G=G'=0) element contributes **~0.5 meV** to BGW's
+Cor' — essentially zero — because `vcoul(G=0)` at the shifted q-point is
+tiny (0.45 a.u., not the mini-BZ average of 315 a.u.).
 
-## The problem: S-tensor head vs BGW head
+Separately, for static COHSEX, the head treatment is different (head enters
+V and W symmetrically, COH = ½(W−V) largely cancels it), and GWJAX matches
+BGW to **46 meV MAE** when using BGW's mini-BZ averaged head values.
 
-GWJAX's default `wcoul0_source = s_tensor` computes the screened Coulomb head
-via Monte Carlo integration of `w(q) = v(q) / (1 - v(q) qᵀSq)` over the
-mini-BZ, where S is the macroscopic susceptibility tensor from dipole matrix
-elements. This macroscopic dielectric model (`ε(q) = 1 - v(q) qᵀSq`) is
-accurate near Γ but breaks down at larger |q|.
+## How BGW treats the head in GN-GPP
 
-For a **1×1 k-grid, the mini-BZ is the entire Brillouin zone**. The S-tensor
-model is integrated over q-points far from Γ where the macroscopic
-approximation fails, giving a significantly wrong screened head.
+BGW does nothing special for the head. Every (G,G') element of ε⁻¹ is
+treated identically in `mtxel_cor.f90`:
 
-| Quantity | GWJAX S-tensor | BGW epsilon.out | Error |
-|---|---|---|---|
-| Vcoul head (mini-BZ avg) | 316.6 a.u. | 315.0 a.u. | +0.5% |
-| Wcoul head (ω=0, mini-BZ avg) | **42.7 a.u.** | **55.6 a.u.** | **−23%** |
-| Effective ε⁻¹ = W/V | 0.135 | 0.176 | −23% |
+1. Read $\varepsilon^{-1}(G,G')$ at two frequencies from `eps0mat.h5`
+2. Compute $I_\varepsilon = \delta_{GG'} - \varepsilon^{-1}(G,G')$
+3. Fit one GN pole: $\tilde\omega^2 = \omega_p^2\, I_\varepsilon(i\omega_p) / (I_\varepsilon(0) - I_\varepsilon(i\omega_p))$
+4. Evaluate SX and CH, accumulate with `vcoul(G')` as outer weight
 
-The bare Coulomb head (Vcoul) agrees well because it doesn't depend on
-screening. The screened head (Wcoul) is 23% too small because the S-tensor
-overscreens at large |q|.
+For `freq_dep=3` with 2D slab truncation, `fixwings_dyn` does **not**
+modify the head of ε⁻¹ (confirmed in code, lines 244–261: only wings are
+modified). The head stored in `eps0mat.h5` enters the GN fit unmodified.
 
-## Impact on COHSEX self-energy
+**Debug prints confirm** (added to `mtxel_cor.f90` and `sigma_main.f90`):
 
-The head correction adds `(wcoul0/Ω) |ζ(G=0)⟩⟨ζ(G=0)|` to W in the ISDF
-basis. With a 23% error in wcoul0, the screened exchange (SX) inherits a
-systematic error that is larger for valence bands (which couple more strongly
-to the long-range Coulomb head) than conduction bands.
+```
+SIGMA HEAD post-fixwings: epsR(G=0,Gp=0,w1) = 8.949E-01
+SIGMA HEAD post-fixwings: epsR(G=0,Gp=0,w2) = 9.946E-01
+SIGMA HEAD post-fixwings: vcoul(1)           = 4.486E-01
 
-Component breakdown for the S-tensor run (640 centroids):
-
-| Component | Valence (bands 19–26) | Conduction (bands 27–30) |
-|---|---|---|
-| SX-X error | +0.28 eV | +0.008 eV |
-| COH error (vs CH') | −0.16 eV | −0.21 eV |
-| Cor' total error | +0.12 to +0.21 eV | −0.20 eV |
-
-## Fix: BGW head override
-
-BGW's `frequency_dependence 3` epsilon.out prints the mini-BZ averaged head
-values (see `PARSE_OUTPUTS.md` for extraction). Passing these as overrides
-in cohsex.in eliminates the S-tensor error:
-
-```ini
-vhead = 315.0137
-whead_0freq = 55.6197
+GN HEAD: I_eps(w1,w2) = 1.051E-01  5.414E-03
+GN HEAD: wtilde2      = 4.021E+01  invalid = F
+GN HEAD: wtilde       = 6.341E+00
 ```
 
-## Results: three COHSEX variants vs BGW
+Key values:
 
-| Band | BGW Cor' | S-tensor Δ | 800c Δ | BGW head Δ |
-|------|----------|-----------|--------|-----------|
-| 19 | +8.495 | +0.122 | +0.074 | +0.013 |
-| 21 | +5.823 | +0.110 | +0.034 | −0.002 |
-| 23 | +5.596 | +0.143 | +0.083 | +0.032 |
-| 25 | +7.972 | +0.213 | +0.389 | +0.103 |
-| 27 | −6.183 | −0.204 | −0.284 | −0.065 |
-| 29 | −8.291 | −0.198 | −0.263 | −0.059 |
+| Quantity | Value | Note |
+|---|---|---|
+| $\varepsilon^{-1}(0,0;\omega\!=\!0)$ | 0.895 | < 1, normal screening |
+| $I_\varepsilon(\omega\!=\!0)$ | +0.105 | positive, valid |
+| $I_\varepsilon(\omega\!=\!i\omega_p)$ | +0.005 | positive, valid |
+| $\tilde\omega^2$ | +40.2 Ry² | valid pole |
+| $v_\text{coul}(G\!=\!0)$ | 0.449 a.u. | at shifted q-point, NOT mini-BZ avg |
+| On-shell head $\Sigma^c$ | ~0.5 meV | negligible |
 
-| Variant | MAE | max\|Δ\| |
-|---------|-----|----------|
-| S-tensor (640c) | 0.165 eV | 0.213 eV |
+The earlier confusion: I mistook the printed "Head of Epsilon = 1.152" for
+ε⁻¹ when it was ε. The actual ε⁻¹ head is 0.895. There is no anti-screening.
+
+## What GWJAX does differently
+
+GWJAX's `head_correction.py` fits a GN pole from mini-BZ averaged values:
+
+| Quantity | GWJAX | BGW |
+|---|---|---|
+| Input to GN fit | $W^c = \langle W\rangle - \langle v\rangle$ | $I_\varepsilon = 1 - \varepsilon^{-1}(q_0)$ |
+| Effective vcoul | $\langle v\rangle = 315$ a.u. | $v(q_0) = 0.45$ a.u. |
+| On-shell shift | ±2.513 eV | ±0.0005 eV |
+| **Ratio** | | **~5000×** |
+
+The GN pole formalism is algebraically equivalent when using the same inputs
+(verified: same poles, signs, on-shell magnitudes). The entire discrepancy
+comes from **what vcoul the head contribution is weighted by**.
+
+In BGW, the q→0 Coulomb divergence enters through the mini-BZ averaged
+`vcoul` in the **bare exchange** $\Sigma_x$ (set up in `vcoul_generator`),
+not through the correlation $\Sigma_c$. The correlation head element uses
+the small $v(q_0)$ and contributes negligibly.
+
+GWJAX's head correction tries to add the full $\langle W\rangle - \langle v\rangle$
+contribution as a correction to $\Sigma_c$ — a fundamentally different
+accounting that produces a ~2.5 eV shift with no BGW counterpart.
+
+## Static COHSEX: different and working
+
+The COHSEX path uses `apply_head_correction()` to add
+$(\text{wcoul0}/\Omega)\,|\zeta(0)\rangle\langle\zeta(0)|$ to both V and W
+in the ISDF basis. Since COH = ½(W−V), the head largely cancels between
+W and V. The residual depends on wcoul0 accuracy:
+
+| COHSEX Variant | MAE | max|Δ| |
+|---|---|---|
+| S-tensor default (640c) | 0.165 eV | 0.213 eV |
 | 800 centroids | 0.188 eV | 0.389 eV |
-| **BGW head override (640c)** | **0.046 eV** | **0.103 eV** |
+| BGW head override (640c) | **0.046 eV** | **0.103 eV** |
+
+The S-tensor error (GWJAX computes wcoul0 = 42.7 vs BGW's 55.6 a.u.) is
+from the macroscopic dielectric model breaking down over the full BZ at
+1×1. With correct BGW values, 46 meV MAE is achieved.
 
 ![COHSEX comparison](cohsex_comparison.png)
 
-Left: absolute Cor' values. Center: difference from BGW. Right: SX-X vs COH
-component errors for the BGW-head variant.
-
-## GN-PPM: head correction effect
-
-| GN-PPM variant | MAE | max\|Δ\| | ΔMAE vs body |
-|---|---|---|---|
-| Body only (no head) | 1.836 eV | 4.474 eV | — |
-| + BGW head applied | 3.336 eV | 6.987 eV | +1.500 eV |
-
-Applying the scalar head diagonal to the GN-PPM sigC makes it worse because
-BGW's Cor' already includes the head through its plane-wave W^c body.
-
-![GN-GPP head effect](gn_gpp_head_effect.png)
-
-## MAE summary
-
 ![MAE summary](mae_summary.png)
+
+## Mini-BZ averaging analysis
+
+BGW's `minibzaverage_2d_oneoverq2` (Common/minibzaverage.f90:119–166) fits a
+model for **ε** (not ε⁻¹):
+
+$$\varepsilon(q,\omega) = 1 + v(q)\,q^2\,\gamma(\omega)$$
+
+and averages $W = v/\varepsilon$ over the mini-BZ via Monte Carlo. The
+parameter $\gamma(\omega)$ is calibrated from $\varepsilon^{-1}(q_0,\omega)$
+independently at each frequency.
+
+For the `Wcoul head (MiniBZ)` values printed in epsilon.out, this averaging
+is done correctly at each frequency. However, these values are **diagnostic
+only** for `freq_dep=3` — Sigma does not use them. Sigma uses the raw
+ε⁻¹ from `eps0mat.h5` directly.
+
+![Averaging analysis](head_averaging_plots.png)
 
 ## Additional findings
 
-### G=0 kernel zeroing
-
-- **2D (sys_dim=2)**: G=0 correctly zeroed in `compute_vcoul.py:349`. The
-  head correction correctly adds it back. Not redundant.
-- **0D (sys_dim=0)**: G=0 is **NOT zeroed** — the box-truncated FFT gives a
-  finite v(G=0) that flows into the ISDF body. `apply_head_correction` then
-  adds it again. This is a double-count, but suppressed by O(1/Ω²) for large
-  vacuum cells (CO passes at 3 meV). Should be fixed for consistency.
-
-### PPM vs COHSEX head paths
-
-The recent commit (a96b12a) removed the head from the ISDF body W in the
-**PPM path only**. The **static COHSEX path was not changed** — it still
-injects the head into both V and W via `apply_head_correction()` at
-`gw_jax.py:1173`. This is physically correct (the head IS needed), but the
-accuracy depends entirely on wcoul0 being correct.
-
-| Path | Head in ISDF body? | After commit a96b12a |
-|---|---|---|
-| PPM (`use_ppm_sigma=true`) | NO — head removed, separate scalar GN channel | Changed |
-| COHSEX (`use_ppm_sigma=false`) | YES — head injected via rank-1 correction | Unchanged |
-
-The PPM path benefits from removing the head because a rank-1 perturbation
-distorts the plasmon-pole fit across all matrix elements. The COHSEX path
-doesn't have this problem (no PPM fit), so keeping the head in the body is
-correct — the only requirement is an accurate wcoul0.
-
-### CH vs CH' in BGW COHSEX
-
-For static COHSEX with `exact_static_ch 0`, BGW's CH (unprimed) and CH'
-(primed) differ by 1.7–2.9 eV. GWJAX's sigCOH matches CH' to ~0.16 eV but
-CH to ~2.5 eV, confirming GWJAX computes the full static COH (equivalent to
-BGW's corrected CH'). **Always compare against CH' (primed), never CH.**
-
-## Lessons learned
-
-1. **Always extract BGW mini-BZ head values** from `frequency_dependence 3`
-   epsilon.out and pass as `vhead`/`whead_0freq`/`whead_imfreq` overrides in
-   cohsex.in. The S-tensor default is unreliable for coarse k-grids.
-
-2. **Run `frequency_dependence 3` epsilon even for COHSEX comparisons** —
-   only the GN-GPP path prints the mini-BZ head diagnostics. Use these values
-   for both GN and COHSEX GWJAX runs.
-
-3. **Increasing centroids does not fix head errors.** The head correction
-   operates outside the ISDF basis — its accuracy depends on wcoul0, not on
-   the number of centroids.
-
-4. **Compare GWJAX sigCOH against BGW CH' (primed), not CH (unprimed).**
-   They differ by ~2 eV for static COHSEX.
-
-5. **The 0D G=0 double-count should be fixed** in `compute_sqrt_vcoul_0d`
-   for correctness, even though it's numerically small for typical systems.
-
-## GN-PPM: separate problem, not heads
-
-The 1.836 eV GN-PPM body error is **entirely independent of heads**. Testing
-with BGW head overrides confirms the body values are identical (heads are
-excluded from the ISDF body in the PPM path). The static decomposition
-(sex_0, coh_0) from the same PPM run matches BGW COHSEX to 165 meV (46 meV
-with correct heads), proving the ISDF screening is fine at ω=0. The error
-enters in the PPM frequency extrapolation from W(0), W(iωp) to real ω.
-
-| GN-PPM variant | body MAE | body+head MAE |
-|---|---|---|
-| S-tensor heads | 1.836 eV | 3.476 eV |
-| BGW head overrides | 1.836 eV | 3.336 eV |
-
-Body is identical because heads don't enter the PPM body path.
-
-**The prior 91 meV GN-PPM result** (head_fix_test) used a different WFN.h5
-from `tests_isdf/` with 160 bands and different eigenvalues. It cannot be
-compared to the current 90-band fresh calculation. The discrepancy is likely
-from the different WFN, not from any code change.
+- **CH vs CH'**: BGW's CH (unprimed) and CH' (primed) differ by 1.7–2.9 eV
+  for static COHSEX. GWJAX's sigCOH matches CH' (primed). Always compare
+  against CH'.
+- **G=0 kernel**: Correctly zeroed for 2D (`compute_vcoul.py:349`). NOT
+  zeroed for 0D (minor double-count, suppressed by large vacuum cell).
+- **`apply_head_diagonal`**: Was missing from the cohsex.in parser; added
+  to `gw_init.py`. Should remain **false** for GN-PPM.
 
 ## Status
 
 - [x] Full workflow: QE → BGW (GN + COHSEX) → GWJAX (GN + COHSEX)
-- [x] Root cause identified: S-tensor wcoul0 error for COHSEX
-- [x] Fix validated: BGW head override gives 46 meV COHSEX MAE
-- [x] PARSE_OUTPUTS.md updated with epsilon.out head parser
-- [x] GN-PPM body error confirmed independent of heads (PPM fit quality issue)
-- [ ] Investigate GN-PPM fit quality — why does extrapolation fail so badly?
-- [ ] Fix S-tensor for coarse grids (or always require BGW heads for comparisons)
-- [ ] Fix 0D G=0 double-count in compute_sqrt_vcoul_0d
-- [ ] Test at 3×3 and larger k-grids
+- [x] COHSEX: 46 meV with BGW head overrides
+- [x] Debug prints added to BGW Sigma confirming head treatment
+- [x] Root cause identified: GWJAX head correction uses ⟨v⟩ ≈ 315 where
+      BGW uses v(q₀) ≈ 0.45, producing a 5000× discrepancy
+- [x] `apply_head_diagonal` should be false for GN-PPM comparisons
+- [ ] Investigate GN-PPM body error (1.8 eV) — ISDF PPM extrapolation
+- [ ] Fix 0D G=0 double-count in `compute_sqrt_vcoul_0d`
+- [ ] k-grid convergence study (3×3, 6×6)

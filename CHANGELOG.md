@@ -1,47 +1,79 @@
 # Changelog
 
-## 2026-04-04: S-tensor head error identified — BGW heads give 46 meV COHSEX
+## 2026-04-05: Root cause of 2D GN-GPP head discrepancy identified
 
 - **Report**: `reports/cohsex_head_investigation_2026-04-04/report.md`
-- **Run**: `runs/MoS2_1x1_full_workflow/` — 6 variants total.
-- **Root cause**: GWJAX's S-tensor computes wcoul0 = 42.7 a.u. vs BGW's mini-BZ
-  average of 55.6 a.u. (23% error). The macroscopic dielectric model
-  `ε(q) = 1 - v(q) qᵀSq` breaks down when the mini-BZ covers the full BZ (1×1).
-- **Fix**: Override with BGW mini-BZ heads from `frequency_dependence 3` epsilon.out
-  (`vhead`, `whead_0freq`). See `PARSE_OUTPUTS.md` for parser.
+- **Run**: `runs/MoS2_1x1_full_workflow/`
+
+### The finding
+
+Added debug prints to BGW `Sigma/mtxel_cor.f90` and `Sigma/sigma_main.f90`
+and confirmed how BGW actually treats the q=0, G=G'=0 head in `freq_dep=3`:
+
+  - `fixwings_dyn` does NOT modify the head for 2D slab (confirmed in code
+    and by debug print: `epsR(G=0,G'=0)` is unchanged after fixwings)
+  - The ε⁻¹ head stored in `eps0mat.h5` is **0.895** (the inverse of the
+    printed ε head 1.152) — NOT 1.152 as I previously confused
+  - `vcoul(G=0)` in the sigma loop is **0.449 a.u.** — the bare Coulomb at
+    the shifted q-point, NOT the mini-BZ average (315 a.u.)
+  - The GN pole is valid: ω̃² = +40.2 Ry², ω̃ = 6.34 Ry
+  - The on-shell head contribution to Σ^c is **~0.5 meV** — essentially zero
+
+### Why GWJAX's head correction is wrong for GN-GPP
+
+BGW treats every (G,G') element identically. The head (G=G'=0) gets:
+  - Its own GN pole from the raw ε⁻¹ at the shifted q-point
+  - Multiplied by `vcoul(G=0)` = v(q₀) ≈ 0.45 a.u. (small)
+  - Net contribution: negligible
+
+GWJAX's `head_correction.py` instead:
+  - Fits a GN pole from mini-BZ averaged ⟨W⟩ and ⟨v⟩ (315 a.u.)
+  - Applies as a ±2.5 eV diagonal shift
+  - This is ~5000× larger than what BGW computes for the same element
+
+The mismatch is not in the GN fit formalism (poles, signs agree when using
+the same inputs). It's that **BGW uses v(q₀) ≈ 0.45 while GWJAX uses
+⟨v⟩ ≈ 315** for the head element. In BGW's accounting, the large q→0
+Coulomb divergence enters through the mini-BZ averaged vcoul in the **bare
+exchange** Σ_x (via `vcoul_generator`), not through the correlation Σ_c.
+
+### Implications
+
+  - `apply_head_diagonal` should remain **false** — the correction is
+    physically incorrect for comparison with BGW's GN-GPP
+  - The COHSEX path is different: `apply_head_correction()` adds the head
+    to V and W symmetrically, then COH = ½(W−V) cancels most of it.
+    With correct ⟨W⟩ overrides this gives 46 meV MAE — working correctly.
+  - The 1.8 eV GN-PPM body error is the real remaining problem, likely
+    from the ISDF PPM extrapolation mixing poles across G-vectors.
+
+### Static COHSEX results (unchanged from prior session)
 
   | Variant | MAE | max|Δ| |
   |---------|-----|--------|
   | S-tensor default | 0.165 eV | 0.213 eV |
-  | 800 centroids | 0.188 eV | 0.389 eV |
   | **BGW head override** | **0.046 eV** | **0.103 eV** |
 
-- **Key lessons**: (1) Always extract BGW mini-BZ heads for GWJAX comparisons.
-  (2) Run freq_dep 3 epsilon even for COHSEX — only it prints head diagnostics.
-  (3) Compare sigCOH against BGW CH' (primed), never CH. (4) More centroids
-  don't fix head errors. (5) 0D has a minor G=0 double-count bug.
-- **GN-GPP**: MAE = 1.836 eV — this is entirely in the PPM body, NOT heads.
-  BGW head overrides don't change the body values at all (head is excluded from
-  ISDF body in PPM path). The static decomposition (sex_0, coh_0) from the same
-  PPM run matches BGW COHSEX to 165 meV (46 meV with correct heads), confirming
-  the screening is fine. The error is in the PPM frequency extrapolation itself.
-- **Prior 91 meV result was from a different WFN** (160 bands, different eigenvalues)
-  in `tests_isdf/`. Cannot be compared to the current fresh 90-band calculation.
-- **Template fixes**: `use_kihdat` (was misspelled), `dont_use_vxcdat`, `no_t_rev`.
+### Template/infrastructure fixes
 
-## Open questions (as of 2026-04-04)
+  - `use_kihdat` (was misspelled `use_kih_dat`), needs `dont_use_vxcdat`
+  - `no_t_rev = .true.` added to all QE templates
+  - `apply_head_diagonal` added to cohsex.in parser (was missing)
 
-- **GN-PPM body error (1.8 eV)**: The PPM fit from W(0) and W(iωp) extrapolates
-  poorly to real frequencies for certain bands (worst: band 25, 4.5 eV). This is
-  independent of heads and needs investigation of the ISDF PPM extraction itself.
-- Run 3×3 k-grid to test whether the PPM error improves with more q-points.
-- Understand why body-only (head removed) matches BGW to 91 meV but adding the
-  separate head diagonal back gives +2.3 eV error. The head GN correction derived
-  from gn_bug_plan.md appears to double-count what BGW already includes in its
-  plane-wave W^c body. Need to understand whether the "correct" physics requires
-  the head correction or whether the body-only path is self-consistent.
-- Set up k-grid convergence study for MoS2 (6×6, 9×9 variants).
-- CO molecule comparison with head fix (should remain ~3 meV).
+## Open questions (as of 2026-04-05)
+
+- **GN-PPM body error (1.8 eV)**: The ISDF body PPM extrapolation fails for
+  MoS2 1×1 but works for CO (0D, 50 meV). The difference: in 2D, G=0 is
+  zeroed from the body, so the ISDF PPM fits poles to an incomplete W^c. In
+  0D, G=0 is finite and included. Possible fix: full-frequency integration
+  in the ISDF basis (static screening is accurate; the PPM extrapolation is
+  the problem).
+- The prior 91 meV GN-PPM result (head_fix_test) used a different WFN.h5
+  (160 bands) from `tests_isdf/`. Cannot be compared to the current 90-band
+  calculation.
+- 0D has a minor G=0 double-count in `compute_sqrt_vcoul_0d` (CO still
+  passes at 3 meV due to large vacuum cell).
+- k-grid convergence study needed (3×3, 6×6).
 
 ## 2026-04-04: Head correction separated from ISDF body — MoS2 1×1 results
 
@@ -56,29 +88,14 @@
   - Head GN fit: Ω_h = 1.145 Ry, R_h = 141.0 Ry·a.u., shift ±2.386 eV/state.
   - **Body only (head removed from ISDF W): MAE = 0.091 eV vs BGW. max|Δ| = 0.126 eV.**
   - Body + separate head diagonal:          MAE = 2.295 eV vs BGW (worse — double-counts).
-  - Conclusion: Removing the head from the ISDF body is the essential fix.
-    The separate diagonal head correction overshoots, suggesting that BGW's Cor'
-    already includes the head through its plane-wave W^c, and the ISDF body without
-    head naturally reproduces this.
-  - Plot: `runs/mos2_1x1/head_fix_test/head_fix_comparison.png`
-
-- **Comparison to old result**: Prior GWJAX (head in ISDF body) had MAE ≈ 2.4 eV
-  vs BGW for MoS2 1×1. After removing head from body: MAE = 0.091 eV. This is a
-  **26× improvement** and within the 100 meV target.
+  - Note: this comparison used a different WFN.h5 (160 bands) and different BGW
+    run from `tests_isdf/`. The 91 meV result cannot be directly compared to the
+    fresh 90-band `MoS2_1x1_full_workflow` runs.
 
 - **Tests pass**: `uv run python -m pytest -q` → 2 passed.
-- **Platform**: Local WSL2, RTX 5070 8 GB, JAX 0.9.1 (GPU confirmed).
-  Runtime: ~311s for 1×1 with 600 centroids and 80 bands (PPM sigma 99% of time).
 
 ## Known issues
 
-- **2D Cor offset (RESOLVED to 91 meV)**: Was ±2.4 eV for MoS2 vs BGW. Cause: the
-  q=0 G=0 Coulomb head was added to the ISDF body W via `apply_head_correction()`,
-  distorting the ISDF representation. Fix: remove head from ISDF body in
-  `ppm_sigma.py`. Residual 91 meV may be from wings or ISDF basis completeness.
-  **The separate diagonal head correction described in `gn_bug_plan.md` should NOT
-  be applied by default** — it double-counts the head that BGW already has in W^c.
-  Available via `apply_head_diagonal = true` for experimentation.
 - **pw2bgw GPU segfault (workaround)**: `MPICH_GPU_SUPPORT_ENABLED=0` for all pw2bgw.
 - **cuFFT scratch OOM on 40 GB A100 (workaround)**: `memory_per_device_gb = 28`.
 - **JAX 0.9.0 multi-GPU segfault (workaround)**: Use Shifter container, not uv.
@@ -90,6 +107,4 @@
 - MoS2: constant ±2.4 eV offset in Cor. **FAIL.**
   - Offset is the same at all 9 k-points in the 3×3 grid.
   - ISDF SoS agrees with gw_jax, not BGW, in both 0D and 2D.
-  - `write_no_head_vw = true`: head accounts for ~0.3 eV of the 2.4 eV. Not the
-    whole story.
 - Confirmed environment workarounds: pw2bgw GPU segfault, cuFFT OOM, JAX multi-GPU.
