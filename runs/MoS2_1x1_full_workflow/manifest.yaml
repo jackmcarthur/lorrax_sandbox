@@ -1,0 +1,67 @@
+run_id: mos2_1x1_full_workflow_2026-04-04
+system:
+  formula: MoS2
+  prefix: MoS2
+  dimensionality: 2
+  n_val: 26
+  n_cond: 44
+  n_band: 80
+  ecutwfc: 30.0
+  kgrid: [1, 1, 1]
+  metal: false
+
+pipeline: qe+bgw+gwjax
+
+platform: local_wsl
+
+files:
+  scf: qe/scf.in
+  nscf: qe/nscf.in
+  nscfq: qe/nscfq.in
+  pw2bgw: qe/pw2bgw.in
+  pw2bgwq: qe/pw2bgwq.in
+  epsilon_gn: 00_bgw/epsilon.inp
+  sigma_gn: 00_bgw/sigma.inp
+  epsilon_cohsex: 01_bgw_cohsex/epsilon.inp
+  sigma_cohsex: 01_bgw_cohsex/sigma.inp
+  cohsex_gn: 00_lorrax/cohsex.in
+  cohsex_static: 01_lorrax_cohsex/cohsex.in
+
+pseudopotentials:
+  - Mo_ONCV_PBE_FR-1.0.upf
+  - S_ONCV_PBE_FR-1.1.upf
+
+gwjax:
+  n_centroids: 640
+  centroids_file: centroids_frac_640.txt
+  use_ppm_sigma: true  # 00_lorrax; false for 01_lorrax_cohsex
+
+bgw:
+  frequency_dependence: 3  # 00_bgw GN-GPP; 0 for 01_bgw_cohsex
+  band_index_min: 19
+  band_index_max: 30
+  epsilon_cutoff: 30.0
+
+steps:
+  qe:                { state: complete, note: "SCF converged 11 iter; WFN.h5 + WFNq.h5 produced" }
+  00_bgw:            { state: complete, note: "GN-GPP base; sigma_hp.log produced" }
+  01_bgw_cohsex:     { state: complete, note: "static COHSEX variant; sigma_hp.log produced" }
+  00_lorrax:         { state: complete, note: "GN-PPM base; eqp0.dat + sigma_freq_debug.dat produced" }
+  01_lorrax_cohsex:  { state: complete, note: "static COHSEX variant; eqp0.dat produced" }
+
+  02_lorrax_cohsex_800c: { state: complete, note: "800 centroids COHSEX; MAE=0.188 eV (worse)" }
+
+results:
+  gn_gpp:
+    exchange_mae_eV: 0.065
+    correlation_mae_eV: 1.836
+    correlation_max_delta_eV: 4.474
+    note: "Known head/PPM issue; not yet resolved for fresh WFN"
+  cohsex_640c:
+    correlation_mae_eV: 0.165
+    correlation_max_delta_eV: 0.213
+    note: "Error dominated by SX-X head/wings, not ISDF basis"
+  cohsex_800c:
+    correlation_mae_eV: 0.188
+    correlation_max_delta_eV: 0.389
+    note: "Worse than 640c — confirms error is NOT ISDF completeness"
