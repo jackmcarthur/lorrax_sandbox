@@ -118,12 +118,26 @@ and compares against directly-computed nosym wavefunctions via Gram matrices:
 
 ### What still needs investigation
 
-The sigma pipeline error must come from one of:
-1. **ISDF pair density assembly**: how products u*_{nk}(r) u_{n,k-q}(r) are
-   computed with symmetry-unfolded wavefunctions
-2. **Q-point summation**: whether symmetry weights or q-point folding is correct
-3. **G-vector indexing in chi0**: whether the FFT-box placement of rotated
-   wavefunctions is consistent with the chi0 computation
+The following have been **ruled out** as causes of the remaining sigma error:
+- K-point mesh: sym and nosym use identical 64-point meshes (verified)
+- Q-point pairing: `kvecs_asints` and `all_unfolded_qpt_ids` are identical
+- FFT axes: all FFT operations use 3D (no 2D residuals found in codebase)
+- `kq_map` dimension mismatch (64×13 vs 64×64): this map is not used by the GW code
+- G-vector FFT-box placement: correct (verified by 100% G-match)
+- Symmetry in the GW code itself: there is none — only wavefunction loading uses symmetry
+
+The remaining hypothesis: the ISDF approximation is **gauge-sensitive** within
+degenerate subspaces. The sym-rotated wavefunctions span the same subspace as
+the nosym wavefunctions (Gram matrix ≈ identity), but the specific linear
+combination within each Kramers pair differs (~84% per-band overlap). Since
+ISDF fits individual band wavefunctions at centroid points, a different gauge
+produces different interpolation vectors ζ_{μν}, changing the ISDF approximation
+quality. The nosym gauge (from QE's direct diagonalization) may be better
+conditioned for ISDF fitting than the sym-rotated gauge.
+
+Testing this hypothesis would require: running the sigma with sym wavefunctions
+but FORCING the nosym gauge (by projecting the sym-rotated wavefunctions onto
+the nosym degenerate subspace basis before ISDF fitting).
 
 ## Plots
 
