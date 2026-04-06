@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-04-06: Imported GN-PPM profiling documentation
+
+- Added the profiling workflow note at `agents_xprof.md`
+- Copied the profiling report and xprof trace guide into `reports/ppm_sigma_profiling_2026-04-05/`
+- No raw trace bundles or profile outputs were copied from the profiling sandbox
+
 ## Current status (2026-04-05)
 
 All work is on `main`. Branches `agent/fix-multihost-device-get` and
