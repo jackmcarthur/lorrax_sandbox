@@ -1,83 +1,47 @@
-# Si 10×10×10 OOM — Handoff Notes for Next Session
+# Si 10×10×10 OOM — Updated Handoff (2026-04-06 evening)
 
-**Date**: 2026-04-06
-**Branch**: `main` (all changes pushed)
+## Status
 
-## Current state
+Memory model updated to 9× shard for multi-GPU (measured from assay).
+16 GPUs should now fit 1000 k-points in a single centroid-extraction chunk
+(predicted 16 GB peak < 28 GB budget). NOT YET TESTED — allocation expired.
 
-Si 10×10×10 (1000 k-points, 60 bands, 480 centroids, 16 GPUs) OOMs during
-the ISDF fitting r-chunk pipeline. The wavefunction centroid loading itself
-works (k-chunking fixes that path), but the r-chunk extraction path in
-`get_sharded_wfns_rchunk_slice` has a sharding annotation problem.
+## What changed this session
 
-## The specific OOM
+1. **load_wfns.py refactor**: 2000 → 700 lines. ISDF fitting extracted to
+   `isdf_fitting.py`, FFT helpers to `fft_helpers.py`, bispinor to
+   `bispinor_init.py`. All tests pass, numerically identical.
 
-XLA log:
-```
-Can't reduce memory use below 14.12 GiB by rematerialization;
-only reduced to 22.66 GiB
-```
+2. **Centroid extraction OOM fix**: keep padded bands through reshard, trim
+   outside JIT. Split JIT prevents FFT rematerialization. VERIFIED working
+   (10×10×10 passed centroid stage on 16 GPUs, reached r-chunk stage).
 
-This means XLA compiled a kernel that needs 22.66 GB, but only 14.12 GB is
-free. The 22.66 GB is from **involuntary full rematerialization** caused by
-a gather operation at `load_wfns.py:548` that transitions from
-`{devices=[1,16,1,1]}` to `{devices=[1,1,1,4,4]}` — XLA can't reshard
-the gather output without recomputing the entire input tensor.
+3. **R-chunk reshard**: split JIT same as centroids. Two-step {-,XY,-,-} →
+   {-,Y,-,-} → {-,-,-,Y}. The {-,Y,-,-} intermediate is the binding
+   constraint (nb_pad/p_y bands × full r_chunk per device).
 
-## Root cause
+4. **Memory model**: FFT peak is 4× on 1 GPU, 9× on multi-GPU (measured).
+   The extra 5× is from collective communication buffers during the
+   band-axis reshard. Validated on Si 4×4×4 with 4 GPUs across 12
+   configurations (3 band chunks × 4 r chunks).
 
-`get_sharded_wfns_rchunk_slice` (line ~290 in load_wfns.py) does:
-1. FFT the band-sharded psi_G → psi_r (sharded on bands across 16 devices)
-2. Flatten to (nk, nb, ns, n_rtot) — still band-sharded
-3. Slice to r-chunk: `psi_r[:, :, :, r_start:r_end]` — still band-sharded
-4. `jnp.take` with linear indices for the gather
-5. Reshard to output sharding `{-, -, -, Y}` (centroids on Y axis)
+5. **V_q pipeline**: fused kernels, GPU-side accumulation via .at[].set().
 
-The transition from `{-, 16-way-band, -, -}` to `{-, -, -, 4×4}` at step 5
-forces XLA to rematerialize the entire tensor. With 1000 k-points, that's
-22.66 GB.
+6. **Improper spinor fix**: mirrors/S6 get correct SU(2) spinor.
 
-## What was already fixed
+## Next steps
 
-`get_sharded_wfns_centroids` (the centroid extraction path) was fixed to use
-direct 3D spatial indexing instead of flatten+linear-gather, avoiding the
-rematerialization. But `get_sharded_wfns_rchunk_slice` (the r-chunk path)
-still uses the old pattern.
+1. **Test 10×10×10 on 16 GPUs** with the 9× model. Prediction: 16 GB peak,
+   fits in 28 GB budget, no k-chunking needed.
 
-## What to do next
+2. If it passes centroid+r-chunk: run full sigma and time it vs BGW.
 
-1. Fix `get_sharded_wfns_rchunk_slice` with the same approach: either
-   - Use 3D spatial indexing (convert r_start:r_end to 3D grid coordinates)
-   - Or add intermediate resharding constraints that XLA can handle
+3. The r-chunk reshard intermediate may still OOM if the chunk solver picks
+   too large an r_chunk. The chunk solver in `compute_optimal_chunks`
+   needs the reshard buffer term added (documented in MEMORY_MODEL.md
+   but not yet in the solver code).
 
-2. More fundamentally: the r-chunk path extracts a contiguous slice of
-   flattened r-space. This is inherently 1D, so 3D indexing doesn't apply
-   directly. The fix may need to keep bands replicated (not sharded) during
-   the r-chunk extraction, or shard on k-points instead of bands.
+## Files on LORRAX main
 
-3. The memory model (4 copies of the shard during FFT) is now calibrated
-   and correct for the centroid path. The r-chunk path may have different
-   memory characteristics because the output is a different shape.
-
-## Measured memory model
-
-From 1-GPU profiling of Si 4×4×4:
-
-| Step | Peak | Arrays alive |
-|------|------|-------------|
-| FFT | 4× input | input + output + 2 FFT staging buffers |
-| Phase multiply | 3× input (staging freed) | input + output + phased |
-| Centroid gather | 3× + small | above + psi_rmu (tiny) |
-
-Peak factor: **4 countable copies** of the per-device shard during FFT.
-Per-device shard = nk × ceil(nb / n_devices) × nspinor × n_rtot × 16 bytes.
-
-## Files changed in this session
-
-- `src/common/load_wfns.py`: k-chunking, make_array_from_callback,
-  3D centroid gather, memory model
-- `src/common/isdf_fitting.py`: extracted from load_wfns
-- `src/common/fft_helpers.py`: extracted from load_wfns
-- `src/common/bispinor_init.py`: extracted from load_wfns
-- `src/gw/compute_vcoul.py`: fused V_q pipeline, GPU-side accumulation
-- `src/common/symmetry_maps.py`: improper spinor fix + multihost fix
+All pushed. Key commits: `1808c15` (9× model), `6df6ac4` (split JIT reshard),
+`1911929` (centroid padded bands fix), `892ea9c` (load_wfns refactor).
