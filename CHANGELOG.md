@@ -1,110 +1,177 @@
 # Changelog
 
-## 2026-04-05: Root cause of 2D GN-GPP head discrepancy identified
+## Current status (2026-04-05)
 
-- **Report**: `reports/cohsex_head_investigation_2026-04-04/report.md`
-- **Run**: `runs/MoS2_1x1_full_workflow/`
+All work is on `main`. No outstanding branches.
 
-### The finding
+### Static COHSEX: working for both 2D and 3D
 
-Added debug prints to BGW `Sigma/mtxel_cor.f90` and `Sigma/sigma_main.f90`
-and confirmed how BGW actually treats the q=0, G=G'=0 head in `freq_dep=3`:
+| System | Grid | MAE vs BGW Corp | Report |
+|--------|------|-----------------|--------|
+| MoS2 (2D) | 3×3 | **67 meV** | `reports/mos2_kgrid_convergence_2026-04-05/` |
+| MoS2 (2D) | 4×4 | **73 meV** | same |
+| Si (3D) | 4×4×4 nosym | **54 meV** (all k) | `reports/si_nosym_2026-04-05/` |
+| Si (3D) | 4×4×4 sym | **52 meV** (Γ only) | `reports/3d_coulomb_si_444_2026-04-05/` |
 
-  - `fixwings_dyn` does NOT modify the head for 2D slab (confirmed in code
-    and by debug print: `epsR(G=0,G'=0)` is unchanged after fixwings)
-  - The ε⁻¹ head stored in `eps0mat.h5` is **0.895** (the inverse of the
-    printed ε head 1.152) — NOT 1.152 as I previously confused
-  - `vcoul(G=0)` in the sigma loop is **0.449 a.u.** — the bare Coulomb at
-    the shifted q-point, NOT the mini-BZ average (315 a.u.)
-  - The GN pole is valid: ω̃² = +40.2 Ry², ω̃ = 6.34 Ry
-  - The on-shell head contribution to Σ^c is **~0.5 meV** — essentially zero
+The ~54-67 meV COHSEX error is k-grid independent and uniform across all
+k-points when symmetry is disabled. The error is dominated by screened exchange
+(57 meV), while the Coulomb hole matches to 5 meV. Source is ISDF basis
+approximation, not symmetry or wing corrections.
 
-### Why GWJAX's head correction is wrong for GN-GPP
+### GN-PPM: ~1 eV body error in 2D MoS2, 12 meV uniform in 3D Si nosym
 
-BGW treats every (G,G') element identically. The head (G=G'=0) gets:
-  - Its own GN pole from the raw ε⁻¹ at the shifted q-point
-  - Multiplied by `vcoul(G=0)` = v(q₀) ≈ 0.45 a.u. (small)
-  - Net contribution: negligible
+| System | Grid | MAE vs BGW Corp | Report |
+|--------|------|-----------------|--------|
+| MoS2 (2D) | 3×3 | **1324 meV** | `reports/mos2_kgrid_convergence_2026-04-05/` |
+| MoS2 (2D) | 4×4 | **1019 meV** | same |
+| Si (3D) | 4×4×4 nosym | **12 meV** (all k) | `reports/si_nosym_2026-04-05/` |
+| Si (3D) | 4×4×4 sym | **5 meV** (Γ only) | `reports/3d_coulomb_si_444_2026-04-05/` |
 
-GWJAX's `head_correction.py` instead:
-  - Fits a GN pole from mini-BZ averaged ⟨W⟩ and ⟨v⟩ (315 a.u.)
-  - Applies as a ±2.5 eV diagonal shift
-  - This is ~5000× larger than what BGW computes for the same element
+The 2D GN-PPM body error improves 25% with denser grid but remains ~1 eV. The
+ISDF PPM pole extraction (W(0), W(iωp) → Ω, B per (q,μ,ν)) is the suspected
+source — the ISDF basis mixes G-vector channels so individual poles are less
+well-defined than in BGW's plane-wave basis. The 3D Si nosym result (12 meV
+uniform at all k-points) shows the PPM machinery works; the 2D error may be
+related to how the G=0 head exclusion interacts with the ISDF body PPM fit.
 
-The mismatch is not in the GN fit formalism (poles, signs agree when using
-the same inputs). It's that **BGW uses v(q₀) ≈ 0.45 while GWJAX uses
-⟨v⟩ ≈ 315** for the head element. In BGW's accounting, the large q→0
-Coulomb divergence enters through the mini-BZ averaged vcoul in the **bare
-exchange** Σ_x (via `vcoul_generator`), not through the correlation Σ_c.
+**Key code locations:**
+- PPM extraction: `src/gw/minimax_screening.py:extract_gn_ppm_parameters_from_Wc`
+- PPM sigma integration: `src/gw/ppm_sigma.py:compute_sigma_c_ppm_omega_grid`
+- BGW PPM: `Sigma/mtxel_cor.f90` (GN pole fit + sigma evaluation)
+- BGW fixwings: `Common/fixwings.f90` (wing rescaling for ε⁻¹ compatibility)
+- BGW avgcut logic: `Sigma/inread.f90:908-912` (10¹² for 3D semicond, 10⁻¹² otherwise)
 
-### Implications
+### CONFIRMED: k-point-dependent errors are entirely from SymMaps rotation bug
 
-  - `apply_head_diagonal` should remain **false** — the correction is
-    physically incorrect for comparison with BGW's GN-GPP
-  - The COHSEX path is different: `apply_head_correction()` adds the head
-    to V and W symmetrically, then COH = ½(W−V) cancels most of it.
-    With correct ⟨W⟩ overrides this gives 46 meV MAE — working correctly.
-  - The 1.8 eV GN-PPM body error is the real remaining problem, likely
-    from the ISDF PPM extrapolation mixing poles across G-vectors.
+Si 3D with `force_symmorphic` (12 syms) shows **300-1600 meV errors** at
+off-axis k-points requiring nontrivial symmetry rotations. Running the **same
+system with `nosym=.true.`** (64 direct k-points, no unfolding) gives
+**uniform 12 meV GN-PPM / 54 meV COHSEX** at ALL k-points. This conclusively
+proves the off-axis errors are from the SymMaps wavefunction rotation, not
+from the ISDF/PPM/Coulomb pipeline.
 
-### Static COHSEX results (unchanged from prior session)
+**What's been checked:**
+- Spinor U_spinor matrices match BGW `Common/spinor_symmetries.f90` convention
+  (improper → proper before SU(2); inversion → identity). Confirmed correct.
+- The SAME set of symmetry operations (syms 0–5) are used for both good
+  k-points (e.g. ik_ibz=1, k=(0,0,0.25)) and bad k-points (e.g. ik_ibz=3,
+  k=(0,0.25,0.25)). So the operations themselves aren't broken — the error
+  depends on the specific k-point being rotated.
+- No time-reversed operations are used (verified: all 64 full-BZ k-points
+  use spatial syms 0–11 only).
 
-  | Variant | MAE | max|Δ| |
-  |---------|-----|--------|
-  | S-tensor default | 0.165 eV | 0.213 eV |
-  | **BGW head override** | **0.046 eV** | **0.103 eV** |
+**What's NOT been checked:**
+- The G-vector mapping / G_shift computation in SymMaps (the relationship
+  $u_{n,Sk}(G) = U_\text{spinor} \cdot u_{n,k}(S^{-1}G - G_\text{shift})$)
+- Whether the wavefunction loader correctly applies this mapping
+- Whether the same issue affects 2D MoS2 (which also uses symmetry, and
+  the persistent ~70 meV COHSEX error could partly come from this)
+- Whether running MoS2 with `nosym = .true.` (full BZ, no symmetry at all)
+  would reduce the COHSEX error below 70 meV
 
-### Template/infrastructure fixes
+**This blocks production 3D calculations.** See per-k breakdown in
+`reports/3d_coulomb_si_444_2026-04-05/si_gnppm_per_kpoint.png`.
 
-  - `use_kihdat` (was misspelled `use_kih_dat`), needs `dont_use_vxcdat`
-  - `no_t_rev = .true.` added to all QE templates
-  - `apply_head_diagonal` added to cohsex.in parser (was missing)
+**Key code:** `src/common/symmetry_maps.py` (SymMaps class, particularly
+`find_symmetry_ops_simple`, `create_kpoint_symmetry_map`, and how
+`irk_to_k_map` / `irk_sym_map` are used by the wavefunction loader in
+`src/common/load_wfns.py`).
 
-## Open questions (as of 2026-04-05)
+**Key code locations:**
+- SymMaps: `src/common/symmetry_maps.py` (k-point unfolding, G-shift computation)
+- BGW equivalent: `Common/genwf.f90` (wavefunction generation via symmetry)
+- Wavefunction rotation: u_{n,Sk}(G) = U_spinor · u_{n,k}(S⁻¹G - G_shift)
 
-- **GN-PPM body error (1.8 eV)**: The ISDF body PPM extrapolation fails for
-  MoS2 1×1 but works for CO (0D, 50 meV). The difference: in 2D, G=0 is
-  zeroed from the body, so the ISDF PPM fits poles to an incomplete W^c. In
-  0D, G=0 is finite and included. Possible fix: full-frequency integration
-  in the ISDF basis (static screening is accurate; the PPM extrapolation is
-  the problem).
-- The prior 91 meV GN-PPM result (head_fix_test) used a different WFN.h5
-  (160 bands) from `tests_isdf/`. Cannot be compared to the current 90-band
-  calculation.
-- 0D has a minor G=0 double-count in `compute_sqrt_vcoul_0d` (CO still
-  passes at 3 meV due to large vacuum cell).
-- k-grid convergence study needed (3×3, 6×6).
+### BGW `cell_average_cutoff` / mini-BZ averaging
 
-## 2026-04-04: Head correction separated from ISDF body — MoS2 1×1 results
+BGW's `Sigma/inread.f90` lines 908-912 auto-set `avgcut`:
+- **3D semiconductor** (`TRUNC_NONE` + `SCREEN_SEMICOND`): `avgcut = 1/TOL_ZERO ≈ 10¹²` Ry
+  → MC-averages vcoul at EVERY q-point, fixwings rescales ε⁻¹ wings at EVERY q-point
+- **Everything else** (slab, wire, box, metals): `avgcut = TOL_ZERO ≈ 10⁻¹²` Ry
+  → MC averaging and fixwings only at exact q=0
 
-- **Implementation** (see `gn_bug_plan.md` for derivation):
-  - `gw/head_correction.py`: New module — scalar GN fit for q=0 G=0 head.
-  - `gw/ppm_sigma.py`: Head no longer added to ISDF body W in PPM extraction.
-  - `gw/gw_jax.py`: Head GN diagonal correction computed; optionally applied
-    via `apply_head_diagonal = true` in cohsex.in (default: false).
-  - `file_io/sigma_output.py`: New `sig_c_head` column in sigma_freq_debug.dat.
+LORRAX now MC-averages v(q, G=0) for all nonzero q in 3D (commit `ef38ce3`),
+matching BGW's head treatment. This reduced Si Γ MAE from 194→52 meV. LORRAX
+does NOT rescale ε⁻¹ wings (no equivalent to fixwings for body elements), but
+this appears to be unnecessary for the ISDF approach where W is computed via
+the Dyson equation rather than ε⁻¹ × v.
 
-- **MoS2 1×1 Γ-only result** (run: `runs/mos2_1x1/head_fix_test/`):
-  - Head GN fit: Ω_h = 1.145 Ry, R_h = 141.0 Ry·a.u., shift ±2.386 eV/state.
-  - **Body only (head removed from ISDF W): MAE = 0.091 eV vs BGW. max|Δ| = 0.126 eV.**
-  - Body + separate head diagonal:          MAE = 2.295 eV vs BGW (worse — double-counts).
-  - Note: this comparison used a different WFN.h5 (160 bands) and different BGW
-    run from `tests_isdf/`. The 91 meV result cannot be directly compared to the
-    fresh 90-band `MoS2_1x1_full_workflow` runs.
+User can override BGW's avgcut via `cell_average_cutoff X.X` in sigma.inp.
 
-- **Tests pass**: `uv run python -m pytest -q` → 2 passed.
+---
 
-## Known issues
+## 2026-04-05: Si nosym test — confirms SymMaps rotation bug
 
-- **pw2bgw GPU segfault (workaround)**: `MPICH_GPU_SUPPORT_ENABLED=0` for all pw2bgw.
-- **cuFFT scratch OOM on 40 GB A100 (workaround)**: `memory_per_device_gb = 28`.
-- **JAX 0.9.0 multi-GPU segfault (workaround)**: Use Shifter container, not uv.
+- **Report**: `reports/si_nosym_2026-04-05/report.md`
+- **Run**: `runs/Si/02_si_4x4x4_nosym/`
+
+Ran full QE→BGW→LORRAX pipeline with `nosym=.true.` (all 64 k-points computed
+directly, no symmetry unfolding). Results:
+
+| Method | nosym MAE (all k) | sym MAE (Gamma) | sym MAE (off-axis) |
+|--------|-------------------|-----------------|---------------------|
+| COHSEX Corp | **54 meV** | 52 meV | 200-700 meV |
+| GN-PPM Corp | **12 meV** | 5 meV | 300-1600 meV |
+
+The nosym errors are uniform across all 64 k-points, proving that the
+300-1600 meV off-axis errors are entirely from the SymMaps wavefunction
+rotation bug. The COHSEX error is dominated by screened exchange (57 meV SX,
+5 meV COH), likely from ISDF basis approximation. Workaround: use nosym for
+production until SymMaps is fixed.
+
+## 2026-04-05: MoS2 k-grid convergence study
+
+- **Report**: `reports/mos2_kgrid_convergence_2026-04-05/report.md`
+
+Compared MoS2 3×3 and 4×4 for both COHSEX and GN-PPM. COHSEX error is
+k-grid independent (~70 meV). GN-PPM improves 25% (1324→1019 meV). New
+JIT-optimized PPM code verified to reproduce old results to <1 meV.
+
+## 2026-04-05: 3D Coulomb implementation and Si 4×4×4
+
+- **Report**: `reports/3d_coulomb_si_444_2026-04-05/report.md`
+
+Implemented sys_dim=3 Coulomb, identified non-symmorphic symmetry issue
+(workaround: `force_symmorphic = .true.`), added MC-averaged v(q, G=0) for 3D.
+Resolved CH vs CH' comparison methodology error (the ~2.4 eV MoS2 "offset"
+from April 2 was comparing the wrong sigma_hp.log column).
+
+## 2026-04-05: GN-PPM profiling and JIT optimization
+
+GN-PPM sigma: 97.5% was XLA compilation. JIT-compiling tau-node loop: 421s→105s.
+Minimax quadrature tables now shipped as assets for instant lookup.
+
+## 2026-04-04: Head correction module
+
+Body-only MoS2 1×1: 91 meV. Static COHSEX with BGW head: 46 meV.
+`apply_head_diagonal` should remain false for GN-PPM comparisons with BGW.
 
 ## 2026-04-02: Initial matched runs
 
-- Set up CO (0D, Γ-only) and MoS2 (2D, 3×3) with matched BGW + gw_jax parameters.
-- CO: BGW and gw_jax Cor agree to 3 meV. **PASS.**
-- MoS2: constant ±2.4 eV offset in Cor. **FAIL.**
-  - Offset is the same at all 9 k-points in the 3×3 grid.
-  - ISDF SoS agrees with gw_jax, not BGW, in both 0D and 2D.
-- Confirmed environment workarounds: pw2bgw GPU segfault, cuFFT OOM, JAX multi-GPU.
+CO (0D): 3 meV. MoS2 3×3: originally reported as 2.4 eV offset (later
+identified as CH vs CH' comparison error — actual COHSEX error was 67 meV).
+
+## Known environment issues
+
+- `pw2bgw` GPU segfault → `MPICH_GPU_SUPPORT_ENABLED=0`
+- cuFFT OOM on 40 GB A100 → `memory_per_device_gb = 28`
+- Multi-GPU JAX → use Shifter container, not uv
+- **Multi-process JAX distributed array crash**: Running LORRAX with multiple
+  OS processes (e.g. `srun -n 4`, each process gets 1 GPU) triggers
+  `jax.device_get()` crashes on sharded arrays. This is a **multi-process**
+  issue, not a multi-node issue — even single-node with `-n 4` crashes. With
+  small k-grids (e.g. 8 IBZ points) arrays may fit on one device and the
+  problem does not appear; with larger grids (e.g. 64 k-points nosym) arrays
+  are sharded across devices and `device_get()` fails because it cannot access
+  non-addressable devices.
+  - **Crash sites**: `minimax_screening.py:extract_gn_ppm_parameters_from_Wc`
+    (line 778) and `extract_gn_ppm_parameters` (line 719), both calling
+    `jax.device_get()`.
+  - **Fix**: Replace `jax.device_get(arr)` with
+    `jax.experimental.multihost_utils.process_allgather(arr, tiled=True)`,
+    matching the existing `_to_host()` pattern in `file_io/tagged_arrays.py`
+    (lines 26-34).
+  - **Workaround**: Use `-N 1 -n 1 --gres=gpu:4` (single process, 4 GPUs on
+    one node). JAX sees all 4 GPUs within the single process, so no arrays are
+    distributed across process boundaries.
+- `centroid.kmeans_isdf` does not accept `-i cohsex.in`; run from CWD

@@ -47,5 +47,19 @@ incorrect sandbox scaffolding is the human's job.
 ### ~~2026-04-04: Templates missing `no_t_rev = .true.` in &system~~ FIXED
 - **Fix**: Added `no_t_rev = .true.` to all 5 QE templates (scf.in, scf_co.in, scf_mos2_1x1.in, nscf.in, nscfq.in).
 
+### 2026-04-05: centroid.kmeans_isdf does not accept `-i cohsex.in`
+- **Where**: `skills/execute_workflow/SKILL.md` step 5a, `skills/build_inputs/SKILL.md`
+- **What happened**: Running `python3 -m centroid.kmeans_isdf -i cohsex.in 480` fails with
+  `invalid int value: 'cohsex.in'`. The module's argparser only accepts a positional `N_k`
+  argument and `--seed`/`--no-plot` flags. It reads `WFN.h5` directly from the CWD.
+- **Expected**: Execute skill should document the correct invocation: `python3 -m centroid.kmeans_isdf 480 --no-plot --seed 42`
+- **Workaround**: Run without `-i` flag from the directory containing WFN.h5.
+
 ### ~~2026-04-04: sigma_freq_debug.dat header comment always says "includes head"~~ FIXED
 - **Fix**: Added `head_applied` parameter to `write_sigma_freq_debug_table()`. Header now correctly says "INCLUDES" or "does NOT include" based on `apply_head_diagonal` setting.
+
+### 2026-04-05: `uv run` from sandbox can fail because editable LORRAX path points to missing `/pscratch` location
+- **Where**: sandbox Python environment / `pyproject.toml` editable dependency resolution
+- **What happened**: Running a simple read-only inspection command with `uv run python ...` failed with `Distribution not found at: file:///pscratch/sd/j/jackm/lorrax`.
+- **Expected**: `uv run` should resolve the local editable LORRAX package successfully from the sandbox.
+- **Workaround**: Use `python3` directly for read-only inspection, or run tooling from the live LORRAX checkout instead of relying on the sandbox's broken editable path.
