@@ -172,6 +172,57 @@ Or `tensorboard --logdir jax_profiles --port 6006` if you have a browser.
 | Dense GPU kernels, uniformly slow | GPU compute is the real cost | **Sharding/fusion/batching** |
 | Warm cache eliminates the cost | Pure compilation overhead | Set `JAX_COMPILATION_CACHE_DIR` persistently |
 
+### Identifying FFT memory peaks
+
+The 3D FFT (`jnp.fft.ifftn`) is the dominant memory consumer during wavefunction
+loading and centroid extraction. At peak, it holds **4 copies** of the per-device
+psi shard (input + output + 2 staging buffers for the x→y→z decomposition).
+
+To verify the FFT is the bottleneck (not a sharding issue or allocation leak):
+
+```python
+# Quick per-device memory check at key stages
+import jax, gc
+def mem():
+    gc.collect()
+    s = jax.local_devices()[0].memory_stats()
+    return s['bytes_in_use'] / 1e9, s['peak_bytes_in_use'] / 1e9
+
+# In a fresh process, allocate and FFT a single shard:
+psi = jnp.zeros((nk, nb_shard, ns, nx, ny, nz), dtype=jnp.complex128)
+shard_gb = psi.nbytes / 1e9
+psi_r = jnp.fft.ifftn(psi, axes=(-3,-2,-1)); psi_r.block_until_ready()
+_, peak = mem()
+print(f'shard={shard_gb:.3f} GB, peak={peak:.3f} GB, ratio={peak/shard_gb:.2f}x')
+# Expected: ratio ≈ 4.0x for large shards, slightly higher for small shards.
+```
+
+If the ratio is significantly above 4× (e.g., 10× or more), look for:
+- **Cumulative peak contamination**: `peak_bytes_in_use` is a high-water mark
+  that never resets within a process. Run each test in a separate srun/process.
+- **Sharding rematerialization**: XLA log messages with "involuntary full
+  rematerialization" indicate a resharding transition that forces XLA to
+  recompute the full tensor. This adds the full unsharded size to the peak.
+  Fix by adding intermediate `with_sharding_constraint` steps or avoiding
+  the problematic sharding transition.
+- **Unfused phase multiply**: After FFT, `psi_r * phase` may allocate a new
+  buffer if XLA doesn't fuse it with the previous operation. This adds a 5th
+  copy briefly, but the FFT staging buffers are freed by then.
+
+### Identifying SPMD resharding OOMs
+
+When `_sharding_constraint_impl` OOMs, XLA is trying to reshard an array from
+one device layout to another. The XLA log will say:
+
+```
+Can't reduce memory use below X GiB by rematerialization; only reduced to Y GiB
+```
+
+This means XLA needs Y GB to execute the resharding, but only X GB is free.
+The Y GB includes the input array (which must be fully materialized to reshard)
+plus the output array. The fix is to avoid the problematic transition — e.g.,
+by resharding through an intermediate layout that XLA can handle incrementally.
+
 ### Known LORRAX cost centers
 
 | Cost center | Location | Cold time | With fix | Status |
