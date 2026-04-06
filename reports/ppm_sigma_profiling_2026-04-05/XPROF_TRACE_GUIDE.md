@@ -223,6 +223,82 @@ The Y GB includes the input array (which must be fully materialized to reshard)
 plus the output array. The fix is to avoid the problematic transition — e.g.,
 by resharding through an intermediate layout that XLA can handle incrementally.
 
+## Profiling the ISDF fitting pipeline
+
+The ISDF zeta fitting (`zeta_fit_chunked` in `isdf_fitting.py`) has distinct
+stages, each with a different memory profile. The stdout timing reports
+sub-sections that map directly to code stages:
+
+```
+gw_jax.zeta_fit_chunked                    17.5 s   35%
+  zeta_fit.load_wfns                         3.6 s    7%    ← centroid extraction (FFT-bound)
+  zeta_fit.CCT                               0.4 s    1%    ← pair density + cross-correlation
+  zeta_fit.cholesky                          1.6 s    3%    ← 2D blocked Cholesky of C_q
+  zeta_fit.cache_gspace                      0.4 s    1%    ← G-space cache for r-chunks
+  zeta_fit.chunk_loop                        3.2 s    6%    ← r-chunk processing loop
+    zeta_fit.chunk.load                        0.7 s         ← FFT + phase for this r-chunk
+    zeta_fit.chunk.pair_density                0.0 s         ← spin-traced P_l, P_r
+    zeta_fit.chunk.ZCT                         0.5 s         ← FFT-based ZCT contraction
+    zeta_fit.chunk.solve                       0.3 s         ← triangular solve ζ = L⁻¹ Z
+    zeta_fit.chunk.h5_write                    1.6 s         ← async H5 write (overlapped)
+```
+
+### Memory stages during ISDF fitting
+
+The per-device memory timeline follows this sequence (measured on Si 4×4×4,
+4 A100 GPUs):
+
+| Stage | GPU used | Peak | What's on device |
+|-------|----------|------|-----------------|
+| Before ISDF | 0.00 GB | 0.00 | Clean |
+| `load_wfns` (centroid FFT) | 0.52 | **3.50** | FFT peak: 4× psi shard |
+| After centroid extract | 0.07 | 3.50 | Only psi_rmu + psi_rmuT |
+| `cache_gspace` | 0.55 | 3.52 | Cached G-space for r-chunks |
+| `chunk.load` (r-chunk FFT) | 1.40 | 6.52 | G-cache + r-chunk psi_rtot |
+| `chunk.ZCT` | 3.97 | 7.37 | + pair densities + Z_q |
+| After chunk loop | 0.55 | 7.37 | G-cache still resident |
+
+**Key observations:**
+- The centroid FFT peak (3.50 GB) is from 4× the psi shard during the 3D FFT
+- The G-space cache (0.55 GB) persists through all r-chunks
+- The r-chunk ZCT peak (7.37 GB) includes pair densities, Z_q, and the solve
+- After the chunk loop, only the G-cache remains (freed explicitly)
+
+### How to profile per-stage memory
+
+Instrument with `jax.local_devices()[0].memory_stats()` at key points.
+**Critical**: use a **fresh process** for each test (cumulative peak
+never resets) and `gc.collect()` before each measurement.
+
+```python
+import jax, gc
+
+def mem(label):
+    gc.collect()
+    s = jax.local_devices()[0].memory_stats()
+    u = s['bytes_in_use'] / 1e9
+    p = s['peak_bytes_in_use'] / 1e9
+    print(f'  [{label}] used={u:.2f} GB, peak={p:.2f} GB')
+```
+
+Patch the entry points in `isdf_fitting.py` (e.g., `fit_zeta_chunked_to_h5`)
+to call `mem()` before/after each stage. See the handoff notes in
+`reports/si_10x10x10_timing_2026-04-06/oom_handoff.md` for the monkey-patching
+pattern used in the 4×4×4 profiling session.
+
+### Which stages are memory-bound vs compute-bound
+
+| Stage | Bound by | Scaling | Notes |
+|-------|----------|---------|-------|
+| `load_wfns` | **Memory** (FFT) | 4 × nk × (nb/P) × ns × n_rtot × 16 | Peak during FFT |
+| `CCT` | Compute (einsum) | O(nk × n_rmu² × ns) | Small for typical n_rmu |
+| `cholesky` | Compute (BLAS) | O(n_q × n_rmu³) | 2D blocked across mesh |
+| `cache_gspace` | Memory (persistent) | nk × (nb/P) × ns × n_rtot × 16 | Stays resident |
+| `chunk.load` | **Memory** (FFT) | Same as load_wfns but for r-chunk bands | Shares G-cache |
+| `chunk.ZCT` | **Memory** (FFT + matmul) | 4 × nk × n_rmu × B_r × 16 | ZCT FFT peak |
+| `chunk.solve` | Compute (trsm) | O(n_q × n_rmu² × B_r) | Dominated by BLAS |
+| `chunk.h5_write` | **I/O** | B_r × n_rmu × n_q × 16 | Overlapped with next chunk |
+
 ### Known LORRAX cost centers
 
 | Cost center | Location | Cold time | With fix | Status |
