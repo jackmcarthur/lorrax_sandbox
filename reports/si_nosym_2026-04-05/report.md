@@ -62,25 +62,79 @@ no catastrophic errors anywhere. Max single-band error: 82 meV.
    (64 vs 8 IBZ), but LORRAX runtime is dominated by ISDF fitting and
    screening, which scale with nq (same either way).
 
-## SymMaps bug: what to investigate
+## SymMaps bug: diagnostic script results
 
-The bug is in the G-vector mapping during wavefunction rotation:
-$u_{n,Sk}(G) = U_\text{spinor} \cdot u_{n,k}(S^{-1}G - G_\text{shift})$
+**Script**: `runs/Si/02_si_4x4x4_nosym/debug_symmaps/test_wfn_rotation.py`
 
-The spinor matrices U_spinor are verified correct. The issue is likely in:
-- `src/common/symmetry_maps.py`: `find_symmetry_ops_simple`, G_shift computation
-- `src/common/load_wfns.py`: how `irk_to_k_map` / `irk_sym_map` apply the rotation
+A standalone diagnostic compares rotated IBZ wavefunctions against
+directly-computed nosym wavefunctions. For each full BZ k-point, it:
+1. Rotates the IBZ wavefunction using the symmetry operation (G-vector
+   rotation + spinor rotation)
+2. Computes the overlap matrix O_ij = <nosym_i | rotated_j> within
+   degenerate subspaces
+3. Checks that ||O||^2 = ndeg (perfect subspace match)
 
-The error depends on the specific k-point being rotated, not the symmetry
-operation itself (the same syms 0-5 produce correct results for some k-points
-and wrong results for others).
+### Results
 
-## Multi-host JAX crash
+| Metric | Value |
+|--------|-------|
+| Total k-points tested | 55 (of 64, 9 are identity) |
+| Excluded (incompatible G-sphere) | 2 (irk=10, irk=12) |
+| Testable | 53 |
+| **GOOD** (err < 0.01) | **41** |
+| **BAD** (err >= 0.01) | **11** |
 
-Running with `-N 1 -n 4` (4 processes, 1 GPU each) crashes in
-`extract_gn_ppm_parameters_from_Wc` when calling `jax.device_get()` on
-sharded arrays with 64 k-points. The fix is to replace `jax.device_get()`
-with `jax.experimental.multihost_utils.process_allgather(arr, tiled=True)`,
-matching the pattern in `file_io/tagged_arrays.py:_to_host()`.
+### Key findings
 
-Workaround: use `-N 1 -n 1 --gres=gpu:4` (single process, 4 GPUs).
+1. **G-vector rotation is PERFECT.** 100% G-vector match fraction for all
+   53 testable k-points. The issue is NOT in G-sphere construction or
+   G-vector indexing.
+
+2. **2 IBZ k-points excluded** (irk=10: k=0.25,0.25,-0.25; irk=12:
+   k=0.25,0.25,0.25) because their G-spheres are incompatible between
+   sym and nosym WFN files — different k-point representations lead to
+   different G-sphere cutoff boundaries.
+
+3. **Failures cluster at specific IBZ k-points**, not specific symmetry ops:
+   - irk=1 (Gamma): some rotations fail
+   - irk=2: some rotations fail
+   - irk=7: some rotations fail
+   - Error magnitudes: ||O||^2 = 0.667 or 1.0 (expected 2.0 for pairs)
+
+4. **Many nontrivial rotations PASS correctly.** C2, C3, mirror operations
+   all produce correct wavefunctions at other IBZ k-points.
+
+5. **Conclusion**: The rotation formula itself is not universally broken.
+   The issue is specific to certain high-symmetry IBZ k-points, possibly
+   related to how degenerate subspaces are handled during rotation (band
+   mixing within degenerate manifolds at Gamma, etc.).
+
+### What to investigate next
+
+- Whether the rotation failures at irk=1,2,7 are from degenerate band
+  mixing (the diagnostic uses energy-based degeneracy grouping; higher
+  degeneracy at Gamma may need larger subspace windows)
+- Whether LORRAX's SymMaps G_shift computation matches the diagnostic's
+  independent implementation
+- Whether the wavefunction loader in `load_wfns.py` applies the rotation
+  in the same order as the diagnostic
+
+## MoS2 nosym test
+
+**Run**: `runs/MoS2/02_mos2_3x3_nosym/`
+
+MoS2 3x3 with `nosym=.true.` shows COHSEX 71 meV (vs 67 meV sym) and
+GN-PPM 1153 meV (vs 1324 meV sym). The errors are essentially unchanged,
+confirming that **MoS2 errors are NOT from symmetry rotation**. The ~70 meV
+COHSEX and ~1 eV GN-PPM errors are intrinsic to the ISDF/PPM treatment of
+the 2D system.
+
+## Multi-host JAX fix
+
+The `jax.device_get()` crash with multi-process runs has been fixed in
+LORRAX (branch `agent/fix-multihost-device-get`, merged to `main`).
+Replaced `jax.device_get(arr)` with
+`jax.experimental.multihost_utils.process_allgather(arr, tiled=True)` in
+`minimax_screening.py`, matching the existing `_to_host()` pattern.
+
+Previous workaround: use `-N 1 -n 1 --gres=gpu:4` (single process, 4 GPUs).

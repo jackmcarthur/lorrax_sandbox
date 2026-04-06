@@ -1,0 +1,38 @@
+run_id: mos2_3x3_nosym_2026-04-05
+system: MoS2
+pipeline: qe_bgw_lorrax
+platform: perlmutter
+
+variant_of: mos2_3x3_cohsex_2026-04-05
+overrides:
+  nosym: true  # was ntran=2, now ntran=1 (identity only)
+
+system_params:
+  formula: MoS2
+  prefix: MoS2
+  dimensionality: 2
+  n_val: 26
+  n_cond: 54
+  n_band: 80
+  ecutwfc: 30.0
+  kgrid: [3, 3, 1]
+  metal: false
+  ntran: 1
+
+bgw:
+  frequency_dependence_cohsex: 0
+  frequency_dependence_gnppm: 3
+  band_index_min: 19
+  band_index_max: 30
+  epsilon_cutoff: 30.0
+
+gwjax:
+  n_centroids: 640
+  centroids_file: centroids_frac_640.txt
+
+steps:
+  qe:              { state: complete }
+  00_bgw_cohsex:   { state: complete }
+  01_bgw_gnppm:    { state: complete }
+  00_lorrax_cohsex: { state: complete, note: "71 meV Corp MAE (vs 67 meV sym) — nosym makes no difference" }
+  01_lorrax_gnppm: { state: complete, note: "1153 meV Corp MAE (vs 1324 meV sym) — NOT a symmetry issue" }

@@ -9,6 +9,7 @@ All work is on `main`. No outstanding branches.
 | System | Grid | MAE vs BGW Corp | Report |
 |--------|------|-----------------|--------|
 | MoS2 (2D) | 3×3 | **67 meV** | `reports/mos2_kgrid_convergence_2026-04-05/` |
+| MoS2 (2D) | 3×3 nosym | **71 meV** | `runs/MoS2/02_mos2_3x3_nosym/` |
 | MoS2 (2D) | 4×4 | **73 meV** | same |
 | Si (3D) | 4×4×4 nosym | **54 meV** (all k) | `reports/si_nosym_2026-04-05/` |
 | Si (3D) | 4×4×4 sym | **52 meV** (Γ only) | `reports/3d_coulomb_si_444_2026-04-05/` |
@@ -23,6 +24,7 @@ approximation, not symmetry or wing corrections.
 | System | Grid | MAE vs BGW Corp | Report |
 |--------|------|-----------------|--------|
 | MoS2 (2D) | 3×3 | **1324 meV** | `reports/mos2_kgrid_convergence_2026-04-05/` |
+| MoS2 (2D) | 3×3 nosym | **1153 meV** | `runs/MoS2/02_mos2_3x3_nosym/` |
 | MoS2 (2D) | 4×4 | **1019 meV** | same |
 | Si (3D) | 4×4×4 nosym | **12 meV** (all k) | `reports/si_nosym_2026-04-05/` |
 | Si (3D) | 4×4×4 sym | **5 meV** (Γ only) | `reports/3d_coulomb_si_444_2026-04-05/` |
@@ -60,16 +62,32 @@ from the ISDF/PPM/Coulomb pipeline.
 - No time-reversed operations are used (verified: all 64 full-BZ k-points
   use spatial syms 0–11 only).
 
-**What's NOT been checked:**
-- The G-vector mapping / G_shift computation in SymMaps (the relationship
-  $u_{n,Sk}(G) = U_\text{spinor} \cdot u_{n,k}(S^{-1}G - G_\text{shift})$)
-- Whether the wavefunction loader correctly applies this mapping
-- Whether the same issue affects 2D MoS2 (which also uses symmetry, and
-  the persistent ~70 meV COHSEX error could partly come from this)
-- Whether running MoS2 with `nosym = .true.` (full BZ, no symmetry at all)
-  would reduce the COHSEX error below 70 meV
+**Diagnostic script results** (`runs/Si/02_si_4x4x4_nosym/debug_symmaps/test_wfn_rotation.py`):
+- G-vector rotation and G-sphere matching is PERFECT (100% match for all testable k-points)
+- 2 IBZ k-points (irk=10, irk=12) excluded due to incompatible G-spheres
+  (negative k-components: k=0.25,0.25,-0.25 vs 0.25,0.25,0.75)
+- Of 53 testable k-points: **41 GOOD, 11 BAD** (err >= 0.01 in subspace overlap)
+- The 11 failures cluster at specific IBZ k-points (irk=1,2,7) with specific
+  error magnitudes (||O||^2=0.667 or 1.0 instead of 2.0)
+- Many nontrivial rotations (C2, C3, mirrors) PASS correctly
+- **Conclusion: NOT a universal rotation formula bug.** The issue is at specific
+  high-symmetry IBZ k-points, possibly related to degenerate subspace handling
 
-**This blocks production 3D calculations.** See per-k breakdown in
+**MoS2 nosym test** (`runs/MoS2/02_mos2_3x3_nosym/`):
+- COHSEX: 71 meV (vs 67 meV with sym) -- essentially unchanged
+- GN-PPM: 1153 meV (vs 1324 meV with sym) -- essentially unchanged
+- **MoS2 errors are NOT from symmetry rotation.** The ~70 meV COHSEX and
+  ~1 eV GN-PPM errors are intrinsic to the ISDF/PPM treatment of the 2D system.
+
+**What's NOT been checked:**
+- Whether the rotation failures at irk=1,2,7 are from degenerate band mixing
+  (the diagnostic uses a simple energy-based degeneracy grouping; the actual
+  rotation may mix bands differently at high-symmetry points)
+- Whether the G_shift computation in SymMaps handles the BZ wrapping correctly
+  for all IBZ k-points (the diagnostic reimplements this independently)
+
+**This blocks production 3D calculations with symmetry.** Workaround: use
+`nosym=.true.`. See per-k breakdown in
 `reports/3d_coulomb_si_444_2026-04-05/si_gnppm_per_kpoint.png`.
 
 **Key code:** `src/common/symmetry_maps.py` (SymMaps class, particularly
@@ -99,6 +117,28 @@ the Dyson equation rather than ε⁻¹ × v.
 User can override BGW's avgcut via `cell_average_cutoff X.X` in sigma.inp.
 
 ---
+
+## 2026-04-05: MoS2 nosym test + SymMaps wavefunction rotation diagnostic
+
+- **Run**: `runs/MoS2/02_mos2_3x3_nosym/`
+- **Diagnostic**: `runs/Si/02_si_4x4x4_nosym/debug_symmaps/test_wfn_rotation.py`
+
+MoS2 3x3 nosym test confirms MoS2 errors are NOT from symmetry (71 meV COHSEX,
+1153 meV GN-PPM, essentially unchanged from sym run). The ~70 meV COHSEX and
+~1 eV GN-PPM errors are intrinsic to the ISDF/PPM treatment of 2D systems.
+
+Wrote a standalone diagnostic script that compares rotated IBZ wavefunctions
+against directly-computed nosym wavefunctions for Si 4x4x4. Key findings:
+- G-vector rotation is PERFECT (100% match)
+- 41 GOOD, 11 BAD out of 53 testable k-points
+- Failures cluster at specific IBZ k-points (irk=1,2,7), NOT specific symmetry ops
+- Many nontrivial rotations (C2, C3, mirrors) pass correctly
+- The issue appears to be at specific high-symmetry IBZ k-points, not a universal
+  rotation formula bug
+
+Applied multihost JAX fix (already merged to LORRAX `main` on branch
+`agent/fix-multihost-device-get`): replaced `jax.device_get()` with
+`process_allgather()` in `minimax_screening.py`.
 
 ## 2026-04-05: Si nosym test — confirms SymMaps rotation bug
 
