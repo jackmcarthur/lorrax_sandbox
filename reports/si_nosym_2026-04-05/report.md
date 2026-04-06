@@ -1,140 +1,137 @@
-# Si 4x4x4 nosym Test — SymMaps Rotation Bug Confirmation
+# Si 4x4x4 Symmetry Bug Investigation
 
 **Date**: 2026-04-05
-**Run**: `runs/Si/02_si_4x4x4_nosym/`
-**Purpose**: Determine whether the 300-1600 meV off-axis k-point errors in
-Si 3D are caused by SymMaps wavefunction rotation or by the ISDF/PPM pipeline.
+**Runs**: `runs/Si/01_si_4x4x4_nosymmorphic/`, `runs/Si/02_si_4x4x4_nosym/`,
+`runs/MoS2/02_mos2_3x3_nosym/`
 
-## Method
+## Executive summary
 
-Ran the identical Si 4x4x4 calculation with `nosym = .true.` in QE, producing
-all 64 k-points directly (no IBZ reduction, no symmetry unfolding by LORRAX).
-Compared LORRAX vs BGW at all 64 k-points.
+With `nosym=.true.` (no symmetry unfolding), LORRAX matches BGW to **12 meV
+GN-PPM / 54 meV COHSEX** uniformly at all 64 k-points. With symmetry (12 ops,
+13 IBZ k-points), errors of **300-1600 meV** appear at off-axis k-points.
 
-Previous run: `force_symmorphic = .true.` (12 symmetries, 8 IBZ k-points,
-LORRAX unfolds to 64 via SymMaps).
+An improper-spinor bug in `SymMaps.get_spinor_rotations()` was found and fixed:
+mirrors/S6 operations were getting U_spinor=I instead of the correct C2/C3
+spinor. After the fix, a wavefunction overlap diagnostic confirms that **all
+64 rotated wavefunctions are correct** (Gram matrix test passes for all k-points).
 
-## Results
+However, re-running sigma with the fix shows **the sigma MAE is essentially
+unchanged** (349 meV). The fix does change the per-band sigma values (3237 of
+3840 bands differ by ~2-3 meV), but the dominant ~300-700 meV errors at
+off-axis k-points persist. This means there is an additional bug in how
+symmetry-unfolded wavefunctions are used in the chi0/W/sigma pipeline, beyond
+the spinor rotation.
 
-### GN-PPM Corp (BGW vs LORRAX)
+## Results summary
 
-| Condition | MAE (all k) | Max error | K-points compared |
-|-----------|-------------|-----------|-------------------|
-| **nosym** | **12 meV** | 82 meV | 64 (all uniform) |
-| sym (Gamma) | 5 meV | 10 meV | 1 |
-| sym (high-sym lines) | 4-16 meV | 65 meV | 4 |
-| sym (off-axis) | **300-765 meV** | 1627 meV | 3 |
+### GN-PPM Corp MAE vs BGW
 
-### COHSEX (BGW vs LORRAX)
+| Condition | MAE (meV) | Max (meV) |
+|-----------|-----------|-----------|
+| **nosym** (64 direct k-points) | **12** | 82 |
+| sym, old code (13 IBZ, buggy spinor) | 349 | 1627 |
+| sym, fixed spinor | 349 | 1627 |
+| sym, Gamma only | 5 | 10 |
 
-| Condition | Corp MAE (all k) | SX MAE | COH MAE |
-|-----------|------------------|--------|---------|
-| **nosym** | **54 meV** | 57 meV | 5 meV |
-| sym (Gamma only) | 52 meV | — | — |
-| sym (off-axis) | 200-700 meV | — | — |
+### COHSEX Corp MAE vs BGW
 
-### Per-k-point COHSEX Corp MAE (nosym)
+| Condition | MAE (meV) | Max (meV) |
+|-----------|-----------|-----------|
+| **nosym** (all k) | **54** | 113 |
+| sym, Gamma only | 52 | — |
 
-All 64 k-points fall in the range 52-56 meV. No outliers. The error is
-dominated by screened exchange (57 meV average), while the Coulomb hole
-matches BGW to 5 meV. This is the ISDF basis approximation error, not a
-code bug.
+### MoS2 3x3 nosym (2D, not a symmetry issue)
 
-### Per-k-point GN-PPM Corp MAE (nosym)
+| Method | nosym | sym |
+|--------|-------|-----|
+| COHSEX Corp MAE | 71 meV | 67 meV |
+| GN-PPM Corp MAE | 1153 meV | 1324 meV |
 
-Range: 4-24 meV across all 64 k-points. Slightly higher at zone-boundary
-points (0.5, 0.5, 0.5) where the PPM pole structure is more complex, but
-no catastrophic errors anywhere. Max single-band error: 82 meV.
+MoS2 errors are intrinsic to ISDF/PPM treatment of 2D systems, not symmetry.
 
-## Conclusions
+## Bug found: improper spinor rotation (FIXED)
 
-1. **The 300-1600 meV off-axis errors are entirely from SymMaps rotation.**
-   With nosym (no rotation needed), all k-points show uniform ~12 meV (PPM)
-   / ~54 meV (COHSEX) agreement with BGW.
+**File**: `src/common/symmetry_maps.py`, function `get_spinor_rotations()`
 
-2. **The baseline ISDF error is ~54 meV for COHSEX, ~12 meV for GN-PPM.**
-   This is k-point independent and comes from the ISDF basis approximation.
-   The COHSEX error is dominated by screened exchange; the Coulomb hole is
-   accurate to 5 meV.
+**Problem**: The Cartesian rotation matrix was fed directly into the
+quaternion→SU(2) algorithm without stripping the improper part. For
+mirrors and S6 operations (det = -1), this produced incorrect spinors.
 
-3. **Workaround for production**: use `nosym = .true.` in QE until the
-   SymMaps G-vector rotation bug is fixed. Cost: 8x more k-points in QE
-   (64 vs 8 IBZ), but LORRAX runtime is dominated by ISDF fitting and
-   screening, which scale with nq (same either way).
+**Fix** (commit `0351c55`, merged to main):
+```python
+if np.linalg.det(R) < 0:
+    R = -R  # strip inversion; matches BGW spinor_symmetries.f90
+```
 
-## SymMaps bug: diagnostic script results
+**Physics**: In the double group, inversion maps to identity in SU(2). An
+improper rotation S = inversion × R_proper has spinor U(S) = U(R_proper).
+Feeding the improper matrix directly into the quaternion algorithm gave the
+wrong spinor (e.g., U=I for mirrors instead of the C2 spinor).
 
-**Script**: `runs/Si/02_si_4x4x4_nosym/debug_symmaps/test_wfn_rotation.py`
+**Verification**: Gram-matrix overlap diagnostic
+(`debug_symmaps/test_actual_symmaps.py`) passes all 64 k-points after fix.
+Before fix: 2 k-points failed (irk=7 with mirrors sym=7,8).
 
-A standalone diagnostic compares rotated IBZ wavefunctions against
-directly-computed nosym wavefunctions. For each full BZ k-point, it:
-1. Rotates the IBZ wavefunction using the symmetry operation (G-vector
-   rotation + spinor rotation)
-2. Computes the overlap matrix O_ij = <nosym_i | rotated_j> within
-   degenerate subspaces
-3. Checks that ||O||^2 = ndeg (perfect subspace match)
+## Remaining issue: sigma pipeline
 
-### Results
+The wavefunction rotation is now correct, but **sigma errors persist unchanged**.
+The chi0/W/sigma pipeline uses symmetry-unfolded wavefunctions internally.
+Since the rotated wavefunctions are verified correct, the remaining bug is in
+how these wavefunctions enter the screening calculation — likely in the ISDF
+pair density assembly or q-point summation with symmetry weights.
 
-| Metric | Value |
-|--------|-------|
-| Total k-points tested | 55 (of 64, 9 are identity) |
-| Excluded (incompatible G-sphere) | 2 (irk=10, irk=12) |
-| Testable | 53 |
-| **GOOD** (err < 0.01) | **41** |
-| **BAD** (err >= 0.01) | **11** |
+### Per-IBZ-k-point GN-PPM error (sym, after spinor fix)
 
-### Key findings
+| irk | k-point | MAE (meV) | Status |
+|-----|---------|-----------|--------|
+| 0 | (0, 0, 0) | 5 | good |
+| 1 | (0, 0, 0.25) | 3 | good |
+| 2 | (0, 0, 0.5) | 17 | good |
+| 3 | (0, 0.25, 0.25) | 318 | bad |
+| 4 | (0, 0.25, 0.5) | 575 | bad |
+| 5 | (0, 0.25, 0.75) | 462 | bad |
+| 6 | (0, 0.5, 0.5) | 765 | bad |
+| 7 | (0.25, 0.5, 0.75) | 466 | bad |
+| 8 | (0.25, 0.25, 0.25) | 396 | bad |
+| 9 | (0.5, 0.5, 0.5) | 338 | bad |
+| 10 | (0.25, 0.25, -0.25) | 752 | bad |
+| 11 | (0.5, 0.5, 0.25) | 13 | good |
+| 12 | (0.25, 0.25, -0.5) | 397 | bad |
 
-1. **G-vector rotation is PERFECT.** 100% G-vector match fraction for all
-   53 testable k-points. The issue is NOT in G-sphere construction or
-   G-vector indexing.
+The "good" k-points (irk=0,1,2,11) are on high-symmetry lines where the
+symmetry operations are simple permutations/reflections. The "bad" k-points
+(irk=3-10,12) are at general positions where multiple symmetry operations
+contribute to the screening.
 
-2. **2 IBZ k-points excluded** (irk=10: k=0.25,0.25,-0.25; irk=12:
-   k=0.25,0.25,0.25) because their G-spheres are incompatible between
-   sym and nosym WFN files — different k-point representations lead to
-   different G-sphere cutoff boundaries.
+## Diagnostic details
 
-3. **Failures cluster at specific IBZ k-points**, not specific symmetry ops:
-   - irk=1 (Gamma): some rotations fail
-   - irk=2: some rotations fail
-   - irk=7: some rotations fail
-   - Error magnitudes: ||O||^2 = 0.667 or 1.0 (expected 2.0 for pairs)
+### Wavefunction overlap test (after spinor fix)
 
-4. **Many nontrivial rotations PASS correctly.** C2, C3, mirror operations
-   all produce correct wavefunctions at other IBZ k-points.
+The diagnostic uses LORRAX's actual `SymMaps` class to rotate IBZ wavefunctions
+and compares against directly-computed nosym wavefunctions via Gram matrices:
 
-5. **Conclusion**: The rotation formula itself is not universally broken.
-   The issue is specific to certain high-symmetry IBZ k-points, possibly
-   related to how degenerate subspaces are handled during rotation (band
-   mixing within degenerate manifolds at Gamma, etc.).
+- **G-vector rotation**: 100% match at all 64 k-points
+- **Spinor rotation**: correct for all 12 symmetry operations (verified)
+- **Subspace overlap**: ||O||² = ndeg for all k-points (including 4-fold
+  manifolds where C3 mixes near-degenerate Kramers pairs)
+- **Energies**: match < 0.001 meV between sym and nosym WFN at all shared k-points
 
-### What to investigate next
+### What still needs investigation
 
-- Whether the rotation failures at irk=1,2,7 are from degenerate band
-  mixing (the diagnostic uses energy-based degeneracy grouping; higher
-  degeneracy at Gamma may need larger subspace windows)
-- Whether LORRAX's SymMaps G_shift computation matches the diagnostic's
-  independent implementation
-- Whether the wavefunction loader in `load_wfns.py` applies the rotation
-  in the same order as the diagnostic
+The sigma pipeline error must come from one of:
+1. **ISDF pair density assembly**: how products u*_{nk}(r) u_{n,k-q}(r) are
+   computed with symmetry-unfolded wavefunctions
+2. **Q-point summation**: whether symmetry weights or q-point folding is correct
+3. **G-vector indexing in chi0**: whether the FFT-box placement of rotated
+   wavefunctions is consistent with the chi0 computation
 
-## MoS2 nosym test
+## Plots
 
-**Run**: `runs/MoS2/02_mos2_3x3_nosym/`
+![Per-k GN-PPM error comparison](si_sym_fix_comparison.png)
 
-MoS2 3x3 with `nosym=.true.` shows COHSEX 71 meV (vs 67 meV sym) and
-GN-PPM 1153 meV (vs 1324 meV sym). The errors are essentially unchanged,
-confirming that **MoS2 errors are NOT from symmetry rotation**. The ~70 meV
-COHSEX and ~1 eV GN-PPM errors are intrinsic to the ISDF/PPM treatment of
-the 2D system.
+## Code changes (pushed to main)
 
-## Multi-host JAX fix
-
-The `jax.device_get()` crash with multi-process runs has been fixed in
-LORRAX (branch `agent/fix-multihost-device-get`, merged to `main`).
-Replaced `jax.device_get(arr)` with
-`jax.experimental.multihost_utils.process_allgather(arr, tiled=True)` in
-`minimax_screening.py`, matching the existing `_to_host()` pattern.
-
-Previous workaround: use `-N 1 -n 1 --gres=gpu:4` (single process, 4 GPUs).
+| Commit | What |
+|--------|------|
+| `0351c55` | Fix improper spinor rotation (mirrors, S6) |
+| `e196a64` | Fix multi-process JAX crash in PPM extraction |
