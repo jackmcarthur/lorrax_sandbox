@@ -85,3 +85,48 @@ extraction peak (7.6 GB) fits comfortably.
 not derived from countable buffers. It likely includes NCCL send/receive
 buffers for the all-gather and all-to-all operations. On 16 processes
 (vs single process), additional per-process NCCL state may increase this.
+
+## Isolated collective buffer measurements
+
+Tested individual `with_sharding_constraint` calls in standalone JITs
+(no FFT context) to measure pure collective costs.
+
+### All-gather along X: {-,XY,-,-} → {-,Y,-,-}
+
+| Config | Input/dev | Output/dev | Peak delta | NCCL overhead | Ratio |
+|--------|-----------|------------|------------|---------------|-------|
+| centroids (0.004→0.009) | 0.004 GB | 0.009 GB | 0.034 GB | 0.025 GB | 2.8× output |
+| full n_rtot (0.255→0.510) | 0.255 GB | 0.510 GB | 1.301 GB | 0.536 GB | 1.1× output |
+
+The NCCL overhead for an all-gather is approximately **1× the output size**.
+This is the send/receive buffer that NCCL allocates for the ring all-gather.
+
+**Model**: `peak_allgather = input + 2 × output`
+- input: nk × (nb_pad/P) × ns × last_dim × 16 / dev
+- output: nk × (nb_pad/p_y) × ns × last_dim × 16 / dev
+- NCCL buffer: ≈ output
+
+### All-to-all along Y: {-,Y,-,-} → {-,-,-,Y}
+
+Not measured (the 10×10×10 full-r case OOMed — XLA tried to allocate
+19.78 GB for the all-to-all, triggering rematerialization of the full
+46 GB unsharded tensor). This confirms that even in a standalone JIT,
+XLA's SPMD partitioner may rematerialize when the array doesn't divide
+cleanly or when the collective buffer exceeds device memory.
+
+### Remaining unknowns
+
+1. **XLA JIT cache**: ~0.27 GB on first compilation, persists in peak.
+   Scales with HLO graph complexity, not array size. Not yet measured
+   as a function of graph size.
+
+2. **shard_map overhead**: ~0.013 GB per shard_map call. Small, fixed.
+
+3. **Multi-process overhead**: Not measured in this assay (single process
+   with 4 GPUs). On 16 processes, NCCL creates per-process communicator
+   state that may add 1-5 GB per device. This is the main unknown for
+   the 10×10×10 scaling.
+
+4. **All-to-all buffer scaling**: Unknown. The centroids all-to-all is
+   too small to measure (0.009 GB). The full-r all-to-all OOMed before
+   we could measure it. Need intermediate sizes to characterize.
