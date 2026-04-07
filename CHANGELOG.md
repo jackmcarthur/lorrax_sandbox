@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-04-06: First-principles memory model initiative
+
+**Report**: `reports/memory_model_assay_2026-04-06/report.md`
+
+Goal: build a predictive memory model for every stage of the LORRAX GW pipeline
+where every GPU buffer > 1 MB is identified by name, shape, and purpose, and the
+sum reproduces XProf peaks to < 10%. The practical target: set `memory_per_device_gb`
+in `cohsex.in` and have `compute_optimal_chunks()` derive chunk sizes that actually
+use that budget without OOM, enabling 10x10x10 Si on 16 GPUs and larger.
+
+Previous assay (`runs/Si/04_si_4x4x4_memory_assay/`) invalidated:
+- All measurements were single-process (`-n 1`), not production multi-process
+- Only covered stages 1-2 (load_wfns), not pair density/ZCT/solve/gather
+- No XProf traces — only aggregate `memory_stats()` numbers
+- Produced phenomenological multipliers ("9x shard") instead of buffer inventories
+
+Plan: instrument all stage boundaries, run systematic sweeps in multi-process mode
+with XProf traces, parse buffer-level attribution, derive and validate formulas.
+Added revalidation notice to `docs/MEMORY_MODEL.md`.
+
 ## 2026-04-06: Imported GN-PPM profiling documentation
 
 - Added the profiling workflow note at `agents_xprof.md`
@@ -237,3 +257,8 @@ identified as CH vs CH' comparison error — actual COHSEX error was 67 meV).
     one node). JAX sees all 4 GPUs within the single process, so no arrays are
     distributed across process boundaries.
 - `centroid.kmeans_isdf` does not accept `-i cohsex.in`; run from CWD
+
+- Added BGW-style non-symmorphic coefficient phases to `sources/lorrax/src/common/symmetry_maps.py` on branch `agent/non-symmorphic-phases`.
+- Preserved the pre-existing time-reversal path while applying `exp[-i (G_target + kg0) · tau]` for spatial symmetries with nonzero `tnp`.
+- Added `tests/test_symmetry_maps_nonsymmorphic.py`; `uv run python -m pytest -q` now passes (`10 passed, 1 warning`).
+- Verified on `runs/Si/00_si_4x4x4_60band/qe/nscf/WFN.h5` that `44/64` full-zone k-points now carry a nontrivial non-symmorphic phase.

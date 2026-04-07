@@ -160,7 +160,7 @@ N_CENTROIDS=640   # from centroids_frac_<N>.txt
 
 # a) ISDF centroids (skip if file exists or is symlinked)
 srun --jobid=$JOBID --gres=gpu:1 -N 1 -n 1 $SHIFTER \
-    python3 -u -m centroid.kmeans_isdf -i cohsex.in $N_CENTROIDS --no-plot --seed 42
+    python3 -u -m centroid.kmeans_isdf $N_CENTROIDS --no-plot --seed 42
 
 # b) Dipole matrix elements (add --kchunk N for large k-grids to control memory)
 srun --jobid=$JOBID --gres=gpu:1 -N 1 -n 1 $SHIFTER \
@@ -280,7 +280,7 @@ Verify: `grep "Job Done" sigma.out && ls sigma_hp.log`
 **Steps 5–6: LORRAX** (all modules accept `-i <path-to-input>`)
 
 ```bash
-uv run python -u -m centroid.kmeans_isdf -i $(pwd)/cohsex.in $N_CENTROIDS --no-plot --seed 42
+uv run python -u -m centroid.kmeans_isdf $N_CENTROIDS --no-plot --seed 42
 uv run python -u -m psp.get_dipole_mtxels_chunked -i $(pwd)/cohsex.in
 uv run python -u -m gw.kin_ion_io_chunked -i $(pwd)/cohsex.in
 uv run python -u -m gw.gw_jax -i $(pwd)/cohsex.in 2>&1 | tee gw.out

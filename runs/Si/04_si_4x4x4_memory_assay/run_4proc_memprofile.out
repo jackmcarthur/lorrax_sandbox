@@ -1,0 +1,268 @@
+
+========================================================================
+  COHSEX-JAX: Self-Energy Calculation
+========================================================================
+  Backend: GPU       Devices: 4  Mesh: 2×2  Processes: 4
+  Device type: NVIDIA A100-SXM4-40GB
+  XLA preallocate: false  mem_fraction: 0.95
+  XLA pool: limit=40.29 GB, in_use=0.00 GB, avail=40.29 GB
+========================================================================
+
+  ISDF basis: 240 centroids
+  FFT grid: 24×24×24   Cell volume: 270.11 a.u.³
+
+  Chunk target utilization: 0.97
+  ISDF pair mode: spin_traced
+  Band chunk size: disabled
+  Using CHUNKED ISDF fitting (memory-efficient)
+    Memory estimate: peak 8.79 GB (budget 28.00 GB), bottleneck=gather
+    Chunk limit estimates (r-points):
+      limit_pair: 169248.5
+      limit_zct: 109306.3
+      limit_reshard: 109306.3
+      limit_solve: 215225.4
+      limit_gather: 383320.8
+
+  Chunked ISDF fitting:
+    Band chunks: 35
+    R chunks:    13824 (contiguous r-space)
+    Q chunks:    64
+    Pair mode:   spin_traced
+    G-space cache: enabled
+    Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/04_si_4x4x4_memory_assay/tmp/zeta_q.h5
+
+============================================================
+Zeta fitting: 1 r-chunks, 13824 points each
+  Left bands:  (0, 35) (35 bands)
+  Right bands: (0, 35) (35 bands)
+  Full range:  (0, 35) (35 bands)
+  Pair mode:   spin_traced
+Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/04_si_4x4x4_memory_assay/tmp/zeta_q.h5
+============================================================
+  [MEM isdf | before ISDF fitting] used=0.000 peak=0.000 limit=40.3 GB
+  [MEM load_wfns | centroid_load: before output alloc] used=0.000 peak=0.000 GB
+  [MEM load_wfns | centroid_load: after output alloc] used=0.017 peak=0.084 GB
+  [MEM load_wfns | centroid_load: bc[0] after read_Gvecs] used=0.286 peak=0.286 GB
+  [MEM load_wfns | centroid_load: bc[0] after FFT+extract] used=0.303 peak=0.579 GB
+  [MEM load_wfns | centroid_load: bc[0] after accumulate+del] used=0.032 peak=0.579 GB
+  [MEM load_wfns | centroid_load: complete] used=0.032 peak=0.579 GB
+  Left wfns:  (64, 35, 2, 240)
+  Right wfns: (64, 35, 2, 240)
+  [MEM isdf | after centroid load + slice] used=0.032 peak=0.579 limit=40.3 GB
+
+Computing spin-traced pair densities P_l and P_r...
+Computing C_q from left/right cross-product...
+  [MEM isdf | after CCT] used=0.064 peak=0.579 limit=40.3 GB
+
+Computing L_q = chol(C_q) using 2D blocked algorithm...
+  L_q shape: (64, 240, 240)
+  [MEM isdf | after cholesky (before del C_q)] used=0.087 peak=0.579 limit=40.3 GB
+  [MEM isdf | after cholesky + del C_q] used=0.055 peak=0.579 limit=40.3 GB
+
+Caching G-space wavefunctions for r-chunk loop...
+  Cached 1 band chunks (sharded across devices)
+  [MEM isdf | after G-cache load (before chunk loop)] used=0.324 peak=0.579 limit=40.3 GB
+Chunk 1/1: r=[0:13824]
+  [MEM isdf | chunk[0]: start] used=0.324 peak=0.579 limit=40.3 GB
+  [MEM load_wfns | rchunk: before extraction r=[0:13824]] used=0.902 peak=2.471 GB
+  [MEM load_wfns | rchunk: bc[0] after FFT+reshard] used=1.466 peak=2.699 GB
+  [MEM isdf | chunk[0]: after load (6a)] used=0.833 peak=2.699 limit=40.3 GB
+  [MEM isdf | chunk[0]: after pair density (6b)] used=2.532 peak=2.699 limit=40.3 GB
+  [MEM isdf | chunk[0]: after ZCT (6c)] used=1.173 peak=3.721 limit=40.3 GB
+  [MEM isdf | chunk[0]: after reshard Z (6d)] used=1.173 peak=3.721 limit=40.3 GB
+  [MEM isdf | chunk[0]: after solve (6e)] used=1.173 peak=3.780 limit=40.3 GB
+  [MEM isdf | chunk[0]: after gather+write (6f)] used=0.324 peak=7.968 limit=40.3 GB
+  [MEM isdf | ISDF fitting complete] used=0.055 peak=7.968 limit=40.3 GB
+
+
+Written to /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/04_si_4x4x4_memory_assay/tmp/zeta_q.h5
+============================================================
+Zeta fitting complete!
+  Shape: (4, 4, 4, 240, 13824)
+============================================================
+
+Timing Summary (1 r-chunks):
+  Phase                     Total    Per-chunk      %
+  --------------------------------------------------
+  Load chunk                 0.65s      653.2ms   20.1%
+  Pair density               0.02s       15.9ms    0.5%
+  ZCT (FFT pipeline)         0.26s      265.0ms    8.1%
+  Solve (L^-1 Z)             0.34s      336.1ms   10.3%
+  H5 write                   1.66s     1657.9ms   50.9%
+  --------------------------------------------------
+  Chunk loop total           3.25s     3254.7ms
+  Per r-point                          235.4us
+    V_q budget:    27.13 GB
+    V_q mu chunks: 240
+    V_q q batches: 4
+  q-points 1-4 / 64: (0,0,0), (0,0,1), (0,0,2), (0,0,3)
+    batch FFT+contract: 0.097s (4 q's)
+  q-points 5-8 / 64: (0,1,0), (0,1,1), (0,1,2), (0,1,3)
+    batch FFT+contract: 0.005s (4 q's)
+  q-points 9-12 / 64: (0,2,0), (0,2,1), (0,2,2), (0,2,3)
+    batch FFT+contract: 0.004s (4 q's)
+  q-points 13-16 / 64: (0,3,0), (0,3,1), (0,3,2), (0,3,3)
+    batch FFT+contract: 0.004s (4 q's)
+  q-points 17-20 / 64: (1,0,0), (1,0,1), (1,0,2), (1,0,3)
+    batch FFT+contract: 0.004s (4 q's)
+  q-points 21-24 / 64: (1,1,0), (1,1,1), (1,1,2), (1,1,3)
+    batch FFT+contract: 0.004s (4 q's)
+  q-points 25-28 / 64: (1,2,0), (1,2,1), (1,2,2), (1,2,3)
+    batch FFT+contract: 0.004s (4 q's)
+  q-points 29-32 / 64: (1,3,0), (1,3,1), (1,3,2), (1,3,3)
+    batch FFT+contract: 0.004s (4 q's)
+  q-points 33-36 / 64: (2,0,0), (2,0,1), (2,0,2), (2,0,3)
+    batch FFT+contract: 0.004s (4 q's)
+  q-points 37-40 / 64: (2,1,0), (2,1,1), (2,1,2), (2,1,3)
+    batch FFT+contract: 0.004s (4 q's)
+  q-points 41-44 / 64: (2,2,0), (2,2,1), (2,2,2), (2,2,3)
+    batch FFT+contract: 0.005s (4 q's)
+  q-points 45-48 / 64: (2,3,0), (2,3,1), (2,3,2), (2,3,3)
+    batch FFT+contract: 0.004s (4 q's)
+  q-points 49-52 / 64: (3,0,0), (3,0,1), (3,0,2), (3,0,3)
+    batch FFT+contract: 0.005s (4 q's)
+  q-points 53-56 / 64: (3,1,0), (3,1,1), (3,1,2), (3,1,3)
+    batch FFT+contract: 0.004s (4 q's)
+  q-points 57-60 / 64: (3,2,0), (3,2,1), (3,2,2), (3,2,3)
+    batch FFT+contract: 0.004s (4 q's)
+  q-points 61-64 / 64: (3,3,0), (3,3,1), (3,3,2), (3,3,3)
+    batch FFT+contract: 0.004s (4 q's)
+    V_q timing breakdown (overlapped I/O):
+      H5 read (waited): 0.664s
+      GPU transfer:     0.685s
+      FFT+contract:     0.160s
+    G0 written to /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/04_si_4x4x4_memory_assay/tmp/zeta_q.h5 (shape: (4, 4, 4, 4, 240))
+
+  V_q computed:
+    Shape: (1, 1, 1, 4, 4, 4, 240, 240)
+    V_q=0 trace: 11109790.2819
+  Wavefunction bundle built (b0:b4=35 bands, canonical X/Y storage)
+  Chunked ISDF path complete
+
+  Minimax screening path enabled at ω = 0.0000 eV (0.000000 Ry)
+  Minimax static window: x=[4.973381e-02, 2.578335e+00] Ry, R=51.84, nodes=10, fit_err~6.434e-06
+  |χ(0)|_max = 3.943261e-05   (minimax, 10 nodes)
+  minimax χ→W time:     1.159 s
+  Minimax imag-freq window (ωp=2.0000 Ry): x=[4.973381e-02, 2.578335e+00] Ry, R=51.84, ω̂=40.21, nodes=5, fit_err~1.006e-06
+  GN-PPM extracted from minimax W^c: ω_p=2.000000 Ry, unfulfilled=0.74%
+
+------------------------------------------------------------------------
+  FINITE-SIZE CORRECTIONS
+------------------------------------------------------------------------
+  Head source: s_tensor
+  v(q→0)  =     3267.787 a.u.  (bare Coulomb head)
+  W(q→0)  =      117.235 a.u.  (screened Coulomb head)
+  ΔW      =    -3150.551 a.u.  (screening correction)
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/global/u2/j/jackm/software/lorrax/src/gw/gw_jax.py", line 2201, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/global/u2/j/jackm/software/lorrax/src/gw/gw_jax.py", line 1186, in main
+    V_qmunu, W_q, _ = apply_head_correction(
+                      ^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/u2/j/jackm/software/lorrax/src/gw/gw_jax.py", line 332, in apply_head_correction
+    V_head = V_qmunu_nohead.at[0, 0, 0, 0, 0, 0, :, :].add((vc0_mean * vol_scale) * outer_u)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/numpy/array_methods.py", line 834, in add
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/global/u2/j/jackm/software/lorrax/src/gw/gw_jax.py", line 2201, in <module>
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/global/u2/j/jackm/software/lorrax/src/gw/gw_jax.py", line 2201, in <module>
+    return scatter._scatter_update(self.array, self.index, values,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/ops/scatter.py", line 77, in _scatter_update
+    return _scatter_impl(x, y, scatter_op, treedef, static_idx, dynamic_idx,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/ops/scatter.py", line 112, in _scatter_impl
+    y = jnp.broadcast_to(y, tuple(indexer.slice_shape))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/numpy/lax_numpy.py", line 3138, in broadcast_to
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/global/u2/j/jackm/software/lorrax/src/gw/gw_jax.py", line 2201, in <module>
+    return util._broadcast_to(array, shape)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/numpy/util.py", line 271, in _broadcast_to
+    raise ValueError(f"Cannot broadcast to shape with fewer dimensions: {arr_shape=} {shape=}")
+ValueError: Cannot broadcast to shape with fewer dimensions: arr_shape=(4, 4, 240) shape=(240, 240)
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/global/u2/j/jackm/software/lorrax/src/gw/gw_jax.py", line 1186, in main
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/global/u2/j/jackm/software/lorrax/src/gw/gw_jax.py", line 1186, in main
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/global/u2/j/jackm/software/lorrax/src/gw/gw_jax.py", line 1186, in main
+    V_qmunu, W_q, _ = apply_head_correction(
+                      ^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/u2/j/jackm/software/lorrax/src/gw/gw_jax.py", line 332, in apply_head_correction
+    V_qmunu, W_q, _ = apply_head_correction(
+                      ^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/u2/j/jackm/software/lorrax/src/gw/gw_jax.py", line 332, in apply_head_correction
+    V_qmunu, W_q, _ = apply_head_correction(
+                      ^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/u2/j/jackm/software/lorrax/src/gw/gw_jax.py", line 332, in apply_head_correction
+    V_head = V_qmunu_nohead.at[0, 0, 0, 0, 0, 0, :, :].add((vc0_mean * vol_scale) * outer_u)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/numpy/array_methods.py", line 834, in add
+    V_head = V_qmunu_nohead.at[0, 0, 0, 0, 0, 0, :, :].add((vc0_mean * vol_scale) * outer_u)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/numpy/array_methods.py", line 834, in add
+    return scatter._scatter_update(self.array, self.index, values,
+    return scatter._scatter_update(self.array, self.index, values,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/ops/scatter.py", line 77, in _scatter_update
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/ops/scatter.py", line 77, in _scatter_update
+    V_head = V_qmunu_nohead.at[0, 0, 0, 0, 0, 0, :, :].add((vc0_mean * vol_scale) * outer_u)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/numpy/array_methods.py", line 834, in add
+    return scatter._scatter_update(self.array, self.index, values,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/ops/scatter.py", line 77, in _scatter_update
+    return _scatter_impl(x, y, scatter_op, treedef, static_idx, dynamic_idx,
+    return _scatter_impl(x, y, scatter_op, treedef, static_idx, dynamic_idx,
+    return _scatter_impl(x, y, scatter_op, treedef, static_idx, dynamic_idx,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/ops/scatter.py", line 112, in _scatter_impl
+  File "/opt/jax/jax/_src/ops/scatter.py", line 112, in _scatter_impl
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/ops/scatter.py", line 112, in _scatter_impl
+    y = jnp.broadcast_to(y, tuple(indexer.slice_shape))
+    y = jnp.broadcast_to(y, tuple(indexer.slice_shape))
+    y = jnp.broadcast_to(y, tuple(indexer.slice_shape))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/numpy/lax_numpy.py", line 3138, in broadcast_to
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/numpy/lax_numpy.py", line 3138, in broadcast_to
+  File "/opt/jax/jax/_src/numpy/lax_numpy.py", line 3138, in broadcast_to
+    return util._broadcast_to(array, shape)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/numpy/util.py", line 271, in _broadcast_to
+    return util._broadcast_to(array, shape)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/numpy/util.py", line 271, in _broadcast_to
+    raise ValueError(f"Cannot broadcast to shape with fewer dimensions: {arr_shape=} {shape=}")
+ValueError: Cannot broadcast to shape with fewer dimensions: arr_shape=(4, 4, 240) shape=(240, 240)
+    raise ValueError(f"Cannot broadcast to shape with fewer dimensions: {arr_shape=} {shape=}")
+ValueError: Cannot broadcast to shape with fewer dimensions: arr_shape=(4, 4, 240) shape=(240, 240)
+    return util._broadcast_to(array, shape)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/jax/jax/_src/numpy/util.py", line 271, in _broadcast_to
+    raise ValueError(f"Cannot broadcast to shape with fewer dimensions: {arr_shape=} {shape=}")
+ValueError: Cannot broadcast to shape with fewer dimensions: arr_shape=(4, 4, 240) shape=(240, 240)
+srun: error: nid001020: task 3: Exited with exit code 1
+srun: Terminating StepId=51133073.0
+[2026-04-07T03:43:18.586] error: *** STEP 51133073.0 ON nid001020 CANCELLED AT 2026-04-07T03:43:18 DUE TO TASK FAILURE ***
+srun: error: nid001020: tasks 0-1: Exited with exit code 1
+srun: error: nid001020: task 2: Exited with exit code 1
