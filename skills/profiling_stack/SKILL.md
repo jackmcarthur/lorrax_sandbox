@@ -5,13 +5,30 @@ memory, compute, sharding, compilation" with **zero edits to the target
 module**. One launcher runs the module, three analyzers produce markdown
 summaries, each row points at a source_file:line or jit name.
 
+## Prerequisites (30 s)
+
+1. Active interactive allocation. `squeue -u $USER` shows running jobs; if
+   none, run `lxalloc 1 04:00:00` in a login shell. Export the job id:
+   `export SLURM_JOBID=<id>`.
+2. The target module's import name. LORRAX modules live under
+   `sources/lorrax/src/` and import as `<subdir>.<file>`:
+   `src/psp/run_nscf.py` → `-m psp.run_nscf`,
+   `src/centroid/kmeans_isdf.py` → `-m centroid.kmeans_isdf`,
+   `src/gw/gw_jax.py` → `-m gw.gw_jax`.
+3. The module's CLI args. These are **module-specific**, not part of this
+   skill — check the module's own `main()` or the canonical invocation in
+   `skills/execute_workflow/SKILL.md`. E.g. `gw.gw_jax` takes `-i cohsex.in`
+   but `centroid.kmeans_isdf` takes a bare positional integer (n_centroids).
+4. The module's working directory must contain its input files. `WFN.h5`
+   is the most common requirement; `cohsex.in` for GW runs; etc.
+
 ## The run in 5 lines
 
 ```bash
-cd <my_run_dir>                             # anywhere with the module's input files
+cd <my_run_dir>                             # must contain the module's input files
 LORRAX_NGPU=4 lxrun python3 -u \
     /pscratch/sd/j/jackm/lorrax_sandbox/scripts/profiling/run_profiled.py \
-    --out profile -m gw.gw_jax -i cohsex.in
+    --out profile -m gw.gw_jax -i cohsex.in   # <args> are module-specific
 cd /pscratch/sd/j/jackm/lorrax_sandbox
 python3 scripts/profiling/analyze_hlo_dump.py     <my_run_dir>/profile
 python3 scripts/profiling/analyze_compile_log.py  <my_run_dir>/profile
@@ -179,6 +196,30 @@ skills/profiling_stack/
     drilldowns.md          # Memory / Compute / Sharding / Compilation interpretations + fixes
     aot_reports.md         # secondary tool: one-function AOT probe
 ```
+
+## Gotchas
+
+- **Stale `SLURM_JOBID`**. `lxrun` fails with `Invalid job id …` when your
+  exported id has expired. Run `squeue -u $USER` to get the live one, or
+  `lxalloc` in a login shell to make a new one.
+- **Multi-process on a non-SPMD module is silent.** If the target module
+  doesn't call `jax.distributed.initialize()` (or its LORRAX wrapper),
+  `LORRAX_NGPU=4` launches **4 independent copies** of the serial driver:
+  every stdout line prints 4×, all 4 ranks write to the same output file.
+  It does NOT error — but `hlo_summary.md` will show **0 collectives** and
+  no meaningful parallelism. **Tell**: duplicated stdout AND empty Sharding
+  table. **Fix**: fall back to `LORRAX_NGPU=1`, or add the
+  `_maybe_init_jax_distributed()` pattern to the module (see
+  `sources/lorrax/src/psp/run_nscf.py` or `src/gw/gw_jax.py` for the
+  template).
+- **Benign stderr on trace start**:
+  `E external/xla/xla/python/profiler/internal/python_hooks.cc:412] Can't
+  import tensorflow.python.profiler.trace` — always prints, always
+  harmless. The trace is captured correctly. Do not treat as a failure.
+- **Per-rank artifacts collide on non-SPMD runs**. If you see multiple
+  `[run_profiled] finished` lines and only one `WFN.h5` (or whatever the
+  module writes), processes raced on the output. Re-run with
+  `LORRAX_NGPU=1`.
 
 ## Rules
 
