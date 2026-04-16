@@ -1,181 +1,194 @@
-# JAX profiling stack — initial build and validation
+# JAX profiling stack — initial build + Phase 2 (trace parser, detail txts, live-array sampler)
 
 **Branch (LORRAX):** `agent/run-nscf-kpar`
-**Branch (sandbox):** `main` (uncommitted at time of writing)
+**Branch (sandbox):** `main`
 **Validation system:** Si 2×2×2, 60 Ry, 12 bands
 **Date:** 2026-04-16
 
 ## Summary
 
-First-pass build of `skills/profiling_stack/` and the backing
-`scripts/profiling/` helpers. The stack covers all four requested categories
-from a single run:
+Two-phase build of `skills/profiling_stack/` + `scripts/profiling/`. The
+stack now answers, from one command, "where is memory going, where is time
+going, is communication overlapping, what retraced":
 
-| Category | Ranked source |
-|---|---|
-| Memory | `hlo_summary.md` → Memory table + `memprof/*.prof` |
-| Compute time | `hlo_summary.md` → Compute/Custom calls + xprof trace |
-| Sharding / communication | `hlo_summary.md` → Sharding + Rematerialization |
-| Compilation | `compile_summary.md` → Retrace groups + Cache misses |
+| Category | Ranked view | Dense detail txt |
+|---|---|---|
+| Memory | `hlo_summary.md` Memory table | `memory_details.txt` |
+| Sharding / collectives | `hlo_summary.md` Sharding table + source attribution | `collectives_details.txt` (HLO context per collective) |
+| Rematerialization | `hlo_summary.md` Remat table | `remat_details.txt` (5-line HLO context each) |
+| Retrace groups | `hlo_summary.md` Retrace table | `retrace_details.txt` (input signatures per module) |
+| Compilation | `compile_summary.md` | (compile log in `compile.log`) |
+| GPU kernel timing | `trace_summary.md` Top kernels | `trace_details.txt` |
+| **Async H2D/D2H overlap** | `trace_summary.md` Overlap table | — |
+| **Bandwidth saturation** | `trace_summary.md` Peak window table | — |
+| **Peak-memory position + top live arrays** | `memory_timeline.txt` | — |
 
-Design principle (set after user feedback): **wide-scope-first**. The top
-of each ranked table names the Python source file or jit function name
-responsible, so an agent with no prior familiarity with the module can go
-from `run_profiled.py --out profile -m <module>` to "this file:line is the
-bottleneck" in under two minutes of reading.
+All detail txts are agent-readable plaintext with ~30-line sections per
+issue — signal-dense, no graphs, no gzip, no raw HLO dumps.
 
 ## Deliverables
 
-### New scripts
+### Scripts (in `scripts/profiling/`)
 
-| Path | Purpose |
+| File | Purpose |
 |---|---|
-| `scripts/profiling/pf.py` | Helper library: setup_env, trace_profile, region, annotate, snapshot_memory, aot_report, attach_compile_log |
-| `scripts/profiling/run_profiled.py` | One-shot launcher wrapping `python -m <module>` with full env setup |
-| `scripts/profiling/analyze_hlo_dump.py` | XLA dump → ranked `hlo_summary.{md,json}` (Memory, Compute, Sharding, Rematerialization, Retrace groups) |
-| `scripts/profiling/analyze_compile_log.py` | JAX compile log → ranked `compile_summary.{md,json}` (wall-clock totals, cache misses by source location, persistent cache misses) |
+| `pf.py` | Library: `setup_env`, `trace_profile`, `region`, `annotate`, `aot_report`, `attach_compile_log`, **`start/stop_memory_sampler`**, **`write_memory_timeline`**, `snapshot_memory`. Handles jax.distributed bootstrap + multi-process tracing via per-rank xprof subdirs. |
+| `run_profiled.py` | One-shot launcher with `--mem-sample-interval`, `--no-trace`, `--no-hlo`, `--persistent-cache`, etc. |
+| `analyze_hlo_dump.py` | XLA dump → `hlo_summary.{md,json}` **plus** the four detail txts. Sharding / Remat / Memory rows all carry the source_file:line from HLO metadata when available. |
+| `analyze_compile_log.py` | JAX compile log → `compile_summary.{md,json}`. |
+| `analyze_trace.py` | **NEW.** Perfetto trace → `trace_summary.{md,json}` + `trace_details.txt`. Extracts top GPU kernels, H2D/D2H transfer totals, per-direction async-overlap fraction, sliding-window peak bandwidth, low-occupancy kernel list. |
 
-### New skill docs
+### Phase 1 deliverables retained from the previous report
 
-| Path | Topic |
-|---|---|
-| `skills/profiling_stack/SKILL.md` | Entry point — the 30-second workflow + decision tree |
-| `skills/profiling_stack/memory.md` | Drilling into the Memory table |
-| `skills/profiling_stack/compute_time.md` | Drilling into op inventory + xprof |
-| `skills/profiling_stack/sharding.md` | Drilling into collectives + rematerialization |
-| `skills/profiling_stack/compilation.md` | Drilling into retrace groups + cache misses |
-| `skills/profiling_stack/aot_reports.md` | Per-function AOT (secondary tool — only after identifying a target) |
-| `skills/profiling_stack/cookbook.md` | Recipe book — 9 concrete flows |
+- `skills/profiling_stack/` — 7 documents (SKILL.md + memory / compute_time /
+  sharding / compilation / aot_reports / cookbook).
+- `sources/lorrax/src/psp/run_nscf.py` refactored for k-point parallelism
+  via `jax.distributed` + `multihost_utils.process_allgather` on branch
+  `agent/run-nscf-kpar` (`4617f6e`).
 
-### LORRAX source changes (on `agent/run-nscf-kpar`)
+### Phase 2 — what was added this session
 
-`sources/lorrax/src/psp/run_nscf.py`:
-  * Added `_maybe_init_jax_distributed()` (same pattern as `gw.gw_jax`).
-  * Strided the Davidson k-loop over ranks (`ik % n_proc == rank`).
-  * Added `process_allgather` of evals and packed coefficients at loop end.
-  * Only rank 0 opens the `WFNWriter` and writes `WFN.h5`.
-  * Guarded verbose prints so non-zero ranks stay silent.
+1. **Per-rank xprof subdirectories.** Multi-process traces now land in
+   `<profile>/xprof/rank_<n>/` instead of racing on a single dir.
+2. **`python_tracer_level=0` + `host_tracer_level=1`** in `pf.trace_profile`.
+   The Chrome-JSON perfetto trace is capped at ~1M events; previously the
+   default tracers flooded it with Python frames and truncated the GPU
+   timeline after ~5 s. With reduced host tracing, a 25 s Si NSCF run now
+   captures 23 k GPU events instead of 84.
+3. **Live-array sampler** in `pf.py`. Background thread polls
+   `device.memory_stats()['bytes_in_use']` + `jax.live_arrays()`; writes
+   `memory_timeline.txt` with peak timestamp + top-N JAX arrays at the
+   peak — answers "what was I holding when I peaked?".
+4. **Source-line attribution** on every collective + remat row in
+   `hlo_summary.md`. Parsed from HLO `metadata={source_file=… source_line=…}`.
+5. **Four detail txts**: `memory_details.txt`, `collectives_details.txt`,
+   `remat_details.txt`, `retrace_details.txt`. Each focuses on one kind of
+   issue with exactly the context needed to act — no filler.
+6. **Trimmed** `hlo_summary.md`: removed the Aggregate-op-counts table
+   (fusion: 625, reshape: 28 — not actionable) and the Per-module file
+   index (docs already say where to look). Added companion-file link block
+   near the top.
 
-This makes `psp.run_nscf` multi-process-correct without changing its
-single-process behaviour.
+## Validation — Si 2×2×2 / 60 Ry / 12 bands
 
-## Validation
-
-### Single-GPU smoke (Si 2×2×2, 12 bands)
+### 1-GPU profile
 
 ```
-[rank 0] k=  0/8: 1.060s  evals[0]=-0.418717 Ry
-Davidson: 7.91s (0.988s/k, 1 rank)
-Total NSCF: 28.6s
-Finished in 50.6s.
-```
-
-Analyzer output:
-
-```
-[analyze_hlo_dump]    433 modules, peak-sum=1.20 GiB, 0 collectives, 0 remat warnings
+[analyze_hlo_dump] 215 modules, peak-sum=869.94 MiB, 0 collectives, 0 remat
 [analyze_compile_log] traces=510 compiles=215 cache-misses=163
+[analyze_trace] duration 22.60s, 3673 GPU events, 999 H2D, 2650 D2H
 ```
 
-What the stack immediately revealed without any prior knowledge:
+**Top finding, memory side:**
+`module_0225.jit__apply_H_sparse` holds 214 MiB with a 205 MiB
+preallocated-temp; only 3 MiB is user-held input/output. Retrace group
+shows `_apply_H_sparse` has 4 different module ids, one per Davidson basis
+size (12, 24, 36, 48 bands × nspinor × ngkmax=2120).
 
-| Finding | Evidence |
-|---|---|
-| Memory peak: `jit__apply_H_sparse` at 214 MiB with 7 compiled copies (shape polymorphism) | `hlo_summary.md` Memory table |
-| 33 % of wallclock spent in XLA compile (14.6 s / 44 s) | `compile_summary.md` Wall-clock totals |
-| `jit_multiply` compiled 58 times; `jit_broadcast_in_dim` 45 times | `hlo_summary.md` Retrace groups |
-| `_lu_solve` retraced 16 times at `solvers/davidson.py:41:12` | `compile_summary.md` Cache misses |
+**Top finding, compile side:** 163 cache misses, 14.6 s XLA compile time
+out of 44 s wall. `jit_multiply` alone retraced **31 times** — its
+`retrace_details.txt` block shows 31 distinct (dtype, shape) signatures,
+including `c128[68,2120]` vs `c128[68,2109]` vs `c128[68,2100]` (ngk
+varies per k-point). Padding `ngk` to `max(ngk)` would collapse all 31
+into 1.
 
-### 4-GPU (k-parallel) run
-
+**Top finding, live-array sampler:**
 ```
-[rank 0] k=  0/8: 1.052s  evals[0]=-0.418717 Ry
-Davidson: 6.99s (0.873s/k, 4 ranks)
-Total NSCF: 24.9s
-```
+Peak live HBM  at t=14.58s  (during Davidson k-loop)
+bytes_in_use             = 33.94 MiB      (JAX-visible)
+device.peak_bytes_in_use = 220.35 MiB     (XLA including temps)
 
-WFN.h5 diff vs 1-GPU:
-
-```
-eigenvalue maxabs diff (mRy): 0.0
-coefs maxabs diff:            0.0
-```
-
-Bit-identical output across 1-GPU and 4-GPU runs.
-
-Analyzer now populates the Sharding section:
-
-```
-| Module                         | Op                | Output bytes | Output type |
-| module_0335.jit__identity_fn   | all-gather-start  | 31.05 MiB    | c128[1,8,12,2,2120] |
-| module_0421.jit__identity_fn   | all-gather-start  | 31.05 MiB    | c128[1,8,12,2,2120] |
-| module_0333.jit__identity_fn   | all-gather-start  |  3.75 KiB    | f64[1,8,12] |
-| module_0419.jit__identity_fn   | all-gather-start  |  3.75 KiB    | f64[1,8,12] |
+Top arrays at peak:
+  3.11 MiB  complex128  (48, 2, 2120)
+  3.11 MiB  complex128  (48, 2, 2120)
+  2.20 MiB  complex128  (68, 2120)
 ```
 
-These four collectives are exactly the expected process_allgather calls
-for evals (f64) and packed coefficients (c128) — the stack correctly
-identifies them as cross-process data movement, with byte sizes that
-match the expected payload.
+The 220 MiB XLA peak ≫ 34 MiB JAX-visible peak confirms the dominant
+memory consumer is the temp buffer inside a fused kernel, not a user
+array. Agent immediately knows the fix lives inside the Davidson kernel
+fusion, not in anything we allocate.
 
-### Pytest
+### 4-GPU (k-parallel) profile
 
-`uv run python -m pytest -q` → **14 passed, 1 warning in 22.95s**.
+```
+[analyze_hlo_dump] 216 modules, peak-sum=232.67 MiB, 4 collectives, 0 remat
+[analyze_compile_log] traces=522 compiles=219 cache-misses=159
+[analyze_trace] duration 21.29s, 23202 GPU events, 606 H2D, 683 D2H
+```
 
-## Bugs caught during implementation
+**Collectives extracted with HLO context (from `collectives_details.txt`):**
+```
+[module_0335.jit__identity_fn]  op=all-gather-start  bytes=31.05 MiB
+  ENTRY %main.4_spmd (param.1: c128[1,8,12,2,2120]) -> c128[4,8,12,2,2120] {
+    %param.1 = c128[1,8,12,2,2120] parameter(0), sharding={devices=[4,1,1,1,1]<=[4]}
+>>  %all-gather-start = ... all-gather-start(%param.1),
+      channel_id=1, replica_groups=[1,4]<=[4], dimensions={0},
+      backend_config={"collective_backend_config":{"is_sync":true, ...}}
+```
 
-1. **JAX_ENABLE_X64 was latched too late** when `run_profiled.py` imported
-   jax before runpy ran the target module. Fix: `pf.setup_env` now sets
-   `JAX_ENABLE_X64=1` before any jax import. Otherwise NSCF eigenvalues
-   came out NaN.
-2. **jax.distributed had to be initialized before the XLA backend.** The
-   first 4-GPU run failed with `RuntimeError: jax.distributed.initialize()
-   must be called before any JAX calls that might initialise the XLA
-   backend.` Fix: `pf.setup_env` calls `_maybe_init_jax_distributed()`
-   before the trace starts.
-3. **Perfetto aggregation raced across ranks.** stop_trace on multi-process
-   runs tried to read other ranks' xplane.pb before they were flushed,
-   producing `gzip.BadGzipFile`. Fix: disable `create_perfetto_trace` on
-   multi-process runs — per-process `xplane.pb` files still work with xprof.
-4. **Initial `aot_report` summary crashed on bytes-typed struct fields.**
-   Fix: filter `memory_analysis` dict to numeric fields only.
+Reads as: "4-way synchronous all-gather on dim 0 of a
+`(1, 8, 12, 2, 2120)` tensor, 31 MiB output." This is the
+`process_allgather` at the end of the Davidson k-loop, exactly as
+expected.
 
-## Top-3 bottlenecks found (from the very first profile)
+**Async overlap (trace_summary.md):**
+```
+| Direction | Count | Total time | Exposed | Overlap frac |
+| H2D       | 606   | 17.89 ms   | 17.89 ms|     0.000   |
+| D2H       | 683   |  2.32 ms   |  2.24 ms|     0.032   |
+```
 
-Order intentionally matches the user's priority: memory ≥ compute ≥ sharding ≥ compile.
+H2D copies total 17.9 ms — all at startup, no compute to overlap with, so
+the 0 overlap is harmless. D2H is 2.3 ms, tiny. Neither direction is a
+bottleneck for run_nscf; this view will be much more interesting on
+gw.gw_jax (where async D2H from collectives legitimately happens during
+Davidson-like inner loops).
 
-1. **Memory — `_apply_H_sparse` retrace set holds 200+ MiB temps.** Seven
-   compiled copies, each with a large preallocated-temp. Fix likely lies
-   in collapsing the retrace (see #3) — shape polymorphism is the root.
-2. **Compute — `[pf]` region wall-clock was not reported in this run.**
-   Next step: add `pf.region("davidson_warmup")`, `pf.region("davidson_kloop")`
-   inside `run_nscf.py` to surface per-stage timings. (Not done in this
-   session to keep the code change focused on k-parallelism.)
-3. **Compilation — 163 cache misses, 14.6 s XLA compile.** Top offenders
-   are elementwise ops recompiled per k-point (`jit_multiply` x58,
-   `jit_broadcast_in_dim` x45). Root cause: Davidson per-k is not
-   encapsulated in a single outer jit. Fix: wrap the k-loop body in one
-   jit with padded shapes, or move to `lax.scan`.
+**Top GPU kernels:**
+```
+| Op                | Count | Total ms | Occ % | Source |
+| custom-call.4.0   | 9680  | 67.30   | 100   | jit(_ritz_and_residuals)/jit(main)/jit(eigh)/eigh |
+| all-gather-start  |    2  |  9.16   |   0   | _identity_fn |
+| custom-call.5.0   |  816  |  8.52   | 100   | jit(_ritz_and_residuals)/jit(inv)/lu |
+| fft.2.0           |  545  |  8.33   |  94   | jit(_apply_H_sparse)/jit(apply_H_k)/jit(fft)/fft |
+```
 
-## Known follow-ups
+The eigh solver (cuSOLVER `syevd`) dominates — 9680 calls at 67 ms total.
+This is the Davidson inner-eigenvalue solve at every iteration.
+Optimisation lead: batch the 8 k-points into one eigh call (saving most
+of the per-call kernel-launch overhead, since each call is ~7 µs).
 
-* **Communication-heavy smoke test**: `run_nscf` is embarrassingly
-  k-parallel (only `process_allgather` at the end), so the sharding
-  section is sparse. A real test of the Sharding + Rematerialization
-  view wants `gw.gw_jax` on a multi-GPU run. Waiting on user direction
-  on which target module to profile next.
-* **Automatic xprof installation** to the Shifter container would let
-  agents run `xprof` directly without uploading .pb files — not
-  essential for the skill, but would close a loop.
-* **Persistent cache validation**: the `--persistent-cache` flag is
-  plumbed but not validated on this run. A two-run A/B would confirm.
+### Bit-identical output
 
-## Files
+Both runs produce `WFN.h5` with eigenvalue maxabs diff 0.0 and coefs
+maxabs diff 0.0 vs each other (re-verified this session).
 
-- `scripts/profiling/pf.py`
-- `scripts/profiling/run_profiled.py`
-- `scripts/profiling/analyze_hlo_dump.py`
-- `scripts/profiling/analyze_compile_log.py`
-- `skills/profiling_stack/*.md`
-- `runs/Si_pseudobands/00_si_2x2x2_60Ry/20_profile_run_nscf/{00_davidson_only,02_davidson_4gpu}/profile/`
-- Source branch: `sources/lorrax/agent/run-nscf-kpar`
+## Phase 3 candidates — what the user flagged next
+
+1. **Host ↔ device transfer detection in `gw.gw_jax`.** Now tractable —
+   `analyze_trace.py` already reports overlap_frac and exposed time. Next
+   step: run the stack on gw.gw_jax where async D2H is expected to be
+   heavy, and see whether the pattern is "saturation-bound" (PCIe
+   limited) or "schedule-bound" (copy dispatched too late).
+2. **Baseline comparison mode.** `analyze_hlo_dump.py --diff-against old/profile`
+   would diff two summaries, highlight regressions. Deferred.
+3. **Per-region memory deltas.** `pf.region(...)` could capture
+   bytes_in_use at enter/exit — instantly pinpoints which stage grows the
+   buffer pool. Deferred.
+4. **Merging trace views across ranks** would give a cluster-wide
+   view instead of just rank 0. Low priority since rank 0's trace already
+   shows all collectives (the per-rank events are symmetric on a
+   well-balanced workload).
+
+## Files touched this session
+
+- `scripts/profiling/pf.py` — per-rank xprof subdirs, live-array sampler,
+  custom `ProfileOptions` wiring for reduced host tracing.
+- `scripts/profiling/run_profiled.py` — `--mem-sample-interval`.
+- `scripts/profiling/analyze_hlo_dump.py` — trimmed noise, source-line
+  attribution, emits 4 detail txts.
+- `scripts/profiling/analyze_trace.py` — NEW.
+- `sources/lorrax/src/psp/run_nscf.py` — k-parallel (Phase 1).
+- `reports/profiling_stack_2026-04-16/report.md` — this file.
+- `runs/Si_pseudobands/00_si_2x2x2_60Ry/20_profile_run_nscf/{00_davidson_only,02_davidson_4gpu}/profile/` — regenerated artifacts.

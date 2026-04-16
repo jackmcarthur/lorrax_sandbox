@@ -217,7 +217,10 @@ def attach_compile_log(path: str | os.PathLike) -> None:
 # ─────────────────────────────────────────────────────────────────────────
 
 @contextlib.contextmanager
-def trace_profile(artifacts_dir: str | os.PathLike, *, create_perfetto_link: bool = False):
+def trace_profile(artifacts_dir: str | os.PathLike, *,
+                  create_perfetto_link: bool = False,
+                  host_tracer_level: int = 1,
+                  python_tracer_level: int = 0):
     """Capture a jax.profiler trace into <artifacts>/xprof/.
 
     The resulting xplane.pb file is viewable with:
@@ -227,21 +230,56 @@ def trace_profile(artifacts_dir: str | os.PathLike, *, create_perfetto_link: boo
     On multi-process runs, each process writes its own .xplane.pb with a
     per-host filename. Only rank 0 creates the aggregated perfetto trace
     (otherwise every rank races on the same file).
+
+    Tuning host vs device tracing:
+      The Chrome-JSON perfetto trace (single file) is capped at ~1M events.
+      Default JAX host/python tracers emit roughly one event per Python
+      frame, which drowns out GPU-kernel events after a few seconds on a
+      busy run. We drop host_tracer_level=1 (kernel launches only) and
+      python_tracer_level=0 (disabled) so the trace captures the full run.
+      Override either if you are debugging host code specifically.
     """
-    import jax, jax.profiler as jp
-    outdir = str(Path(artifacts_dir) / "xprof")
-    # Perfetto aggregation races across processes (rank 0 reads the xplane
-    # while non-zero ranks are still writing). Disable in multi-process mode;
-    # each process still emits its own xplane.pb, openable by xprof.
-    multi_proc = jax.process_count() > 1
-    perfetto = (not multi_proc)
-    jp.start_trace(outdir,
-                   create_perfetto_link=create_perfetto_link and perfetto,
-                   create_perfetto_trace=perfetto)
+    import jax
+    import jax.profiler as jp
+    import jax._src.profiler as _p
+    import jaxlib.xla_extension as xe
+    # Each rank writes to its own subdir so stop_trace's perfetto aggregation
+    # (which reads back the .trace.json.gz) never races with another rank.
+    rank = jax.process_index()
+    base = Path(artifacts_dir) / "xprof"
+    base.mkdir(exist_ok=True)
+    outdir = base / f"rank_{rank}" if jax.process_count() > 1 else base
+    outdir.mkdir(exist_ok=True)
+
+    perfetto = True  # Per-rank dir → always safe to write perfetto trace
+
+    # Replicate jp.start_trace behaviour but with reduced host/python tracer
+    # levels. The Chrome-JSON perfetto trace is capped at 1M events; default
+    # host_tracer_level=2 + python_tracer_level=1 swamps the buffer with host
+    # frame events after ~5 s on a busy run, truncating the tail of the
+    # actual GPU timeline. host_tracer_level=1 keeps kernel launches;
+    # python_tracer_level=0 drops the per-Python-frame events entirely.
+    with _p._profile_state.lock:
+        if _p._profile_state.profile_session is not None:
+            raise RuntimeError("A jax.profiler trace is already in progress.")
+        # Make sure the backend is initialized before the session starts.
+        jax.devices()
+        opts = xe.profiler.ProfileOptions()
+        opts.host_tracer_level = int(host_tracer_level)
+        opts.python_tracer_level = int(python_tracer_level)
+        opts.include_dataset_ops = False
+        _p._profile_state.profile_session = xe.profiler.ProfilerSession(opts)
+        _p._profile_state.create_perfetto_link = (create_perfetto_link and perfetto)
+        _p._profile_state.create_perfetto_trace = perfetto
+        _p._profile_state.log_dir = str(outdir)
     try:
-        yield outdir
+        yield str(outdir)
     finally:
-        jp.stop_trace()
+        # Delegates to the exact same finalization path jp.stop_trace uses.
+        try:
+            jp.stop_trace()
+        except Exception as e:
+            print(f"[pf] stop_trace failed: {e}", file=sys.stderr)
 
 
 @contextlib.contextmanager
@@ -288,7 +326,186 @@ def annotate(name: Optional[str] = None):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-#  Device memory snapshot
+#  Live-array memory sampler — peak-position + what-was-held-then
+# ─────────────────────────────────────────────────────────────────────────
+
+# A background thread polls ``device.memory_stats()['bytes_in_use']`` on a
+# short interval. When a new peak is seen we snapshot the top-N live JAX
+# arrays (shape, dtype, size, an abbreviated origin) so the post-run report
+# can answer: "what arrays were we holding when we peaked?" That question is
+# invisible to the static HLO view and to a pprof snapshot taken at an
+# arbitrary time.
+#
+# Overhead is small (one Python call per interval, no device sync) but we
+# keep the default interval conservative — the sampler is for orientation,
+# not microbenchmarking.
+
+import threading as _threading
+
+
+class _LiveArraySampler:
+    def __init__(self, interval_s: float = 0.25, top_n: int = 10):
+        self.interval_s = interval_s
+        self.top_n = top_n
+        self._stop = _threading.Event()
+        self._thread: _threading.Thread | None = None
+        self.timeline: list[dict] = []   # every sample
+        self.peak_bytes: int = 0
+        self.peak_sample: dict | None = None
+        self._t0 = time.perf_counter()
+
+    def _snapshot(self) -> dict:
+        import jax
+        dev = jax.local_devices()[0]
+        try:
+            stats = dev.memory_stats() or {}
+        except Exception:
+            stats = {}
+        bytes_in_use = int(stats.get("bytes_in_use", 0))
+        peak_bytes = int(stats.get("peak_bytes_in_use", 0))
+        arr_summary: list[dict] = []
+        try:
+            arrs = list(jax.live_arrays())
+        except Exception:
+            arrs = []
+        # Keep only addressable shards to avoid double-counting across devices
+        rows = []
+        for a in arrs:
+            try:
+                sz = a.nbytes
+            except Exception:
+                sz = 0
+            try:
+                dt = str(a.dtype)
+            except Exception:
+                dt = "?"
+            try:
+                shp = tuple(a.shape)
+            except Exception:
+                shp = ()
+            rows.append((sz, dt, shp))
+        rows.sort(reverse=True)
+        total_live = sum(r[0] for r in rows)
+        for sz, dt, shp in rows[: self.top_n]:
+            arr_summary.append({"bytes": sz, "dtype": dt, "shape": list(shp)})
+        return {
+            "t": time.perf_counter() - self._t0,
+            "bytes_in_use": bytes_in_use,
+            "peak_bytes_in_use": peak_bytes,
+            "live_bytes_sum": total_live,
+            "n_live_arrays": len(rows),
+            "top_arrays": arr_summary,
+        }
+
+    def _run(self):
+        while not self._stop.is_set():
+            s = self._snapshot()
+            self.timeline.append(s)
+            if s["bytes_in_use"] > self.peak_bytes:
+                self.peak_bytes = s["bytes_in_use"]
+                self.peak_sample = s
+            self._stop.wait(self.interval_s)
+
+    def start(self) -> None:
+        if self._thread is not None:
+            return
+        self._thread = _threading.Thread(
+            target=self._run, name="pf-mem-sampler", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=2.0)
+        # One final snapshot after stop, in case we missed the peak on the
+        # last interval (e.g. a kernel that finished and freed immediately).
+        try:
+            s = self._snapshot()
+            self.timeline.append(s)
+            if s["bytes_in_use"] > self.peak_bytes:
+                self.peak_bytes = s["bytes_in_use"]
+                self.peak_sample = s
+        except Exception:
+            pass
+
+    def write(self, out_path: str | os.PathLike) -> None:
+        out = Path(out_path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        # JSON for machine use
+        out.with_suffix(".json").write_text(json.dumps({
+            "peak_bytes": self.peak_bytes,
+            "peak_sample": self.peak_sample,
+            "timeline": self.timeline,
+        }, indent=2))
+        # TXT for agent reading — timeline + peak breakdown
+        def _hb(n):
+            x = float(n)
+            for u in ("B", "KiB", "MiB", "GiB"):
+                if abs(x) < 1024:
+                    return f"{x:.2f} {u}"
+                x /= 1024
+            return f"{x:.2f} TiB"
+        lines: list[str] = []
+        lines.append(f"# memory_timeline.txt — live-array sampler output")
+        lines.append(f"# Interval: {self.interval_s:.3f}s  |  "
+                     f"Samples: {len(self.timeline)}")
+        lines.append("")
+        if self.peak_sample:
+            ps = self.peak_sample
+            lines.append(f"── Peak live HBM  at t={ps['t']:.2f}s  ──────────────────────────")
+            lines.append(f"bytes_in_use                = {_hb(ps['bytes_in_use'])}")
+            lines.append(f"device.peak_bytes_in_use    = {_hb(ps['peak_bytes_in_use'])}  (cumulative)")
+            lines.append(f"sum of jax.live_arrays()    = {_hb(ps['live_bytes_sum'])}")
+            lines.append(f"n live arrays at peak        = {ps['n_live_arrays']}")
+            lines.append("")
+            lines.append("Top JAX arrays at peak:")
+            lines.append(f"  {'size':>14s}  {'dtype':<12s}  shape")
+            for a in ps["top_arrays"]:
+                lines.append(f"  {_hb(a['bytes']):>14s}  {a['dtype']:<12s}  "
+                             f"{tuple(a['shape'])}")
+            lines.append("")
+        lines.append("── Timeline (t, bytes_in_use, n_live) ─────────────────────────")
+        lines.append(f"{'t (s)':>8s}  {'bytes_in_use':>14s}  {'n_live':>7s}  {'live_bytes_sum':>14s}")
+        for s in self.timeline:
+            lines.append(
+                f"{s['t']:>8.2f}  {_hb(s['bytes_in_use']):>14s}  "
+                f"{s['n_live_arrays']:>7d}  {_hb(s['live_bytes_sum']):>14s}"
+            )
+        out.write_text("\n".join(lines) + "\n")
+
+
+_SAMPLER: _LiveArraySampler | None = None
+
+
+def start_memory_sampler(interval_s: float = 0.25, top_n: int = 10) -> None:
+    """Start the background live-array sampler.
+
+    Should be called AFTER jax is importable. Pair with ``stop_memory_sampler``
+    (or rely on atexit — not yet wired). Produces ``memory_timeline.txt`` and
+    ``memory_timeline.json`` when ``write_memory_timeline`` is called.
+    """
+    global _SAMPLER
+    if _SAMPLER is not None:
+        return
+    _SAMPLER = _LiveArraySampler(interval_s=interval_s, top_n=top_n)
+    _SAMPLER.start()
+
+
+def stop_memory_sampler() -> None:
+    global _SAMPLER
+    if _SAMPLER is None:
+        return
+    _SAMPLER.stop()
+
+
+def write_memory_timeline(out_path: str | os.PathLike) -> None:
+    if _SAMPLER is None:
+        return
+    _SAMPLER.write(out_path)
+
+
+# ─────────────────────────────────────────────────────────────────────────
+#  Device memory snapshot (pprof format — unchanged)
 # ─────────────────────────────────────────────────────────────────────────
 
 def snapshot_memory(path: str | os.PathLike, label: str = "") -> None:
