@@ -1,29 +1,28 @@
-# AOT reports — drilling into one known function
+# AOT reports — probing one function in isolation
 
-This is the **secondary** tool in the stack. Use it only after the ranked
-summaries from `hlo_summary.md` / `compile_summary.md` have pointed at a
-specific function. If you don't yet have an identified bottleneck, go back
-to `SKILL.md` and run the full profile first.
+Secondary tool. Use when the ranked summaries from the full profile have
+pointed at a specific function and you want to inspect or A/B it without
+re-running the whole pipeline. **The target module is not edited.** You
+write a small standalone probe script.
 
-## What it does
+## What `pf.aot_report` produces
 
-`pf.aot_report(fn, *args, out=..., timing_runs=N)` lowers and compiles
-the function once with the exact input shapes and shardings you pass, then
-dumps every static attribute:
+`pf.aot_report(fn, *args, out=…, timing_runs=N)` lowers + compiles `fn`
+with the exact shapes/shardings of your args, then dumps:
 
 ```
 <out>/
-    jaxpr.txt              # primitive-level IR (cheap, shape-only)
-    stablehlo.mlir         # after lowering, before XLA
-    optimized_hlo.txt      # final GPU HLO (collectives, fusions, cuBLAS calls)
-    memory_analysis.txt    # per-bucket byte counts
-    cost_analysis.txt      # flops + bytes-accessed estimates
-    input_shardings.txt    # PartitionSpec / NamedSharding per arg
-    summary.md             # one-page agent-readable digest
-    timings.txt            # iff timing_runs > 0
+    summary.md           ← one-page digest — read first
+    jaxpr.txt            primitive-level IR (cheap, shape-only)
+    stablehlo.mlir       after jit lowering, before XLA
+    optimized_hlo.txt    final GPU HLO (collectives, fusions, cuBLAS calls)
+    memory_analysis.txt  arguments / outputs / temp / alias / code bytes
+    cost_analysis.txt    flops + bytes-accessed (some entries may be -1)
+    input_shardings.txt  NamedSharding / PartitionSpec per arg
+    timings.txt          (only if timing_runs > 0)
 ```
 
-`summary.md` is the file to read first. Example:
+`summary.md` is the file to read first:
 
 ```
 # AOT report: compute_chi0_q
@@ -31,7 +30,7 @@ dumps every static attribute:
 ## Memory
 - arguments : 1.25 GiB
 - outputs   : 480.00 MiB
-- temp      : 4.00 GiB       ← the number you usually care about
+- temp      : 4.00 GiB     ← usually the number that matters
 - alias     : 0.00 B
 - code      : 1.15 MiB
 
@@ -43,80 +42,62 @@ dumps every static attribute:
 ## Timings (after compile)
 - first call (incl compile): 4.12 s
 - median of remaining:       18.2 ms
-
-## Input shardings
-  NamedSharding(mesh=Mesh('x': 4, 'y': 1), spec=PartitionSpec(None, 'x', None, None))
-  ...
 ```
 
-## When to reach for this
+## When to reach for this (and when not)
 
-| Scenario | Yes/No |
+| Scenario | AOT? |
 |---|---|
-| Summaries pointed at `compute_chi0_q` as the biggest memory module; I want to know if reducing centroids halves peak | ✓ |
+| Summaries pointed at X; I want to see if halving centroids halves peak | ✓ |
 | Comparing two implementations A, B of the same kernel | ✓ |
-| Cost-sizing a refactor before running the full pipeline | ✓ |
-| "I want to know which function is slow" | ✗ — use the full profile instead |
-| "I want to know which jit retraced most" | ✗ — `hlo_summary.md` Retrace groups already answers |
+| Cost-sizing a refactor before touching the full pipeline | ✓ |
+| "Which function is slow?" | ✗ — use `trace_summary.md` instead |
+| "Which jit retraced most?" | ✗ — `hlo_summary.md` Retrace groups |
 
-## Typical driver
+## Typical probe script
 
 ```python
-# probe_chi0.py
+# probe_compute_chi0.py — put anywhere; does NOT edit LORRAX source
 import sys; sys.path.insert(0, "/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profiling")
 import pf
-pf.setup_env("probe_artifacts", hlo=False, log_compiles=False)   # no trace needed
+pf.setup_env("probe_artifacts", hlo=False, log_compiles=False)
 
-import jax, jax.numpy as jnp
-from jax.sharding import NamedSharding, PartitionSpec as P
-from gw.gw_init import load_inputs                    # reuse real setup
-from gw.w_isdf import compute_chi0_q                  # target
+from gw.gw_init import load_inputs            # reuse the module's own setup
+from gw.w_isdf import compute_chi0_q
 
-args = load_inputs("cohsex.in")                       # realistic shapes + shardings
-
-# Baseline
+args = load_inputs("cohsex.in")               # realistic shapes + shardings
 pf.aot_report(compute_chi0_q, *args,
               out="probe_artifacts/aot/baseline", timing_runs=3)
-
-# A candidate refactor (with different centroid count)
-args2 = load_inputs("cohsex.in", n_centroids_override=400)
-pf.aot_report(compute_chi0_q, *args2,
-              out="probe_artifacts/aot/400c", timing_runs=3)
 ```
 
-Then:
+Run with `LORRAX_NGPU=4 lxrun python3 -u probe_compute_chi0.py`, then
+`cat probe_artifacts/aot/baseline/summary.md`.
 
-```bash
-diff probe_artifacts/aot/baseline/summary.md \
-     probe_artifacts/aot/400c/summary.md
-```
+A/B: run again with a second arg set, diff the two `summary.md`s.
 
 ## Caveats
 
-1. **Argument shapes and shardings matter.** The report reflects the exact
-   args you pass. Use realistic sizes — toy shapes give toy answers.
-2. **`cost_analysis` may return -1s** for ops without an analytic model
+1. **Argument shapes and shardings matter.** Use realistic sizes — toy
+   shapes give toy answers.
+2. **`cost_analysis` may contain `-1`** for ops with no analytic model
    (eigh, cholesky, fft sometimes). Memory analysis is always reliable.
-3. **`timing_runs=0` skips execution entirely.** The lower+compile cycle
-   still happens (that's how we get the HLO + memory), but we never call
-   the compiled function — useful on huge kernels you can't afford to run.
-4. **The `code` bucket is PTX size**, not working set. If it balloons >50
-   MiB, XLA unrolled something — often a `lax.scan` that degenerated.
+3. **`timing_runs=0` skips execution.** Lower+compile still runs (that's
+   how we get the HLO + memory), but we never call the compiled function
+   — useful on huge kernels you can't afford to run.
+4. **The `code` bucket is PTX size**, not working set. >50 MiB usually
+   means an unwanted `lax.scan` unroll.
 
-## Grep recipes on the AOT HLO
+## Grep recipes on the generated HLO
 
 ```bash
 # All collectives
 grep -E "all-gather|reduce-scatter|all-reduce|collective-permute|all-to-all" \
      probe_artifacts/aot/baseline/optimized_hlo.txt
 
-# All cuBLAS / cuDNN / cuFFT calls
-grep 'custom_call_target=' probe_artifacts/aot/baseline/optimized_hlo.txt | \
-     sed 's/.*custom_call_target="\([^"]*\)".*/\1/' | sort | uniq -c
-
-# Largest allocations
-head -30 probe_artifacts/aot/baseline/memory_analysis.txt
+# All cuBLAS / cuDNN / cuFFT calls, counted
+grep 'custom_call_target=' probe_artifacts/aot/baseline/optimized_hlo.txt \
+    | sed 's/.*custom_call_target="\([^"]*\)".*/\1/' | sort | uniq -c
 ```
 
-That's it. For anything that requires running the whole pipeline, use
-`run_profiled.py` + the ranked summaries instead.
+For anything that requires running the whole pipeline, go back to
+`run_profiled.py` + the three analyzers — `SKILL.md` top.

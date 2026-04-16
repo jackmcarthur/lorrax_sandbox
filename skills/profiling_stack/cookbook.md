@@ -1,89 +1,21 @@
-# Cookbook
+# Cookbook — recipes not in SKILL.md
 
-Concrete recipes, each self-contained. Pattern: "wide-scope run first, then
-narrow". Assumes `module load lorrax` and `SLURM_JOBID` exported (see the
-main sandbox `AGENTS.md` for `lxalloc` setup).
+`SKILL.md` covers the default flow + common launcher variants (compile-time
+sweep, persistent cache, A/B comparison, mem-sampler off). This file holds
+a few special-case recipes.
 
-## Recipe 1 — cold start on an unfamiliar module
+## Recipe A — memory-leak hunt across pipeline stages
 
-```bash
-# From the target run directory
-cd runs/<system>/<run>/<lorrax_variant>
-LORRAX_NGPU=4 lxrun python3 -u \
-    /pscratch/sd/j/jackm/lorrax_sandbox/scripts/profiling/run_profiled.py \
-    --out profile -m gw.gw_jax -i cohsex.in
-
-cd /pscratch/sd/j/jackm/lorrax_sandbox
-python3 scripts/profiling/analyze_hlo_dump.py     <run>/profile
-python3 scripts/profiling/analyze_compile_log.py  <run>/profile
-```
-
-Read order (≈1 min total):
-
-1. `<run>/profile/hlo_summary.md`  — top of each section (Memory, Compute,
-   Sharding, Retrace groups).
-2. `<run>/profile/compile_summary.md` — Wall-clock totals + Cache misses.
-3. Pick the single highest-ranking issue across the four categories.
-4. *Only now* open the per-category doc (memory.md / compute_time.md /
-   sharding.md / compilation.md) for the drill-in.
-
-## Recipe 2 — single-GPU compile-time sweep
-
-Fast iteration while changing one line of a function to see if a retrace
-count drops. Skips xprof and HLO to make each iteration <30 s.
-
-```bash
-LORRAX_NGPU=1 lxrun python3 -u \
-    /pscratch/sd/j/jackm/lorrax_sandbox/scripts/profiling/run_profiled.py \
-    --out quick --no-trace --no-hlo -m psp.run_nscf -i nscf.in
-python3 scripts/profiling/analyze_compile_log.py quick
-```
-
-## Recipe 3 — multi-GPU sharding audit
-
-```bash
-LORRAX_NGPU=4 lxrun python3 -u \
-    /pscratch/sd/j/jackm/lorrax_sandbox/scripts/profiling/run_profiled.py \
-    --out profile4 -m gw.gw_jax -i cohsex.in
-python3 scripts/profiling/analyze_hlo_dump.py profile4 --top 30
-```
-
-The Sharding + Rematerialization sections of `hlo_summary.md` are the
-first things to read. Any Involuntary full rematerialization warning
-should lead every follow-up investigation.
-
-## Recipe 4 — A/B comparison of two code paths
-
-Same run directory, different source branches:
-
-```bash
-# main
-git -C sources/lorrax checkout main
-LORRAX_NGPU=4 lxrun python3 ... --out profile_main ...
-
-# candidate
-git -C sources/lorrax checkout agent/my-refactor
-LORRAX_NGPU=4 lxrun python3 ... --out profile_candidate ...
-
-diff <(head -40 profile_main/hlo_summary.md) \
-     <(head -40 profile_candidate/hlo_summary.md)
-diff <(head -40 profile_main/compile_summary.md) \
-     <(head -40 profile_candidate/compile_summary.md)
-```
-
-The diffs are usually small and pinpoint exactly what changed (a new
-collective, a lost fusion, a retrace group).
-
-## Recipe 5 — memory-leak hunt
-
-Driver that takes periodic snapshots:
+When peak HBM grows across stages rather than being dominated by one
+module. Run a probe script that inserts pprof snapshots at stage
+boundaries:
 
 ```python
 # leak_probe.py
 import sys; sys.path.insert(0, "/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profiling")
 import pf; pf.setup_env("leak_probe", hlo=False, log_compiles=False)
 
-from gw.gw_jax import main_phase  # hypothetical API
+from gw.gw_jax import main_phase          # or any staged API the module exposes
 
 pf.snapshot_memory("leak_probe/memprof/00_start.prof")
 main_phase("isdf");  pf.snapshot_memory("leak_probe/memprof/10_isdf.prof")
@@ -91,94 +23,55 @@ main_phase("chi0");  pf.snapshot_memory("leak_probe/memprof/20_chi0.prof")
 main_phase("sigma"); pf.snapshot_memory("leak_probe/memprof/30_sigma.prof")
 ```
 
-Diff consecutive snapshots to see which stage accumulates memory:
-
 ```bash
+LORRAX_NGPU=4 lxrun python3 -u leak_probe.py
 pprof -diff_base leak_probe/memprof/10_isdf.prof leak_probe/memprof/20_chi0.prof
 ```
 
-## Recipe 6 — drilling into one named function
+The diff shows what was held after stage 2 that wasn't after stage 1 —
+usually a buffer not donated or not deleted.
 
-AFTER the ranked summaries have identified a bottleneck:
+## Recipe B — drop-in instrumentation without using `run_profiled.py`
 
-```python
-# probe_<fn>.py
-import sys; sys.path.insert(0, "/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profiling")
-import pf; pf.setup_env("probe", hlo=False, log_compiles=False)
-
-from gw.w_isdf import compute_chi0_q  # the function the summaries pointed at
-from gw.gw_init import load_inputs
-args = load_inputs("cohsex.in")
-pf.aot_report(compute_chi0_q, *args,
-              out="probe/aot/compute_chi0_q", timing_runs=3)
-```
-
-```bash
-LORRAX_NGPU=4 lxrun python3 -u probe_compute_chi0_q.py
-cat probe/aot/compute_chi0_q/summary.md
-```
-
-See `aot_reports.md` for the API.
-
-## Recipe 7 — drop-in instrumentation without using run_profiled.py
-
-When you already have a driver script and want to add profiling without
-switching launchers:
+When you already have a hand-rolled driver and don't want to switch to the
+launcher.
 
 ```python
-# At the very top, BEFORE any jax import
+# At the top, BEFORE any jax import
 import sys; sys.path.insert(0, "/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profiling")
 import pf
 pf.setup_env("my_artifacts")
 pf.attach_compile_log("my_artifacts/compile.log")
 
-# ... rest of script ...
+# ... rest of your script ...
 import jax
 from gw.gw_jax import main
 
+pf.start_memory_sampler(interval_s=0.25)
 with pf.trace_profile("my_artifacts"):
     with pf.region("chi0"):
-        compute_chi0(...)
+        chi = compute_chi0(...)
     with pf.region("W"):
-        solve_w(...)
-
+        W = solve_w(...)
+pf.stop_memory_sampler()
+pf.write_memory_timeline("my_artifacts/memory_timeline.txt")
 pf.snapshot_memory("my_artifacts/memprof/end.prof")
 ```
 
-Then run the analyzers on `my_artifacts/` as usual. No LORRAX source edits
-required.
+Run the three analyzers on `my_artifacts/` exactly as with the launcher.
 
-## Recipe 8 — persistent cache for fast iteration
+## Recipe C — ending a profiling session
 
-When changing one file and comparing two runs:
+Every profiling session closes with a short report under
+`reports/profiling_<module>_<date>/report.md` containing:
 
-```bash
-LORRAX_NGPU=4 lxrun python3 -u \
-    /pscratch/sd/j/jackm/lorrax_sandbox/scripts/profiling/run_profiled.py \
-    --out run1 --persistent-cache -m psp.run_nscf -i nscf.in
-# (edit a source file)
-LORRAX_NGPU=4 lxrun python3 -u \
-    /pscratch/sd/j/jackm/lorrax_sandbox/scripts/profiling/run_profiled.py \
-    --out run2 --persistent-cache -m psp.run_nscf -i nscf.in
-```
+1. Two-sentence summary of the module + run size.
+2. Top-3 bottlenecks across the four categories, each with:
+   - symptom (one line from a summary artifact)
+   - `source_file:line` pointed to
+   - proposed next step
+3. Relative-path links to `hlo_summary.md`, `compile_summary.md`,
+   `trace_summary.md`, `memory_timeline.txt`, xprof dir.
+4. Any LORRAX source changes with commit hash + branch.
 
-`run1/compilation_cache/` is populated after the first run; `run2` hits it
-for most modules. `run2/compile_summary.md` should show near-zero XLA
-compile time — anything that didn't cache is a lead for further work (see
-`compilation.md`).
-
-## Recipe 9 — ending a profiling session
-
-Every session produces a report under `reports/profiling_<module>_<date>/`
-with:
-
-1. A two-sentence summary of the module profiled and the size of the run.
-2. The top-3 bottlenecks across the four categories, each with:
-   - a one-line symptom from the summaries
-   - the file:line pointed at
-   - a proposed next step
-3. Links (relative paths) to `hlo_summary.md`, `compile_summary.md`,
-   and the xprof trace.
-4. Any code changes made under `sources/lorrax/` with commit hash.
-
-See `reports/profiling_run_nscf_2026-04-16/` for an example.
+See `reports/profiling_stack_2026-04-16/report.md` for an example.

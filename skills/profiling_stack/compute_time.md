@@ -1,131 +1,76 @@
-# Compute time
+# Compute time — drilling in
 
-Follow this doc AFTER reading `hlo_summary.md` — you already have two
-ranked views of the module's compute behaviour. Here we turn that into a
-diagnosis.
+Read this AFTER `trace_summary.md` has ranked GPU kernels and
+host↔device transfers.
 
-## What the ranked summary told you already
+## What each summary artifact tells you
 
-`hlo_summary.md` → `## Compute — aggregate op counts` and `### Custom calls`
-give the module's global op inventory: how much fusion, how many dots,
-how many FFTs, how many cuBLAS / cuDNN / cuFFT / cuSOLVER calls. Example:
-
-```
-| Op          | Count |
-| fusion      | 625   |
-| transpose   | 130   |
-| copy        |  97   |
-| fft         |  44   |
-
-| __cublas$gemm             | 78 |
-| __cublas$triangularSolve  | 32 |
-| cusolver_getrf_ffi        | 16 |
-| cusolver_syevd_ffi        | 10 |
-```
-
-Interpretation rules of thumb:
-
-| Pattern | What it tells you |
+| File | Gives you |
 |---|---|
-| `fusion` dominates | XLA is doing its job; good baseline |
-| `copy` count > `fusion` / 5 | layout churn; likely missed fusion across a sharding boundary |
-| `transpose` count very high | repeated axis-reordering — frequent cause of serialisation |
-| cuSOLVER calls unexpectedly large | an inner solve isn't batched (e.g. per-k `eigh`) |
-| Many cuFFT with shape polymorphism | plan cache thrash; see `compilation.md` |
+| `trace_summary.md` → Top GPU kernels | Ranked by total GPU time across the run, with count, max ms, theoretical occupancy %, HLO module, Python source |
+| `trace_summary.md` → Transfers table | H2D/D2H/D2D totals (count, bytes, time, average GB/s) |
+| `trace_summary.md` → Async overlap | Per-direction `overlap_frac` — close to 1 means the copy was hidden behind compute |
+| `trace_summary.md` → Peak window bandwidth | Sliding-window (default 100 ms) peak GB/s for H2D and D2H — compare vs A100 PCIe Gen4 ≈32 GB/s ceiling |
+| `trace_summary.md` → Low-occupancy kernels | Compute kernels with theoretical occupancy < 50 %, ranked by wasted time |
+| `trace_details.txt` | Dense per-event dump of the top copies + top kernels |
+| `hlo_summary.md` → Custom calls | cuBLAS / cuDNN / cuFFT / cuSOLVER call counts |
 
-The `[pf] ■ <region> Xs` lines in the run's stderr also rank pipeline stages
-by wall clock. Paste them at the top of your session report — they are the
-single clearest orientation signal.
+## Reading rules of thumb
 
-## Drill-in #1 — open the xprof trace
-
-The primary GPU-timeline view. Open `<run>/profile/xprof/plugins/profile/<ts>/`
-either in Perfetto (no install — upload the `perfetto_trace.json.gz` on
-single-process runs; multi-process runs ship the per-rank `xplane.pb` only)
-or with xprof CLI:
-
-```bash
-xprof profile/xprof --port=8791
-```
-
-Useful tabs:
-
-| Tab | What to look for |
+| You see | Interpret as |
 |---|---|
-| Overview | Step-time breakdown, GPU idle fraction — jump-off point |
-| Trace Viewer | Per-op timing; see your `pf.region(...)` annotations as coloured blocks |
-| Graph Viewer | HLO graph — chase a kernel back to its producers |
-| Memory Profile | HBM timeline — intersects with `memory.md` |
+| One kernel >30 % of total GPU time | The thing to optimise first; open its module's HLO |
+| `overlap_frac ≈ 0` on D2H AND D2H total > ~5 % of wall | Async D2H is blocking — likely `.block_until_ready()` or host code depending on the value |
+| Peak window bandwidth > ~20 GB/s sustained | PCIe link saturated; combine with `overlap_frac` — saturated + low overlap = the bottleneck |
+| Many low-occupancy kernels | Bad block/grid sizes or tiny shapes — candidates for batching / fusing |
+| cuSOLVER call count very high | A per-k / per-batch solver call — consider batching |
+| cuFFT call count high with many shapes | Plan cache thrash; pad FFT shapes to a fixed size |
 
-The `pf.region("name")` annotations you added in your driver show up in
-Trace Viewer as named horizontal bars — use them to match wall-clock costs
-to pipeline stages.
+## Drill-in sequence
 
-## Drill-in #2 — thunk sequence for a specific module
+1. **`trace_summary.md` Top kernels** — is ONE kernel dominant? If yes, go
+   to its `module_XXXX.<fn>.thunk_sequence.txt` for the exact kernel order,
+   and `sm_*_gpu_after_optimizations.txt` for the HLO.
+2. **Overlap table** — decide if the H2D/D2H volume is hiding or blocking.
+   If blocking is small (< few ms), ignore. If blocking > 10 % of wall,
+   it's the bottleneck.
+3. **Peak window bandwidth** — if D2H bandwidth peaks near PCIe ceiling
+   during a long window, memory movement is the real limiter, not compute.
+4. **Low-occupancy table** — pick offenders that ALSO cost >1 ms total.
 
-For a single compiled module, the cheapest "what does the GPU actually do"
-view is its `thunk_sequence.txt`:
+## Adding finer-grained regions (opt-in, zero-source-touch stays default)
 
-```
-profile/xla_dump/module_0225.jit__apply_H_sparse.thunk_sequence.txt
-```
+If the top kernel is inside a long pipeline stage and you want to attribute
+the time back to a specific call site, add `pf.region("name"):` blocks to
+the driver. Each region produces:
 
-It lists the ordered kernel launches. Useful when the trace viewer shows a
-kernel taking an unexpected fraction of its module's time — the thunk
-sequence shows the exact preceding / following kernels.
-
-## Drill-in #3 — named regions in your driver
-
-Nothing pinpoints compute cost faster than a `pf.region("name")` block:
+  * a stderr `[pf] ■ name Xs` line
+  * a named bar in the xprof Trace Viewer
 
 ```python
-with pf.region("setup_potentials"):
-    V_scf, V_loc, vnl_setup = _build_potentials(crystal, pseudos)
-with pf.region("davidson"):
-    for ik in range(nk):
-        ...
+with pf.region("davidson_kloop"):
+    for ik in range(nk): ...
 ```
 
-This costs nothing to add and gives you:
-  * a stderr `[pf] ■ name  Xs` timestamp per region
-  * a named block in the xprof trace
+One-liner, no API changes. Re-run the profile; new regions show up
+immediately. This is the ONLY opt-in source edit the stack wants from you,
+and it's unnecessary in most cases because `trace_summary.md` already
+attributes every kernel to its `py_name`.
 
-Use this as soon as your first profile run tells you "stage X is slow" and
-you want finer resolution. If you have a 10-line `main()`, you can wrap
-each line this way at zero reading cost.
-
-## Drill-in #4 — AOT microbenchmark of one function
-
-```python
-pf.aot_report(compute_chi0_q, psi_l, psi_r, quad, meta,
-              out="probe/aot/compute_chi0_q", timing_runs=5)
-```
-
-Reads `probe/aot/compute_chi0_q/summary.md` → `Timings` block:
-```
-- first call (incl compile): 4.12 s
-- median of remaining:       18.2 ms
-```
-
-A/B compare two implementations by swapping the first argument and diffing
-the two summaries.
-
-## Common diagnoses and their fixes
+## Common diagnoses → fixes
 
 | Symptom | Root cause | Fix |
 |---|---|---|
-| Dominant `[pf]` region, GPU idle in xprof | Python-side / HDF5 I/O / kpoint loop | wrap the loop with `lax.scan`, move work into jit, stream HDF5 in a thread |
-| Many tiny GPU kernels | No fusion — boundaries cut it | inspect HLO for `copy` / `convert_element_type` / `reshape` between kernels; remove unnecessary ones |
-| Single GEMM >1 s | Bad autotune plan | check `autotune_results.pbtxt`, try `--xla_gpu_autotune_level=4` |
-| cuFFT dominates | Plan cache thrash across shapes | pad FFT shapes to a fixed size across iterations |
-| Many `copy` around an axis | Layout mismatch before a dot or collective | see `sharding.md` |
+| Single kernel dominates + low occupancy | Bad block size or small shape | Batch / fuse; check `autotune_results.pbtxt` |
+| `overlap_frac ≈ 0` for D2H, total time meaningful | Host code waiting on device result | `jax.block_until_ready` moved too early; or use `jax.experimental.array_api.async_wait` |
+| cuFFT dominant, retrace groups show many FFT modules | Shape polymorphism | Pad FFT shapes; see `compilation.md` |
+| Many tiny kernels | No fusion — layout-breakers between them | HLO grep for `copy` / `reshape` / `convert_element_type` between kernels |
 
-## When the summary isn't enough
+## Escape hatches
 
 | Question | Tool |
 |---|---|
-| "What is op X's wall-clock cost?" | xprof Trace Viewer |
-| "Which kernels run inside module Y?" | `module_Y.thunk_sequence.txt` |
-| "Is the GPU actually idle here?" | xprof Overview + Trace |
-| "Which Python line called this kernel?" | xprof Trace Viewer + op metadata |
-| "What would chunking cost in ms?" | `pf.aot_report(..., timing_runs=N)` |
+| Exact wall-clock cost of op X | xprof Trace Viewer |
+| Kernels run inside module Y | `profile/xla_dump/module_Y*.thunk_sequence.txt` |
+| Is the GPU idle during stage Z | xprof Overview idle-fraction |
+| A/B timing of an alternative kernel | `pf.aot_report(..., timing_runs=N)` |
