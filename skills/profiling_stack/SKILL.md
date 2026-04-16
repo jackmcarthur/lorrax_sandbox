@@ -46,8 +46,8 @@ sampler in a sidecar thread.
 2. `compile_summary.md` — Wall-clock totals + top cache misses.
 3. `trace_summary.md` — top kernels + overlap + bandwidth.
 4. `memory_timeline.txt` — peak timestamp + top arrays at peak.
-5. Pick the single highest-ranking issue → open the category doc
-   (`memory.md` / `compute_time.md` / `sharding.md` / `compilation.md`).
+5. Pick the single highest-ranking issue → open `drilldowns.md` at the
+   matching § (Memory / Compute time / Sharding / Compilation).
 6. *Only now* open LORRAX source at the file:line the summary pointed to.
 
 If you find yourself opening LORRAX source before step 5, stop — you are
@@ -75,7 +75,7 @@ prematurely narrowing.
     per-function AOT report with jaxpr / StableHLO / optimized HLO /
     memory / cost. Target source stays untouched. See `aot_reports.md`.
 
-## Common launcher variants
+## Launcher variants
 
 ```bash
 # Single-GPU (k-parallel off)
@@ -96,6 +96,74 @@ LORRAX_NGPU=4 lxrun python3 -u .../run_profiled.py --out p --mem-sample-interval
 
 Full option list: `scripts/profiling/run_profiled.py --help`.
 
+## A/B comparison — when refactoring
+
+```bash
+git -C sources/lorrax checkout main          && lxrun ... --out profile_main ...
+git -C sources/lorrax checkout agent/my-fix  && lxrun ... --out profile_fix  ...
+
+diff <(head -40 profile_main/hlo_summary.md)    <(head -40 profile_fix/hlo_summary.md)
+diff <(head -40 profile_main/compile_summary.md) <(head -40 profile_fix/compile_summary.md)
+diff <(head -40 profile_main/trace_summary.md)   <(head -40 profile_fix/trace_summary.md)
+```
+
+Small diffs pinpoint exactly what changed (new collective, lost fusion,
+new retrace group, peak-bandwidth regression).
+
+## Memory-leak hunt across pipeline stages
+
+When peak HBM grows across stages rather than being dominated by one
+module:
+
+```python
+# leak_probe.py — separate file, target module unchanged
+import sys; sys.path.insert(0, "/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profiling")
+import pf; pf.setup_env("leak_probe", hlo=False, log_compiles=False)
+
+from gw.gw_jax import main_phase          # or any staged API the module exposes
+
+pf.snapshot_memory("leak_probe/memprof/00_start.prof")
+main_phase("isdf");  pf.snapshot_memory("leak_probe/memprof/10_isdf.prof")
+main_phase("chi0");  pf.snapshot_memory("leak_probe/memprof/20_chi0.prof")
+main_phase("sigma"); pf.snapshot_memory("leak_probe/memprof/30_sigma.prof")
+```
+
+```bash
+LORRAX_NGPU=4 lxrun python3 -u leak_probe.py
+pprof -diff_base leak_probe/memprof/10_isdf.prof leak_probe/memprof/20_chi0.prof
+```
+
+The diff shows what was held after stage 2 that wasn't after stage 1 —
+usually a buffer not donated or not deleted.
+
+## Drop-in instrumentation without using `run_profiled.py`
+
+When you already have a hand-rolled driver:
+
+```python
+# at the top, BEFORE any jax import
+import sys; sys.path.insert(0, "/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profiling")
+import pf
+pf.setup_env("my_artifacts")
+pf.attach_compile_log("my_artifacts/compile.log")
+
+# ... rest of script ...
+import jax
+from gw.gw_jax import main
+
+pf.start_memory_sampler(interval_s=0.25)
+with pf.trace_profile("my_artifacts"):
+    with pf.region("chi0"):
+        chi = compute_chi0(...)
+    with pf.region("W"):
+        W = solve_w(...)
+pf.stop_memory_sampler()
+pf.write_memory_timeline("my_artifacts/memory_timeline.txt")
+pf.snapshot_memory("my_artifacts/memprof/end.prof")
+```
+
+Run the three analyzers on `my_artifacts/` exactly as with the launcher.
+
 ## Layout
 
 ```
@@ -108,26 +176,9 @@ scripts/profiling/
 
 skills/profiling_stack/
     SKILL.md               # this file, the cold entry point
-    memory.md              # drill: Memory table → fix
-    compute_time.md        # drill: kernel ranking + overlap → fix
-    sharding.md            # drill: collectives + rematerialization → fix
-    compilation.md         # drill: retrace groups + cache misses → fix
+    drilldowns.md          # Memory / Compute / Sharding / Compilation interpretations + fixes
     aot_reports.md         # secondary tool: one-function AOT probe
 ```
-
-## A/B comparison — when refactoring
-
-```bash
-git -C sources/lorrax checkout main          && lxrun ... --out profile_main ...
-git -C sources/lorrax checkout agent/my-fix  && lxrun ... --out profile_fix  ...
-
-diff <(head -40 profile_main/hlo_summary.md)    <(head -40 profile_fix/hlo_summary.md)
-diff <(head -40 profile_main/compile_summary.md) <(head -40 profile_fix/compile_summary.md)
-diff <(head -40 profile_main/trace_summary.md)   <(head -40 profile_fix/trace_summary.md)
-```
-
-Small diffs; they pinpoint exactly what changed (new collective, lost
-fusion, new retrace group, peak-bandwidth regression).
 
 ## Rules
 
@@ -135,17 +186,8 @@ fusion, new retrace group, peak-bandwidth regression).
 2. **Read the four summaries before opening LORRAX source.** That's the
    whole point.
 3. **End every profiling session with a report** under
-   `reports/profiling_<module>_<date>/report.md` linking the summaries +
-   top-3 bottlenecks + proposed next step.
+   `reports/profiling_<module>_<date>/report.md` linking the summaries,
+   top-3 bottlenecks with `source_file:line` + proposed next steps, and
+   any LORRAX source changes with commit hash + branch.
 4. **Don't turn on `--xla_dump_hlo_pass_re=.*`** (40× artifact blowup) unless
    you're specifically hunting a compiler pass.
-
-## Escape hatches
-
-| Question summaries can't answer | Tool |
-|---|---|
-| Per-op GPU kernel timings in an interactive UI | `xprof profile/xprof --port=8791`, or upload `perfetto_trace.json.gz` to ui.perfetto.dev |
-| Memory timeline across a fori_loop | xprof Memory Profile tab |
-| Which Python line allocated a live buffer | `pprof -tree profile/memprof/end.prof` |
-| Does my sharding constraint survive a reshape | open the specific module's `sm_*_gpu_after_optimizations.txt` |
-| SPMD-partitioner decisions | add `--xla_dump_hlo_pass_re=spmd-partitioner\|sharding-propagation` for that run only |
