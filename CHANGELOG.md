@@ -1,264 +1,432 @@
 # Changelog
 
-## 2026-04-06: First-principles memory model initiative
+## 2026-04-16: JAX profiling stack — skill, helpers, k-parallel run_nscf
 
-**Report**: `reports/memory_model_assay_2026-04-06/report.md`
+New sandbox-level `skills/profiling_stack/` and `scripts/profiling/` that
+turn an unfamiliar LORRAX module into a ranked punch-list of bottlenecks
+in one command. Four categories covered: memory, compute time, sharding,
+compilation.
 
-Goal: build a predictive memory model for every stage of the LORRAX GW pipeline
-where every GPU buffer > 1 MB is identified by name, shape, and purpose, and the
-sum reproduces XProf peaks to < 10%. The practical target: set `memory_per_device_gb`
-in `cohsex.in` and have `compute_optimal_chunks()` derive chunk sizes that actually
-use that budget without OOM, enabling 10x10x10 Si on 16 GPUs and larger.
+### Deliverables
+- `scripts/profiling/pf.py` — helper library (`setup_env`, `trace_profile`,
+  `region`, `annotate`, `snapshot_memory`, `aot_report`, `attach_compile_log`).
+  Handles jax.distributed bootstrap, JAX_ENABLE_X64 latching, and the
+  per-rank perfetto-trace race that broke multi-process runs.
+- `scripts/profiling/run_profiled.py` — one-shot launcher wrapping
+  `python -m <module>` with the whole env (XLA_FLAGS dump, JAX_LOG_COMPILES,
+  IR dump, xprof trace, pprof snapshot).
+- `scripts/profiling/analyze_hlo_dump.py` — XLA dump → ranked
+  `hlo_summary.{md,json}` (Memory, Compute + custom calls, Sharding
+  collectives, Rematerialization warnings, Retrace groups).
+- `scripts/profiling/analyze_compile_log.py` — JAX compile log → ranked
+  `compile_summary.{md,json}` (wall-clock totals, cache misses by source
+  location, persistent-cache misses).
+- `skills/profiling_stack/` — SKILL.md (entry point) + four category docs
+  (memory / compute_time / sharding / compilation) + aot_reports.md +
+  cookbook.md. All docs lead with "read the ranked summaries first, drill
+  into source second" — per-function inspection is the secondary tool.
 
-Previous assay (`runs/Si/04_si_4x4x4_memory_assay/`) invalidated:
-- All measurements were single-process (`-n 1`), not production multi-process
-- Only covered stages 1-2 (load_wfns), not pair density/ZCT/solve/gather
-- No XProf traces — only aggregate `memory_stats()` numbers
-- Produced phenomenological multipliers ("9x shard") instead of buffer inventories
+### LORRAX code change — branch `agent/run-nscf-kpar` (`4617f6e`)
+- `src/psp/run_nscf.py`: module-level `_maybe_init_jax_distributed()`
+  (same pattern as `gw.gw_jax`); Davidson k-loop strides over
+  `jax.process_index()`; `process_allgather` of evals + packed coeffs;
+  only rank 0 writes WFN.h5.
 
-Plan: instrument all stage boundaries, run systematic sweeps in multi-process mode
-with XProf traces, parse buffer-level attribution, derive and validate formulas.
-Added revalidation notice to `docs/MEMORY_MODEL.md`.
+### Validation — Si 2×2×2 / 60 Ry / 12 bands
+- `runs/Si_pseudobands/00_si_2x2x2_60Ry/20_profile_run_nscf/00_davidson_only/`:
+  1 GPU, Davidson 7.91 s (1 rank), evals[0]=-0.418717 Ry.
+- `runs/Si_pseudobands/00_si_2x2x2_60Ry/20_profile_run_nscf/02_davidson_4gpu/`:
+  4 GPU k-parallel, Davidson 6.99 s (4 ranks). **WFN.h5 bit-identical to
+  1-GPU** (eigenvalue maxabs diff 0.0, coefs maxabs diff 0.0).
+- Analyzer on 4-GPU run surfaces 4 collectives (all-gather-start on
+  f64[1,8,12] evals + c128[1,8,12,2,2120] coeffs, 31 MiB each) — the
+  expected multihost_utils payloads.
+- `uv run python -m pytest -q` → 14 passed when login-node GPU not saturated.
 
-## 2026-04-06: Imported GN-PPM profiling documentation
+### Report
+`reports/profiling_stack_2026-04-16/report.md` — deliverables, validation,
+top-3 bottlenecks found from the very first profile (memory in
+`jit__apply_H_sparse`, 33 % of wallclock spent in XLA compile, 163 cache
+misses localised to `solvers/davidson.py` + `psp/vnl_ops.py`).
 
-- Added the profiling workflow note at `agents_xprof.md`
-- Copied the profiling report and xprof trace guide into `reports/ppm_sigma_profiling_2026-04-05/`
-- No raw trace bundles or profile outputs were copied from the profiling sandbox
+### Next steps
+- A communication-heavy smoke test (multi-GPU `gw.gw_jax`) would exercise
+  the Sharding + Rematerialization view at scale — `run_nscf` is
+  embarrassingly k-parallel so only holds single-digit MiB collectives.
+  Waiting on direction for the next target module.
+- Collapse the `jit_multiply` x58 / `jit_broadcast_in_dim` x45 retrace
+  groups by wrapping the Davidson k-loop body in one outer jit (or
+  `lax.scan`).
 
-## Current status (2026-04-05)
+## 2026-04-16: Symmetric Si 2x2x2 failure traced to SymMaps index conflation
 
-All work is on `main`. Branches `agent/fix-multihost-device-get` and
-`agent/fix-improper-spinor` merged and pushed.
+- Reproduced the current symmetry-path failure directly from
+  `runs/Si_pseudobands/00_si_2x2x2_60Ry/qe/nscf/WFN.h5`:
+  `SymMaps(WFNReader(...))` raises
+  `IndexError: index 8 is out of bounds for axis 0 with size 8`.
+- Root cause is in `sources/lorrax/src/common/symmetry_maps.py`:
+  `create_kpoint_symmetry_map()` stores **symmetry-operation indices** in
+  `kpoint_map`, but `kpoint_map_irrbz_ids()` later treats those values as
+  **full-/irreducible-k indices** and indexes `full_kpts[idx]`.
+- For the Si `2x2x2` WFN this is fatal because `nk_full=8` but the stored
+  symmetry ids include `8` and `12`; the symmetric `4x4x4` path only
+  appears to survive because its mistaken symmetry ids remain `< 64`.
+- Compared against BerkeleyGW `Sigma/genwf_mpi.f90` and
+  `Common/find_kpt_match.f90`, which keep irreducible-k index and symmetry
+  index as separate state. This is the active bug; time reversal is only a
+  secondary latent concern for future TR+nonsymmorphic cases.
+- Fixed on source branch `agent/symmetry-maps-fix`:
+  `create_kpoint_symmetry_map()` now stores irreducible-k ids rather than
+  symmetry ids, and `kpoint_map_irrbz_ids()` now validates that direct map
+  instead of reinterpreting it as a full-grid index.
+- Added `src/common/symmetry_test.py`, a debug checker that validates both
+  atomic-position invariance under the stored spatial symmetries and full-grid
+  k-point unfolding from the irreducible wedge.
+- Validation:
+  `uv run python -m pytest -q` → `14 passed, 1 warning`;
+  `uv run python -m common.symmetry_test .../Si_pseudobands/.../WFN.h5`
+  → `48/48` symmetries and `8/8` k-points valid;
+  `uv run python -m common.symmetry_test .../Si/05_si_4x4x4_sym/.../WFN.h5`
+  → `48/48` symmetries and `64/64` k-points valid.
 
-### Static COHSEX: working for both 2D and 3D
+## 2026-04-15: Bare Σ_X invariance analysis — ISDF quality confirmed OK
 
-| System | Grid | MAE vs BGW Corp | Report |
-|--------|------|-----------------|--------|
-| MoS2 (2D) | 3×3 | **67 meV** | `reports/mos2_kgrid_convergence_2026-04-05/` |
-| MoS2 (2D) | 3×3 nosym | **71 meV** | `runs/MoS2/02_mos2_3x3_nosym/` |
-| MoS2 (2D) | 4×4 | **73 meV** | same |
-| Si (3D) | 4×4×4 nosym | **54 meV** (all k) | `reports/si_nosym_2026-04-05/` |
-| Si (3D) | 4×4×4 sym | **52 meV** (Γ only) | `reports/3d_coulomb_si_444_2026-04-05/` |
+### Bare exchange is nearly invariant (17 meV shift, BGW: 0 meV)
+- Added bare Σ_X diagnostic print to gw_jax.py
+- Ran 4 COHSEX calculations with the diagnostic: baseline (400c, 2000c), V1 PB, V2 PB
+- Result: bare X shifts only 17-20 meV with pseudobands
+- Centroids don't affect bare X (400c vs 2000c identical)
+- ISDF quality for exchange is acceptable
 
-The ~54-67 meV COHSEX error is k-grid independent and uniform across all
-k-points when symmetry is disabled. The error is dominated by screened exchange
-(57 meV), while the Coulomb hole matches to 5 meV. Source is ISDF basis
-approximation, not symmetry or wing corrections.
+### Decomposed comparison vs BGW (using CH' = exact static, per BGW sigma_hp.log)
+- LORRAX absolute X differs from BGW by 5.5 eV — nk convention (8 vs 4 k-points)
+- PB screening shifts: LORRAX ΔCH ≈ -1.4 to -1.7 eV, BGW ΔCH' ≈ -1.1 to -1.8 eV — within 20%
+- Baseline CH offset (LORRAX -6.77 vs BGW -8.46) is k-grid dependent: 1.7 eV at 2×2×2, 0.6 eV at 4×4×4
+- No evidence of COHSEX implementation regression from recent refactors
 
-### GN-PPM: ~1 eV body error in 2D MoS2, 12 meV uniform in 3D Si nosym
+## 2026-04-15: Pseudobands v2 (Gauss-quadrature energies) — implemented, tested, V1 still wins
 
-| System | Grid | MAE vs BGW Corp | Report |
-|--------|------|-----------------|--------|
-| MoS2 (2D) | 3×3 | **1324 meV** | `reports/mos2_kgrid_convergence_2026-04-05/` |
-| MoS2 (2D) | 3×3 nosym | **1153 meV** | `runs/MoS2/02_mos2_3x3_nosym/` |
-| MoS2 (2D) | 4×4 | **1019 meV** | same |
-| Si (3D) | 4×4×4 nosym | **12 meV** (all k) | `reports/si_nosym_2026-04-05/` |
-| Si (3D) | 4×4×4 sym | **5 meV** (Γ only) | `reports/3d_coulomb_si_444_2026-04-05/` |
+Branch `agent/nscf-clean-scaffold` (+6 commits).
 
-The 2D GN-PPM body error improves 25% with denser grid but remains ~1 eV. The
-ISDF PPM pole extraction (W(0), W(iωp) → Ω, B per (q,μ,ν)) is the suspected
-source — the ISDF basis mixes G-vector channels so individual poles are less
-well-defined than in BGW's plane-wave basis. The 3D Si nosym result (12 meV
-uniform at all k-points) shows the PPM machinery works; the 2D error may be
-related to how the G=0 head exclusion interacts with the ISDF body PPM fit.
+### New module: `solvers/pseudobands_v2.py`
+- **Shifted CJ boundaries** (δ = π/2M) for quadratic POU: Σw_j² ≈ 1 ± 0.04
+- **Gauss quadrature** from windowed DOS moments (Stieltjes/Jacobi algorithm)
+  gives per-band energies and weights. Numerically fragile for large n_eff;
+  falls back to Ritz eigenvalues + uniform weight.
+- **Davidson windows**: no-matvec Galerkin from stored eigenvalues
+- **n_min = k floor** prevents pathologically narrow windows
+- **Window placement** with automatic n_min enforcement
+- Wired into `run_nscf.py` via `pb_version = 2` in nscf.in
 
-**Key code locations:**
-- PPM extraction: `src/gw/minimax_screening.py:extract_gn_ppm_parameters_from_Wc`
-- PPM sigma integration: `src/gw/ppm_sigma.py:compute_sigma_c_ppm_omega_grid`
-- BGW PPM: `Sigma/mtxel_cor.f90` (GN pole fit + sigma evaluation)
-- BGW fixwings: `Common/fixwings.f90` (wing rescaling for ε⁻¹ compatibility)
-- BGW avgcut logic: `Sigma/inread.f90:908-912` (10¹² for 3D semicond, 10⁻¹² otherwise)
+### COHSEX comparison (Si 2×2×2, VBM)
 
-### SymMaps wavefunction rotation: FIXED (improper spinor bug)
+| Method | sigTOT (eV) | Δ from 40-band |
+|:--|:--:|:--:|
+| Baseline 40-band | -12.824 | — |
+| **V1 hybrid PB** | **-14.145** | **-1.32** |
+| V2 Gauss PB | -14.428 | -1.60 |
+| V2 Ritz energies | -14.419 | -1.60 |
+| BGW reference | — | -1.18 |
 
-**Status: spinor fix merged and pushed (commit `0351c55`). Sigma errors
-persist — the spinor fix corrects the wavefunction rotation but there is
-an additional bug in the chi0/W/sigma pipeline.**
+**V1 remains the better scheme** (-1.32 vs -1.60 excess). The v2 shifted
+boundaries and different window placement create 0.3 eV more over-screening.
+Energy assignment (Gauss vs Ritz) has negligible effect (< 10 meV).
 
-#### The bug
+### Key findings
+- Dominant error: ISDF quality degradation with pseudobands (89 meV sigSX shift)
+- Energy assignment is NOT the bottleneck — Gauss vs Ritz ≈ same result
+- The v2 infrastructure is complete and working, but the shifted boundaries
+  need further investigation to understand why they increase over-screening
+- `dos_cjwindows.py` diagnostic plots CJ window indicators on the full spectrum
 
-`get_spinor_rotations()` in `symmetry_maps.py` feeds the Cartesian rotation
-matrix directly into the quaternion→SU(2) algorithm. For **improper** rotations
-(mirrors, S₆, etc., where det(R) = −1), this is wrong. The quaternion method
-assumes a proper rotation (det = +1) and produces a spurious result.
-
-The physical reason: in the double group, inversion maps to the identity in
-SU(2). An improper rotation S = I_inv · R_proper should have spinor U(S) =
-U(R_proper), because U(I_inv) = I. So the correct procedure is to strip
-the inversion (negate the matrix) before computing the spinor. This is exactly
-what BGW does in `Common/spinor_symmetries.f90:63-69`.
-
-#### The fix
-
-One line added to `get_spinor_rotations()`:
-```python
-if np.linalg.det(R) < 0:
-    R = -R
+### Test directories (runs/Si_pseudobands/00_si_2x2x2_60Ry/)
+```
+11_lorrax_pb_v2_k4_40win/    — v2 k=4, 41 windows (192 bands)
+12_lorrax_pb_v2_k6_60win/    — v2 k=6, 59 windows (382 bands)
+13_lorrax_cohsex_v2/          — COHSEX with v2 Gauss energies
+14_lorrax_pb_v2_ritz_energies/ — v2 with Ritz energies
+15_lorrax_cohsex_v2_ritz/     — COHSEX with v2 Ritz energies
 ```
 
-#### Why this produced the specific error pattern
+## 2026-04-15: Hybrid stochastic/CJ-Ritz pseudobands — cross-window fix
 
-Only 2 of the 12 symmorphic Si symmetries triggered the bug in the diagnostic:
-syms 7 and 8 (mirrors). The other improper ops (sym 6 = pure inversion, syms
-9-11 = S₆) were either:
-- Pure inversion (sym 6): stripping gives identity → U=I either way
-- Not used by the k-points in the diagnostic's test set
+Branch `agent/nscf-clean-scaffold` (+1 commit on top of prior work).
 
-The mirrors have the property that −R_mirror is a C2 rotation with a nontrivial
-spinor. Without the fix, these mirrors got U=I, producing ||O||²=1.0 instead
-of 2.0 (exactly half the subspace overlap, because the spinor rotation accounts
-for half the transformation).
+### Architecture change
+- **Hybrid pseudobands**: three construction modes per window:
+  - **Stochastic**: random-phase sums of exact eigenstates (for windows
+    where CJ filter can't resolve — near conduction edge).
+  - **CJ-Ritz**: Chebyshev-filtered Galerkin-Ritz (high-energy windows).
+  - **CJ-0**: zero-weight placeholder (spectral gaps, CJ produces garbage).
+- Det bands split into "protected" (below window start, included as-is)
+  and "available" (consumed by stochastic construction). Extends Davidson
+  deeper (nbnd=60) to provide exact eigenstates for transition zone.
 
-#### Why this is a complete fix for all symmorphic symmetries
+### Bug fixes
+- **Window start below det max**: E_cross was 1.31 Ry but det bands
+  went to 2.23 Ry. First 3-4 windows were in the det manifold — after
+  deflation, CJ produced noise. Now: stochastic for those windows.
+- **Zero-norm NaN**: WFNReader clamped zero norms to 1e-30, ISDF divided
+  by it → 10^30 → NaN in all zeta. Fixed: clamp to 1.0 (no-op division).
+- **n_protected consistency**: fixed band count across k-points by passing
+  n_protected from k=0 to subsequent k-points.
 
-The diagnostic verified **every other component** of the rotation formula:
+### Results (Si 2×2×2, 60 Ry)
+- COHSEX pseudobands shift: **-1.32 eV** (was -1.77 eV broken, BGW ref -1.18 eV)
+- Excess over BGW: **0.14 eV** (was 0.59 eV — 76% reduction)
+- No more NaN output, no cross-window leakage
 
-| Component | Verification |
-|-----------|-------------|
-| **K-point mapping** (IBZ→full BZ) | All 64 k-points correctly mapped; energies match < 0.001 meV |
-| **G-vector rotation** (S@G + G_shift) | 100% G-vector match at all 64 k-points |
-| **G-shift** (BZ wrapping) | Correct for all k-points, including wrap-around cases |
-| **Spinor for proper rotations** (C2, C3) | Verified correct by overlap test: all proper-rotation k-points pass |
-| **Spinor for improper rotations** | Was wrong (missing `det<0` negation); now fixed and verified |
-| **Time-reversal** (complex conjugation for `sym >= ntran`) | Not used in Si `force_symmorphic` (all 64 k-points use spatial syms 0–11); verified separately that the MoS2 ntran=2 case works |
-| **Coefficient reindexing** | Confirmed by perfect G-vector match: coefficients are placed at the correct G-vector positions after rotation |
+### Next
+- Investigate remaining 0.14 eV excess (ISDF quality with pseudobands)
+- Test with more centroids (5000+) to separate ISDF error from PB error
+- Consider global QR for CJ windows to further reduce cross-window overlap
 
-After the fix, the Gram-matrix overlap test passes **all 64 k-points** of
-Si 4×4×4 with `force_symmorphic` (12 symmorphic symmetries of Oh). The 2
-k-points that show ||O||²≈0.67 in the 2-fold test are **not failures** —
-they pass perfectly (||O||²=4.0, SVDs all 1.0) when the near-degenerate
-bands are grouped into 4-fold manifolds, which is the physically correct
-grouping (the C3 rotation mixes Kramers pairs from the same irreducible
-representation of the little group).
+## 2026-04-14: NSCF refactor — clean scaffold, 2D Coulomb fix, module reorganization
 
-The fix is general because the improper-stripping logic applies to **any**
-space group: every improper symmetry in any crystal factors as inversion ×
-proper rotation, and the SU(2) spinor of the inversion is always identity.
-The quaternion→SU(2) algorithm is correct for proper rotations of any axis
-and angle. No space-group-specific logic is needed.
+Branch `agent/nscf-clean-scaffold` (14 commits).
 
-#### Sigma errors persist after wavefunction fix
+### Bug fix
+- **MoS2 2D Coulomb truncation**: `compute_V_H_and_V_xc` hardcoded `truncation_2d=False`
+  for V_H Poisson solve. QE's `assume_isolated='2D'` now auto-detected from XML and
+  applied to both V_loc and V_H. MoS2: 594 mRy → 0.013 mRy offset. Si unchanged.
 
-Re-running sigma with the fixed code changes per-band values (3237 of 3840
-bands differ by ~2-3 meV), confirming the fix has a physical effect. But the
-**dominant 300-700 meV errors at off-axis k-points are unchanged** (MAE 349
-meV before and after). Since the wavefunctions are now verified correct and
-the nosym baseline is 12 meV, there must be a separate bug in how the
-chi0/W/sigma pipeline uses symmetry-unfolded wavefunctions. Candidates:
-- ISDF pair density assembly with rotated wavefunctions
-- Q-point folding / symmetry weight handling in the screening
-- FFT-box G-vector indexing when placing rotated coefficients for chi0
+### Module reorganization
+- **`src/solvers/davidson.py`**: generic eigensolver (BSE-ready). `nspinor→n_channels`,
+  `n_tgt→n_eig`, `nG→dim`. `psp/davidson.py` → shim.
+- **`psp/pseudos.py`**: `load_pseudopotentials`, `symbol_to_Z`, `AtomPP` extracted from
+  `get_DFT_mtxels.py` (-300 lines from the kitchen sink).
+- **`psp/gvec_utils.py`**: `build_master_gvec_list`, `select_gvecs_for_k`, `compute_ngkmax`,
+  `reorder_to_qe` consolidated.
+- **`psp/radial/`**: `radial_jax.py`, `solid_harmonics.py`, `build_projectors_qe.py`.
+- **`psp/upf/`**: `load_upf.py`, `normalize.py`, `upf_model_2_0_1/`.
+- **`file_io/`**: `qe_save_reader.py` + `wfn_writer.py` joined `WFNReader` et al.
+- **`dft_operators.py`**: now owns `poisson_potential_from_rhoG`, `generate_gvectors_k`,
+  `build_G_cart` (moved from `get_DFT_mtxels` and `charge_density`).
+- **Deleted**: `kpar.py`, `get_dipole_mtxels_chunked.py`, debug functions (~750 lines).
+- **Archived**: `charge_density.py` (85% dead SCF code).
+- **`get_DFT_mtxels.py`**: 1281 → 974 lines.
 
-**Workaround: `nosym=.true.` is still required** for production calculations
-until the screening pipeline bug is found.
+All three entry points (`run_nscf`, `get_DFT_mtxels`, `get_dipole_mtxels`) and GW drivers
+now import shared routines from canonical locations. Validated: Si 0.001 mRy, MoS2 0.013 mRy.
 
-**Remaining caveat:** non-symmorphic symmetries (fractional translations
-τ ≠ 0) are not yet handled. The phase factor e^{−iG·τ} is computed but
-currently zero for all symmorphic operations. This was already a known
-limitation — the `force_symmorphic` workaround in QE removes all non-
-symmorphic operations from the symmetry group.
+## 2026-04-14: NSCF driver, WFN.h5 writer, k-parallel, MoS2 validation
 
-#### Diagnostic scripts
+### New modules
+- **`psp/run_nscf.py`**: Full NSCF driver (QE .save → Davidson → WFN.h5)
+- **`psp/kpar.py`**: K-point parallel diag via 2D mesh ('k', 'g')  
+- **`compare_wfn.py`** (sandbox): Permanent WFN.h5 comparison tool
 
-Located in `runs/Si/02_si_4x4x4_nosym/debug_symmaps/`:
-- `test_actual_symmaps.py`: full 64-k-point test using LORRAX's real SymMaps
-  class. Run via Shifter: `srun ... $SHIFTER python3 -u test_actual_symmaps.py`
-- `diagnose_4_bad.py`: detailed per-G-vector and per-band analysis of specific
-  failing k-points
-- `test_wfn_rotation.py`: standalone reimplementation (useful for understanding
-  the algorithm but has subtle differences from the real code)
+### WFN.h5 accuracy
+- **Si 4×4×4**: 33/37 fields EXACT, eigenvalues 0.0009 mRy MAE, timing competitive with QE
+- **MoS2 3×3×1**: 36/37 fields EXACT (all structural, G-vectors byte-identical after QE convention matching). Eigenvalues: 2.7 mRy MAE at Gamma, 1.0 mRy at other k-points.
 
-### BGW `cell_average_cutoff` / mini-BZ averaging
+### Bug fixes
+- **bvec.T transpose bugs**: bdot, adot, atom_crys, G_cart — all hidden by cubic Si, exposed by hexagonal MoS2. Fixed in qe_save_reader.py, wfn_writer.py, ionic_gspace.py, charge_density.py.
+- **QE G-vector ordering**: Matched exactly via `(round(|G|²×1e8), g1, g2, g3)` lexicographic sort
+- **nosym symmetry convention**: ntran=1, identity only, zero-padded to 48
+- **scipy_erf**: Replaces jax.scipy.erf in table construction (avoids Shifter PTX crash)
 
-BGW's `Sigma/inread.f90` lines 908-912 auto-set `avgcut`:
-- **3D semiconductor** (`TRUNC_NONE` + `SCREEN_SEMICOND`): `avgcut = 1/TOL_ZERO ≈ 10¹²` Ry
-  → MC-averages vcoul at EVERY q-point, fixwings rescales ε⁻¹ wings at EVERY q-point
-- **Everything else** (slab, wire, box, metals): `avgcut = TOL_ZERO ≈ 10⁻¹²` Ry
-  → MC averaging and fixwings only at exact q=0
+### MoS2 NSCF eigenvalue discrepancy — FIXED
+**Root cause**: `compute_V_H_and_V_xc` hardcoded `truncation_2d=False` for V_H Poisson solve.
+QE's MoS2 input uses `assume_isolated='2D'`, applying 2D Coulomb truncation to both V_H and
+V_loc. LORRAX applied it to V_loc but not V_H, causing 594 mRy offset.
 
-LORRAX now MC-averages v(q, G=0) for all nonzero q in 3D (commit `ef38ce3`),
-matching BGW's head treatment. This reduced Si Γ MAE from 194→52 meV. LORRAX
-does NOT rescale ε⁻¹ wings (no equivalent to fixwings for body elements), but
-this appears to be unnecessary for the ISDF approach where W is computed via
-the Dyson equation rather than ε⁻¹ × v.
+**Fix** (branch `agent/nscf-2d-truncation`): Added `truncation_2d` kwarg to
+`compute_V_H_and_V_xc` and threaded from `run_nscf.py`. After fix: **0.013 mRy offset,
+0.002 mRy MAE-no-offset** across all 9 k-points. Si unchanged at 0.001 mRy.
 
-User can override BGW's avgcut via `cell_average_cutoff X.X` in sigma.inp.
+## 2026-04-13: Unified ionic G-space pipeline — 195s → 31s (setup: 177s → 5s)
 
----
+Three changes on branch `agent/rho-core-table-interpolate`:
 
-## 2026-04-05: Si/MoS2 nosym tests + SymMaps diagnostic
+1. **Unified `build_ionic_and_core`** (new `psp/ionic_gspace.py`):
+   - V_loc(r) and ρ_core(r) built in one pass via shared `lax.scan` primitives
+   - `species_structure_factors` + `accumulate_species_on_G` — jittable, scannable
+   - Cold: 2.37s. Warm: 0.01s. Previously V_loc=1.5s + rho_core=155s.
 
-- **Report**: `reports/si_nosym_2026-04-05/report.md`
-- **Runs**: `runs/Si/02_si_4x4x4_nosym/`, `runs/MoS2/02_mos2_3x3_nosym/`
-- **Diagnostic**: `runs/Si/02_si_4x4x4_nosym/debug_symmaps/test_wfn_rotation.py`
+2. **SciPy CPU table construction** (`radial_jax._spherical_hankel_table_np`):
+   - Replaced JIT-compiled `spherical_hankel_table_jax` for one-time setup
+   - l=1 table build: 20.27s → 0.24s (84× faster, no JIT overhead)
+   - JAX version kept for gradient computations
 
-Si nosym confirms SymMaps rotation bug (uniform 12/54 meV vs 300-1600 meV
-off-axis with sym). MoS2 nosym confirms 2D errors are NOT from symmetry.
-Diagnostic script identifies 11 failing k-points clustered at irk=1,2,7 —
-not a universal formula bug, specific to certain IBZ k-points.
+3. **VNL table reduction** (`vnl_ops.build_vnl_setup` n_q: 50000 → 4000):
+   - Linear interpolation accurate to <1e-6 Ry at dq~0.001
+   - vnl_setup: 21.5s → 2.6s
 
-Also applied multihost JAX fix: `jax.device_get()` → `process_allgather()`
-in `minimax_screening.py` (merged to LORRAX `main`, pushed).
+Full pipeline Si 4×4×4 nosym 64 k-points: **195s → 31s** total (26s is per-k JIT).
+Setup (V_loc+NLCC+VNL): **177s → 5.0s**. Eigenvalues ≤0.0001 mRy.
+Branch: `agent/rho-core-table-interpolate`, commits `8e50cbc`..`3c95c63`.
+- **Next**: wire `build_ionic_and_core` into `test_dft_hamiltonian.py` callers,
+  consider further per-k JIT reduction, merge to main.
 
-## 2026-04-05: MoS2 k-grid convergence study
+## 2026-04-13: Active PSP callers migrated onto unified JAX VNL path
 
-- **Report**: `reports/mos2_kgrid_convergence_2026-04-05/report.md`
+- Switched the remaining active preprocessing callers off the old
+  `projector_pipeline` execution backend:
+  `psp.get_dipole_mtxels`, `psp.get_dipole_mtxels_chunked`,
+  `psp.get_DFT_mtxels`, and `gw.kin_ion_io_chunked` now build one
+  `vnl_ops.build_vnl_setup(...)` and use per-k
+  `build_vnl_kdata_from_kvec(...)` plus dense JAX contractions for `V_NL`.
+- Added canonical sparse-G helpers to `psp.dft_operators` so the active caller
+  scripts share one gather / `V_NL` matrix-element path rather than
+  reimplementing host-side extraction logic.
+- Preserved the custom JAX radial/spline/Bessel handling in one place:
+  the migration still flows through `psp.radial_jax` and `psp.vnl_ops` for
+  uniform-table interpolation, derivative tables, and stable spherical-Bessel
+  behaviour.
+- Archived the old CPU-heavy compatibility modules under `src/psp/archive/`:
+  `build_projectors.py` and `projector_pipeline.py`.
+- Validation:
+  `uv run python -m pytest -q` → `13 passed, 1 warning in 19.27s`
+  and real sandbox smokes both completed on local GPU:
+  `gw.kin_ion_io_chunked` wrote `/tmp/kin_ion_migrated_smoke.h5`
+  with shape `(64, 8, 8)` in `38.769 s`, and
+  `psp.get_dipole_mtxels_chunked` wrote `dipole.h5`
+  with shape `(3, 64, 60, 60)` from a temp staging directory.
+- Revalidated both migrated preprocessors in the documented Perlmutter
+  interactive-node Shifter environment on job `51487668` so profiling stays
+  comparable to earlier sandbox runs:
+  `gw.kin_ion_io_chunked` completed with `Total recorded: 17.793 s`
+  and `real 30.31`, while
+  `psp.get_dipole_mtxels_chunked --vnl-mode analytic` completed with
+  `real 49.57`.
 
-Compared MoS2 3×3 and 4×4 for both COHSEX and GN-PPM. COHSEX error is
-k-grid independent (~70 meV). GN-PPM improves 25% (1324→1019 meV). New
-JIT-optimized PPM code verified to reproduce old results to <1 meV.
+## 2026-04-12: Unified JAX radial backend for PSP setup path
 
-## 2026-04-05: 3D Coulomb implementation and Si 4×4×4
+- Added a shared source backend for radial transforms:
+  [src/psp/radial_jax.py](/global/u2/j/jackm/software/lorrax/src/psp/radial_jax.py:1).
+  This now owns the common spherical-Bessel kernels, uniform radial tables,
+  interpolation, and radial integration weights used to form `V_NL`, `V_loc`,
+  and NLCC/core charge.
+- Switched the active production builders away from the old SciPy spline path:
+  `vnl_ops.build_vnl_setup(...)`,
+  `build_projectors_qe.build_local_ionic_potential_on_G_total(...)`, and
+  `charge_density.build_core_density(...)` now all use the shared JAX/table
+  backend.
+- Simplified the autodiff `V_NL` channel extraction path in
+  `dft_operators.py` so it consumes the same uniform tables rather than SciPy
+  spline internals.
+- Removed a duplicate spherical-Bessel implementation from
+  `projector_pipeline.py` by importing the shared backend instead.
+- Validation:
+  `uv run python -m pytest -q` → `13 passed, 1 warning in 15.24s`
+  and the canonical Si DFT-H reproducer still passes with
+  `Max MAE: 0.0001 mRy = 0.00 meV`.
+- Measured canonical launcher wall time after the refactor:
+  `/usr/bin/time -p ./launch_test_dft_hamiltonian.sh` →
+  `real 25.67`, `user 0.05`, `sys 0.04`.
+- Followed up with a terminology cleanup in the active path so plan/bundle
+  fields now prefer `radial_tables` over `splines`, reducing conceptual drift
+  after the backend swap.
+- Added report:
+  [reports/jax_unified_psp_radial_2026-04-12/report.md](/global/homes/j/jackm/scratchperl/lorrax_sandbox/reports/jax_unified_psp_radial_2026-04-12/report.md)
 
-- **Report**: `reports/3d_coulomb_si_444_2026-04-05/report.md`
+## 2026-04-12: Standalone psp DFT-H validation now documented and runnable
 
-Implemented sys_dim=3 Coulomb, identified non-symmorphic symmetry issue
-(workaround: `force_symmorphic = .true.`), added MC-averaged v(q, G=0) for 3D.
-Resolved CH vs CH' comparison methodology error (the ~2.4 eV MoS2 "offset"
-from April 2 was comparing the wrong sigma_hp.log column).
+- Fast-forwarded `sources/lorrax` again from `f7bc2e2` to `273a7d8`, picking up
+  the new upstream reproducer `src/psp/tests/test_dft_hamiltonian.py` and the
+  expanded `src/psp/dev_status.md`.
+- Logged a new sandbox mismatch in `KNOWN_SANDBOX_ERRORS.md`: the local
+  `runs/Si/04_si_4x4x4_davidson/00_davidson/` helper scripts still pointed at
+  deleted `psp` setup helpers, so they were no longer a valid entrypoint.
+- Added a sandbox-side canonical entrypoint for the standalone DFT path:
+  [runs/Si/04_si_4x4x4_davidson/00_davidson/README.md](/global/homes/j/jackm/scratchperl/lorrax_sandbox/runs/Si/04_si_4x4x4_davidson/00_davidson/README.md)
+  and
+  [runs/Si/04_si_4x4x4_davidson/00_davidson/launch_test_dft_hamiltonian.sh](/global/homes/j/jackm/scratchperl/lorrax_sandbox/runs/Si/04_si_4x4x4_davidson/00_davidson/launch_test_dft_hamiltonian.sh),
+  both using this sandbox's real paths and the Shifter environment that
+  includes `$SANDBOX/sources` for `jax_xc_local`.
+- First launcher run exposed a real upstream test bug: `test_dft_hamiltonian.py`
+  passed `CrystalData` into `vnl_ops.build_vnl_setup(...)`, but the current
+  implementation needs the `WFNReader` for its k-dependent G-vector scan.
+  Patched locally on source branch `agent/test-dft-hamiltonian-fix`.
+- Re-ran the canonical test on interactive job `51470500` and obtained:
+  `Max MAE: 0.0000 mRy = 0.00 meV`
+  and
+  `PASS: all k-points match QE to < 0.01 mRy`
+  for all 8 Si `4x4x4` IBZ k-points.
+- Added report:
+  [reports/dft_hamiltonian_validation_2026-04-12/report.md](/global/homes/j/jackm/scratchperl/lorrax_sandbox/reports/dft_hamiltonian_validation_2026-04-12/report.md)
 
-## 2026-04-05: GN-PPM profiling and JIT optimization
+## 2026-04-12: Si 4x4x4 no-sym COHSEX output-format rerun
 
-GN-PPM sigma: 97.5% was XLA compilation. JIT-compiling tau-node loop: 421s→105s.
-Minimax quadrature tables now shipped as assets for instant lookup.
+- Created `runs/Si/02_si_4x4x4_nosym/16_lorrax_cohsex_rerun_4gpu_repeat/` as a fresh clone of variant `15` and reran GWJAX on interactive job `51470500` (1 node / 4 GPUs) so the updated logging/output-writing behavior would land in a new `gw.out` without overwriting prior outputs.
+- Run completed end to end in `26.661 s`; artifacts written successfully: `gw.out`, `eqp0.dat`, `qp_wfn_rotations.h5`, and `tmp/isdf_tensors_480.h5`.
+- The new `gw.out` differs materially from variant `15`: no initial `srun` step line, denser chunked-ISDF setup summary, progress-bar style zeta/V_q status lines, a new `STATIC HEAD TERMS` block, and inline XLA rematerialization warnings captured in the file.
+- `eqp0.dat` from variant `16` is not byte-identical to variant `15`, so this should be treated as more than a cosmetic logging-only rerun.
 
-## 2026-04-04: Head correction module
+## 2026-04-12: Housekeeping sync
 
-Body-only MoS2 1×1: 91 meV. Static COHSEX with BGW head: 46 meV.
-`apply_head_diagonal` should remain false for GN-PPM comparisons with BGW.
+- Fast-forwarded `sources/lorrax` on local `main` from `b0b02f9` to `f7bc2e2` to match `origin/main`.
+- Logged a sandbox inconsistency in `KNOWN_SANDBOX_ERRORS.md`: the newest report directory (`reports/mos2_kgrid_gnppm_head_convergence_2026-4-10/`) does not contain the documented `report.md`.
+- Added sandbox-local `jax_xc_local` wiring for the standalone `psp` DFT path:
+  `sources/jax_xc_local -> /global/u2/j/jackm/software/jax_xc_local_lorrax_sandbox`
+  and `sources/jax_xc -> /global/u2/j/jackm/software/jax_xc`.
+  Verified `jax_xc_local.pbe` and `psp.dft_operators.compute_V_H_and_V_xc` import and execute under the documented Shifter flow when `PYTHONPATH` includes `$SANDBOX/sources`.
+- Pulled the current Si Davidson/NSCF test drivers from `../lorrax_sandbox_fresh` into
+  `runs/Si/04_si_4x4x4_davidson/00_davidson/` and updated `run_direct_diag_v2.py`
+  to the current `origin/main` `psp` API (`setup_H_k`, `build_matrix_k`, `vnl_ops.build_vnl_setup`).
+- First live Perlmutter/Shifter validation now works end-to-end for the direct-diag rung.
+  `run_direct_diag_v2.py` reaches all 8 IBZ k-points and reports:
+  diagonalized occupied-band MAE `94.890 mRy`, offset `-94.890 mRy`, MAE-no-offset
+  `19.943 mRy`, max `153.478 mRy`. Nontrivial k-points show `H` non-Hermitian warnings
+  (`~1e-4` to `4.5e-4`) and pathological Rayleigh quotients, which is the clearest
+  current testing signal before Davidson wall-time work.
 
-## 2026-04-02: Initial matched runs
+## 2026-04-12: Major code clarity refactor
 
-CO (0D): 3 meV. MoS2 3×3: originally reported as 2.4 eV offset (later
-identified as CH vs CH' comparison error — actual COHSEX error was 67 meV).
+Session focused on making gw_jax.py main() read like a physics outline.
 
-## Known environment issues
+**Screening pipeline surfaced at top level:**
+- `compute_chi0(wfns, quad, meta, mesh_xy)` and `solve_w(V_q, chi0_q, meta, mesh_xy)` now visible in main() for both COHSEX and PPM paths
+- `build_static_quadrature` / `build_imag_quadrature` are clean one-liners for quadrature setup
+- `fit_gn_ppm(W_q, Wiwp_q, V_q, omega_p, mesh_xy)` extracted from monolithic PPM builder
 
-- `pw2bgw` GPU segfault → `MPICH_GPU_SUPPORT_ENABLED=0`
-- cuFFT OOM on 40 GB A100 → `memory_per_device_gb = 28`
-- Multi-GPU JAX → use Shifter container, not uv
-- **Multi-process JAX distributed array crash**: Running LORRAX with multiple
-  OS processes (e.g. `srun -n 4`, each process gets 1 GPU) triggers
-  `jax.device_get()` crashes on sharded arrays. This is a **multi-process**
-  issue, not a multi-node issue — even single-node with `-n 4` crashes. With
-  small k-grids (e.g. 8 IBZ points) arrays may fit on one device and the
-  problem does not appear; with larger grids (e.g. 64 k-points nosym) arrays
-  are sharded across devices and `device_get()` fails because it cannot access
-  non-addressable devices.
-  - **Crash sites**: `minimax_screening.py:extract_gn_ppm_parameters_from_Wc`
-    (line 778) and `extract_gn_ppm_parameters` (line 719), both calling
-    `jax.device_get()`.
-  - **Fix**: Replace `jax.device_get(arr)` with
-    `jax.experimental.multihost_utils.process_allgather(arr, tiled=True)`,
-    matching the existing `_to_host()` pattern in `file_io/tagged_arrays.py`
-    (lines 26-34).
-  - **Workaround**: Use `-N 1 -n 1 --gres=gpu:4` (single process, 4 GPUs on
-    one node). JAX sees all 4 GPUs within the single process, so no arrays are
-    distributed across process boundaries.
-- `centroid.kmeans_isdf` does not accept `-i cohsex.in`; run from CWD
+**ppm_sigma.py (-347 lines):**
+- PPM arrays stored as flat-q (nq,μ,μ) — eliminated transpose round-trip
+- Fixed _mu_nu_sharding (was 5D for dead k-last layout)
+- Fixed _build_single_sigma_window missing mask_B args (would crash on kernel_sign=-1)
+- Stripped all profiling boilerplate; replaced verbose prints with per-window summary
+- _convolve_sigma_branch_kij takes wfns bundle (28→22 params)
 
-- Added BGW-style non-symmorphic coefficient phases to `sources/lorrax/src/common/symmetry_maps.py` on branch `agent/non-symmorphic-phases`.
-- Preserved the pre-existing time-reversal path while applying `exp[-i (G_target + kg0) · tau]` for spatial symmetries with nonzero `tnp`.
-- Added `tests/test_symmetry_maps_nonsymmorphic.py`; `uv run python -m pytest -q` now passes (`10 passed, 1 warning`).
-- Verified on `runs/Si/00_si_4x4x4_60band/qe/nscf/WFN.h5` that `44/64` full-zone k-points now carry a nontrivial non-symmorphic phase.
+**gw_jax.py (-267 lines from ISDF move, +gw_output.py):**
+- ISDF pipeline moved to gw_init.py (fixes circular import), split: fit_zeta + compute_V_q
+- Output formatting extracted to gw_output.py (GWResults dataclass + write_results)
+- V_q/W_q naming used consistently everywhere (no more bare V/W aliases)
+- solve_w_from_chi_q_jax → solve_w; print0= → print_fn= standardized
+
+**w_isdf.py:**
+- Fixed chi0 accumulator sharding for non-divisible k-grids: P(None,'x','y')
+- Fixed Dyson solve padding order (pad before reshard)
+- Both verified on 4×A100 with MoS2 3×3 (nk=9)
+
+All changes GPU-regression-tested (MoS2 3×3 COHSEX, 4×A100-40GB, bit-identical).
+COHSEX chi0_W timing dropped from 2.7s→1.7s (old path computed unnecessary PPM head terms).
+
+## 2026-04-09: GWJAX pipeline refactor status
+
+Primary initiative: remove non-jitted stages, eliminate incorrect host/replicated
+materializations, and make the active no-symmetry GWJAX pipeline safe on multi-GPU
+Si `4x4x4` and `10x10x10`.
+
+
+## Current status
+
+What is now in good shape:
+- head corrections for sigma_{X,static SX-X/CH, GN-PPM cor}
+- active multi-GPU minimax screening path
+- active GN-PPM fit path
+- active dynamic sigma path
+- post-PPM tail safety on `10x10x10`
+- one process per GPU execution
+
+What still looks worth improving:
+- `compute_sigma_c_ppm_omega_grid` dominates runtime on large grids
+- post-PPM fixed-point / QSGW work is safer now, but not yet distributed over
+  band tiles on the `XY` mesh. This is a significant issue.
+- likely next architectural step is a band-sharded `sigma_mnk.h5` / post-PPM
+  path over `(omega, k, m_X, n_Y)`
+
+## Known environment notes
+
+- For multi-GPU GWJAX on Perlmutter, use Shifter, not `uv run`.
+- *Keep one MPI rank per GPU. Do not ever run one mpi rank per node with 4 GPUs or so forth.*

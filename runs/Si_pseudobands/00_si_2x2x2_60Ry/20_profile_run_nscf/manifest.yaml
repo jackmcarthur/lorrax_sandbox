@@ -1,0 +1,26 @@
+run_id: si_pseudobands_2x2x2_60Ry_profile_run_nscf_2026-04-16
+system: Si
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: si_pseudobands_2x2x2_60Ry_2026-04-14
+reuse_from_parent:
+  - 08_lorrax_pseudobands/silicon.save
+  - 08_lorrax_pseudobands/Si.upf
+overrides:
+  # single-GPU so profiling output is readable
+  LORRAX_NGPU: 1
+  profile: full
+
+notes: |
+  Scratch run for the JAX profiling stack (skills/profiling_stack/).
+  Runs psp.run_nscf.main() under scripts/profiling/run_profiled.py, which
+  captures HLO dump, compile log, xprof trace, and device-memory snapshots.
+
+  Two sub-runs:
+    00_davidson_only/  — nbnd=12, pseudobands disabled (fast, for stack smoke)
+    01_davidson_pb/    — nbnd=12, pseudobands=true pb_k=4 (exercises more code)
+
+steps:
+  00_davidson_only:  { state: complete, note: "1 GPU, evals[0]=-0.418717 Ry, 44 s wall" }
+  02_davidson_4gpu:  { state: complete, note: "4 GPU k-parallel, WFN.h5 bit-identical to 1-GPU, 34 s wall" }
