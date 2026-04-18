@@ -1,5 +1,326 @@
 # Changelog
 
+## 2026-04-18 (midday): scissor-shift for out-of-grid bands + Si 4×4×4 pseudobands end-to-end [agent A]
+
+Branch `agent-A/scissor-shift-sc-gw` on `lorrax_A`
+(commits `dfc880c`, `9b0e666`).  Full write-up in
+`reports/scissor_shift_2026-04-18/report.md`.
+
+- **`src/gw/scissor.py`** — `ScissorFit` dataclass, `fit_scissor` (numpy
+  OLS, separate valence / conduction lines), `extrapolate_delta_e`, and
+  `add_diag_to_H_kmn` (shard_map-based diagonal add onto a
+  `P(None,'x','y')`-sharded Hamiltonian, ready for the future SC loop).
+  Smoke-tested 4-GPU: fit recovers synthetic slopes to <6e-6, sharded
+  diagonal add bit-identical to numpy (maxabs 0.0), P(None,'x','y')
+  output sharding preserved, divisibility check raises cleanly.
+- **`src/gw/gw_jax.py`** — G0W0 PPM post-processing now honors the
+  `sigma_at_dft_extrapolate` config knob: out-of-grid bands get the
+  fitted affine QP correction instead of the static-COHSEX fallback.
+  Fixed two adjacent bugs while wiring:
+  - `E_qp_ev * ryd2ev` unit double-count in the original `in_grid`
+    mask — every state looked out-of-grid, so the diagonal Sigma
+    fixed-point was silently discarded for all bands.
+  - in-grid test must use `E_DFT`, not `eigvalsh(H_qp)`, because
+    pseudobands' non-unit norms scale `<n|H|n>` by the pseudoband
+    weight and produce garbage eigenvalues for compressed states.
+- **First end-to-end test** — `runs/Si/A_06_si_4x4x4_scissor/`.
+  Si 4×4×4 nosym, BGW-convention pseudobands via
+  `psp.run_nscf --pseudobands` (50 windows × 2 pseudobands = 8 prot +
+  98 pseudo = 106 bands).  Σ(ω) grid ±5 eV so all pseudobands
+  (onset ~+10 eV) are out-of-grid.  GN-PPM G0W0 + scissor on 4×A100:
+  run wall 30 s, 668/6784 in-grid, valence fit
+  α=-0.44, β=-6.24 eV (RMSE 1.07 eV), conduction fit
+  α=-0.64, β=-0.61 eV (RMSE 2.37 eV).  E_QP vs E_DFT is a single
+  smooth line across the full 0→330 eV bandrange with no jump at the
+  in-grid / out-of-grid boundary — continuity goal met.  Magnitudes
+  over-correct at the high-E tail (E_QP ≈ 0.36·E_DFT → highest
+  pseudoband lands at ~120 eV vs DFT 330 eV); expected for a line fit
+  over 10 eV extrapolated to 300 eV, worth revisiting with a softer
+  A + B/E tail or a damped law later.
+- **Known issue documented**: `psp.get_dipole_mtxels` crashes on a
+  pseudobands WFN (`vnl_velocity_matrix` hits a `None` `dZ`).  Worked
+  around in this run by routing the q→0 head through the BGW
+  `eps0mat.h5` from `runs/Si/02_si_4x4x4_nosym/01_bgw_gnppm/` with
+  `wcoul0_source = epshead` in `cohsex.in`.
+
+Validation: `uv run python -m pytest -q` on `lorrax_A` → 13 passed,
+1 pre-existing reshard failure (unchanged from prior state).
+
+## 2026-04-18 (overnight): sigma_ppm cleanup + compile-cache trims + zeta_fit probe [agent C]
+
+Branch `agent/C-sigma-ppm-cleanup` on `lorrax_C`. Full write-up in
+`reports/session_2026-04-18_async_probe/report.md`.
+
+MoS2 3×3 / 4-GPU run_module wall: **47.3 s → 34.7 s (−27 %)**, eqp0.dat
+bit-identical at every commit (16 substantive + 1 TEMP profiling).
+
+- **Reduce-scatter in `_sigma_kij_kernel`**: `projection_kernel.project_ri`
+  tail replaced by a shard_map'd local einsum + `psum_scatter × 2` (m on x,
+  n on y).  σ^τ now emerges `(m_X, n_Y)`-sharded; every downstream ω-kernel
+  multiply + accumulate is rank-local.  HLO diff shows 4× `all-reduce
+  c128[9,2,2,320,80]` flipping to `reduce-scatter c128[2,9,40,2,320]` per
+  τ step, same byte volume but output is now sharded.
+- **σ^τ as a (re, im) tuple** from the shard_map — removes the
+  `sigma_ri[0]/[1]` indexing pjits and the `is_fully_addressable` assert
+  that a multi-process tuple-unpack of a sharded (2, …) stacked array
+  would trigger.
+- **New `_ReduceScatterGpuAccumulator`** is the default buffered path;
+  Σ_c(ω, k, m, n) is held sharded on GPU so it's n_b²/p² per rank instead
+  of replicated.  `_BufferedGpuAccumulator` deleted (was redundant).
+- **lax.scan τ-loop infrastructure** landed as `_get_sigma_tau_scan_kernel`
+  + `_ReduceScatterGpuAccumulator.run_window_scan`, **off by default** —
+  regresses at MoS2 3×3 scale (fewer overlap opps with big fused module +
+  per-window compile).  Reconsider at padded-τ or larger mesh.
+- **Physics visibility pass**: module docstring states the quadrature
+  formula directly; `_iter_branches` NamedTuple with comments deriving
+  kernel_sign / scale flips; `_run_sigma_branch` reads like a physics
+  outline; `_combine_coeff_with_sigma_tau` documents the re/im split and
+  drops the dead "real" branch; `_convolve_sigma_branch_kij` →
+  `_run_sigma_branch`; 'channel' scrubbed from factory names.
+- **Dead-param / dead-class purge**: `omega_sign_flip` (always +1), the
+  unused `_BufferedGpuAccumulator`, the one-line wrapper
+  `_accumulate_tau_into_window`.  −203 / +102 lines in one commit.
+- **Compile-cache trims — numpy for tiny host-side helpers**:
+  `get_enk_bandrange`, `fft_integer_axes`, `exp_ikr_fftbox`, `_build_Gij`,
+  `_build_occ`.  Each had emitted ~8–16 standalone pjits at trace time
+  for pure host bookkeeping.  TRACING CACHE MISS 313 → 269 (−44).
+  `wavefunction_setup` section **1.79 s → 0.18 s** (the old `jnp.zeros_like`
+  + `.at[].set` on sharded input had a non-trivial runtime tied to
+  cross-device scatter).
+- **zeta_fit chunk loop**: dropped the per-chunk `sync_global_devices`
+  (the allgather is itself a collective; one rendezvous at the end is
+  enough).  Investigated async-allgather paths and confirmed JAX has no
+  async `process_allgather`-to-host API; the 1.95 s first-collective
+  NCCL setup is the floor without pre-warming or the phdf5 FFI path.
+
+Future work documented in-tree (heavy comments at each extension point):
+  τ batching, m-chunking, `_CollectiveFlushSlabIoAccumulator` (FFI SlabIO
+  collective-write variant for multi-process streamed output).  `zeta_fit`
+  remains the dominant cost bucket (47.6 % of total) and is the natural
+  next target.
+
+## 2026-04-17 (pm): k-means ISDF — parallelism refactor + 4-GPU sharding prototype [agent B]
+
+Branch `agent/kmeans-sharded` on `lorrax_B`. Full write-up in
+`reports/kmeans_sharded_2026-04-17/report.md`.
+
+- **Refactored `centroid/kmeans_isdf.kmeans_update_step`** to eliminate the
+  double (P, K, 3) tensor materialization: segment-sum over labels replaces
+  the one-hot-mask weighted mean; a `lax.scan` over K-chunks replaces the full
+  pairwise distance tensor (peak (P, `k_block`, 3) instead of (P, K, 3)).
+  PBC minimal image and metric tensor behavior are byte-compatible with the
+  old implementation (new regression test covers orthorhombic / FCC / skew
+  cells and the cross-boundary minimum-image case).
+- **Added `make_sharded_kmeans_update`** — `shard_map`-based parallel Lloyd
+  step. P sharded on mesh axis `'x'`, centroids replicated, one `lax.psum`
+  per iteration on the (K, 3) / (K,) accumulators. Verified bit-identical
+  single-GPU vs 4-GPU on Si 4×4×4 (matching md5 on `centroids_frac_128.txt`),
+  same 71-step trajectory.
+- **Fixed latent `alat`-vs-`Å` mislabel in `main()`.** BGW WFN.h5 stores
+  `avec` in alat units and `alat` in Bohr; the old code treated `|avec row|`
+  as Å, which silently inverted a ~2× grid upsample into a ~0.6× downsample.
+  `main()` now converts to Å once via `wfn.alat * BOHR_TO_ANG`; the kmeans
+  function docstring states distances inherit the caller's avec units.
+- **Multi-process bootstrap.** Added the standard `_maybe_init_jax_distributed`
+  to the module so `srun -n N>1` works (matches `psp/run_nscf.py`, `gw/gw_jax.py`).
+  Prototype uses the simpler single-process-4-GPU path.
+- **New tests** (`tests/test_kmeans_sharded.py`): 5 cases, all pass. Full
+  suite: 18 pass, 1 pre-existing failure in `test_reshard_all_to_all.py`
+  unrelated to this branch.
+- **Sandbox doc hardening.** `skills/execute_workflow/SKILL.md` now says
+  explicitly: never export a `SLURM_JOBID` you did not allocate yourself; the
+  interactive-allocation section documents the background `salloc` +
+  `-J lorrax_X_agent` naming pattern. Matching memory pointer at
+  `memory/feedback_never_share_allocation.md`.
+- **Run**: `runs/Si_B/00_si_4x4x4/` — fresh 4×4×4 Si sym-reduced QE (8 IBZ
+  k-pts, 24³ FFT, 16 bands) → 48³ kmeans grid. Three sub-dirs hold the
+  baseline, refactored-single-GPU, and sharded-4-GPU centroid outputs for
+  the equivalence check.
+
+## 2026-04-17: Three parallel LORRAX checkouts (A/B/C) for concurrent agents
+
+Consolidated the previous per-sandbox LORRAX clones into three sibling
+checkouts at `$HOME/software/lorrax_{A,B,C}`, symlinked into the sandbox
+as `sources/lorrax_{A,B,C}`. Each agent session claims one letter and
+touches only its own checkout. Shared Shifter stage trees remain at
+`/pscratch/sd/j/jackm/lorrax_{nvhpc,phdf5_openmpi}` (read-only in the
+container), so the three variants share bind-mounted deps but build
+their own `src/ffi/common/cpp/build/liblorrax_ffi.so`.
+
+- `config/perlmutter/install.sh`, modulefile template: new
+  `LORRAX_MODULE_NAME` variable lets each checkout install its own
+  modulefile (`lorrax_A`, `lorrax_B`, `lorrax_C`). `family("lorrax")`
+  makes variants mutually exclusive in a single shell; across shells
+  they are fully independent. Landed on `main` (LORRAX feature branch
+  `agent/multi-checkout`, fast-forwarded).
+- Sandbox `AGENTS.md`: new "Which agent are you?" section at the top,
+  revised source-code table, non-negotiable rule #7 ("only edit your
+  assigned checkout"). `execute_workflow`, `checkpoint`,
+  `profiling_stack` skills updated to say `sources/lorrax_X` /
+  `module load lorrax_X`.
+- Deleted stale sandboxes: `lorrax_sandbox_fresh`,
+  `lorrax_sandbox_profiling`, and their backing clones
+  `$HOME/software/lorrax_{bse,profile_ppm}`.
+- `pyproject.toml`: dropped the sandbox-level `lorrax` editable
+  dependency; the path no longer resolves to a single variant. Host
+  Python that imports LORRAX should run inside Shifter via `lxrun`, or
+  `uv run` from inside a specific `sources/lorrax_X`.
+
+## 2026-04-17: WFNReader full-zone symmetry wrappers
+
+- Audited the raw wavefunction reader usage after the nonsymmorphic-phase work.
+  In active `src/`, raw `get_cnk()` / `get_cnk_batch()` are only consumed by
+  `SymMaps.get_cnk_fullzone*`; there was no active path pairing unfolded
+  `get_gvecs_kfull()` output with raw irreducible-zone coefficients.
+- Clarified the API in both `src/common/wfnreader.py` and
+  `src/file_io/wfnreader.py`: raw `get_cnk*` / `get_gvec_nk` remain explicit
+  irreducible-zone readers, and new `get_gvecs_kfull`,
+  `get_cnk_fullzone`, and `get_cnk_fullzone_batch` wrappers now route full-BZ
+  access through `SymMaps` so the non-symmorphic `tau` phase is applied in the
+  safe path by construction.
+- Switched active consumers in `src/common/load_wfns.py`,
+  `src/bandstructure/htransform.py`, and
+  `src/centroid/get_charge_density.py` to the new WFNReader full-zone
+  wrappers.
+- Verified on Si `4x4x4` symmetry-vs-nosym WFNs that for all `44` k-points
+  unfolded with nonzero `tau`, `get_gvecs_kfull()` matches the nosym G-list as
+  a set, confirming `tau` does not act on the integer G-list itself.
+- Added wrapper regression coverage in
+  `tests/test_symmetry_maps_nonsymmorphic.py`.
+- Validation: `uv run python -m pytest -q tests/test_symmetry_maps_nonsymmorphic.py`
+  passed (`4 passed`), and full `uv run python -m pytest -q` passed
+  (`15 passed, 1 warning`).
+
+## 2026-04-16 (pm): cuSOLVERMp FFI unblocked — NCCL-backed cal_comm_create works
+
+Follow-up to the earlier "cuSOLVERMp WIP" entry.  The SIGFPE in
+`cusolverMpSyevd_bufferSize` was a communicator-plumbing bug:
+NVIDIA's sample passes `ncclComm_t` directly to a `cal_comm_t`-typed
+API, which works under `MPI_Init` but *not* in a JAX-only C++ process
+(C implicit pointer-conversion quietly becomes a bug in C++).  The
+documented non-MPI CAL path — `cal_comm_create` with user
+allgather/req_test/req_free callbacks — routes through NCCL cleanly.
+
+### Result (job 51659364, nid001033, 1 node × 4×A100)
+
+| Path | n   | type        | max \|evals − ref\| |
+|------|-----|-------------|---------------------|
+| cuSOLVERMp (multi-proc, NCCL)   | 128 | F64  sym    | 9.1e-13 |
+| cuSOLVERMp (multi-proc, NCCL)   | 128 | C128 Herm   | 5.7e-13 |
+
+Both on a 2×2 process grid with `NamedSharding(P('x','y'))`.
+
+### Source changes (branch `agent/ffi-cusolvermp`, commits 22ed74a, 7c716a7)
+
+- `src/ffi/cusolvermp/cpp/ctx.h`: add `CalNcclShim` (NCCL comm + stream
+  + persistent device scratch buffer), add `cal_comm_t` field on Ctx.
+- `src/ffi/cusolvermp/cpp/context.cc`: three static callbacks
+  (`cal_nccl_allgather` = H2D→`ncclAllGather`→D2H→stream-sync,
+  `cal_nccl_req_test/free` trivial since we're synchronous).  Replace
+  `reinterpret_cast<cal_comm_t>(ncclComm)` with a real
+  `cal_comm_create(params, &ctx->cal_comm)`.  Teardown extended.
+- `src/common/cusolvermp_eigh_test.py`: `gather_to_numpy` now uses
+  `multihost_utils.process_allgather(x, tiled=True)` so each rank
+  can verify the full logical array in multi-process mode.
+- `src/ffi/AGENTS.md`: mark cuSOLVERMp status as working, document the
+  three required env vars and why.
+
+### Required runtime env
+
+```
+CUSOLVERMP_FORCE_NCCL=1              # route libcal's runtime collectives via NCCL
+XLA_PYTHON_CLIENT_MEM_FRACTION=0.5   # leave headroom for cuSOLVERMp workspace
+XLA_PYTHON_CLIENT_PREALLOCATE=false  # allocate on demand, not up front
+```
+
+Without the first flag, libcal's internal reduce goes through UCC and
+trips `Failed to parse ib device list` in the container.  Without the
+memory settings, `cudaMalloc(scratch)` inside UCC fails because JAX's
+modulefile default reserves 95% of VRAM up front.
+
+### Why this is the real scaffold for ELPA
+
+The multi-process NCCL bootstrap is the hard part; everything else
+(`XLA_FFI_DEFINE_HANDLER_SYMBOL` in C++, `jax.ffi.ffi_call` wrapped in
+`shard_map` in Python, ctypes-loaded .so, bind-mounted host libs, JAX
+KV-store unique-id broadcast) transfers to ELPA 1-for-1.  ELPA takes
+an MPI communicator instead of NCCL; that swaps `ncclGetUniqueId` /
+`ncclCommInitRank` for their MPI equivalents but does not change the
+control flow.
+
+### Report
+
+`reports/ffi_cusolvermp_nccl_2026-04-16/report.md`.
+
+## 2026-04-16: JAX FFI scaffolding — cuSOLVERMg eigh working on 4 GPUs; cuSOLVERMp WIP
+
+New directory `sources/lorrax/src/ffi/` with pluggable scaffolding for
+calling compiled parallel-LA libraries from JAX via the XLA FFI.  No
+pybind/nanobind; the `.so` is plain C ABI loaded with `ctypes.CDLL` and
+its XLA handlers wrapped via `jax.ffi.pycapsule` — the pattern from
+NVIDIA's JAX FFI tutorial.
+
+### Working — `ffi.cusolvermg` (single-process, multi-GPU)
+
+- `src/ffi/cusolvermg/cpp/eigh_mg_ffi.cc`: XLA FFI handler that owns a
+  lazy `cusolverMgHandle_t` + pairwise peer access, scatters the
+  device-0 input into cuSOLVERMg's column-tile layout via
+  `cudaMemcpyPeerAsync`, runs `cusolverMgSyevd` across all visible GPUs,
+  and gathers `Q` back to device 0.
+- `src/ffi/cusolvermg/eigh.py`: `eigh_mg(A, tile_size=32, max_gpus=0)`.
+- `src/common/cusolvermg_eigh_test.py`: 4-GPU Python test.
+
+Validation on 1 node × 4×A100 (job 51656242, nid001164):
+
+| n    | tile | max \|evals − ref\| | wall (post-warmup) |
+|------|------|---------------------|--------------------|
+| 128  | 32   | 9.1e-13             | 57 ms              |
+| 2048 | 256  | 2.2e-11             | 509 ms             |
+
+Eigenvector residuals `‖A q_i − λ_i q_i‖∞` ≈ 7e-14 (F64).
+
+### WIP — `ffi.cusolvermp` (multi-process, multi-GPU/multi-node)
+
+Everything builds, links, and runs up to the solve.  NCCL bootstrap
+works via `jax.distributed.global_state.client` KV-store broadcast of
+a 128-byte `ncclUniqueId` (note: `multihost_utils.broadcast_one_to_all`
+silently promotes `uint8 → uint64` under `jax_enable_x64=True` and
+scrambles it — workaround is documented in the code).  `cusolverMpCreate`,
+`CreateDeviceGrid`, `CreateMatrixDesc` all succeed.  `cusolverMpSyevd_bufferSize`
+then SIGFPEs (integer divide-by-zero) at a constant offset inside
+`libcusolverMp.so`.
+
+Most likely cause: NVIDIA's `mp_syevd.c` sample passes `ncclComm_t`
+directly to an API typed `cal_comm_t` — the C implicit pointer
+conversion plus an MPI-initialised libcal recognises the wrap; our
+JAX-only process never calls `MPI_Init` so libcal's NCCL-detection path
+never arms, `cal_comm_get_size` returns 0, and bufferSize divides.
+Preserved as branch `agent/ffi-cusolvermp`; follow-ups
+documented in `src/ffi/AGENTS.md` and the report.
+
+### Build + runtime environment
+
+- Container: `nvcr.io/nvidia/jax:25.04-py3` (CUDA 12.9, JAX 0.5.3.dev,
+  `libcusolver*`, `libcusolverMg*` in-container).
+- NVHPC (for cuSOLVERMp ONLY): `/opt/nvidia/hpc_sdk/Linux_x86_64/25.5/`
+  staged to `/pscratch/sd/j/jackm/lorrax_nvhpc` and bind-mounted into
+  Shifter at `/lorrax_nvhpc` — the Mg path needs nothing outside the
+  container.
+- Build: `src/ffi/common/cpp/build.sh` via
+  `src/ffi/common/cpp/run_shifter.sh`.
+- `LORRAX_NTASKS` env added to `run_shifter.sh` so single-process
+  multi-GPU runs (1 task × N GPUs) are as easy as multi-process
+  (N tasks × 1 GPU each).
+
+### Report
+
+`reports/ffi_cusolvermg_2026-04-16/report.md`.
+
+### Regression
+
+`uv run python -m pytest -q` → 12 passed, 1 OOM failure (GPU contention
+with the interactive 4-GPU alloc; not a regression).
+
 ## 2026-04-16: JAX profiling stack — skill, helpers, k-parallel run_nscf
 
 New sandbox-level `skills/profiling_stack/` and `scripts/profiling/` that

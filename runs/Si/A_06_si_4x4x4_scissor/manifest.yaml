@@ -1,0 +1,42 @@
+run_id: A_si_4x4x4_scissor_2026-04-18
+system: Si
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: si_4x4x4_nosym_2026-04-05
+reuse_from_parent:
+  - qe/scf/silicon.save (as silicon.save)
+overrides:
+  pseudobands: true          # 8 prot + 50 windows x 2 pseudobands = 108 cond
+  sigma_at_dft_extrapolate: true
+  sigma_omega_window: [-10, +10] eV
+
+system_params:
+  formula: Si
+  prefix: silicon
+  dimensionality: 3
+  n_val: 8
+  n_prot: 8                  # deterministic conduction
+  n_pseudo_windows: 50
+  n_pseudo_per_window: 2
+  n_band: 116
+  ecutwfc: 25.0
+  kgrid: [4, 4, 4]
+  metal: false
+  ntran: 1
+
+notes: |
+  First scissor-shift test.  Pseudobands all sit above +10 eV relative to
+  E_F, so the ±10 eV Σ(ω) grid contains only the deterministic valence and
+  low conduction bands.  With sigma_at_dft_extrapolate=true the pseudobands
+  pick up their QP correction from the fitted valence/conduction affine law
+  instead of clamping to the grid edge.  Check QP bandstructure continuity
+  across the scissor boundary (pseudoband onset, ~+10-15 eV).
+
+steps:
+  nscf_pb:   { state: pending }
+  centroids: { state: pending }
+  dipole:    { state: pending }
+  kin_ion:   { state: pending }
+  lorrax_gw: { state: pending }
+  analysis:  { state: pending }
