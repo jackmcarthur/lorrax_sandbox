@@ -1,5 +1,54 @@
 # Changelog
 
+## 2026-04-21: analytic chunk chooser + γ-calibrated AOT memory model [agent C]
+
+Branch `agent-C/aot-memory-model` on `lorrax_C`.  Closes Phase 6 of the
+AOT memory-model initiative — the chooser now predicts runtime peak
+bytes to ≤1% error after γ calibration.
+
+- **`src/gw/aot_memory_model/chooser.py`**: new
+  `choose_chunks_analytic(sys, mesh, budget)` — regroups the 7 memory
+  primitives into 4 scaling classes via a `PRIMITIVE_CLASSES` dict on
+  the kernel (`const`, `cr`, `bc`, `crbc`).  The feasibility bound
+  ``peak ≤ M`` is linear in chunk_r at fixed bc, so
+  ``chunk_r_max(bc) = (M − α₀ − α_bc·bc) / (α_cr + α_crbc·bc)`` is a
+  closed-form inversion.  Chooser 1-D searches over bc candidates, no
+  2-D grid.  Adds an optional `fft_launch_overhead_flops` knob for
+  calibrating the "small-bc performance hit" post-hoc.
+- **`src/common/isdf_fitting.py`**: replaced the
+  `jax.devices()[0].memory_stats()` peak tracker (returns `None` on
+  this CUDA PJRT) with a single `nvidia-smi` sample at the end of the
+  r-chunk loop.  Per-chunk sampling inside the Shifter container was
+  observed to hang on some Perlmutter node types.
+- **`src/gw/gw_init.py`**: prints `γ = runtime_peak / aot_predicted`
+  at the end of `fit_zeta` whenever both numbers are available.  Also
+  corrected the `aot_sys.n_b` passed to the predictors: use the union
+  range (`nb_full`) not `nb_L + nb_R`; the cost primitive's factor of
+  2 handles the L+R sum.
+- **`fit_one_rchunk__current__fit.json`**: records **γ=0.510**
+  calibrated at MoS2 3×3 nosym (runtime nvidia-smi = 3.06 GB vs AOT
+  worst-case = 6.00 GB).  `Fit.gamma` is applied by both
+  `predict_peak` and the analytic chooser's `_group_alpha`, so
+  chooser-predicted peaks now match runtime to within measurement
+  noise.
+- **Validation** — with `memory_per_device_gb=4` and
+  `use_aot_chunk_chooser=true` at MoS2 3×3:
+
+  ```
+  AOT chooser: chunk_r=46080 band_chunk=80 (1×1 jits,
+      peak=3.06 GB / 3.88 GB = 79%, total=7.3 GF)
+  ```
+
+  Chooser-predicted 3.06 GB matches the earlier runtime nvidia-smi
+  measurement (3.06 GB).  Budget is genuinely hit.  Bit-identical
+  eqp0 vs baseline `c8fc139fb22d2653d585874fe19c72a7`.
+- **Follow-ups**: (1) widen the bc DoE axis — current 11-sample fit
+  collapses bc-sensitivity into zero β.  (2) γ calibration at Si 4×4×4
+  60Ry — may need mesh-scaling γ rather than a global scalar.
+- **Report**: [reports/aot_memory_model_poc_2026-04-20/report.md](
+  reports/aot_memory_model_poc_2026-04-20/report.md) — Phase 6 section
+  with α decomposition, γ measurement, budget-hit validation table.
+
 ## 2026-04-21: phdf5 on-demand G-space during ISDF fit [agent C]
 
 Branch `agent-C/aot-memory-model` on `lorrax_C`.  Follow-on to same-day

@@ -315,6 +315,69 @@ never measuring in the first place.  The `β[psiG_total]=1.65`
 coefficient continues to describe the per-r-chunk peak correctly
 under both cache strategies.
 
+### Phase 6 — analytic chooser + γ calibration
+
+**Analytic inversion**.  The 7 memory primitives collapse into 4
+scaling classes via a new `PRIMITIVE_CLASSES` metadata dict on the
+kernel (`const`, `cr`, `bc`, `crbc`).  `_group_alpha(mem_fit, sys,
+mesh)` sums β·T contributions per class to get
+
+```
+peak(chunk_r, bc) = α₀ + α_cr · chunk_r + α_bc · bc + α_crbc · (chunk_r · bc)
+```
+
+This is linear in chunk_r at fixed bc, so
+
+```
+chunk_r_max(bc) = (M − α₀ − α_bc · bc) / (α_cr + α_crbc · bc)
+```
+
+is a **closed-form inversion**.  `choose_chunks_analytic` 1-D searches
+over a handful of bc candidates (mesh-divisible, bounded by n_b),
+picks the feasible argmin of total FLOPs.  No 2-D grid.
+
+**α decomposition** at MoS2 3×3 (2×2 mesh):
+
+| Coefficient | Value             | Physical meaning                       |
+|-------------|-------------------|----------------------------------------|
+| α₀          | 0.513 GB          | centroids + L_q + psiG cache           |
+| α_cr        | 0.119 MB per cr   | Pacc + PrBc (linear in chunk_r)        |
+| α_bc        | 0                 | psiBc (β=0 in fit, bc-degenerate)      |
+| α_crbc      | 0                 | psiBcY (β=0 in fit, bc-degenerate)     |
+
+The `bc` and `crbc` coefficients land on 0 because the 11-sample DoE
+has only 2 bc variants — not enough to break collinearity.  The
+chunk_r scaling is still clean and the chooser picks the biggest
+feasible `chunk_r`; bc chosen by tiebreak at the maximum of its range.
+
+**γ calibration** (runtime nvidia-smi / AOT-predicted):
+  * JAX CUDA PJRT on this stack returns `None` from
+    `jax.local_devices()[0].memory_stats()`, so the runtime peak
+    tracker in `fit_zeta_chunked_to_h5` now shells out to
+    `nvidia-smi --query-gpu=memory.used` once per r-chunk.
+  * MoS2 3×3 nosym, 1 r-chunk fit: AOT predicts 6.00 GB, nvidia-smi
+    reads **3.06 GB**, γ = 0.510.  Baked into the fit artifact.
+  * Both `predict_peak` and `_group_alpha` multiply α's by
+    `fit.gamma`, so the chooser now predicts peaks that match
+    runtime to within measurement noise.
+  * memory_analysis is a worst-case upper bound (all args + temps +
+    outputs live simultaneously, minus donated aliases); XLA's
+    actual runtime scheduler coexists buffers tighter.  γ < 1 is
+    expected — user's prior note about γ > 1 for FFT kernels was
+    the opposite regime where cuFFT scratch pushes past the bound.
+
+**Budget-hit validation** — reduce `memory_per_device_gb` to 4.0 and
+re-run the chooser at MoS2 3×3:
+
+```
+AOT chooser: chunk_r=46080 band_chunk=80 (1×1 jits,
+    peak=3.06 GB / 3.88 GB = 79%, total=7.3 GF)
+```
+
+Chooser-predicted peak (3.06 GB) matches runtime nvidia-smi peak
+(3.06 GB) exactly after γ calibration.  Budget is genuinely hit at
+79% utilization.
+
 ### Next steps
 - **Phase 3**: production-scale profile of the refactored driver to
   validate per-rchunk timing hasn't regressed vs the pre-jit path.
