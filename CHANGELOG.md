@@ -1,5 +1,122 @@
 # Changelog
 
+## 2026-04-21: jit the r-chunk body + AOT-model fit_one_rchunk [agent C]
+
+Branch `agent-C/aot-memory-model` on `lorrax_C`.
+
+- **`src/common/isdf_fitting.py`**: new
+  `_make_fit_one_rchunk_kernel` factory + `fit_one_rchunk` entry point.
+  The full per-r-chunk body (FFT+reshard per band-chunk, streamed
+  spin-traced pair-density accumulate, ZCT, Z→col reshard, Cholesky
+  solve) is now one jitted kernel.  `fit_zeta_chunked_to_h5` calls it
+  once per r-chunk.  Two compile variants per run (full + remainder).
+- **`src/common/load_wfns.py`**: `get_sharded_wfns_rchunk_slice`
+  signature refactored `(r_start, r_end)` → `(r_start, r_chunk_size)`
+  so `r_start` can be a tracer inside an outer jit.  Callers in
+  `iter_psi_rchunk_bandwise` updated.
+- **`src/gw/aot_memory_model/kernels/fit_one_rchunk.py`**: new
+  composite AOT kernel mirroring the production factory.  Captures the
+  driver-level memory peak including coexisting buffers that per-stage
+  kernels can't see.  Primitives: `Pacc`, `PrBc`, `psiBc`, `psiBcY`,
+  `psi_cent`, `L_q`, `psiG_total`.
+- **`src/gw/aot_memory_model/core.py`**: `SysDims` gains an optional
+  `fft_grid` field + `fft_shape` property for kernels that need both
+  k-grid and real-space FFT box.
+- **`src/gw/aot_memory_model/presets.py`**: `points_fit_one_rchunk`
+  for `mos2_3x3` and `si444_60Ry`.
+- **`src/gw/gw_init.py`**: logs the AOT-predicted driver peak
+  alongside the existing per-stage heuristic — sanity-check-only, does
+  not override `chunk_r` yet.
+- **Validation**: MoS2 3×3 COHSEX single-chunk (46080 pts) and
+  multi-chunk (r_chunk_size=10000, 5 chunks + remainder 6080) both
+  produce `md5sum eqp0.dat == c8fc139fb22d2653d585874fe19c72a7` matching
+  the reshard-fix baseline.
+- **NNLS fit** (11 DoE points, residual RMS 0.23 GB on ~3 GB peaks):
+  β[PrBc]=1.03, β[L_q]=5.02, β[psiG_total]=1.65.  Saved at
+  `src/gw/aot_memory_model/artifacts/fit_one_rchunk__current__{fit,samples}.json`.
+- **Report**: [reports/aot_memory_model_poc_2026-04-20/report.md](
+  reports/aot_memory_model_poc_2026-04-20/report.md) — new "Update
+  2026-04-21" section with primitives table, fit coefficients, next
+  steps.
+- **Next**: (1) host-resident `cached_gspace` via phdf5-like duck type
+  — attacks the `psiG_total=1.65` primitive directly; (2) switch
+  `compute_optimal_chunks` to use AOT prediction for the
+  pair+zct+reshard+solve sub-loop; (3) γ-calibrate at Si 4×4×4 60 Ry.
+
+## 2026-04-20: phdf5 FFI — independent writes by default, Cray MPICH now viable [agent A]
+
+Branch `agent-A/independent-writes-default` on `lorrax_A`.
+
+- **`src/ffi/phdf5/cpp/ctx.h`**: split `use_collective` into
+  `use_collective_read` (default `true`) and `use_collective_write`
+  (default `false`).  `coll_metadata` now defaults to `false`.
+- **`src/ffi/phdf5/cpp/context.cc`**: new env-var surface.
+  `LORRAX_PHDF5_INDEPENDENT=1` still forces reads independent too (power
+  user override).  New `LORRAX_PHDF5_COLLECTIVE_WRITES=1` to opt writes
+  back into collective (do NOT set on Cray).  New `LORRAX_PHDF5_COLL_META=1`
+  to re-enable collective metadata.
+- **`src/ffi/phdf5/cpp/write_ffi.cc` + `read_ffi.cc`**: dxpl selection
+  now uses the per-direction flag.
+- **Why**: the Cray MPICH collective write driver
+  (`ad_cray_write_coll.c:669`) OOMs at ≥ 1 GB/rank regardless of
+  `cb_*`, `stripe_*`, `alloc_time`, or `cray_cb_write_lock_mode` knobs.
+  The fix that prior investigation missed was the combination of
+  `H5FD_MPIO_INDEPENDENT` writes AND non-collective metadata ops —
+  both are needed to fully bypass the buggy driver.  Independent
+  writes are neutral on OpenMPI at our measured sizes; collective
+  reads are preserved (ROMIO two-phase is optimal on both stacks).
+- **Regression data** (1 node / 4 GPUs, post-fix defaults):
+
+  | workload | OpenMPI | Cray MPICH |
+  |---|---|---|
+  | MoS2 3×3 `phdf5_multi_offset_test` | PASS | PASS |
+  | MoS2 3×3 `phdf5_profile` (45 MB WFN) | 18.1 ms (was 18.3) | **17.9 ms** |
+  | MoS2 3×3 `phdf5_profile --centroids` (gw_jax load) | 26.2 ms | 26.4 ms (parity) |
+  | n=16384 C128 `phdf5_read_bench` (4.29 GB) | 3.04 GB/s | **3.79 GB/s** (was CRASH) |
+
+  Cray now works at all scales and beats OpenMPI at large scale; at
+  MoS2 3×3 scale the two stacks are within noise.  Unification around
+  Cray for cross-cluster portability is viable.
+- **Docs**: `src/ffi/phdf5/ARCHITECTURE.md` env-var table and
+  `src/ffi/PORTING.md` Option B write-up refreshed.
+
+## 2026-04-20: flat-k FFT helper — one wrapper for kx/ky/kz across the GW pipeline [agent C]
+
+Branch merged to `main` as commit `c9bd801`.
+
+- **`src/common/fft_helpers.py`** — new `make_flat_k_fft` /
+  `make_flat_k_ifftn` / `make_flat_k_fftn`.  Callers hand it flat-k
+  `(nk, *trail)` arrays, the helper does
+  `reshape → with_sharding_constraint → custom-partitioned 3-D FFT →
+  reshape back`.  `kgrid` and the 3-D PartitionSpec are closure state;
+  the 3-D form never appears in caller code.
+- **Call sites wired through**:
+  - `gw/w_isdf.py` chi0 minimax — three FFT closures collapsed to
+    helper calls (`Gv_ifftn`, `Gc_fftn`, `chi_fftn_local`).
+  - `gw/ppm_sigma.py` `_sigma_kij_kernel` — `_fft_flat_G` /
+    `_fft_flat_V` closures replaced.
+  - `gw/gw_jax.py` — `_make_fft_pair` factory removed in favor of
+    direct helper calls for G and V.
+  - `common/isdf_fitting.py` — `CCT_LR`, `CCT_LR_spin_matrix`,
+    `ZCT_LR`, `ZCT_LR_spin_matrix` all refactored to take flat-k
+    input end-to-end.  The pre-ZCT `reshape → with_sharding_constraint`
+    in the r-chunk loop was deleted (ZCT now takes flat-k directly).
+    `donate_argnums` re-enabled on CCT_LR (0, 1), ZCT_LR `_left_ifft_conj`
+    (0) and `_right_ifft_mul_fft` (0, 1), and on the spin-matrix
+    variants — a handful of one-shot trace-time XLA aliasing warnings
+    remain (rank-3 → rank-5 intermediate), but there are no per-call
+    donation failures.
+- **Validation** (`runs/Si/C_flatk_si10/`, Si 10×10×10 mem12, 4 GPUs):
+  - `eqp0.dat` **byte-identical** to `C_stream_si10_transposed`
+    baseline (0-byte diff).
+  - Total runtime 304.7 s → **275.9 s** (9.5 % faster).  Savings
+    concentrated in `zeta_fit.chunk_loop` (30 s → 25.5 s) from
+    pair-density donation; `close_io` unchanged (65.9 s → 63.2 s);
+    Σ computation unchanged.
+- **Why it matters**: single point where the 3-D FFT happens, so the
+  NUFFT substitution the user has in mind is a one-file change with
+  no call-site churn.
+
 ## 2026-04-18 (midday): scissor-shift for out-of-grid bands + Si 4×4×4 pseudobands end-to-end [agent A]
 
 Branch `agent-A/scissor-shift-sc-gw` on `lorrax_A`
