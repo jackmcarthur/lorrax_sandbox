@@ -274,12 +274,48 @@ GB is `max(stage) + base` which overestimates because stage maxes
 don't coexist with the full persistent base (XLA reschedules).  AOT's
 6.44 GB aligns with runtime `peak_bytes_in_use` observations.
 
-### Next steps
+### Phase 1b — phdf5 on-demand G-space (no persistent device cache)
 
-- **Phase 1b**: host-resident `cached_gspace` — move the ~300 MB
-  per-rank G-space cache off GPU, transferring per-rchunk.  This
-  directly attacks the `psiG_total=1.65` primitive (largest non-PrBc
-  contribution).
+New config flag `use_phdf5_gspace: bool` on `cohsex.in` (wired through
+`CohsexCfg.use_phdf5_gspace` → `fit_zeta_chunked_to_h5`).  When set,
+the driver skips `load_gspace_for_bands()` and instead calls
+`PhdfWfnReader.coeffs_gspace(band_range)` freshly per r-chunk per
+band-chunk.  The `psi_bc_G_tuple` is `del`'d right after the
+`fit_one_rchunk` jit returns so nothing persists between r-chunks.
+
+Duck-type match: `PhdfWfnReader.coeffs_gspace` already returns
+`(n_k, nb_pad, n_s, nx, ny, nz)` with
+`P(None, ('x','y'), None, None, None, None)` — no signature change to
+the FFI reader was needed.  The driver-side factory is four lines.
+
+Validation (MoS2 3×3):
+- `use_phdf5_gspace=true` single r-chunk (46080 pts) + `use_ffi_io=true`:
+  md5 = `c8fc139fb22d2653d585874fe19c72a7` ✓
+- `use_phdf5_gspace=true` multi-chunk (5×10000 + remainder 6080) +
+  `use_ffi_io=false`: same md5 ✓
+- `use_phdf5_gspace=true` multi-chunk + `use_ffi_io=true`: fails with
+  concurrent HDF5 MPI-IO errors in the async zeta_q writer
+  (pre-existing issue — PhdfWfnReader + SlabIO-FFI on the same ranks
+  race on MPI-IO state, not specific to this refactor).  Combine with
+  `use_ffi_io=false` when both flags are set.
+
+Timing impact at MoS2 3×3 multi-chunk: +0.2 s total (4.3 s vs 4.1 s
+baseline).  Negligible.
+
+Memory impact: zero persistent GPU residency for G-space between
+r-chunks.  At MoS2 3×3 that's ~265 MB per rank (small); at Si
+10×10×10 with 1000+ bands it is multi-GB and pushes the pre-rchunk
+CCT/cholesky stages back under budget.
+
+Interaction with the AOT model: the per-r-chunk jit boundary is
+unchanged — `psi_bc_G_tuple` is still an input argument, so
+`argument_size_in_bytes` and hence the AOT peak are identical.  What
+changes is the *between-rchunk* GPU state, which the AOT kernel was
+never measuring in the first place.  The `β[psiG_total]=1.65`
+coefficient continues to describe the per-r-chunk peak correctly
+under both cache strategies.
+
+### Next steps
 - **Phase 3**: production-scale profile of the refactored driver to
   validate per-rchunk timing hasn't regressed vs the pre-jit path.
 - **Multi-kernel AOT**: use `fit_one_rchunk` to *replace* the

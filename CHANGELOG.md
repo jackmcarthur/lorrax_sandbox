@@ -1,5 +1,47 @@
 # Changelog
 
+## 2026-04-21: phdf5 on-demand G-space during ISDF fit [agent C]
+
+Branch `agent-C/aot-memory-model` on `lorrax_C`.  Follow-on to same-day
+"jit the r-chunk body" work.
+
+- **`src/common/isdf_fitting.py`**: new `use_phdf5_gspace: bool`
+  parameter to `fit_zeta_chunked_to_h5`.  When True, the driver skips
+  the device-resident G-space cache (`load_gspace_for_bands`) and
+  instead calls `PhdfWfnReader.coeffs_gspace(band_range)` fresh per
+  r-chunk per band-chunk.  The tuple is `del`'d right after the
+  `fit_one_rchunk` jit returns — nothing persists between r-chunks.
+- **`src/gw/gw_config.py` + `gw_init.py`**: `use_phdf5_gspace` surfaces
+  as a `cohsex.in` flag and threads into `fit_zeta`.
+- **Duck-type**: `PhdfWfnReader.coeffs_gspace` already returns
+  `(n_k, nb_pad, n_s, nx, ny, nz)` with
+  `P(None, ('x','y'), None, None, None, None)`, matching the cached
+  path's shape/sharding contract exactly.  No FFI-reader signature
+  changes were needed; the driver-side factory is four lines.
+- **Validation** (MoS2 3×3, `use_phdf5_gspace=true`):
+  - single r-chunk + `use_ffi_io=true`:
+    md5 `c8fc139fb22d2653d585874fe19c72a7` ✓
+  - multi-chunk (5×10000 + remainder 6080) + `use_ffi_io=false`:
+    same md5 ✓
+  - Multi-chunk + `use_ffi_io=true` fails with concurrent HDF5 MPI-IO
+    errors in the async zeta_q writer.  Pre-existing interaction —
+    PhdfWfnReader + SlabIO-FFI race on MPI-IO state on the same ranks.
+    When both flags are needed, use `use_ffi_io=false`.
+- **Memory win**: zero persistent GPU footprint for the per-band-chunk
+  G-space cache between r-chunks.  ~265 MB per rank saved at MoS2 3×3
+  (small); multi-GB at Si 10×10×10 1000+ bands, where it pushes the
+  pre-rchunk CCT/cholesky stages back under budget.
+- **Timing**: +0.2 s total at MoS2 3×3 multi-chunk (4.3 s vs 4.1 s).
+  Negligible under phdf5; would be slow under legacy h5py (keep flag
+  opt-in).
+- **AOT model**: per-r-chunk peak unchanged — `psi_bc_G_tuple` is
+  still a jit input, so `argument_size_in_bytes` is identical.  Phase
+  1b benefits show up in the *between-rchunk* GPU residency, which the
+  AOT kernel doesn't currently measure.
+- **Report**: [reports/aot_memory_model_poc_2026-04-20/report.md](
+  reports/aot_memory_model_poc_2026-04-20/report.md) — new Phase 1b
+  section with validation matrix and the FFI-writer conflict note.
+
 ## 2026-04-21: jit the r-chunk body + AOT-model fit_one_rchunk [agent C]
 
 Branch `agent-C/aot-memory-model` on `lorrax_C`.
