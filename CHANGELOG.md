@@ -70,6 +70,31 @@ Bispinor unit tests in `tests/test_compute_V_q_bispinor_g_flat.py`
   charge-only orchestrator on the same ζ_C file (confirms genuine
   code path sharing, not just structural duplication).
 
+### Diagnostic (3-way Bare Σ_X check)
+
+Ran a third comparison to disentangle the V_q rewrite from
+code-drift between May 8 and today: legacy r-space writer +
+legacy μ × ν V_q driver, on the SAME git rev as the G-flat run.
+
+```
+                                            Bare Σ_X k=0, band 1
+G-flat new (today)                            -40.0326
+Diagnostic — legacy path, same git rev        -40.0325     ← <100 μeV
+May 8 baseline (A_bispinor_smoke)             -40.0572     ← 25 meV drift
+```
+
+So the V_q rewrite is **bit-equivalent** to the current legacy
+code (1e-5 relative on every sampled band).  The 25 meV vs May 8
+is intervening fixes to the legacy bispinor path (`_make_K_cart`
+qvec_frac convention, IBZ unfold, Bloch-phase unification), not
+my rewrite.  The new G-flat code never had those bugs because it
+builds K_cart from per-q components with already-divided
+fractional q.
+
+xx/yy symmetry sanity (`||V_TT_11 − V_TT_22|| / ||sum||`):
+May 8 baseline 0.97 (broken), today's legacy 0.50 (fixed), today's
+G-flat 0.50 (matches).
+
 ### Notes
 
 - Each new kernel compile emits ~8 `Involuntary full

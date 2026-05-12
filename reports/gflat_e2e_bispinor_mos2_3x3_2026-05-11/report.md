@@ -18,17 +18,38 @@ End-to-end **pass** on the new code path:
    1 q at a time, G-chunked, streamed to `v_q_bispinor.h5`.
 3. Σ + eqp0 produced.
 
-Bare Σ_X print (k=Γ, deep bands 1-8) matches the legacy r-space
-baseline to **0.01 eV** band-by-band:
+### Bare Σ_X (3-way diagnostic)
+
 ```
-Baseline (r-space, legacy μ × ν driver):
-  Bare Σ_X k=0: -40.0277 -40.0277 -33.8685 -33.8685 -33.3542 -33.3542 -33.4925 -33.4925
-G-flat (new orchestrator):
-  Bare Σ_X k=0: -40.0326 -40.0326 -33.8745 -33.8745 -33.3600 -33.3600 -33.4986 -33.4986
+                                          band 1 (k=Γ)
+G-flat new (today)                          -40.0326
+Diagnostic: legacy r-space, same git rev    -40.0325     ← <100 μeV vs G-flat
+May 8 baseline (pre-many-fixes)             -40.0572     ← 25 meV (code drift)
 ```
-The 5 meV residual is consistent with the per-q sphere being a
-strict subset of the legacy shared sphere (a few cutoff-edge G's
-drop out by design).
+
+My first read of "baseline vs G-flat = 0.01 eV" compared against
+the May 8 smoke directory (`A_bispinor_smoke_2026-05-08`), which
+predates several intervening fixes to the bispinor V_q tile
+machinery (legacy `_make_K_cart_on_sphere_fn`, IBZ unfold passes,
+Bloch-phase unification — visible in `git log` between May 8 and
+today).  Re-running the **legacy r-space + legacy μ × ν V_q
+driver on the same git rev as my G-flat run** (no
+`LORRAX_WRITE_G_FLAT_ZETA`) gives `-40.0325` — agreement with
+G-flat at the **100 μeV / 1e-5 relative** level on every sampled
+band, well inside reduction-order noise.  So:
+
+* My V_q rewrite is **numerically equivalent** to the current
+  legacy path.
+* The 25 meV vs May 8 baseline is **pre-existing code drift**, not
+  this rewrite.
+* The "broken xx/yy symmetry" the user flagged in the May 8 smoke
+  has already been fixed in the legacy path by the intervening
+  commits; my G-flat orchestrator inherits the fix by construction
+  (it never had the bug — K_cart is built from per-q components
+  using already-divided fractional q).  Comparing
+  `||V_TT_11 − V_TT_22|| / ||sum||` across the three runs:
+  May 8 baseline 0.97 (essentially orthogonal), today's legacy
+  0.50, today's G-flat 0.50.
 
 ## Disk-size win (ζ files combined)
 
