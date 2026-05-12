@@ -511,3 +511,88 @@ LORRAX_PSIG_KCHUNK=<n_k / 4>                             # psi_G_store kchunk
 Never trust ``memory_per_device_gb`` in cohsex.in as anything more
 than a hint for the (stale) AOT chooser; XLA preallocation does its
 own thing.
+
+### 2026-05-12 — `with_sharding_constraint` on FFT box made it WORSE
+
+Hypothesis: add ``with_sharding_constraint(box, P(None, ('x','y'),
+None, None, None, None))`` immediately after ``_box_kernel`` and
+again after ``ifftn`` in ``to_rmu`` / ``to_rchunk`` would force XLA
+to keep the (n_k, nb, ns, nx, ny, nz) box band-sharded and prevent
+the unsharded 41 GB/rank materialisation.
+
+Result on CrI3 6×6 80 Ry, 80 GB nodes, default cohsex.in:
+
+| Config                     | r_chunk | original | post-remat | floor |
+|----------------------------|--------:|---------:|-----------:|------:|
+| **no constraints (revert)**| 16512   | 60.35 GiB| 41.94 GiB  |**27.43 GiB**|
+| **constraints added**      | 12528   | 87.54 GiB| 73.85 GiB  |**59.44 GiB**|
+| **constraints added**      |  4992   | 99.44 GiB| 66.31 GiB  |**59.80 GiB**|
+
+XLA's irreducible **floor doubled** with the constraint added (27 GiB
+→ 60 GiB).  The constraint is **counterproductive** here.
+
+MoS2 3×3 with the same constraints did still match (49.3 s vs 51.8 s
+pre-constraint, bit-identical eqp0) — likely because at MoS2 scale
+the box fits comfortably either way and the constraint just nudges
+fusion.  At CrI3 scale it's actively harmful.
+
+**Why?** Speculation (not verified by HLO diff): the constraint
+matches the FFT helper's shard_map ``in_spec`` and should be a
+no-op, but XLA's spmd-partitioner appears to interpret it as an
+explicit "force materialise in this layout" hint, inserting copies
+at fusion boundaries that would otherwise be elided.  The unsharded
+intermediate is upstream of where the constraint sits and the
+constraint forces XLA to keep BOTH the pre- and post-constraint
+layouts live.
+
+**Reverted in this session.**  The real fix is deeper than a
+boundary constraint — likely needs the unsharded intermediate
+**located** (HLO grep for the actual 60-GB tensor) and either
+sharded at its creation site or chunked along its dominant axis.
+
+Note: this is the same regression class the ``load_wfns:657`` "16×
+safety margin" comment was hedging against.  The unsharded
+intermediate is *somewhere* on the band-chunked load path
+(``psi_G_store.fetch_psi_rchunk`` → ``to_rchunk`` → reshard to Y),
+but pinning down which exact array is materialised unsharded
+requires reading the HLO dump.
+
+### 2026-05-12 — 80 GB A100s + `LORRAX_PSIG_KCHUNK=6` unblocks CrI3
+
+What actually worked, after reverting the failed constraint:
+
+1. **Allocated 80 GB A100 nodes** (``--constraint="gpu&hbm80g"``).
+   The CrI3 6×6 80 Ry kernel's irreducible floor at default chunks
+   is ~28 GiB; on 40 GB GPUs it can't fit, on 80 GB GPUs it does.
+2. **Set ``LORRAX_PSIG_KCHUNK=6``** — k-axis chunker inside
+   ``psi_G_store.fetch_psi_rchunk``.  Caps the per-call FFT box at
+   ``(_k_chunk=6, bc=16, ns=4, n_rtot=1.125 M) ≈ 6.9 GB`` total
+   (~0.43 GB/rank sharded; ~6.9 GB unsharded if XLA fails sharding).
+   This was the unsharded culprit.
+
+Compile + first r-chunk on 80 GB nodes with kchunk=6:
+**no remat warnings, no RESOURCE_EXHAUSTED**, kernel proceeds to
+the r-chunk loop.  AOT chooser picked ``r_chunk = 12528 / 90 chunks``.
+
+(Wall-time numbers TBD; compile of fit_one_rchunk's `_kernel` at
+CrI3 scale is ~1–2 min, then steady-state chunk rate to follow.)
+
+**Recommended cohsex.in for CrI3 6×6 80 Ry on 80 GB A100s
+(1 node × 4 GPUs minimum, 4 nodes × 4 GPUs preferred):**
+
+```ini
+memory_per_device_gb = 60.0
+band_chunk_size = 16
+r_chunk_size = 0          # let AOT chooser pick ~12500
+# All other defaults.
+```
+
+With env knobs:
+```bash
+LORRAX_GFLAT_CHUNK_SIZE=64   # bound accumulate FFT box to 1.15 GB/rank
+LORRAX_PSIG_KCHUNK=6         # bound band-load FFT box (THE key fix here)
+```
+
+On 40 GB nodes: must drop ``band_chunk_size`` to 4 or 8 (and fix the
+``read_kchunk_union`` remainder bug at ``load_wfns:795`` first), OR
+land the real ``with_sharding_constraint``-at-source-site fix.
