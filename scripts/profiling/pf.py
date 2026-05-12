@@ -60,51 +60,19 @@ _DEFAULT_XLA_FLAGS = [
 ]
 
 
-_DISTRIBUTED_SENTINEL = "_LORRAX_JAX_DISTRIBUTED_DONE"
-
-
 def _maybe_init_jax_distributed() -> None:
-    """Same logic as gw.gw_jax — run once, before any jax import triggers the
-    XLA backend. Safe on single-process; a no-op when called a second time.
+    """Delegate to LORRAX's canonical multi-process bootstrap.
+
+    The old in-tree copy of this function called ``jax.distributed.initialize()``
+    with no kwargs, which hangs on Perlmutter Cray MPICH (each rank sees only
+    one GPU via ``CUDA_VISIBLE_DEVICES=$SLURM_LOCALID`` so the no-arg topology
+    exchange waits forever for "local" peers that don't exist). The fixed
+    implementation lives in ``runtime/__init__.py`` and explicitly sets
+    ``local_device_ids=[0]`` derived from CUDA_VISIBLE_DEVICES — see the
+    docstring there for the full reasoning.
     """
-    if os.environ.get(_DISTRIBUTED_SENTINEL):
-        return
-    proc_count = int(
-        os.environ.get("JAX_PROCESS_COUNT",
-        os.environ.get("JAX_NUM_PROCESSES",
-        os.environ.get("SLURM_NTASKS", "1"))))
-    if proc_count <= 1:
-        os.environ[_DISTRIBUTED_SENTINEL] = "1"
-        return
-    import jax  # OK: we are about to initialize distributed right now
-    try:
-        jax.distributed.initialize()
-        os.environ[_DISTRIBUTED_SENTINEL] = "1"
-        return
-    except Exception:
-        pass
-    coord = os.environ.get("JAX_COORDINATOR_ADDRESS")
-    if coord is None:
-        import subprocess
-        nodelist = os.environ.get("SLURM_NODELIST")
-        if nodelist:
-            try:
-                result = subprocess.run(
-                    ["scontrol", "show", "hostnames", nodelist],
-                    capture_output=True, text=True, check=True)
-                coord = f"{result.stdout.strip().splitlines()[0]}:12355"
-            except Exception:
-                pass
-        if coord is None:
-            host = (os.environ.get("SLURMD_NODENAME")
-                    or os.environ.get("HOSTNAME") or "localhost")
-            coord = f"{host}:12355"
-    proc_id = int(os.environ.get("JAX_PROCESS_INDEX",
-                                 os.environ.get("SLURM_PROCID", "0")))
-    jax.distributed.initialize(coordinator_address=coord,
-                               num_processes=proc_count,
-                               process_id=proc_id)
-    os.environ[_DISTRIBUTED_SENTINEL] = "1"
+    from runtime import init_jax_distributed
+    init_jax_distributed()
 
 
 def setup_env(

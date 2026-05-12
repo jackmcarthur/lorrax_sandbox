@@ -574,8 +574,17 @@ Compile + first r-chunk on 80 GB nodes with kchunk=6:
 **no remat warnings, no RESOURCE_EXHAUSTED**, kernel proceeds to
 the r-chunk loop.  AOT chooser picked ``r_chunk = 12528 / 90 chunks``.
 
-(Wall-time numbers TBD; compile of fit_one_rchunk's `_kernel` at
-CrI3 scale is ~1–2 min, then steady-state chunk rate to follow.)
+**Steady-state ζ-fit timing (in flight):**
+
+```
+r-chunk  1 / 90  (compile + first iter)       ~5 min
+r-chunk  6 / 90                               ~5 min total (~1.0 min for chunks 2-6)
+r-chunk 10 / 90                               ~9.7 min total (~1.1 min for chunks 7-10)
+ETA for full ζ-fit                            ~78 min (90 × ~1 min)
+```
+
+Per-rank GPU memory residency well below the 80 GB device, no
+remat warnings throughout, no RESOURCE_EXHAUSTED.
 
 **Recommended cohsex.in for CrI3 6×6 80 Ry on 80 GB A100s
 (1 node × 4 GPUs minimum, 4 nodes × 4 GPUs preferred):**
