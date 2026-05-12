@@ -1,5 +1,81 @@
 # Changelog
 
+## 2026-05-11: G-flat ζ on-disk with WFN.h5-style per-q sphere padding [agent]
+
+Branch `agent/zeta-ibz-header` on `lorrax_D`.
+
+Writer now produces ``zeta_q_G(n_q, n_rmu, ngkmax)`` instead of
+``zeta_q(n_q, n_rtot, n_rmu)`` when ``LORRAX_WRITE_G_FLAT_ZETA=1`` is
+set, with per-q WFN.h5-style sphere components stored alongside.
+
+- **`sources/lorrax_D/src/common/coulomb_sphere.py` (NEW)**
+  - `compute_bare_coulomb_sphere_idx(...)` — shared single sphere
+    used by V_q kernel.  Extracted from inline code in
+    `compute_vcoul.py:246-263` so the writer and consumer share one
+    source of truth.
+  - `compute_per_q_bare_coulomb_components(...)` — per-q sphere
+    `{G : |q+G|² ≤ cutoff}` for every IBZ q, padded uniformly to
+    `ngkmax = max_q ngk[q]` with sentinel Miller index
+    `(-nx/2, -ny/2, -nz/2)`.  Returns `sphere_idx_padded`,
+    `gvec_components_padded`, `ngk_per_q`, `ngkmax`.
+  - Fixed `_q_max_cart` bug: enumerates the actual BGW-wrapped
+    q-list instead of using the `±0.5/kgrid` half-BZ corners
+    (under-bound for the real q-list — even kgrid leaves q=K/2 at
+    `q_frac = 1/2` outside the Wigner-Seitz cell).
+- **`sources/lorrax_D/src/gw/compute_vcoul.py`**
+  - Inline sphere construction at lines 246-263 replaced by a call
+    to `compute_bare_coulomb_sphere_idx`.
+- **`sources/lorrax_D/src/common/wfn_transforms.py`**
+  - `accumulate_rchunk_to_gflat` accepts a 2-D per-q
+    `sphere_idx (n_q, ngkmax)` in addition to the legacy 1-D shared
+    sphere.  Uses `jnp.take_along_axis(mode='promise_in_bounds')`
+    to dodge the XLA x64+shard_map verifier bug.
+- **`sources/lorrax_D/src/file_io/isdf_header.py`**
+  - New fields: `gvec_components (n_q, 3, ngkmax)`, `ngk_per_q (n_q,)`,
+    `bare_coulomb_cutoff_ry`.  Required by `IsdfHeader.build` when
+    `zeta_layout == 'G_flat'`; legacy r-space files read with these
+    fields set to `None`.
+- **`sources/lorrax_D/src/common/isdf_fitting.py`**
+  - `fit_zeta_to_h5(..., vcoul_cutoff_ry=...)` accepts the bare
+    cutoff; builds the per-q sphere, allocates
+    `gflat_acc(n_q, n_rmu_padded, ngkmax)`, gathers per-q after each
+    chunk's FFT, masks pad slots to zero post-loop, and persists
+    components + ngk + cutoff in the isdf_header.
+- **`sources/lorrax_D/src/gw/gw_init.py`**
+  - Plumbs `vcoul_cutoff_ry` into both `fit_zeta_to_h5` call sites
+    (scalar charge + bispinor transverse μ_L=1,2,3).
+- **`sources/lorrax_D/src/file_io/zeta_loader.py` / `zeta_reader.py`**
+  - Expose `gvec_components`, `ngk_per_q`, `bare_coulomb_cutoff_ry`,
+    `ngkmax_zeta`.
+  - Loader: G-flat-on-disk reads `zeta_q_G` directly via the new
+    `_read_g_flat_disk` helper.  `layout='r_space'` raises
+    `NotImplementedError` against a G-flat file (would need IFFT).
+  - Reader: G-flat path raises `NotImplementedError` for the
+    "narrow to shared sphere" sub-case (per-q → shared scatter not
+    yet wired into the V_q hot loop); raw slab returns work.
+- **Disk-size win** (`n_G_sph / n_rtot`, smaller is better):
+  - MoS2 3×3×1, cutoff=30 Ry: **11.5%** of r-space (~8.7× shrinkage).
+  - Si 4×4×4, cutoff=30 Ry: **16.9%** (~5.9× shrinkage).
+  - Si 4×4×4, cutoff=120 Ry (=ecutrho): 94.4% (near full FFT box at
+    the rho cutoff — expected).
+- **Tests**
+  - `tests/test_per_q_sphere.py` (NEW, 6 tests): helper correctness
+    vs direct `(q+G)` enumeration, shared-sphere ⊇ per-q-sphere
+    invariant, per-q accumulate matches reference FFT+gather,
+    header round-trip + validation errors.
+  - `tests/test_zeta_loader.py`: bumped 1 test's `IsdfHeader.build`
+    call to supply the new required G-flat fields.
+- **Validation**
+  - 33/33 new + existing G-flat tests pass.
+  - Full non-GPU pytest sweep: 181 passed, 20 skipped.  Pre-existing
+    `test_kmeans_sharded` failures unchanged (independent of this
+    branch).  GPU regression needs a CUDA job allocation (login-node
+    cuSolver init fails — same as before).
+- **Followups**
+  - Wire the per-q → shared-sphere scatter into the V_q wrapper so
+    the kernel can consume the new G-flat on-disk format.  Until
+    then, the kernel keeps using r-space ζ files.
+
 ## 2026-05-11: chunk-capable local FFT helpers + slab-only phase helpers [agent]
 
 Branch `agent/fft-batch-chunks` on `lorrax_A`, rebased onto `origin/main`
