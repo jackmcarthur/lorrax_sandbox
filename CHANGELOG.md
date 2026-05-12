@@ -1,5 +1,77 @@
 # Changelog
 
+## 2026-05-12: accumulate_rchunk_to_gflat μ-axis chunking [agent]
+
+Branch `agent/zeta-ibz-header` on `lorrax_D`.
+
+`accumulate_rchunk_to_gflat` now chunks the **μ axis (axis 1)**
+inside the FFT-batch scan, replacing the previous n_q-axis chunking.
+This bounds the per-rank FFT-box transient at CrI3 J_3x3 scale
+(n_q=9, n_rmu_padded=1504, FFT grid 45×45×120) without OOM, and
+crucially handles the n_q=1 case (Γ-only debug runs) that n_q
+chunking could not.
+
+### Why this change
+
+The n_q chunking required `n_batch_chunks | n_q`.  CrI3 J_3x3 has
+n_q=9 in the IBZ which is only divisible by {1, 3, 9}; MoS2 has
+n_q=9 with the same restriction.  More importantly, single-q
+debugging runs (n_q=1) had no way to chunk at all.  The μ axis is
+always large (n_rmu_padded = several hundred to a few thousand) and
+is already μ-sharded across ranks, so chunking it aligns naturally
+with `with_sharding_constraint` decomposing the per-chunk
+intermediates across ranks.
+
+### Code changes
+
+- `common/wfn_transforms.py: accumulate_rchunk_to_gflat`:
+  - Replaced `_q_chunk` with `_mu_chunk = n_rmu_padded /
+    n_batch_chunks`.
+  - Scan body now `dynamic_slice_in_dim(..., axis=1)` on rch, with
+    `_shard3` / `_shard5` constraints on pad_buf / box / G_box so
+    each per-rank chunk is `(n_q, _mu_chunk/p_prod, ...)`.
+  - qvec_frac path simplified: qvec is per-q (n_q, 3), broadcasts
+    the same way for every μ chunk — no per-chunk slicing.
+  - Sphere gather uses the shared `_gather_sphere` helper for both
+    one-shot and chunked paths (per-q sphere broadcasts across the
+    μ-chunk; no per-chunk sphere slicing needed since axis 0 is
+    intact).
+  - Divisor check: `n_batch_chunks | n_rmu_padded`.
+- `common/isdf_fitting.py`: updated comment + default chunk
+  selection (largest divisor of `n_mu_local` ≤ `num_chunks`).
+- `tests/test_rchunk_gflat_pair.py`: tightened test (n_rmu = 6,
+  divisible by every parametrised chunk count {1, 2, 3}) and
+  updated the indivisible-rejection test to match the
+  n_rmu_padded check message.
+
+### Numbers (vs the 2026-05-11 baseline, both on the same git tree)
+
+MoS2 3×3 bispinor end-to-end (4 ranks A100, full COHSEX):
+
+| | 2026-05-11 baseline | 2026-05-12 μ-chunked | Δ |
+|-|--|--|--|
+| Σ^B(μ_L=1,ν_L=1) | -0.242923 eV | -0.242923 eV | 0 |
+| Σ^X band 1 k=Γ | -40.0326 eV | -40.0326 eV | 0 |
+| eqp0 max abs Δ vs baseline | — | 0 eV | bit-exact |
+| Total wall | 47.3 s | 47.95 s | +0.65 s (~1.5%) |
+| Per-chunk FFT box | n/a (one-shot) | 9 q × 40 μ × 46080 = 0.27 GB | — |
+
+CrI3 J_3x3 G-flat (8 ranks A100, x-only):
+
+| | 2026-05-11 baseline | 2026-05-12 μ-chunked |
+|-|--|--|
+| Per-chunk FFT box | n/a (one-shot OOMed at 98 GB) | 9 q × 47 μ × 243000 = 1.64 GB |
+| ζ-fit | OOM at 98 GB | succeeds |
+| V_q[CC] trace at q=0 | n/a | 120459594.32 |
+
+(Run fails downstream at `kin_ion.h5` — same pre-existing
+followup as the 2026-05-11 attempt; not a regression in this
+refactor.)
+
+Run dirs:
+- `runs/MoS2/00_mos2_3x3_cohsex/D_gflat_bispinor_shardmap_2026-05-12/`
+- `runs/CrI3/D_gflat_cri3_3x3_muchunk_2026-05-12/`
+
 ## 2026-05-11: Bispinor V_q orchestrator on G-flat — end-to-end MoS2 3×3 [agent]
 
 Branch `agent/zeta-ibz-header` on `lorrax_D`.
