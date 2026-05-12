@@ -1,0 +1,16 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(c128[1,60,60]{2,1,0}, c128[1,60,1]{2,1,0})->c128[1,60,60]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="7238f3a07ba01056e7e87b516260a91b"}
+
+%fused_multiply (param_0.2: c128[1,60,60], param_1.2: c128[1,60,1]) -> c128[1,60,60] {
+  %param_0.2 = c128[1,60,60]{2,1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %param_1.2 = c128[1,60,1]{2,1,0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %bitcast.23.3 = c128[60]{0} bitcast(%param_1.2), metadata={scheduling_name="bitcast.23.3"}
+  %broadcast.4.3 = c128[1,60,60]{2,1,0} broadcast(%bitcast.23.3), dimensions={1}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/head_correction.py" source_line=425 scheduling_name="broadcast.4.3"}
+  ROOT %multiply.2.1 = c128[1,60,60]{2,1,0} multiply(%param_0.2, %broadcast.4.3), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/head_correction.py" source_line=425 scheduling_name="multiply.2.1"}
+}
+
+ENTRY %main.7 (Arg_0.1.0: c128[1,60,60], Arg_1.2.0: c128[1,60,1]) -> c128[1,60,60] {
+  %Arg_1.2.0 = c128[1,60,1]{2,1,0} parameter(1), metadata={op_name="y" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[1,60,60]{2,1,0} parameter(0), metadata={op_name="x" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_multiply_fusion = c128[1,60,60]{2,1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/head_correction.py" source_line=425 scheduling_name="loop_multiply_fusion"}
+}
+

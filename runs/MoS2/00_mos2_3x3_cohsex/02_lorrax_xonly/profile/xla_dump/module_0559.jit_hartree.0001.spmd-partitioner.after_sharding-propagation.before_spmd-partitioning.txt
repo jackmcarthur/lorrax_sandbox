@@ -1,0 +1,41 @@
+HloModule jit_hartree, entry_computation_layout={(c128[9,80,2,640]{3,2,1,0}, c128[9,80,2,640]{3,2,1,0}, c128[9,80,80]{2,1,0}, c128[9,640,640]{2,1,0})->c128[9,80,80]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%scalar_add_computation (scalar_lhs: c128[], scalar_rhs: c128[]) -> c128[] {
+  %scalar_lhs = c128[] parameter(0)
+  %scalar_rhs = c128[] parameter(1)
+  ROOT %add = c128[] add(%scalar_lhs, %scalar_rhs)
+}
+
+ENTRY %main.25 (Arg_0.1: c128[9,80,2,640], Arg_1.2: c128[9,80,2,640], Arg_2.3: c128[9,80,80], Arg_3.4: c128[9,640,640]) -> c128[9,80,80] {
+  %Arg_0.1 = c128[9,80,2,640]{3,2,1,0} parameter(0), sharding={devices=[1,1,1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="wfns.psi_xr"}
+  %real.19 = f64[9,80,2,640]{3,2,1,0} real(%Arg_0.1), sharding={devices=[1,1,1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=121}
+  %imag.20 = f64[9,80,2,640]{3,2,1,0} imag(%Arg_0.1), sharding={devices=[1,1,1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=121}
+  %negate.21 = f64[9,80,2,640]{3,2,1,0} negate(%imag.20), sharding={devices=[1,1,1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=121}
+  %complex.22 = c128[9,80,2,640]{3,2,1,0} complex(%real.19, %negate.21), sharding={devices=[1,1,1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=121}
+  %Arg_3.4 = c128[9,640,640]{2,1,0} parameter(3), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="V_q"}
+  %slice.14 = c128[1,640,640]{2,1,0} slice(%Arg_3.4), slice={[0:1], [0:640], [0:640]}, sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(hartree)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=117}
+  %Arg_1.2 = c128[9,80,2,640]{3,2,1,0} parameter(1), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="wfns.psi_yr"}
+  %Arg_2.3 = c128[9,80,80]{2,1,0} parameter(2), sharding={replicated}, metadata={op_name="Gij"}
+  %real.7 = f64[9,80,2,640]{3,2,1,0} real(%Arg_1.2), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=115}
+  %imag.8 = f64[9,80,2,640]{3,2,1,0} imag(%Arg_1.2), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=115}
+  %negate.9 = f64[9,80,2,640]{3,2,1,0} negate(%imag.8), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=115}
+  %complex.10 = c128[9,80,2,640]{3,2,1,0} complex(%real.7, %negate.9), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=115}
+  %dot.11 = c128[9,80,2,640]{3,2,1,0} dot(%Arg_2.3, %complex.10), lhs_batch_dims={0}, lhs_contracting_dims={1}, rhs_batch_dims={0}, rhs_contracting_dims={1}, sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/kisx,kjsx,kij->x/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=113}
+  %multiply.4 = c128[9,80,2,640]{3,2,1,0} multiply(%Arg_1.2, %dot.11), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}
+  %constant = c128[] constant((0, 0))
+  %reduce = c128[640]{0} reduce(%multiply.4, %constant), dimensions={1,0,2}, to_apply=%scalar_add_computation, sharding={devices=[2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/kisx,kjsx,kij->x/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=113}
+  %real.13 = f64[640]{0} real(%reduce), sharding={devices=[2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=113}
+  %constant.1 = f64[] constant(0.1111111111111111), sharding={replicated}
+  %broadcast = f64[640]{0} broadcast(%constant.1), dimensions={}, sharding={devices=[2,2]<=[2,2]T(1,0) last_tile_dim_replicate}
+  %multiply.1 = f64[640]{0} multiply(%real.13, %broadcast), sharding={devices=[2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=118}
+  %convert.17 = c128[640]{0} convert(%multiply.1), sharding={devices=[2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/xy,y->x/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=116}
+  %broadcast.3 = c128[1,640,640]{2,1,0} broadcast(%convert.17), dimensions={2}, sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(hartree)/jit(main)/xy,y->x/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=116}
+  %multiply.5 = c128[1,640,640]{2,1,0} multiply(%slice.14, %broadcast.3), sharding={devices=[1,2,2]<=[4]}
+  %constant.2 = c128[] constant((0, 0))
+  %reduce.1 = c128[640]{0} reduce(%multiply.5, %constant.2), dimensions={0,2}, to_apply=%scalar_add_computation, sharding={devices=[2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/xy,y->x/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=116}
+  %broadcast.4 = c128[9,80,2,640]{2,1,0,3} broadcast(%reduce.1), dimensions={3}, sharding={devices=[1,1,1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/kmsx,x,knsx->kmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=119}
+  %multiply.6 = c128[9,80,2,640]{3,2,1,0} multiply(%complex.22, %broadcast.4), sharding={devices=[1,1,1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/kmsx,x,knsx->kmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=119}
+  %transpose.8 = c128[640,9,80,2]{3,2,1,0} transpose(%multiply.6), dimensions={3,0,1,2}, sharding={devices=[2,1,1,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(hartree)/jit(main)/kmsx,x,knsx->kmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=119}
+  ROOT %dot.24 = c128[9,80,80]{2,1,0} dot(%transpose.8, %Arg_0.1), lhs_batch_dims={1}, lhs_contracting_dims={3,0}, rhs_batch_dims={0}, rhs_contracting_dims={2,3}, sharding={replicated}, metadata={op_name="jit(hartree)/jit(main)/kmsx,x,knsx->kmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/cohsex_sigma.py" source_line=119}
+}
+

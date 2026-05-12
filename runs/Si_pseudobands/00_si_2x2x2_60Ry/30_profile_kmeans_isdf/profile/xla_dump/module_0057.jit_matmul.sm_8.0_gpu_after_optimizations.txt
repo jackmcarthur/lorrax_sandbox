@@ -1,0 +1,14 @@
+HloModule jit_matmul, is_scheduled=true, entry_computation_layout={(f32[3,3]{1,0}, f32[3,3]{1,0})->f32[3,3]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="3bfa1c5dc4eb2352fbbd2e6fa116db90"}
+
+%wrapped_dot_computation (param_0: f32[3,3], param_1: f32[3,3]) -> f32[3,3] {
+  %param_0 = f32[3,3]{1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1 = f32[3,3]{1,0} parameter(1), metadata={scheduling_name="param_1"}
+  ROOT %dot.3.1 = f32[3,3]{1,0} dot(%param_0, %param_1), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=412 scheduling_name="dot.3.1"}
+}
+
+ENTRY %main.4 (Arg_0.1.0: f32[3,3], Arg_1.2.0: f32[3,3]) -> f32[3,3] {
+  %Arg_1.2.0 = f32[3,3]{1,0} parameter(1), metadata={op_name="b" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f32[3,3]{1,0} parameter(0), metadata={op_name="a" scheduling_name="Arg_0.1.0"}
+  ROOT %wrapped_dot = f32[3,3]{1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%wrapped_dot_computation, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=412 scheduling_name="wrapped_dot"}
+}
+

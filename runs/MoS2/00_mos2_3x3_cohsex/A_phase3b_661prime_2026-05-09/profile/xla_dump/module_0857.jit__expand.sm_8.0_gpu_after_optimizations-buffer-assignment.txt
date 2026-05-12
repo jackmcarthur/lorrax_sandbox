@@ -1,0 +1,103 @@
+BufferAssignment:
+allocation 0: size 132710400, output shape is |c128[9,5,4,24,24,80]|, maybe-live-out:
+ value: <35 loop_add_fusion @0> (size=9953280,offset=0): f64[9,24,24,80,3]{4,3,2,1,0}
+ value: <40 input_concatenate_fusion @0> (size=132710400,offset=0): c128[9,5,4,24,24,80]{5,4,3,2,1,0}
+allocation 1: size 66355200, parameter 0, shape |c128[9,5,2,24,24,80]| at ShapeIndex {}:
+ value: <32 param.2 @0> (size=66355200,offset=0): c128[9,5,2,24,24,80]{5,4,3,2,1,0}
+allocation 2: size 1105920, constant:
+ value: <34 constant_11_0 @0> (size=1105920,offset=0): f64[24,24,80,3]{3,2,1,0}
+allocation 3: size 216, parameter 1, shape |f64[9,3]| at ShapeIndex {}:
+ value: <33 param.1.0 @0> (size=216,offset=0): f64[9,3]{1,0}
+allocation 4: size 72, constant:
+ value: <36 constant_12_0 @0> (size=72,offset=0): f64[3,3]{1,0}
+allocation 5: size 14147712, preallocated-temp:
+ value: <37 custom-call.1.0{} @0> (size=16,offset=0): (f64[414720,3]{0,1}, s8[4194304]{0})
+ value: <38 custom-call.1.0{0} @0> (size=9953280,offset=128): f64[414720,3]{0,1}
+ value: <39 custom-call.1.0{1} @0> (size=4194304,offset=9953408): s8[4194304]{0}
+
+Total bytes used: 214319520 (204.39MiB)
+
+Used values:
+<32 param.2 @0>
+ positions:
+  param.2
+ uses:
+  input_concatenate_fusion, operand 0
+ from instruction: %param.2 = c128[9,5,2,24,24,80]{5,4,3,2,1,0} parameter(0), sharding={devices=[1,16,1,1,1,1]<=[16]}, metadata={op_name="psi_G" scheduling_name="param.2"}
+<33 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  loop_add_fusion, operand 0
+ from instruction: %param.1.0 = f64[9,3]{1,0} parameter(1), sharding={replicated}, metadata={op_name="kvecs" scheduling_name="param.1.0"}
+<34 constant_11_0 @0>
+ positions:
+  constant_11_0
+ uses:
+  loop_add_fusion, operand 1
+ from instruction: %constant_11_0 = f64[24,24,80,3]{3,2,1,0} constant({...}), metadata={op_name="jit(_expand)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=645}
+<35 loop_add_fusion @0>
+ positions:
+  loop_add_fusion
+  bitcast.169.0
+ uses:
+  bitcast.169.0, operand 0
+  custom-call.1.0, operand 0
+ from instruction: %loop_add_fusion = f64[9,24,24,80,3]{4,3,2,1,0} fusion(%param.1.0, %constant_11_0), kind=kLoop, calls=%fused_add, metadata={op_name="jit(_expand)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=645 scheduling_name="loop_add_fusion"}
+<36 constant_12_0 @0>
+ positions:
+  constant_12_0
+ uses:
+  custom-call.1.0, operand 1
+ from instruction: %constant_12_0 = f64[3,3]{1,0} constant({ { 1, 0.57734886366995242, -0 }, { 0, 1.1547006466675693, 0 }, { 0, -0, 0.26369100000000006 } })
+<37 custom-call.1.0{} @0>
+ positions:
+  custom-call.1.0 {}
+ uses:
+  get-tuple-element.1, operand 0 {}
+ from instruction: %custom-call.1.0 = (f64[414720,3]{0,1}, s8[4194304]{0}) custom-call(%bitcast.169.0, %constant_12_0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_expand)/jit(main)/kxyzc,cd->kxyzd/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=646 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"1244160","rhs_stride":"9","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<38 custom-call.1.0{0} @0>
+ positions:
+  custom-call.1.0 {0}
+  get-tuple-element.1
+ uses:
+  input_concatenate_fusion, operand 1
+ from instruction: %custom-call.1.0 = (f64[414720,3]{0,1}, s8[4194304]{0}) custom-call(%bitcast.169.0, %constant_12_0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_expand)/jit(main)/kxyzc,cd->kxyzd/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=646 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"1244160","rhs_stride":"9","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<39 custom-call.1.0{1} @0>
+ positions:
+  custom-call.1.0 {1}
+ uses:
+ from instruction: %custom-call.1.0 = (f64[414720,3]{0,1}, s8[4194304]{0}) custom-call(%bitcast.169.0, %constant_12_0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_expand)/jit(main)/kxyzc,cd->kxyzd/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=646 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"1244160","rhs_stride":"9","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<40 input_concatenate_fusion @0>
+ positions:
+  input_concatenate_fusion
+ uses:
+ from instruction: %input_concatenate_fusion = c128[9,5,4,24,24,80]{5,4,3,2,1,0} fusion(%param.2, %get-tuple-element.1), kind=kInput, calls=%fused_concatenate, metadata={op_name="jit(_expand)/jit(main)/concatenate" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=661 scheduling_name="input_concatenate_fusion"}
+
+
+HloLiveRange (max 9):
+  InstructionSequence:
+    0:constant_12_0
+    1:param.1.0
+    2:constant_11_0
+    3:param.2
+    4:loop_add_fusion
+    5:bitcast.169.0
+    6:custom-call.1.0
+    7:get-tuple-element.1
+    8:input_concatenate_fusion
+  BufferLiveRange:
+    param.2{}:0-9
+    param.1.0{}:0-9
+    constant_11_0{}:2-4
+    loop_add_fusion{}:4-6
+    constant_12_0{}:0-6
+    custom-call.1.0{}:6-7
+    custom-call.1.0{0}:6-8
+    custom-call.1.0{1}:6-6
+    input_concatenate_fusion{}:8-9
+  Live ranges at 8 (peak):
+    param.2: 66355200 bytes
+    param.1.0: 216 bytes
+    custom-call.1.0: 16 bytes
+    input_concatenate_fusion: 132710400 bytes

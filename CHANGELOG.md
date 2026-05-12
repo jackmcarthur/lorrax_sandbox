@@ -1,5 +1,51 @@
 # Changelog
 
+## 2026-05-11: chunk-capable local FFT helpers + slab-only phase helpers [agent]
+
+Branch `agent/fft-batch-chunks` on `lorrax_A`, rebased onto `origin/main`
+`92cbd83`.
+
+- **`sources/lorrax_A/src/common/fft_helpers.py`**
+  - added `apply_local_fft(...)`, a reusable device-local FFT helper with
+    optional `fft_batch_chunks=` batching over all non-transform axes
+  - threaded `fft_batch_chunks=` through
+    `make_sharded_{f,if}ftn_3d`, `make_flat_k_fft`, and
+    `query_fft_peak_bytes`
+  - default remains `fft_batch_chunks=1`, so current production callers keep
+    today’s one-shot FFT behavior unless a future refactor opts in
+- **`sources/lorrax_A/src/common/wfn_transforms.py`**
+  - added generic flat-r helpers:
+    `extract_flat_rchunk`, `embed_flat_rchunk`,
+    `apply_bloch_phase_flat_points`, `apply_bloch_phase_flat_rchunk`
+  - `to_rmu(..., kvecs_frac=...)` now phases only the gathered centroid
+    points instead of the whole FFT box
+  - `to_rchunk(..., kvecs_frac=...)` now slices the flat-r slab first and
+    applies the Bloch phase only on that retained slab
+  - `to_rbox` / `to_rmu` / `to_rchunk` now also accept `fft_batch_chunks=`
+    for future opt-in use
+- **`sources/lorrax_A/src/file_io/zeta_reader.py`** and
+  **`sources/lorrax_A/src/file_io/zeta_loader.py`**
+  - threaded `fft_batch_chunks=` into the `G_flat` zeta read path so the
+    upcoming `rchunk <-> G_flat` zeta/V refactor can reuse the same helper
+    without reopening reader internals
+- **Tests**
+  - `tests/test_fft_helpers.py`: new chunked-helper coverage and
+    chunk-aware `query_fft_peak_bytes` coverage
+  - `tests/test_wfn_transforms.py`: new phased `to_rmu`,
+    phased/chunked `to_rchunk`, and flat-r helper coverage
+- **Validation**
+  - `uv run python -m pytest -q tests/test_fft_helpers.py` → `5 passed`
+  - `uv run python -m pytest -q tests/test_wfn_transforms.py` → `16 passed`
+  - `uv run python -m pytest -q` → `182 passed, 20 skipped, 4 failed`
+  - remaining failures are unchanged from `main`:
+    - `tests/test_gw_jax_regression.py::test_gw_jax_matches_reference`
+      (`write_qp_wfn_h5` shape mismatch)
+    - `tests/test_kmeans_sharded.py::test_refactored_matches_naive[fcc-avec1]`
+    - `tests/test_kmeans_sharded.py::test_refactored_matches_naive[skew-avec2]`
+    - `tests/test_kmeans_sharded.py::test_pbc_distance_scan_matches_naive_fcc`
+- **Report**
+  - `reports/fft_helper_unification_2026-05-11/report.md`
+
 ## 2026-04-21: analytic chunk chooser + γ-calibrated AOT memory model [agent C]
 
 Branch `agent-C/aot-memory-model` on `lorrax_C`.  Closes Phase 6 of the

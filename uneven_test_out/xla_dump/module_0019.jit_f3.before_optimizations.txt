@@ -1,0 +1,24 @@
+HloModule jit_f3, entry_computation_layout={(c128[9,2419,668]{2,1,0})->c128[9,2419]{1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16
+
+%_pad.4 (Arg_0.5: c128[9,2419,668], Arg_1.6: s64[]) -> c128[9,2419,672] {
+  %Arg_0.5 = c128[9,2419,668]{2,1,0} parameter(0), metadata={op_name="jit(f3)/jit(main)/pjit"}
+  %Arg_1.6 = s64[] parameter(1), metadata={op_name="jit(f3)/jit(main)/pjit"}
+  %convert.7 = c128[] convert(%Arg_1.6), metadata={op_name="jit(f3)/jit(main)/jit(_pad)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  ROOT %pad.8 = c128[9,2419,672]{2,1,0} pad(%Arg_0.5, %convert.7), padding=0_0x0_0x0_4, metadata={op_name="jit(f3)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+}
+
+%region_0.11 (Arg_0.12: c128[], Arg_1.13: c128[]) -> c128[] {
+  %Arg_0.12 = c128[] parameter(0), metadata={op_name="jit(f3)/jit(main)/reduce_sum"}
+  %Arg_1.13 = c128[] parameter(1), metadata={op_name="jit(f3)/jit(main)/reduce_sum"}
+  ROOT %add.14 = c128[] add(%Arg_0.12, %Arg_1.13), metadata={op_name="jit(f3)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=209}
+}
+
+ENTRY %main.16 (Arg_0.1: c128[9,2419,668]) -> c128[9,2419] {
+  %Arg_0.1 = c128[9,2419,668]{2,1,0} parameter(0), sharding={devices=[1,1,4,4]<=[16] last_tile_dim_replicate}, metadata={op_name="x"}
+  %constant.3 = s64[] constant(0)
+  %call.9 = c128[9,2419,672]{2,1,0} call(%Arg_0.1, %constant.3), to_apply=%_pad.4
+  %custom-call.10 = c128[9,2419,672]{2,1,0} custom-call(%call.9), custom_call_target="Sharding", sharding={devices=[1,1,16]<=[16]}, metadata={op_name="jit(f3)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=208}
+  %constant.2 = c128[] constant((0, 0))
+  ROOT %reduce.15 = c128[9,2419]{1,0} reduce(%custom-call.10, %constant.2), dimensions={2}, to_apply=%region_0.11, metadata={op_name="jit(f3)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=209}
+}
+

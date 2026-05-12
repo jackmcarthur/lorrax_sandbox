@@ -1,0 +1,69 @@
+HloModule jit__per_rank, is_scheduled=true, entry_computation_layout={(f64[4,2,5,1963,2]{4,3,2,1,0}, c128[9,2,2]{2,1,0}, c128[9,1963]{1,0}, pred[9]{0}, s32[9]{0})->c128[9,4,2,1963]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="d4d330519f97196a551e8764e52b55be"}
+
+%fused_transpose (param_0.1: c128[9,7852,2]) -> c128[36,2,1963] {
+  %param_0.1 = c128[9,7852,2]{2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.251.1 = c128[36,1963,2]{2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.251.1"}
+  ROOT %transpose.15.1 = c128[36,2,1963]{2,1,0} transpose(%bitcast.251.1), dimensions={0,2,1}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/kac,bckg->bakg/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=960 scheduling_name="transpose.15.1"}
+}
+
+%fused_multiply (param_0.43: c128[9,1963], param_1.62: f64[4,2,5,1963,2], param_2.60: pred[9], param_3.33: s32[9]) -> c128[9,4,1963,2] {
+  %param_2.60 = pred[9]{0} parameter(2), metadata={scheduling_name="param_2.60"}
+  %broadcast.64.1 = pred[9,4,1963,2]{3,2,1,0} broadcast(%param_2.60), dimensions={0}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_where)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=957 scheduling_name="broadcast.64.1"}
+  %param_3.33 = s32[9]{0} parameter(3), metadata={scheduling_name="param_3.33"}
+  %constant_13_1 = s32[] constant(0)
+  %broadcast.65.9 = s32[9]{0} broadcast(%constant_13_1), dimensions={}, metadata={scheduling_name="broadcast.65.9"}
+  %compare.15.9 = pred[9]{0} compare(%param_3.33, %broadcast.65.9), direction=LT, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=956 scheduling_name="compare.15.9"}
+  %constant_14_1 = s32[] constant(5)
+  %broadcast.67.9 = s32[9]{0} broadcast(%constant_14_1), dimensions={}, metadata={scheduling_name="broadcast.67.9"}
+  %add.10.9 = s32[9]{0} add(%param_3.33, %broadcast.67.9), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=956 scheduling_name="add.10.9"}
+  %select.18.7 = s32[9]{0} select(%compare.15.9, %add.10.9, %param_3.33), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/jit(_where)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=956 scheduling_name="select.18.7"}
+  %bitcast.195.15 = s32[9,1]{1,0} bitcast(%select.18.7), metadata={scheduling_name="bitcast.195.15"}
+  %convert.18.15 = s64[9,1]{1,0} convert(%bitcast.195.15), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=956 scheduling_name="convert.18.15"}
+  %constant_15_1 = s64[] constant(0)
+  %broadcast.68.5 = s64[9,1]{1,0} broadcast(%constant_15_1), dimensions={}, metadata={scheduling_name="broadcast.68.5"}
+  %compare.16.5 = pred[9,1]{1,0} compare(%convert.18.15, %broadcast.68.5), direction=GE, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/ge" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=956 scheduling_name="compare.16.5"}
+  %constant_16_1 = s64[] constant(4)
+  %broadcast.69.5 = s64[9,1]{1,0} broadcast(%constant_16_1), dimensions={}, metadata={scheduling_name="broadcast.69.5"}
+  %compare.17.5 = pred[9,1]{1,0} compare(%convert.18.15, %broadcast.69.5), direction=LE, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/le" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=956 scheduling_name="compare.17.5"}
+  %and.5.3 = pred[9,1]{1,0} and(%compare.16.5, %compare.17.5), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/and" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=956 scheduling_name="and.5.3"}
+  %bitcast.207.3 = pred[9]{0} bitcast(%and.5.3), metadata={scheduling_name="bitcast.207.3"}
+  %broadcast.70.3 = pred[1,9,4,1963,2]{4,3,2,1,0} broadcast(%bitcast.207.3), dimensions={1}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=956 scheduling_name="broadcast.70.3"}
+  %param_1.62 = f64[4,2,5,1963,2]{4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1.62"}
+  %convert.19.10 = c128[4,2,5,1963,2]{4,3,2,1,0} convert(%param_1.62), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=955 scheduling_name="convert.19.10"}
+  %slice.10.5 = c128[4,2,5,1963,1]{4,3,2,1,0} slice(%convert.19.10), slice={[0:4], [0:2], [0:5], [0:1963], [0:1]}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=955 scheduling_name="slice.10.5"}
+  %slice.11.5 = c128[4,2,5,1963,1]{4,3,2,1,0} slice(%convert.19.10), slice={[0:4], [0:2], [0:5], [0:1963], [1:2]}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=955 scheduling_name="slice.11.5"}
+  %constant_17_1 = c128[] constant((0, 1))
+  %broadcast.71.5 = c128[4,2,5,1963,1]{4,3,2,1,0} broadcast(%constant_17_1), dimensions={}, metadata={scheduling_name="broadcast.71.5"}
+  %multiply.9.5 = c128[4,2,5,1963,1]{4,3,2,1,0} multiply(%slice.11.5, %broadcast.71.5), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=955 scheduling_name="multiply.9.5"}
+  %add.11.3 = c128[4,2,5,1963,1]{4,3,2,1,0} add(%slice.10.5, %multiply.9.5), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=955 scheduling_name="add.11.3"}
+  %bitcast.222.11 = c128[5,4,2,1963]{3,0,2,1} bitcast(%add.11.3), metadata={scheduling_name="bitcast.222.11"}
+  %gather.3.11 = c128[9,1,4,2,1963]{3,4,2,0,1} gather(%bitcast.222.11, %convert.18.15), offset_dims={1,2,3,4}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,4,2,1963}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=956 scheduling_name="gather.3.11"}
+  %bitcast.227.9 = c128[1,9,4,1963,2]{4,3,2,1,0} bitcast(%gather.3.11), metadata={scheduling_name="bitcast.227.9"}
+  %constant_18_1 = c128[] constant((nan, 0))
+  %broadcast.72.9 = c128[1,9,4,1963,2]{4,3,2,1,0} broadcast(%constant_18_1), dimensions={}, metadata={scheduling_name="broadcast.72.9"}
+  %select.19.9 = c128[1,9,4,1963,2]{4,3,2,1,0} select(%broadcast.70.3, %bitcast.227.9, %broadcast.72.9), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=956 scheduling_name="select.19.9"}
+  %bitcast.232.7 = c128[9,4,1963,2]{3,2,1,0} bitcast(%select.19.9), metadata={scheduling_name="bitcast.232.7"}
+  %real.4.3 = f64[9,4,1963,2]{3,2,1,0} real(%bitcast.232.7), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=958 scheduling_name="real.4.3"}
+  %imag.4.5 = f64[9,4,1963,2]{3,2,1,0} imag(%bitcast.232.7), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=958 scheduling_name="imag.4.5"}
+  %negate.4.3 = f64[9,4,1963,2]{3,2,1,0} negate(%imag.4.5), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=958 scheduling_name="negate.4.3"}
+  %complex.4.1 = c128[9,4,1963,2]{3,2,1,0} complex(%real.4.3, %negate.4.3), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=958 scheduling_name="complex.4.1"}
+  %select.21.3 = c128[9,4,1963,2]{3,2,1,0} select(%broadcast.64.1, %complex.4.1, %bitcast.232.7), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_where)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=957 scheduling_name="select.21.3"}
+  %param_0.43 = c128[9,1963]{1,0} parameter(0), metadata={scheduling_name="param_0.43"}
+  %broadcast.73.1 = c128[9,4,1963,2]{3,2,1,0} broadcast(%param_0.43), dimensions={0,2}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=959 scheduling_name="broadcast.73.1"}
+  ROOT %multiply.10.1 = c128[9,4,1963,2]{3,2,1,0} multiply(%select.21.3, %broadcast.73.1), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=959 scheduling_name="multiply.10.1"}
+}
+
+ENTRY %main.92_spmd (param.2.0: f64[4,2,5,1963,2], param.4.0: c128[9,2,2], param.3.0: c128[9,1963], param.5: pred[9], param.1.0: s32[9]) -> c128[9,4,2,1963] {
+  %param.4.0 = c128[9,2,2]{2,1,0} parameter(1), sharding={replicated}, metadata={op_name="U_per_k" scheduling_name="param.4.0"}
+  %param.3.0 = c128[9,1963]{1,0} parameter(2), sharding={replicated}, metadata={op_name="phase_per_k" scheduling_name="param.3.0"}
+  %param.2.0 = f64[4,2,5,1963,2]{4,3,2,1,0} parameter(0), sharding={devices=[4,1,1,1,1]<=[4]}, metadata={op_name="cnk_at_ibz" scheduling_name="param.2.0"}
+  %param.1.0 = s32[9]{0} parameter(4), sharding={replicated}, metadata={op_name="position_in_reads" scheduling_name="param.1.0"}
+  %param.5 = pred[9]{0} parameter(3), sharding={replicated}, metadata={op_name="tr_mask_per_k" scheduling_name="param.5"}
+  %loop_multiply_fusion = c128[9,4,1963,2]{3,2,1,0} fusion(%param.3.0, %param.2.0, %param.5, %param.1.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=959 scheduling_name="loop_multiply_fusion"}
+  %bitcast.246.0 = c128[9,7852,2]{2,1,0} bitcast(%loop_multiply_fusion), metadata={scheduling_name="bitcast.246.0"}
+  %custom-call.1.0 = (c128[9,7852,2]{2,1,0}, s8[2261952]{0}) custom-call(%bitcast.246.0, %param.4.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/kac,bckg->bakg/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=960 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["2"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"15704","rhs_stride":"4","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.1 = c128[9,7852,2]{2,1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/kac,bckg->bakg/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=960 scheduling_name="get-tuple-element.1"}
+  %loop_transpose_fusion = c128[36,2,1963]{2,1,0} fusion(%get-tuple-element.1), kind=kLoop, calls=%fused_transpose, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/kac,bckg->bakg/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=960 scheduling_name="loop_transpose_fusion"}
+  ROOT %bitcast.179.0 = c128[9,4,2,1963]{3,2,1,0} bitcast(%loop_transpose_fusion), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/kac,bckg->bakg/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=960 scheduling_name="bitcast.179.0"}
+}
+

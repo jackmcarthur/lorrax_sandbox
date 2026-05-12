@@ -1,0 +1,18 @@
+HloModule jit__identity_fn, is_scheduled=true, entry_computation_layout={(c128[16,960,60]{2,1,0})->c128[4,960,60]{2,1,0}}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="61f9a6f509f6bed7807b9c56bc9f985b"}
+
+%fused_dynamic_slice (param_0: c128[16,960,60], param_1.3: u32[]) -> c128[4,960,60] {
+  %param_0 = c128[16,960,60]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.3 = u32[] parameter(1), metadata={scheduling_name="param_1.3"}
+  %convert.3.1 = s32[] convert(%param_1.3), metadata={scheduling_name="convert.3.1"}
+  %constant_3_1 = s32[] constant(4)
+  %multiply.4.1 = s32[] multiply(%convert.3.1, %constant_3_1), metadata={scheduling_name="multiply.4.1"}
+  %constant_1_1 = s32[] constant(0)
+  ROOT %dynamic-slice.4.1 = c128[4,960,60]{2,1,0} dynamic-slice(%param_0, %multiply.4.1, %constant_1_1, %constant_1_1), dynamic_slice_sizes={4,960,60}, metadata={scheduling_name="dynamic-slice.4.1"}
+}
+
+ENTRY %main.4_spmd (param.1: c128[16,960,60]) -> c128[4,960,60] {
+  %param.1 = c128[16,960,60]{2,1,0} parameter(0), sharding={replicated}, metadata={op_name="x" scheduling_name="param.1"}
+  %partition-id.1 = u32[] partition-id(), metadata={scheduling_name="partition-id.1"}
+  ROOT %loop_dynamic_slice_fusion = c128[4,960,60]{2,1,0} fusion(%param.1, %partition-id.1), kind=kLoop, calls=%fused_dynamic_slice, metadata={scheduling_name="loop_dynamic_slice_fusion"}
+}
+

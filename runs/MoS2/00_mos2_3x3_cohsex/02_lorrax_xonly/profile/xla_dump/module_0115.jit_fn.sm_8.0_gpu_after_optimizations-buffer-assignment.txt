@@ -1,0 +1,169 @@
+BufferAssignment:
+allocation 0: size 2261376, parameter 0, shape |c128[9,4,2,1963]| at ShapeIndex {}:
+ value: <182 param.4 @0> (size=2261376,offset=0): c128[9,4,2,1963]{3,2,1,0}
+allocation 1: size 1658880, parameter 1, shape |s32[9,24,24,80]| at ShapeIndex {}:
+ value: <183 param.1.0 @0> (size=1658880,offset=0): s32[9,24,24,80]{3,2,1,0}
+allocation 2: size 737280, output shape is |c128[9,4,2,640]|, maybe-live-out:
+ value: <195 loop_gather_fusion.1 @0> (size=737280,offset=0): c128[640,1,1,1,9,4,2]{0,6,5,4,3,2,1}
+allocation 3: size 7680, parameter 2, shape |s32[640,3]| at ShapeIndex {}:
+ value: <193 param.3.0 @0> (size=7680,offset=0): s32[640,3]{1,0}
+allocation 4: size 216, parameter 3, shape |f64[9,3]| at ShapeIndex {}:
+ value: <189 param.2.0 @0> (size=216,offset=0): f64[9,3]{1,0}
+allocation 5: size 424677124, preallocated-temp:
+ value: <184 loop_gather_fusion @0> (size=53084160,offset=256): c128[414720,1,4,2]{0,3,2,1}
+ value: <185 all-gather-start{} @0> (size=16,offset=0): (c128[9,4,2,24,24,80]{5,4,3,0,2,1}, c128[9,16,2,24,24,80]{5,4,3,0,2,1})
+ value: <186 all-gather-start{1} @0> (size=212336640,offset=212336896): c128[9,16,2,24,24,80]{5,4,3,0,2,1}
+ value: <187 loop_transpose_fusion @0> (size=212336640,offset=256): c128[9,32,46080]{2,1,0}
+ value: <188 fft.1.0 @0> (size=212336640,offset=212336896): c128[9,16,2,24,24,80]{5,4,3,2,1,0}
+ value: <190 loop_select_fusion{} @0> (size=16,offset=128): (f64[9,24]{1,0}, f64[9,24]{1,0})
+ value: <191 loop_select_fusion{0} @0> (size=1728,offset=424673536): f64[9,24]{1,0}
+ value: <192 loop_select_fusion{1} @0> (size=1728,offset=424675328): f64[9,24]{1,0}
+ value: <194 partition-id.1 @0> (size=4,offset=424677120): u32[]
+
+Total bytes used: 429342556 (409.45MiB)
+
+Used values:
+<182 param.4 @0>
+ positions:
+  param.4
+ uses:
+  loop_gather_fusion, operand 0
+ from instruction: %param.4 = c128[9,4,2,1963]{3,2,1,0} parameter(0), sharding={devices=[1,4,1,1]<=[4]}, metadata={op_name="psi_" scheduling_name="param.4"}
+<183 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  loop_gather_fusion, operand 1
+ from instruction: %param.1.0 = s32[9,24,24,80]{3,2,1,0} parameter(1), sharding={replicated}, metadata={op_name="g_index_" scheduling_name="param.1.0"}
+<184 loop_gather_fusion @0>
+ positions:
+  loop_gather_fusion
+  bitcast.703.0
+  all-gather-start {0}
+ uses:
+  bitcast.703.0, operand 0
+  all-gather-start, operand 0
+  all-gather-done, operand 0 {0}
+ from instruction: %loop_gather_fusion = c128[414720,1,4,2]{0,3,2,1} fusion(%param.4, %param.1.0), kind=kLoop, calls=%fused_gather, metadata={op_name="jit(fn)/jit(main)/jit(_take)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=104 scheduling_name="loop_gather_fusion"}
+<185 all-gather-start{} @0>
+ positions:
+  all-gather-start {}
+ uses:
+  all-gather-done, operand 0 {}
+ from instruction: %all-gather-start = (c128[9,4,2,24,24,80]{5,4,3,0,2,1}, c128[9,16,2,24,24,80]{5,4,3,0,2,1}) all-gather-start(%bitcast.703.0), channel_id=1, replica_groups=[1,4]<=[4], dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(fn)/jit(main)/jit(fft)/fft" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=287 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<186 all-gather-start{1} @0>
+ positions:
+  all-gather-start {1}
+  all-gather-done
+ uses:
+  all-gather-done, operand 0 {1}
+  loop_transpose_fusion, operand 0
+ from instruction: %all-gather-start = (c128[9,4,2,24,24,80]{5,4,3,0,2,1}, c128[9,16,2,24,24,80]{5,4,3,0,2,1}) all-gather-start(%bitcast.703.0), channel_id=1, replica_groups=[1,4]<=[4], dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(fn)/jit(main)/jit(fft)/fft" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=287 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<187 loop_transpose_fusion @0>
+ positions:
+  loop_transpose_fusion
+  bitcast.710.0
+ uses:
+  bitcast.710.0, operand 0
+  fft.1.0, operand 0
+ from instruction: %loop_transpose_fusion = c128[9,32,46080]{2,1,0} fusion(%all-gather-done), kind=kLoop, calls=%fused_transpose, metadata={op_name="jit(fn)/jit(main)/jit(fft)/fft" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=287 scheduling_name="loop_transpose_fusion"}
+<188 fft.1.0 @0>
+ positions:
+  fft.1.0
+ uses:
+  loop_gather_fusion.1, operand 0
+ from instruction: %fft.1.0 = c128[9,16,2,24,24,80]{5,4,3,2,1,0} fft(%bitcast.710.0), fft_type=IFFT, fft_length={24,24,80}, metadata={op_name="jit(fn)/jit(main)/jit(fft)/fft" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=287 scheduling_name="fft.1.0"}
+<189 param.2.0 @0>
+ positions:
+  param.2.0
+ uses:
+  loop_select_fusion, operand 0
+  loop_gather_fusion.1, operand 5
+ from instruction: %param.2.0 = f64[9,3]{1,0} parameter(3), sharding={replicated}, metadata={op_name="kvecs_" scheduling_name="param.2.0"}
+<190 loop_select_fusion{} @0>
+ positions:
+  loop_select_fusion {}
+ uses:
+  get-tuple-element, operand 0 {}
+  get-tuple-element.1, operand 0 {}
+ from instruction: %loop_select_fusion = (f64[9,24]{1,0}, f64[9,24]{1,0}) fusion(%param.2.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(fn)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405 scheduling_name="loop_select_fusion"}
+<191 loop_select_fusion{0} @0>
+ positions:
+  loop_select_fusion {0}
+  get-tuple-element
+ uses:
+  loop_gather_fusion.1, operand 1
+ from instruction: %loop_select_fusion = (f64[9,24]{1,0}, f64[9,24]{1,0}) fusion(%param.2.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(fn)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405 scheduling_name="loop_select_fusion"}
+<192 loop_select_fusion{1} @0>
+ positions:
+  loop_select_fusion {1}
+  get-tuple-element.1
+ uses:
+  loop_gather_fusion.1, operand 2
+ from instruction: %loop_select_fusion = (f64[9,24]{1,0}, f64[9,24]{1,0}) fusion(%param.2.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(fn)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405 scheduling_name="loop_select_fusion"}
+<193 param.3.0 @0>
+ positions:
+  param.3.0
+ uses:
+  loop_gather_fusion.1, operand 3
+ from instruction: %param.3.0 = s32[640,3]{1,0} parameter(2), sharding={replicated}, metadata={op_name="r_mu_" scheduling_name="param.3.0"}
+<194 partition-id.1 @0>
+ positions:
+  partition-id.1
+ uses:
+  loop_gather_fusion.1, operand 4
+ from instruction: %partition-id.1 = u32[] partition-id(), metadata={op_name="jit(fn)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416 scheduling_name="partition-id.1"}
+<195 loop_gather_fusion.1 @0>
+ positions:
+  loop_gather_fusion.1
+  bitcast.316.0
+ uses:
+  bitcast.316.0, operand 0
+ from instruction: %loop_gather_fusion.1 = c128[640,1,1,1,9,4,2]{0,6,5,4,3,2,1} fusion(%fft.1.0, %get-tuple-element, %get-tuple-element.1, %param.3.0, %partition-id.1, /*index=5*/%param.2.0), kind=kLoop, calls=%fused_gather.1, metadata={op_name="jit(fn)/jit(main)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=289 scheduling_name="loop_gather_fusion.1"}
+
+
+HloLiveRange (max 17):
+  InstructionSequence:
+    0:param.4
+    1:param.1.0
+    2:param.2.0
+    3:param.3.0
+    4:loop_gather_fusion
+    5:bitcast.703.0
+    6:all-gather-start
+    7:all-gather-done
+    8:loop_transpose_fusion
+    9:loop_select_fusion
+    10:partition-id.1
+    11:bitcast.710.0
+    12:fft.1.0
+    13:get-tuple-element
+    14:get-tuple-element.1
+    15:loop_gather_fusion.1
+    16:bitcast.316.0
+  BufferLiveRange:
+    param.4{}:0-17
+    param.1.0{}:0-17
+    loop_gather_fusion{}:4-7
+    all-gather-start{}:6-7
+    all-gather-start{1}:6-8
+    loop_transpose_fusion{}:8-12
+    fft.1.0{}:12-15
+    param.2.0{}:0-17
+    loop_select_fusion{}:9-14
+    loop_select_fusion{0}:9-15
+    loop_select_fusion{1}:9-15
+    param.3.0{}:0-17
+    partition-id.1{}:10-15
+    loop_gather_fusion.1{}:15-17
+  Live ranges at 12 (peak):
+    param.4: 2261376 bytes
+    param.1.0: 1658880 bytes
+    loop_transpose_fusion: 212336640 bytes
+    fft.1.0: 212336640 bytes
+    param.2.0: 216 bytes
+    loop_select_fusion: 16 bytes
+    loop_select_fusion: 16 bytes
+    loop_select_fusion: 16 bytes
+    param.3.0: 7680 bytes
+    partition-id.1: 4 bytes

@@ -1,0 +1,14 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(c128[250,480,480]{2,1,0}, c128[250,480,480]{2,1,0})->c128[250,480,480]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="32d4ec982b96f8eedeaa93760961378c"}
+
+%wrapped_multiply_computation (param_0: c128[250,480,480], param_1: c128[250,480,480]) -> c128[250,480,480] {
+  %param_0 = c128[250,480,480]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1 = c128[250,480,480]{2,1,0} parameter(1), metadata={scheduling_name="param_1"}
+  ROOT %multiply.4.1 = c128[250,480,480]{2,1,0} multiply(%param_0, %param_1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/minimax_screening.py" source_line=378 scheduling_name="multiply.4.1"}
+}
+
+ENTRY %main.4_spmd (param.2: c128[250,480,480], param.1.0: c128[250,480,480]) -> c128[250,480,480] {
+  %param.1.0 = c128[250,480,480]{2,1,0} parameter(1), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="y" scheduling_name="param.1.0"}
+  %param.2 = c128[250,480,480]{2,1,0} parameter(0), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="x" scheduling_name="param.2"}
+  ROOT %wrapped_multiply = c128[250,480,480]{2,1,0} fusion(%param.2, %param.1.0), kind=kLoop, calls=%wrapped_multiply_computation, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/minimax_screening.py" source_line=378 scheduling_name="wrapped_multiply"}
+}
+

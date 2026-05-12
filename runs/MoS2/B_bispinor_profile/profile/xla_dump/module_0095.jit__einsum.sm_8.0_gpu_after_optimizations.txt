@@ -1,0 +1,31 @@
+HloModule jit__einsum, is_scheduled=true, entry_computation_layout={(c128[2,2,1947]{2,1,0}, c128[8,2,1947]{2,1,0})->c128[8,2,1947]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="e5d9fd5c7801154a88a6bbdb8dc7cdba"}
+
+%fused_transpose (param_0.1: c128[1947,8,2]) -> c128[16,1947] {
+  %param_0.1 = c128[1947,8,2]{2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.37.1 = c128[1947,16]{1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.37.1"}
+  ROOT %transpose.13.1 = c128[16,1947]{1,0} transpose(%bitcast.37.1), dimensions={1,0}, metadata={op_name="jit(_einsum)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/bispinor_init.py" source_line=54 scheduling_name="transpose.13.1"}
+}
+
+%fused_transpose.1 (param_0.3: c128[8,2,1947]) -> c128[1947,16] {
+  %param_0.3 = c128[8,2,1947]{2,1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.27.1 = c128[16,1947]{1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.27.1"}
+  ROOT %transpose.11.1 = c128[1947,16]{1,0} transpose(%bitcast.27.1), dimensions={1,0}, metadata={op_name="operands[1]" scheduling_name="transpose.11.1"}
+}
+
+%wrapped_transpose_computation (param_0.4: c128[2,2,1947]) -> c128[1947,2,2] {
+  %param_0.4 = c128[2,2,1947]{2,1,0} parameter(0), metadata={scheduling_name="param_0.4"}
+  ROOT %transpose.12.1 = c128[1947,2,2]{2,1,0} transpose(%param_0.4), dimensions={2,1,0}, metadata={op_name="operands[0]" scheduling_name="transpose.12.1"}
+}
+
+ENTRY %main.5 (Arg_0.1.0: c128[2,2,1947], Arg_1.2.0: c128[8,2,1947]) -> c128[8,2,1947] {
+  %Arg_1.2.0 = c128[8,2,1947]{2,1,0} parameter(1), metadata={op_name="operands[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[2,2,1947]{2,1,0} parameter(0), metadata={op_name="operands[0]" scheduling_name="Arg_0.1.0"}
+  %wrapped_transpose = c128[1947,2,2]{2,1,0} fusion(%Arg_0.1.0), kind=kLoop, calls=%wrapped_transpose_computation, metadata={op_name="operands[0]" scheduling_name="wrapped_transpose"}
+  %input_transpose_fusion.1 = c128[1947,16]{1,0} fusion(%Arg_1.2.0), kind=kInput, calls=%fused_transpose.1, metadata={op_name="operands[1]" scheduling_name="input_transpose_fusion.1"}
+  %bitcast.31.0 = c128[1947,8,2]{2,1,0} bitcast(%input_transpose_fusion.1), metadata={scheduling_name="bitcast.31.0"}
+  %custom-call.1.0 = (c128[1947,8,2]{2,1,0}, s8[623040]{0}) custom-call(%bitcast.31.0, %wrapped_transpose), custom_call_target="__cublas$gemm", metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/bispinor_init.py" source_line=54 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"16","rhs_stride":"4","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.1 = c128[1947,8,2]{2,1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/bispinor_init.py" source_line=54 scheduling_name="get-tuple-element.1"}
+  %input_transpose_fusion = c128[16,1947]{1,0} fusion(%get-tuple-element.1), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_einsum)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/bispinor_init.py" source_line=54 scheduling_name="input_transpose_fusion"}
+  ROOT %bitcast.24.0 = c128[8,2,1947]{2,1,0} bitcast(%input_transpose_fusion), metadata={op_name="jit(_einsum)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/bispinor_init.py" source_line=54 scheduling_name="bitcast.24.0"}
+}
+

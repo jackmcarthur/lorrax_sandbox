@@ -1,0 +1,69 @@
+HloModule jit__impl, entry_computation_layout={(c128[10,8,2,64]{3,2,1,0}, f64[10]{0}, f64[64,8]{1,0}, f64[64,2]{1,0})->c128[10,8,2,64]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,true,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%_where.37 (Arg_0.38: pred[10,8,2,64], Arg_1.39: f64[], Arg_2.40: f64[10,8,2,64]) -> f64[10,8,2,64] {
+  %Arg_0.38 = pred[10,8,2,64]{3,2,1,0} parameter(0), metadata={op_name="jit(_impl)/jit(main)/pjit"}
+  %Arg_1.39 = f64[] parameter(1), metadata={op_name="jit(_impl)/jit(main)/pjit"}
+  %broadcast.41 = f64[10,8,2,64]{3,2,1,0} broadcast(%Arg_1.39), dimensions={}, metadata={op_name="jit(_impl)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=192}
+  %Arg_2.40 = f64[10,8,2,64]{3,2,1,0} parameter(2), metadata={op_name="jit(_impl)/jit(main)/pjit"}
+  ROOT %select.42 = f64[10,8,2,64]{3,2,1,0} select(%Arg_0.38, %broadcast.41, %Arg_2.40), metadata={op_name="jit(_impl)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=192}
+}
+
+%region_0.48 (Arg_0.49: f64[], Arg_1.50: f64[]) -> f64[] {
+  %Arg_0.49 = f64[] parameter(0), metadata={op_name="jit(_impl)/jit(main)/reduce_sum"}
+  %Arg_1.50 = f64[] parameter(1), metadata={op_name="jit(_impl)/jit(main)/reduce_sum"}
+  ROOT %add.51 = f64[] add(%Arg_0.49, %Arg_1.50), metadata={op_name="jit(_impl)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196}
+}
+
+ENTRY %main.61 (Arg_0.1: c128[10,8,2,64], Arg_1.2: f64[10], Arg_2.3: f64[64,8], Arg_3.4: f64[64,2]) -> c128[10,8,2,64] {
+  %Arg_0.1 = c128[10,8,2,64]{3,2,1,0} parameter(0), sharding={devices=[1,2,2,1]<=[4]}, metadata={op_name="R"}
+  %Arg_2.3 = f64[64,8]{1,0} parameter(2), metadata={op_name="eps_c_in"}
+  %transpose.13 = f64[8,64]{0,1} transpose(%Arg_2.3), dimensions={1,0}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %reshape.14 = f64[8,1,64]{2,1,0} reshape(%transpose.13), metadata={op_name="jit(_impl)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %broadcast.17 = f64[8,1,64]{2,1,0} broadcast(%reshape.14), dimensions={0,1,2}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %reshape.18 = f64[8,64]{1,0} reshape(%broadcast.17), metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %broadcast.19 = f64[8,2,64]{2,1,0} broadcast(%reshape.18), dimensions={0,2}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %Arg_3.4 = f64[64,2]{1,0} parameter(3), metadata={op_name="eps_v_in"}
+  %transpose.15 = f64[2,64]{0,1} transpose(%Arg_3.4), dimensions={1,0}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %reshape.16 = f64[1,2,64]{2,1,0} reshape(%transpose.15), metadata={op_name="jit(_impl)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %broadcast.20 = f64[1,2,64]{2,1,0} broadcast(%reshape.16), dimensions={0,1,2}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %reshape.21 = f64[2,64]{1,0} reshape(%broadcast.20), metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %broadcast.22 = f64[8,2,64]{2,1,0} broadcast(%reshape.21), dimensions={1,2}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %subtract.23 = f64[8,2,64]{2,1,0} subtract(%broadcast.19, %broadcast.22), metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %custom-call.24 = f64[8,2,64]{2,1,0} custom-call(%subtract.23), custom_call_target="Sharding", sharding={devices=[2,2,1]<=[4]}, metadata={op_name="jit(_impl)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=187}
+  %reshape.25 = f64[1,8,2,64]{3,2,1,0} reshape(%custom-call.24), metadata={op_name="jit(_impl)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189}
+  %broadcast.27 = f64[1,8,2,64]{3,2,1,0} broadcast(%reshape.25), dimensions={0,1,2,3}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189}
+  %reshape.28 = f64[8,2,64]{2,1,0} reshape(%broadcast.27), metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189}
+  %broadcast.29 = f64[10,8,2,64]{3,2,1,0} broadcast(%reshape.28), dimensions={1,2,3}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189}
+  %Arg_1.2 = f64[10]{0} parameter(1), sharding={replicated}, metadata={op_name="Lambda"}
+  %reshape.26 = f64[10,1,1,1]{3,2,1,0} reshape(%Arg_1.2), metadata={op_name="jit(_impl)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=190}
+  %broadcast.30 = f64[10,1,1,1]{3,2,1,0} broadcast(%reshape.26), dimensions={0,1,2,3}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189}
+  %reshape.31 = f64[10]{0} reshape(%broadcast.30), metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189}
+  %broadcast.32 = f64[10,8,2,64]{3,2,1,0} broadcast(%reshape.31), dimensions={0}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189}
+  %subtract.33 = f64[10,8,2,64]{3,2,1,0} subtract(%broadcast.29, %broadcast.32), metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189}
+  %constant.9 = f64[] constant(0.001)
+  %broadcast.10 = f64[10,8,2,64]{3,2,1,0} broadcast(%constant.9), dimensions={}
+  %add.34 = f64[10,8,2,64]{3,2,1,0} add(%subtract.33, %broadcast.10), metadata={op_name="jit(_impl)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189}
+  %abs.35 = f64[10,8,2,64]{3,2,1,0} abs(%add.34), metadata={op_name="jit(_impl)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=192}
+  %constant.7 = f64[] constant(1e-12)
+  %broadcast.8 = f64[10,8,2,64]{3,2,1,0} broadcast(%constant.7), dimensions={}
+  %compare.36 = pred[10,8,2,64]{3,2,1,0} compare(%abs.35, %broadcast.8), direction=LT, metadata={op_name="jit(_impl)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=192}
+  %constant.12 = f64[] constant(1e-12)
+  %call.43 = f64[10,8,2,64]{3,2,1,0} call(%compare.36, %constant.12, %add.34), to_apply=%_where.37
+  %convert.44 = c128[10,8,2,64]{3,2,1,0} convert(%call.43), metadata={op_name="jit(_impl)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=195}
+  %divide.45 = c128[10,8,2,64]{3,2,1,0} divide(%Arg_0.1, %convert.44), metadata={op_name="jit(_impl)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=195}
+  %abs.46 = f64[10,8,2,64]{3,2,1,0} abs(%divide.45), metadata={op_name="jit(_impl)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196}
+  %multiply.47 = f64[10,8,2,64]{3,2,1,0} multiply(%abs.46, %abs.46), metadata={op_name="jit(_impl)/jit(main)/integer_pow" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196}
+  %constant.11 = f64[] constant(0)
+  %reduce.52 = f64[10]{0} reduce(%multiply.47, %constant.11), dimensions={1,2,3}, to_apply=%region_0.48, metadata={op_name="jit(_impl)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196}
+  %reshape.53 = f64[10,1,1,1]{3,2,1,0} reshape(%reduce.52), metadata={op_name="jit(_impl)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196}
+  %sqrt.54 = f64[10,1,1,1]{3,2,1,0} sqrt(%reshape.53), metadata={op_name="jit(_impl)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196}
+  %constant.5 = f64[] constant(1e-30)
+  %broadcast.6 = f64[10,1,1,1]{3,2,1,0} broadcast(%constant.5), dimensions={}
+  %maximum.55 = f64[10,1,1,1]{3,2,1,0} maximum(%sqrt.54, %broadcast.6), metadata={op_name="jit(_impl)/jit(main)/max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=198}
+  %convert.56 = c128[10,1,1,1]{3,2,1,0} convert(%maximum.55), metadata={op_name="jit(_impl)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=198}
+  %broadcast.57 = c128[10,1,1,1]{3,2,1,0} broadcast(%convert.56), dimensions={0,1,2,3}, metadata={op_name="jit(_impl)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=198}
+  %reshape.58 = c128[10]{0} reshape(%broadcast.57), metadata={op_name="jit(_impl)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=198}
+  %broadcast.59 = c128[10,8,2,64]{3,2,1,0} broadcast(%reshape.58), dimensions={0}, metadata={op_name="jit(_impl)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=198}
+  ROOT %divide.60 = c128[10,8,2,64]{3,2,1,0} divide(%divide.45, %broadcast.59), metadata={op_name="jit(_impl)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=198}
+}
+

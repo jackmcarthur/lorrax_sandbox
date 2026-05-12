@@ -1,0 +1,32 @@
+HloModule jit_eigh, entry_computation_layout={(f64[200,200]{1,0})->(f64[200]{0}, f64[200,200]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true,true}
+
+ENTRY %main.28 (Arg_0.1: f64[200,200]) -> (f64[200], f64[200,200]) {
+  %Arg_0.1 = f64[200,200]{1,0} parameter(0), metadata={op_name="a"}
+  %transpose.9 = f64[200,200]{0,1} transpose(%Arg_0.1), dimensions={1,0}, metadata={op_name="jit(eigh)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %add.10 = f64[200,200]{1,0} add(%Arg_0.1, %transpose.9), metadata={op_name="jit(eigh)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %constant.6 = f64[] constant(2)
+  %broadcast.7 = f64[200,200]{1,0} broadcast(%constant.6), dimensions={}
+  %divide.11 = f64[200,200]{1,0} divide(%add.10, %broadcast.7), metadata={op_name="jit(eigh)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %custom-call.12 = (f64[200,200]{0,1}, f64[200]{0}, s32[]) custom-call(%divide.11), custom_call_target="cusolver_syevd_ffi", operand_layout_constraints={f64[200,200]{0,1}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}, backend_config={algorithm = 0 : ui8, lower = true}
+  %get-tuple-element.15 = s32[] get-tuple-element(%custom-call.12), index=2, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %constant.8 = s32[] constant(0)
+  %compare.16 = pred[] compare(%get-tuple-element.15, %constant.8), direction=EQ, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %reshape.22 = pred[1]{0} reshape(%compare.16), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %broadcast.23 = pred[1]{0} broadcast(%reshape.22), dimensions={0}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %reshape.24 = pred[] reshape(%broadcast.23), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %broadcast.25 = pred[200]{0} broadcast(%reshape.24), dimensions={}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %get-tuple-element.14 = f64[200]{0} get-tuple-element(%custom-call.12), index=1, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %constant.2 = f64[] constant(nan)
+  %broadcast.3 = f64[200]{0} broadcast(%constant.2), dimensions={}
+  %select.26 = f64[200]{0} select(%broadcast.25, %get-tuple-element.14, %broadcast.3), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %reshape.17 = pred[1,1]{1,0} reshape(%compare.16), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %broadcast.18 = pred[1,1]{1,0} broadcast(%reshape.17), dimensions={0,1}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %reshape.19 = pred[] reshape(%broadcast.18), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %broadcast.20 = pred[200,200]{1,0} broadcast(%reshape.19), dimensions={}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %get-tuple-element.13 = f64[200,200]{0,1} get-tuple-element(%custom-call.12), index=0, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  %constant.4 = f64[] constant(nan)
+  %broadcast.5 = f64[200,200]{1,0} broadcast(%constant.4), dimensions={}
+  %select.21 = f64[200,200]{1,0} select(%broadcast.20, %get-tuple-element.13, %broadcast.5), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=292}
+  ROOT %tuple.27 = (f64[200]{0}, f64[200,200]{1,0}) tuple(%select.26, %select.21)
+}
+

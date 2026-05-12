@@ -1,0 +1,115 @@
+HloModule jit__compute_CCT_LR, input_output_alias={ {}: (0, {}, may-alias) }, entry_computation_layout={(c128[9,640,640]{2,1,0}, c128[9,640,640]{2,1,0})->c128[9,640,640]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, num_partitions=4
+
+%fft.10 (Arg_0.11: c128[320,320,3,3,1]) -> c128[320,320,3,3,1] {
+  %Arg_0.11 = c128[320,320,3,3,1]{4,3,2,1,0} parameter(0), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/pjit"}
+  ROOT %fft.12 = c128[320,320,3,3,1]{4,3,2,1,0} fft(%Arg_0.11), fft_type=IFFT, fft_length={3,3,1}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+}
+
+%region_0.13 (Arg_0.14: c128[], Arg_1.15: c128[]) -> c128[] {
+  %Arg_0.14 = c128[] parameter(0), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod"}
+  %Arg_1.15 = c128[] parameter(1), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod"}
+  ROOT %multiply.16 = c128[] multiply(%Arg_0.14, %Arg_1.15), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+}
+
+%shmap_body.17 (Arg_0.18: c128[3], Arg_1.19: c128[3,3,1,320,320]) -> c128[3,3,1,320,320] {
+  %Arg_1.19 = c128[3,3,1,320,320]{4,3,2,1,0} parameter(1), metadata={op_name="[None, None, None, (\'x\',), (\'y\',)]"}
+  %transpose.21 = c128[320,320,3,3,1]{1,0,4,3,2} transpose(%Arg_1.19), dimensions={3,4,0,1,2}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+  %call.22 = c128[320,320,3,3,1]{4,3,2,1,0} call(%transpose.21), to_apply=%fft.10
+  %Arg_0.18 = c128[3]{0} parameter(0), metadata={op_name="[None]"}
+  %constant.20 = c128[] constant((1, 0))
+  %reduce.23 = c128[] reduce(%Arg_0.18, %constant.20), dimensions={0}, to_apply=%region_0.13, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+  %broadcast.24 = c128[320,320,3,3,1]{4,3,2,1,0} broadcast(%reduce.23), dimensions={}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+  %multiply.25 = c128[320,320,3,3,1]{4,3,2,1,0} multiply(%call.22, %broadcast.24), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+  ROOT %transpose.26 = c128[3,3,1,320,320]{2,1,0,4,3} transpose(%multiply.25), dimensions={2,3,4,0,1}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+}
+
+%fft_1.37 (Arg_0.38: c128[320,320,3,3,1]) -> c128[320,320,3,3,1] {
+  %Arg_0.38 = c128[320,320,3,3,1]{4,3,2,1,0} parameter(0), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/pjit"}
+  ROOT %fft.39 = c128[320,320,3,3,1]{4,3,2,1,0} fft(%Arg_0.38), fft_type=IFFT, fft_length={3,3,1}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+}
+
+%region_1.40 (Arg_0.41: c128[], Arg_1.42: c128[]) -> c128[] {
+  %Arg_0.41 = c128[] parameter(0), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod"}
+  %Arg_1.42 = c128[] parameter(1), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod"}
+  ROOT %multiply.43 = c128[] multiply(%Arg_0.41, %Arg_1.42), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+}
+
+%shmap_body_0.44 (Arg_0.45: c128[3], Arg_1.46: c128[3,3,1,320,320]) -> c128[3,3,1,320,320] {
+  %Arg_1.46 = c128[3,3,1,320,320]{4,3,2,1,0} parameter(1), metadata={op_name="[None, None, None, (\'x\',), (\'y\',)]"}
+  %transpose.48 = c128[320,320,3,3,1]{1,0,4,3,2} transpose(%Arg_1.46), dimensions={3,4,0,1,2}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+  %call.49 = c128[320,320,3,3,1]{4,3,2,1,0} call(%transpose.48), to_apply=%fft_1.37
+  %Arg_0.45 = c128[3]{0} parameter(0), metadata={op_name="[None]"}
+  %constant.47 = c128[] constant((1, 0))
+  %reduce.50 = c128[] reduce(%Arg_0.45, %constant.47), dimensions={0}, to_apply=%region_1.40, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+  %broadcast.51 = c128[320,320,3,3,1]{4,3,2,1,0} broadcast(%reduce.50), dimensions={}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+  %multiply.52 = c128[320,320,3,3,1]{4,3,2,1,0} multiply(%call.49, %broadcast.51), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+  ROOT %transpose.53 = c128[3,3,1,320,320]{2,1,0,4,3} transpose(%multiply.52), dimensions={2,3,4,0,1}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+}
+
+%fft_3.69 (Arg_0.70: c128[320,320,3,3,1]) -> c128[320,320,3,3,1] {
+  %Arg_0.70 = c128[320,320,3,3,1]{4,3,2,1,0} parameter(0), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/pjit"}
+  ROOT %fft.71 = c128[320,320,3,3,1]{4,3,2,1,0} fft(%Arg_0.70), fft_type=FFT, fft_length={3,3,1}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343}
+}
+
+%region_2.72 (Arg_0.73: c128[], Arg_1.74: c128[]) -> c128[] {
+  %Arg_0.73 = c128[] parameter(0), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod"}
+  %Arg_1.74 = c128[] parameter(1), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod"}
+  ROOT %multiply.75 = c128[] multiply(%Arg_0.73, %Arg_1.74), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343}
+}
+
+%shmap_body_2.76 (Arg_0.77: c128[3], Arg_1.78: c128[3,3,1,320,320]) -> c128[3,3,1,320,320] {
+  %Arg_1.78 = c128[3,3,1,320,320]{4,3,2,1,0} parameter(1), metadata={op_name="[None, None, None, (\'x\',), (\'y\',)]"}
+  %transpose.80 = c128[320,320,3,3,1]{1,0,4,3,2} transpose(%Arg_1.78), dimensions={3,4,0,1,2}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343}
+  %call.81 = c128[320,320,3,3,1]{4,3,2,1,0} call(%transpose.80), to_apply=%fft_3.69
+  %constant.79 = c128[] constant((1, 0))
+  %Arg_0.77 = c128[3]{0} parameter(0), metadata={op_name="[None]"}
+  %reduce.82 = c128[] reduce(%Arg_0.77, %constant.79), dimensions={0}, to_apply=%region_2.72, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343}
+  %divide.83 = c128[] divide(%constant.79, %reduce.82), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343}
+  %broadcast.84 = c128[320,320,3,3,1]{4,3,2,1,0} broadcast(%divide.83), dimensions={}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343}
+  %multiply.85 = c128[320,320,3,3,1]{4,3,2,1,0} multiply(%call.81, %broadcast.84), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343}
+  ROOT %transpose.86 = c128[3,3,1,320,320]{2,1,0,4,3} transpose(%multiply.85), dimensions={2,3,4,0,1}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343}
+}
+
+ENTRY %main.93 (Arg_0.1: c128[9,640,640], Arg_1.2: c128[9,640,640]) -> c128[9,640,640] {
+  %constant.3 = c128[3]{0} constant({(3, 0), (3, 0), (1, 0)})
+  %custom-call.65 = c128[3]{0} custom-call(%constant.3), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %custom-call.66 = c128[3]{0} custom-call(%custom-call.65), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %custom-call.6 = c128[3]{0} custom-call(%constant.3), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %custom-call.7 = c128[3]{0} custom-call(%custom-call.6), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %Arg_0.1 = c128[9,640,640]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="P_l"}
+  %reshape.4 = c128[3,3,1,640,640]{4,3,2,1,0} reshape(%Arg_0.1), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=403}
+  %custom-call.5 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%reshape.4), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=402}
+  %custom-call.8 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%custom-call.5), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %custom-call.9 = c128[3,3,1,320,320]{4,3,2,1,0} custom-call(%custom-call.8), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %call.27 = c128[3,3,1,320,320]{2,1,0,4,3} call(%custom-call.7, %custom-call.9), to_apply=%shmap_body.17
+  %custom-call.28 = c128[3,3,1,320,320]{4,3,2,1,0} custom-call(%call.27), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %custom-call.29 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%custom-call.28), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %reshape.30 = c128[9,640,640]{2,1,0} reshape(%custom-call.29), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %real.58 = f64[9,640,640]{2,1,0} real(%reshape.30), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=388}
+  %imag.59 = f64[9,640,640]{2,1,0} imag(%reshape.30), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=388}
+  %negate.60 = f64[9,640,640]{2,1,0} negate(%imag.59), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=388}
+  %complex.61 = c128[9,640,640]{2,1,0} complex(%real.58, %negate.60), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=388}
+  %custom-call.33 = c128[3]{0} custom-call(%constant.3), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %custom-call.34 = c128[3]{0} custom-call(%custom-call.33), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %Arg_1.2 = c128[9,640,640]{2,1,0} parameter(1), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="P_r"}
+  %reshape.31 = c128[3,3,1,640,640]{4,3,2,1,0} reshape(%Arg_1.2), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=403}
+  %custom-call.32 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%reshape.31), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=402}
+  %custom-call.35 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%custom-call.32), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %custom-call.36 = c128[3,3,1,320,320]{4,3,2,1,0} custom-call(%custom-call.35), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %call.54 = c128[3,3,1,320,320]{2,1,0,4,3} call(%custom-call.34, %custom-call.36), to_apply=%shmap_body_0.44
+  %custom-call.55 = c128[3,3,1,320,320]{4,3,2,1,0} custom-call(%call.54), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %custom-call.56 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%custom-call.55), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %reshape.57 = c128[9,640,640]{2,1,0} reshape(%custom-call.56), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %multiply.62 = c128[9,640,640]{2,1,0} multiply(%complex.61, %reshape.57), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=388}
+  %reshape.63 = c128[3,3,1,640,640]{4,3,2,1,0} reshape(%multiply.62), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=403}
+  %custom-call.64 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%reshape.63), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=402}
+  %custom-call.67 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%custom-call.64), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %custom-call.68 = c128[3,3,1,320,320]{4,3,2,1,0} custom-call(%custom-call.67), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %call.87 = c128[3,3,1,320,320]{2,1,0,4,3} call(%custom-call.66, %custom-call.68), to_apply=%shmap_body_2.76
+  %custom-call.88 = c128[3,3,1,320,320]{4,3,2,1,0} custom-call(%call.87), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %custom-call.89 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%custom-call.88), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %reshape.90 = c128[9,640,640]{2,1,0} reshape(%custom-call.89), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404}
+  %tuple.91 = (c128[9,640,640]{2,1,0}) tuple(%reshape.90)
+  ROOT %get-tuple-element.92 = c128[9,640,640]{2,1,0} get-tuple-element(%tuple.91), index=0, sharding={devices=[1,2,2]<=[4]}
+}
+

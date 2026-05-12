@@ -1,0 +1,28 @@
+HloModule jit__diag, entry_computation_layout={(f64[199]{0})->f64[200,200]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}
+
+%_where.14 (Arg_0.15: pred[200,200], Arg_1.16: f64[200], Arg_2.17: f64[200]) -> f64[200,200] {
+  %Arg_0.15 = pred[200,200]{1,0} parameter(0), metadata={op_name="jit(_diag)/jit(main)/pjit"}
+  %Arg_1.16 = f64[200]{0} parameter(1), metadata={op_name="jit(_diag)/jit(main)/pjit"}
+  %broadcast.18 = f64[200,200]{1,0} broadcast(%Arg_1.16), dimensions={1}, metadata={op_name="jit(_diag)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=288}
+  %Arg_2.17 = f64[200]{0} parameter(2), metadata={op_name="jit(_diag)/jit(main)/pjit"}
+  %broadcast.19 = f64[200,200]{1,0} broadcast(%Arg_2.17), dimensions={1}, metadata={op_name="jit(_diag)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=288}
+  ROOT %select.20 = f64[200,200]{1,0} select(%Arg_0.15, %broadcast.18, %broadcast.19), metadata={op_name="jit(_diag)/jit(main)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=288}
+}
+
+ENTRY %main.22 (Arg_0.1: f64[199]) -> f64[200,200] {
+  %iota.8 = s64[200]{0} iota(), iota_dimension=0, metadata={op_name="jit(_diag)/jit(main)/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=290}
+  %broadcast.9 = s64[200,200]{1,0} broadcast(%iota.8), dimensions={0}, metadata={op_name="jit(_diag)/jit(main)/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=290}
+  %constant.4 = s64[] constant(-1)
+  %broadcast.5 = s64[200,200]{1,0} broadcast(%constant.4), dimensions={}
+  %add.12 = s64[200,200]{1,0} add(%broadcast.9, %broadcast.5), metadata={op_name="jit(_diag)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=290}
+  %iota.10 = s64[200]{0} iota(), iota_dimension=0, metadata={op_name="jit(_diag)/jit(main)/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=290}
+  %broadcast.11 = s64[200,200]{1,0} broadcast(%iota.10), dimensions={1}, metadata={op_name="jit(_diag)/jit(main)/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=290}
+  %compare.13 = pred[200,200]{1,0} compare(%add.12, %broadcast.11), direction=EQ, metadata={op_name="jit(_diag)/jit(main)/eq" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=290}
+  %Arg_0.1 = f64[199]{0} parameter(0), metadata={op_name="v"}
+  %constant.6 = f64[] constant(0)
+  %pad.7 = f64[200]{0} pad(%Arg_0.1, %constant.6), padding=0_1, metadata={op_name="jit(_diag)/jit(main)/pad" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=290}
+  %constant.2 = f64[] constant(0)
+  %broadcast.3 = f64[200]{0} broadcast(%constant.2), dimensions={}
+  ROOT %call.21 = f64[200,200]{1,0} call(%compare.13, %pad.7, %broadcast.3), to_apply=%_where.14
+}
+

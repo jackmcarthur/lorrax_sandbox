@@ -1,0 +1,15 @@
+HloModule jit_greater, is_scheduled=true, entry_computation_layout={(f64[9,320,320]{2,1,0}, f64[])->pred[9,320,320]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="80f244034460ea53f5fab49d2f467c8e"}
+
+%fused_compare (param_0: f64[9,320,320], param_1.1: f64[]) -> pred[9,320,320] {
+  %param_0 = f64[9,320,320]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.1 = f64[] parameter(1), metadata={scheduling_name="param_1.1"}
+  %broadcast.4.1 = f64[9,320,320]{2,1,0} broadcast(%param_1.1), dimensions={}, metadata={op_name="jit(greater)/jit(main)/gt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=216 scheduling_name="broadcast.4.1"}
+  ROOT %compare.3.1 = pred[9,320,320]{2,1,0} compare(%param_0, %broadcast.4.1), direction=GT, metadata={op_name="jit(greater)/jit(main)/gt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=216 scheduling_name="compare.3.1"}
+}
+
+ENTRY %main.5_spmd (param.2: f64[9,320,320], param.1.0: f64[]) -> pred[9,320,320] {
+  %param.1.0 = f64[] parameter(1), sharding={replicated}, metadata={op_name="y" scheduling_name="param.1.0"}
+  %param.2 = f64[9,320,320]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="x" scheduling_name="param.2"}
+  ROOT %loop_compare_fusion = pred[9,320,320]{2,1,0} fusion(%param.2, %param.1.0), kind=kLoop, calls=%fused_compare, metadata={op_name="jit(greater)/jit(main)/gt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=216 scheduling_name="loop_compare_fusion"}
+}
+

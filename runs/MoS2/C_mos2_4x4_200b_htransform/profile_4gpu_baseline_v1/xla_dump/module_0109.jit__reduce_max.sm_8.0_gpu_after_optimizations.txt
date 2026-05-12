@@ -1,0 +1,20 @@
+HloModule jit__reduce_max, is_scheduled=true, entry_computation_layout={(f64[60,60]{1,0})->f64[]}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="3972542249695cfb1917c5318c32f6a2"}
+
+%region_0.3 (Arg_0.4: f64[], Arg_1.5: f64[]) -> f64[] {
+  %Arg_1.5 = f64[] parameter(1), metadata={op_name="jit(_reduce_max)/jit(main)/reduce_max" scheduling_name="Arg_1.5"}
+  %Arg_0.4 = f64[] parameter(0), metadata={op_name="jit(_reduce_max)/jit(main)/reduce_max" scheduling_name="Arg_0.4"}
+  ROOT %maximum.2 = f64[] maximum(%Arg_0.4, %Arg_1.5), metadata={op_name="jit(_reduce_max)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=212 scheduling_name="maximum.2"}
+}
+
+%fused_reduce (param_0.2: f64[60,60]) -> f64[] {
+  %param_0.2 = f64[60,60]{1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %bitcast.25.1 = f64[3600]{0} bitcast(%param_0.2), metadata={scheduling_name="bitcast.25.1"}
+  %constant_3 = f64[] constant(-inf)
+  ROOT %reduce.3 = f64[] reduce(%bitcast.25.1, %constant_3), dimensions={0}, to_apply=%region_0.3, metadata={op_name="jit(_reduce_max)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=212 scheduling_name="reduce.3"}
+}
+
+ENTRY %main.8_spmd (param.1: f64[60,60]) -> f64[] {
+  %param.1 = f64[60,60]{1,0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.1"}
+  ROOT %input_reduce_fusion = f64[] fusion(%param.1), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_reduce_max)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=212 scheduling_name="input_reduce_fusion"}
+}
+

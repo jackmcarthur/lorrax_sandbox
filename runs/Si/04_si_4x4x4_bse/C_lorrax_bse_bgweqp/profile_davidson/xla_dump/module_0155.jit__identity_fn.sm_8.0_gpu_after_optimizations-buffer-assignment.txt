@@ -1,0 +1,105 @@
+BufferAssignment:
+allocation 0: size 327680, output shape is |c128[20,4,4,64]|, maybe-live-out:
+ value: <9 all-gather-start{1} @0> (size=163840,offset=0): c128[20,2,4,64]{3,1,0,2}
+ value: <13 loop_transpose_fusion @0> (size=327680,offset=0): c128[20,4,256]{2,1,0}
+allocation 1: size 81920, parameter 0, shape |c128[20,2,2,64]| at ShapeIndex {}:
+ value: <6 param.1 @0> (size=81920,offset=0): c128[20,2,2,64]{3,2,1,0}
+allocation 2: size 491776, preallocated-temp:
+ value: <7 loop_transpose_fusion.2 @0> (size=81920,offset=256): c128[2,40,64]{2,1,0}
+ value: <8 all-gather-start{} @0> (size=16,offset=0): (c128[20,2,2,64]{3,1,0,2}, c128[20,2,4,64]{3,1,0,2})
+ value: <10 loop_transpose_fusion.1 @0> (size=163840,offset=327936): c128[2,20,4,64]{3,2,1,0}
+ value: <11 all-gather-start.1{} @0> (size=16,offset=128): (c128[20,2,4,64]{3,2,0,1}, c128[20,4,4,64]{3,2,0,1})
+ value: <12 all-gather-start.1{1} @0> (size=327680,offset=256): c128[20,4,4,64]{3,2,0,1}
+
+Total bytes used: 901376 (880.2KiB)
+
+Used values:
+<6 param.1 @0>
+ positions:
+  param.1
+ uses:
+  loop_transpose_fusion.2, operand 0
+ from instruction: %param.1 = c128[20,2,2,64]{3,2,1,0} parameter(0), sharding={devices=[1,2,2,1]<=[4]}, metadata={op_name="x" scheduling_name="param.1"}
+<7 loop_transpose_fusion.2 @0>
+ positions:
+  loop_transpose_fusion.2
+  bitcast.44.0
+  all-gather-start {0}
+ uses:
+  bitcast.44.0, operand 0
+  all-gather-start, operand 0
+  all-gather-done, operand 0 {0}
+ from instruction: %loop_transpose_fusion.2 = c128[2,40,64]{2,1,0} fusion(%param.1), kind=kLoop, calls=%fused_transpose.2, metadata={op_name="x" scheduling_name="loop_transpose_fusion.2"}
+<8 all-gather-start{} @0>
+ positions:
+  all-gather-start {}
+ uses:
+  all-gather-done, operand 0 {}
+ from instruction: %all-gather-start = (c128[20,2,2,64]{3,1,0,2}, c128[20,2,4,64]{3,1,0,2}) all-gather-start(%bitcast.44.0), channel_id=1, replica_groups=[2,2]<=[4], dimensions={2}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<9 all-gather-start{1} @0>
+ positions:
+  all-gather-start {1}
+  all-gather-done
+ uses:
+  all-gather-done, operand 0 {1}
+  loop_transpose_fusion.1, operand 0
+ from instruction: %all-gather-start = (c128[20,2,2,64]{3,1,0,2}, c128[20,2,4,64]{3,1,0,2}) all-gather-start(%bitcast.44.0), channel_id=1, replica_groups=[2,2]<=[4], dimensions={2}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<10 loop_transpose_fusion.1 @0>
+ positions:
+  loop_transpose_fusion.1
+  bitcast.51.0
+  all-gather-start.1 {0}
+ uses:
+  bitcast.51.0, operand 0
+  all-gather-start.1, operand 0
+  all-gather-done.1, operand 0 {0}
+ from instruction: %loop_transpose_fusion.1 = c128[2,20,4,64]{3,2,1,0} fusion(%all-gather-done), kind=kLoop, calls=%fused_transpose.1, metadata={scheduling_name="loop_transpose_fusion.1"}
+<11 all-gather-start.1{} @0>
+ positions:
+  all-gather-start.1 {}
+ uses:
+  all-gather-done.1, operand 0 {}
+ from instruction: %all-gather-start.1 = (c128[20,2,4,64]{3,2,0,1}, c128[20,4,4,64]{3,2,0,1}) all-gather-start(%bitcast.51.0), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={1}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<12 all-gather-start.1{1} @0>
+ positions:
+  all-gather-start.1 {1}
+  all-gather-done.1
+ uses:
+  all-gather-done.1, operand 0 {1}
+  loop_transpose_fusion, operand 0
+ from instruction: %all-gather-start.1 = (c128[20,2,4,64]{3,2,0,1}, c128[20,4,4,64]{3,2,0,1}) all-gather-start(%bitcast.51.0), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={1}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<13 loop_transpose_fusion @0>
+ positions:
+  loop_transpose_fusion
+  bitcast.35.0
+ uses:
+  bitcast.35.0, operand 0
+ from instruction: %loop_transpose_fusion = c128[20,4,256]{2,1,0} fusion(%all-gather-done.1), kind=kLoop, calls=%fused_transpose, metadata={scheduling_name="loop_transpose_fusion"}
+
+
+HloLiveRange (max 11):
+  InstructionSequence:
+    0:param.1
+    1:loop_transpose_fusion.2
+    2:bitcast.44.0
+    3:all-gather-start
+    4:all-gather-done
+    5:loop_transpose_fusion.1
+    6:bitcast.51.0
+    7:all-gather-start.1
+    8:all-gather-done.1
+    9:loop_transpose_fusion
+    10:bitcast.35.0
+  BufferLiveRange:
+    param.1{}:0-11
+    loop_transpose_fusion.2{}:1-4
+    all-gather-start{}:3-4
+    all-gather-start{1}:3-5
+    loop_transpose_fusion.1{}:5-8
+    all-gather-start.1{}:7-8
+    all-gather-start.1{1}:7-9
+    loop_transpose_fusion{}:9-11
+  Live ranges at 9 (peak):
+    param.1: 81920 bytes
+    all-gather-start.1: 16 bytes
+    loop_transpose_fusion: 327680 bytes

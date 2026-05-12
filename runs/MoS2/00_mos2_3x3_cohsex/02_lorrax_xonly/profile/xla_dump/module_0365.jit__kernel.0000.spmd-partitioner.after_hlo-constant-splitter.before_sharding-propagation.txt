@@ -1,0 +1,30 @@
+HloModule jit__kernel, input_output_alias={ {0}: (0, {}, may-alias), {1}: (1, {}, may-alias) }, entry_computation_layout={(c128[9,640,640]{2,1,0}, c128[9,640]{1,0}, c128[9,640,2419]{2,1,0}, c128[9,2419]{1,0}, s32[], /*index=5*/s32[], s32[])->(c128[9,640,640]{2,1,0}, c128[9,640]{1,0})}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,false,false,false}, allow_spmd_sharding_propagation_to_output={false,false}, num_partitions=4
+
+ENTRY %main.51 (Arg_0.1: c128[9,640,640], Arg_1.2: c128[9,640], Arg_2.3: c128[9,640,2419], Arg_3.4: c128[9,2419], Arg_4.5: s32[], Arg_5.6: s32[], Arg_6.7: s32[]) -> (c128[9,640,640], c128[9,640]) {
+  %Arg_0.1 = c128[9,640,640]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="V_acc"}
+  %Arg_1.2 = c128[9,640]{1,0} parameter(1), sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="g0_acc"}
+  %Arg_4.5 = s32[] parameter(4), metadata={op_name="q_lo_dyn"}
+  %Arg_5.6 = s32[] parameter(5), metadata={op_name="mu_lo_dyn"}
+  %Arg_6.7 = s32[] parameter(6), metadata={op_name="nu_lo_dyn"}
+  %Arg_2.3 = c128[9,640,2419]{2,1,0} parameter(2), sharding={devices=[1,4,1]<=[4]}, metadata={op_name="zeta_L_G"}
+  %custom-call.11 = c128[9,640,2419]{2,1,0} custom-call(%Arg_2.3), custom_call_target="Sharding", sharding={devices=[1,4,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=868}
+  %custom-call.12 = c128[9,640,2419]{2,1,0} custom-call(%custom-call.11), custom_call_target="Sharding", sharding={devices=[1,2,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=876}
+  %Arg_3.4 = c128[9,2419]{1,0} parameter(3), sharding={replicated}, metadata={op_name="v_per_G_batch"}
+  %broadcast.17 = c128[9,640,2419]{2,1,0} broadcast(%Arg_3.4), dimensions={0,2}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=881}
+  %multiply.18 = c128[9,640,2419]{2,1,0} multiply(%custom-call.12, %broadcast.17), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=881}
+  %custom-call.19 = c128[9,640,2419]{2,1,0} custom-call(%multiply.18), custom_call_target="Sharding", sharding={devices=[1,2,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=880}
+  %real.20 = f64[9,640,2419]{2,1,0} real(%custom-call.19), metadata={op_name="jit(_kernel)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=884}
+  %imag.21 = f64[9,640,2419]{2,1,0} imag(%custom-call.19), metadata={op_name="jit(_kernel)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=884}
+  %negate.22 = f64[9,640,2419]{2,1,0} negate(%imag.21), metadata={op_name="jit(_kernel)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=884}
+  %complex.23 = c128[9,640,2419]{2,1,0} complex(%real.20, %negate.22), metadata={op_name="jit(_kernel)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=884}
+  %custom-call.13 = c128[9,640,2419]{2,1,0} custom-call(%custom-call.11), custom_call_target="Sharding", sharding={devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=877}
+  %dot.24 = c128[9,640,640]{2,1,0} dot(%complex.23, %custom-call.13), lhs_batch_dims={0}, lhs_contracting_dims={2}, rhs_batch_dims={0}, rhs_contracting_dims={2}, metadata={op_name="jit(_kernel)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=883}
+  %custom-call.25 = c128[9,640,640]{2,1,0} custom-call(%dot.24), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=886}
+  %custom-call.36 = c128[9,640,640]{2,1,0} custom-call(%custom-call.25), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=889}
+  %slice.37 = c128[9,640,1]{2,1,0} slice(%custom-call.11), slice={[0:9], [0:640], [0:1]}, metadata={op_name="jit(_kernel)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=893}
+  %reshape.38 = c128[9,640]{1,0} reshape(%slice.37), metadata={op_name="jit(_kernel)/jit(main)/squeeze" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=893}
+  %custom-call.39 = c128[9,640]{1,0} custom-call(%reshape.38), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=894}
+  %custom-call.47 = c128[9,640]{1,0} custom-call(%custom-call.39), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=897}
+  ROOT %tuple.50 = (c128[9,640,640]{2,1,0}, c128[9,640]{1,0}) tuple(%custom-call.36, %custom-call.47), sharding={{devices=[1,2,2]<=[4]}, {devices=[1,2,2]<=[4] last_tile_dim_replicate}}
+}
+

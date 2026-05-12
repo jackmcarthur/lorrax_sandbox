@@ -1,0 +1,35 @@
+HloModule jit_scatter, is_scheduled=true, entry_computation_layout={(f64[80]{0}, s32[1]{0}, f64[40]{0})->f64[80]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="9795fd1a5aa89caa9252070a0078652f"}
+
+%fused_dynamic_update_slice (param_0.1: f64[80], param_1.2: f64[40], param_2.1: s32[1]) -> f64[80] {
+  %param_0.1 = f64[80]{0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %param_1.2 = f64[40]{0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %param_2.1 = s32[1]{0} parameter(2), metadata={scheduling_name="param_2.1"}
+  %bitcast.79.2 = s32[] bitcast(%param_2.1), metadata={scheduling_name="bitcast.79.2"}
+  ROOT %dynamic-update-slice.4.1 = f64[80]{0} dynamic-update-slice(%param_0.1, %param_1.2, %bitcast.79.2), metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=49 scheduling_name="dynamic-update-slice.4.1"}
+}
+
+%fused_select (param_0.7: f64[40], param_1.5: f64[80], param_2.4: s32[1]) -> f64[40] {
+  %constant_21_1 = s32[1]{0} constant({0})
+  %param_2.4 = s32[1]{0} parameter(2), metadata={scheduling_name="param_2.4"}
+  %compare.9.1 = pred[1]{0} compare(%constant_21_1, %param_2.4), direction=LE, metadata={scheduling_name="compare.9.1"}
+  %constant_20_1 = s32[1]{0} constant({40})
+  %compare.10.1 = pred[1]{0} compare(%constant_20_1, %param_2.4), direction=GE, metadata={scheduling_name="compare.10.1"}
+  %and.5.1 = pred[1]{0} and(%compare.9.1, %compare.10.1), metadata={scheduling_name="and.5.1"}
+  %bitcast.69.3 = pred[] bitcast(%and.5.1), metadata={scheduling_name="bitcast.69.3"}
+  %broadcast.15.3 = pred[40]{0} broadcast(%bitcast.69.3), dimensions={}, metadata={scheduling_name="broadcast.15.3"}
+  %param_0.7 = f64[40]{0} parameter(0), metadata={scheduling_name="param_0.7"}
+  %param_1.5 = f64[80]{0} parameter(1), metadata={scheduling_name="param_1.5"}
+  %bitcast.79.4 = s32[] bitcast(%param_2.4), metadata={scheduling_name="bitcast.79.4"}
+  %dynamic-slice.6.3 = f64[40]{0} dynamic-slice(%param_1.5, %bitcast.79.4), dynamic_slice_sizes={40}, metadata={scheduling_name="dynamic-slice.6.3"}
+  ROOT %select.4.1 = f64[40]{0} select(%broadcast.15.3, %param_0.7, %dynamic-slice.6.3), metadata={scheduling_name="select.4.1"}
+}
+
+ENTRY %main.8 (Arg_0.1.0: f64[80], Arg_1.2.0: s32[1], Arg_2.3.0: f64[40]) -> f64[80] {
+  %Arg_1.2.0 = s32[1]{0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_2.3.0 = f64[40]{0} parameter(2), metadata={op_name="args[2]" scheduling_name="Arg_2.3.0"}
+  %Arg_0.1.0 = f64[80]{0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  %copy.2 = f64[80]{0} copy(%Arg_0.1.0)
+  %loop_select_fusion = f64[40]{0} fusion(%Arg_2.3.0, %copy.2, %Arg_1.2.0), kind=kLoop, calls=%fused_select, metadata={scheduling_name="loop_select_fusion"}
+  ROOT %loop_dynamic_update_slice_fusion = f64[80]{0} fusion(%copy.2, %loop_select_fusion, %Arg_1.2.0), kind=kLoop, calls=%fused_dynamic_update_slice, metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=49 scheduling_name="loop_dynamic_update_slice_fusion"}
+}
+

@@ -1,0 +1,15 @@
+HloModule jit_conjugate, is_scheduled=true, entry_computation_layout={(c128[9,80,80]{2,1,0})->c128[9,80,80]{2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="7750bbb42d7bec23cd4d962db5d145e0"}
+
+%fused_complex (param_0.1: c128[9,80,80]) -> c128[9,80,80] {
+  %param_0.1 = c128[9,80,80]{2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %real.4.1 = f64[9,80,80]{2,1,0} real(%param_0.1), metadata={op_name="jit(conjugate)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=668 scheduling_name="real.4.1"}
+  %imag.4.1 = f64[9,80,80]{2,1,0} imag(%param_0.1), metadata={op_name="jit(conjugate)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=668 scheduling_name="imag.4.1"}
+  %negate.3.1 = f64[9,80,80]{2,1,0} negate(%imag.4.1), metadata={op_name="jit(conjugate)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=668 scheduling_name="negate.3.1"}
+  ROOT %complex.3.1 = c128[9,80,80]{2,1,0} complex(%real.4.1, %negate.3.1), metadata={op_name="jit(conjugate)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=668 scheduling_name="complex.3.1"}
+}
+
+ENTRY %main.6_spmd (param.1: c128[9,80,80]) -> c128[9,80,80] {
+  %param.1 = c128[9,80,80]{2,1,0} parameter(0), sharding={replicated}, metadata={op_name="x" scheduling_name="param.1"}
+  ROOT %loop_complex_fusion = c128[9,80,80]{2,1,0} fusion(%param.1), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(conjugate)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=668 scheduling_name="loop_complex_fusion"}
+}
+

@@ -1,0 +1,18 @@
+HloModule jit_subtract, is_scheduled=true, entry_computation_layout={(f64[3]{0}, f64[3]{0}, f64[3]{0})->(f64[3]{0}, f64[3]{0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="0814fd6a8e3acd2c020960eae57b30a1"}
+
+%fused_negate_subtract (param_0_0: f64[3], param_0_1: f64[3], param_1_0: f64[3]) -> (f64[3], f64[3]) {
+  %param_0_0 = f64[3]{0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %param_0_1 = f64[3]{0} parameter(1), metadata={scheduling_name="param_0_1"}
+  %subtract.2.2 = f64[3]{0} subtract(%param_0_0, %param_0_1), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=216 scheduling_name="subtract.2.2"}
+  %param_1_0 = f64[3]{0} parameter(2), metadata={scheduling_name="param_1_0"}
+  %negate.2.2 = f64[3]{0} negate(%param_1_0), metadata={op_name="jit(subtract)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=216 scheduling_name="negate.2.2"}
+  ROOT %tuple = (f64[3]{0}, f64[3]{0}) tuple(%subtract.2.2, %negate.2.2), metadata={scheduling_name="tuple"}
+}
+
+ENTRY %main.7 (Arg_0.1.0: f64[3], Arg_1.2.0: f64[3], Arg_2.3.0: f64[3]) -> (f64[3], f64[3]) {
+  %Arg_2.3.0 = f64[3]{0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = f64[3]{0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[3]{0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  ROOT %loop_negate_subtract_fusion = (f64[3]{0}, f64[3]{0}) fusion(%Arg_0.1.0, %Arg_1.2.0, %Arg_2.3.0), kind=kLoop, calls=%fused_negate_subtract, metadata={scheduling_name="loop_negate_subtract_fusion"}
+}
+

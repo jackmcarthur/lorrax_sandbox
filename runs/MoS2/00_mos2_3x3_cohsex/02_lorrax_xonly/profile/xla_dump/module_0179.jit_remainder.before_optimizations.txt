@@ -1,0 +1,31 @@
+HloModule jit_remainder, entry_computation_layout={(s64[4]{0}, s64[])->s64[4]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}
+
+%_where.8 (Arg_0.9: pred[], Arg_1.10: s64[], Arg_2.11: s64[]) -> s64[] {
+  %Arg_0.9 = pred[] parameter(0), metadata={op_name="jit(remainder)/jit(main)/pjit"}
+  %Arg_1.10 = s64[] parameter(1), metadata={op_name="jit(remainder)/jit(main)/pjit"}
+  %Arg_2.11 = s64[] parameter(2), metadata={op_name="jit(remainder)/jit(main)/pjit"}
+  ROOT %select.12 = s64[] select(%Arg_0.9, %Arg_1.10, %Arg_2.11), metadata={op_name="jit(remainder)/jit(main)/jit(_where)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+}
+
+ENTRY %main.25 (Arg_0.1: s64[4], Arg_1.2: s64[]) -> s64[4] {
+  %Arg_0.1 = s64[4]{0} parameter(0), metadata={op_name="x1"}
+  %Arg_1.2 = s64[] parameter(1), metadata={op_name="x2"}
+  %constant.6 = s64[] constant(0)
+  %compare.7 = pred[] compare(%Arg_1.2, %constant.6), direction=EQ, metadata={op_name="jit(remainder)/jit(main)/eq" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+  %constant.5 = s64[] constant(1)
+  %call.13 = s64[] call(%compare.7, %constant.5, %Arg_1.2), to_apply=%_where.8
+  %broadcast.14 = s64[4]{0} broadcast(%call.13), dimensions={}, metadata={op_name="jit(remainder)/jit(main)/rem" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+  %remainder.15 = s64[4]{0} remainder(%Arg_0.1, %broadcast.14), metadata={op_name="jit(remainder)/jit(main)/rem" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+  %constant.3 = s64[] constant(0)
+  %broadcast.4 = s64[4]{0} broadcast(%constant.3), dimensions={}
+  %compare.17 = pred[4]{0} compare(%remainder.15, %broadcast.4), direction=LT, metadata={op_name="jit(remainder)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+  %compare.18 = pred[] compare(%call.13, %constant.6), direction=LT, metadata={op_name="jit(remainder)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+  %broadcast.19 = pred[4]{0} broadcast(%compare.18), dimensions={}, metadata={op_name="jit(remainder)/jit(main)/ne" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+  %compare.20 = pred[4]{0} compare(%compare.17, %broadcast.19), direction=NE, metadata={op_name="jit(remainder)/jit(main)/ne" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+  %compare.16 = pred[4]{0} compare(%remainder.15, %broadcast.4), direction=NE, metadata={op_name="jit(remainder)/jit(main)/ne" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+  %and.21 = pred[4]{0} and(%compare.20, %compare.16), metadata={op_name="jit(remainder)/jit(main)/and" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+  %broadcast.22 = s64[4]{0} broadcast(%call.13), dimensions={}, metadata={op_name="jit(remainder)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+  %add.23 = s64[4]{0} add(%remainder.15, %broadcast.22), metadata={op_name="jit(remainder)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+  ROOT %select.24 = s64[4]{0} select(%and.21, %add.23, %remainder.15), metadata={op_name="jit(remainder)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+}
+

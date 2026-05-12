@@ -1,0 +1,57 @@
+HloModule jit_scatter, is_scheduled=true, entry_computation_layout={(f64[3,5,2109]{2,1,0}, s32[2]{0}, f64[2109]{0})->f64[3,5,2109]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="cc57045559dd0c80bcdc1e5552315f71"}
+
+%fused_dynamic_slice (param_0: f64[3,5,2109], param_1.20: s32[2]) -> f64[1,1,2109] {
+  %param_0 = f64[3,5,2109]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.20 = s32[2]{0} parameter(1), metadata={scheduling_name="param_1.20"}
+  %bitcast.130.7 = s32[1,2]{1,0} bitcast(%param_1.20), metadata={scheduling_name="bitcast.130.7"}
+  %slice.21.7 = s32[1,1]{1,0} slice(%bitcast.130.7), slice={[0:1], [0:1]}, metadata={scheduling_name="slice.21.7"}
+  %bitcast.159.1 = s32[] bitcast(%slice.21.7), metadata={scheduling_name="bitcast.159.1"}
+  %slice.22.3 = s32[1]{0} slice(%param_1.20), slice={[1:2]}, metadata={scheduling_name="slice.22.3"}
+  %bitcast.163.1 = s32[] bitcast(%slice.22.3), metadata={scheduling_name="bitcast.163.1"}
+  %constant_13_1 = s32[] constant(0)
+  ROOT %dynamic-slice.7.1 = f64[1,1,2109]{2,1,0} dynamic-slice(%param_0, %bitcast.159.1, %bitcast.163.1, %constant_13_1), dynamic_slice_sizes={1,1,2109}, metadata={scheduling_name="dynamic-slice.7.1"}
+}
+
+%and.reduce_sub_computation (lhs: pred[], rhs: pred[]) -> pred[] {
+  %rhs = pred[] parameter(1), metadata={scheduling_name="rhs"}
+  %lhs = pred[] parameter(0), metadata={scheduling_name="lhs"}
+  ROOT %and.7 = pred[] and(%lhs, %rhs), metadata={scheduling_name="and.7"}
+}
+
+%fused_dynamic_update_slice (param_0.1: f64[3,5,2109], param_1.21: f64[1,1,2109], param_2.21: f64[2109], param_3.15: s32[2], param_4.13: s32[3]) -> f64[3,5,2109] {
+  %param_0.1 = f64[3,5,2109]{2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %constant_13_2 = s32[] constant(0)
+  %broadcast.25.5 = s32[3]{0} broadcast(%constant_13_2), dimensions={}, metadata={scheduling_name="broadcast.25.5"}
+  %param_3.15 = s32[2]{0} parameter(3), metadata={scheduling_name="param_3.15"}
+  %bitcast.130.11 = s32[1,2]{1,0} bitcast(%param_3.15), metadata={scheduling_name="bitcast.130.11"}
+  %slice.21.11 = s32[1,1]{1,0} slice(%bitcast.130.11), slice={[0:1], [0:1]}, metadata={scheduling_name="slice.21.11"}
+  %bitcast.133.5 = s32[1]{0} bitcast(%slice.21.11), metadata={scheduling_name="bitcast.133.5"}
+  %slice.22.7 = s32[1]{0} slice(%param_3.15), slice={[1:2]}, metadata={scheduling_name="slice.22.7"}
+  %constant_22_1 = s32[1]{0} constant({0})
+  %concatenate.4.5 = s32[3]{0} concatenate(%bitcast.133.5, %slice.22.7, %constant_22_1), dimensions={0}, metadata={scheduling_name="concatenate.4.5"}
+  %compare.9.5 = pred[3]{0} compare(%broadcast.25.5, %concatenate.4.5), direction=LE, metadata={scheduling_name="compare.9.5"}
+  %param_4.13 = s32[3]{0} parameter(4), metadata={scheduling_name="param_4.13"}
+  %compare.10.3 = pred[3]{0} compare(%param_4.13, %concatenate.4.5), direction=GE, metadata={scheduling_name="compare.10.3"}
+  %and.8.3 = pred[3]{0} and(%compare.9.5, %compare.10.3), metadata={scheduling_name="and.8.3"}
+  %constant_24_1 = pred[] constant(true)
+  %reduce.1.1 = pred[] reduce(%and.8.3, %constant_24_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.1.1"}
+  %broadcast.26.1 = pred[1,1,2109]{2,1,0} broadcast(%reduce.1.1), dimensions={}, metadata={scheduling_name="broadcast.26.1"}
+  %param_2.21 = f64[2109]{0} parameter(2), metadata={scheduling_name="param_2.21"}
+  %bitcast.152.3 = f64[1,1,2109]{2,1,0} bitcast(%param_2.21), metadata={scheduling_name="bitcast.152.3"}
+  %param_1.21 = f64[1,1,2109]{2,1,0} parameter(1), metadata={scheduling_name="param_1.21"}
+  %select.4.3 = f64[1,1,2109]{2,1,0} select(%broadcast.26.1, %bitcast.152.3, %param_1.21), metadata={scheduling_name="select.4.3"}
+  %bitcast.159.2 = s32[] bitcast(%slice.21.11), metadata={scheduling_name="bitcast.159.2"}
+  %bitcast.163.2 = s32[] bitcast(%slice.22.7), metadata={scheduling_name="bitcast.163.2"}
+  ROOT %dynamic-update-slice.5.1 = f64[3,5,2109]{2,1,0} dynamic-update-slice(%param_0.1, %select.4.3, %bitcast.159.2, %bitcast.163.2, %constant_13_2), metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/radial/solid_harmonics.py" source_line=82 scheduling_name="dynamic-update-slice.5.1"}
+}
+
+ENTRY %main.8 (Arg_0.1.0: f64[3,5,2109], Arg_1.2.0: s32[2], Arg_2.3.0: f64[2109]) -> f64[3,5,2109] {
+  %Arg_1.2.0 = s32[2]{0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %constant_23_0 = s32[3]{0} constant({2, 4, 0})
+  %Arg_2.3.0 = f64[2109]{0} parameter(2), metadata={op_name="args[2]" scheduling_name="Arg_2.3.0"}
+  %Arg_0.1.0 = f64[3,5,2109]{2,1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  %copy.2 = f64[3,5,2109]{2,1,0} copy(%Arg_0.1.0)
+  %loop_dynamic_slice_fusion = f64[1,1,2109]{2,1,0} fusion(%copy.2, %Arg_1.2.0), kind=kLoop, calls=%fused_dynamic_slice, metadata={scheduling_name="loop_dynamic_slice_fusion"}
+  ROOT %loop_dynamic_update_slice_fusion = f64[3,5,2109]{2,1,0} fusion(%copy.2, %loop_dynamic_slice_fusion, %Arg_2.3.0, %Arg_1.2.0, %constant_23_0), kind=kLoop, calls=%fused_dynamic_update_slice, metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/radial/solid_harmonics.py" source_line=82 scheduling_name="loop_dynamic_update_slice_fusion"}
+}
+

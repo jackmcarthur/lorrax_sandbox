@@ -1,0 +1,18 @@
+HloModule jit_mul, is_scheduled=true, entry_computation_layout={(f64[1,3,1963]{2,1,0}, f64[9,1,1963]{2,1,0})->f64[9,3,1963]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="9b1c536f142f653ff5d9f641402cd8a2"}
+
+%fused_multiply (param_0.8: f64[1,3,1963], param_1.4: f64[9,1,1963]) -> f64[9,3,1963] {
+  %param_0.8 = f64[1,3,1963]{2,1,0} parameter(0), metadata={scheduling_name="param_0.8"}
+  %bitcast.30.3 = f64[3,1963]{1,0} bitcast(%param_0.8), metadata={scheduling_name="bitcast.30.3"}
+  %broadcast.7.3 = f64[9,3,1963]{2,1,0} broadcast(%bitcast.30.3), dimensions={1,2}, metadata={op_name="jit(mul)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=93 scheduling_name="broadcast.7.3"}
+  %param_1.4 = f64[9,1,1963]{2,1,0} parameter(1), metadata={scheduling_name="param_1.4"}
+  %bitcast.35.3 = f64[9,1963]{1,0} bitcast(%param_1.4), metadata={scheduling_name="bitcast.35.3"}
+  %broadcast.9.3 = f64[9,3,1963]{2,1,0} broadcast(%bitcast.35.3), dimensions={0,2}, metadata={op_name="jit(mul)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=93 scheduling_name="broadcast.9.3"}
+  ROOT %multiply.2.1 = f64[9,3,1963]{2,1,0} multiply(%broadcast.7.3, %broadcast.9.3), metadata={op_name="jit(mul)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=93 scheduling_name="multiply.2.1"}
+}
+
+ENTRY %main.10 (Arg_0.1.0: f64[1,3,1963], Arg_1.2.0: f64[9,1,1963]) -> f64[9,3,1963] {
+  %Arg_1.2.0 = f64[9,1,1963]{2,1,0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[1,3,1963]{2,1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_multiply_fusion = f64[9,3,1963]{2,1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(mul)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=93 scheduling_name="loop_multiply_fusion"}
+}
+

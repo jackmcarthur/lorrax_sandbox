@@ -1,0 +1,38 @@
+HloModule jit__left_ifft_conj, is_scheduled=true, input_output_alias={ {}: (0, {}, may-alias) }, entry_computation_layout={(c128[3,3,1,320,23040]{4,3,2,1,0})->c128[3,3,1,320,23040]{4,3,2,1,0}}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="a4a279d70a5e1ec78a0a7e48a8042355"}
+
+%fused_transpose (param_0.1: c128[3,1,320,23040,3]) -> c128[3,3,7372800] {
+  %param_0.1 = c128[3,1,320,23040,3]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.81.1 = c128[3,7372800,3]{2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.81.1"}
+  ROOT %transpose.17.1 = c128[3,3,7372800]{2,1,0} transpose(%bitcast.81.1), dimensions={0,2,1}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="transpose.17.1"}
+}
+
+%fused_transpose.1 (param_0.3: c128[3,1,320,23040,3]) -> c128[3,7372800,3] {
+  %param_0.3 = c128[3,1,320,23040,3]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.74.1 = c128[3,7372800,3]{2,1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.74.1"}
+  ROOT %transpose.16.1 = c128[3,7372800,3]{2,1,0} transpose(%bitcast.74.1), dimensions={2,1,0}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="transpose.16.1"}
+}
+
+%fused_transpose.2 (param_0.10: c128[3,3,1,320,23040]) -> c128[22118400,3] {
+  %param_0.10 = c128[3,3,1,320,23040]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.10"}
+  %real.10.3 = f64[3,3,1,320,23040]{4,3,2,1,0} real(%param_0.10), metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="real.10.3"}
+  %imag.10.3 = f64[3,3,1,320,23040]{4,3,2,1,0} imag(%param_0.10), metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="imag.10.3"}
+  %negate.10.3 = f64[3,3,1,320,23040]{4,3,2,1,0} negate(%imag.10.3), metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="negate.10.3"}
+  %complex.10.3 = c128[3,3,1,320,23040]{4,3,2,1,0} complex(%real.10.3, %negate.10.3), metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="complex.10.3"}
+  %bitcast.67.1 = c128[3,22118400]{1,0} bitcast(%complex.10.3), metadata={scheduling_name="bitcast.67.1"}
+  ROOT %transpose.15.1 = c128[22118400,3]{1,0} transpose(%bitcast.67.1), dimensions={1,0}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="transpose.15.1"}
+}
+
+ENTRY %main.11_spmd (param.1: c128[3,3,1,320,23040]) -> c128[3,3,1,320,23040] {
+  %param.1 = c128[3,3,1,320,23040]{4,3,2,1,0} parameter(0), sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="P_l_3d" scheduling_name="param.1"}
+  %loop_transpose_fusion.2 = c128[22118400,3]{1,0} fusion(%param.1), kind=kLoop, calls=%fused_transpose.2, metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="loop_transpose_fusion.2"}
+  %bitcast.71.0 = c128[3,1,320,23040,3]{4,3,2,1,0} bitcast(%loop_transpose_fusion.2), metadata={scheduling_name="bitcast.71.0"}
+  %fft.0.0 = c128[3,1,320,23040,3]{4,3,2,1,0} fft(%bitcast.71.0), fft_type=FFT, fft_length={3}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="fft.0.0"}
+  %loop_transpose_fusion.1 = c128[3,7372800,3]{2,1,0} fusion(%fft.0.0), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="loop_transpose_fusion.1"}
+  %bitcast.78.0 = c128[3,1,320,23040,3]{4,3,2,1,0} bitcast(%loop_transpose_fusion.1), metadata={scheduling_name="bitcast.78.0"}
+  %fft.1.0 = c128[3,1,320,23040,3]{4,3,2,1,0} fft(%bitcast.78.0), fft_type=FFT, fft_length={3}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="fft.1.0"}
+  %loop_transpose_fusion = c128[3,3,7372800]{2,1,0} fusion(%fft.1.0), kind=kLoop, calls=%fused_transpose, metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="loop_transpose_fusion"}
+  %bitcast.85.0 = c128[3,3,320,23040,1]{4,3,2,1,0} bitcast(%loop_transpose_fusion), metadata={scheduling_name="bitcast.85.0"}
+  %fft.2.0 = c128[3,3,320,23040,1]{4,3,2,1,0} fft(%bitcast.85.0), fft_type=FFT, fft_length={1}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="fft.2.0"}
+  ROOT %bitcast.30.0 = c128[3,3,1,320,23040]{4,3,2,1,0} bitcast(%fft.2.0), metadata={op_name="jit(_left_ifft_conj)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=157 scheduling_name="bitcast.30.0"}
+}
+

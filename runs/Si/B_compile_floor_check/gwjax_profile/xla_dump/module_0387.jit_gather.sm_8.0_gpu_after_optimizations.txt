@@ -1,0 +1,16 @@
+HloModule jit_gather, is_scheduled=true, entry_computation_layout={(c128[64,60,2,240]{3,2,1,0}, s32[1]{0})->c128[64,8,2,240]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="4429aac84e357065999a972e0363b362"}
+
+%fused_dynamic_slice (param_0: c128[64,60,2,240], param_1.1: s32[1]) -> c128[64,8,2,240] {
+  %param_0 = c128[64,60,2,240]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %constant_22_1 = s32[] constant(0), metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/wavefunction_bundle.py" source_line=150}
+  %param_1.1 = s32[1]{0} parameter(1), metadata={scheduling_name="param_1.1"}
+  %bitcast.27.1 = s32[] bitcast(%param_1.1), metadata={scheduling_name="bitcast.27.1"}
+  ROOT %dynamic-slice.8.1 = c128[64,8,2,240]{3,2,1,0} dynamic-slice(%param_0, %constant_22_1, %bitcast.27.1, %constant_22_1, %constant_22_1), dynamic_slice_sizes={64,8,2,240}, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/wavefunction_bundle.py" source_line=150 scheduling_name="dynamic-slice.8.1"}
+}
+
+ENTRY %main.4_spmd (param.2.0: c128[64,60,2,240], param.3.0: s32[1]) -> c128[64,8,2,240] {
+  %param.3.0 = s32[1]{0} parameter(1), sharding={replicated}, metadata={op_name="args[1]" scheduling_name="param.3.0"}
+  %param.2.0 = c128[64,60,2,240]{3,2,1,0} parameter(0), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="args[0]" scheduling_name="param.2.0"}
+  ROOT %loop_dynamic_slice_fusion = c128[64,8,2,240]{3,2,1,0} fusion(%param.2.0, %param.3.0), kind=kLoop, calls=%fused_dynamic_slice, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/wavefunction_bundle.py" source_line=150 scheduling_name="loop_dynamic_slice_fusion"}
+}
+

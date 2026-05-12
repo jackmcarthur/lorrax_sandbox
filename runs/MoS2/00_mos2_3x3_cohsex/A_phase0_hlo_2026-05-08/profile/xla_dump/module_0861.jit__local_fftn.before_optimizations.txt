@@ -1,0 +1,23 @@
+HloModule jit__local_fftn, entry_computation_layout={(c128[1,656,24,24,80]{4,3,2,1,0})->c128[1,656,24,24,80]{4,3,2,1,0}}, num_partitions=16
+
+%fft.4 (Arg_0.5: c128[1,41,24,24,80]) -> c128[1,41,24,24,80] {
+  %Arg_0.5 = c128[1,41,24,24,80]{4,3,2,1,0} parameter(0), metadata={op_name="jit(_local_fftn)/jit(main)/jit(shmap_body)/pjit"}
+  ROOT %fft.6 = c128[1,41,24,24,80]{4,3,2,1,0} fft(%Arg_0.5), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(_local_fftn)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343}
+}
+
+%shmap_body.7 (Arg_0.8: c128[1,41,24,24,80]) -> c128[1,41,24,24,80] {
+  %Arg_0.8 = c128[1,41,24,24,80]{4,3,2,1,0} parameter(0), metadata={op_name="[None, (\'x\', \'y\'), None, None, None]"}
+  ROOT %call.9 = c128[1,41,24,24,80]{4,3,2,1,0} call(%Arg_0.8), to_apply=%fft.4
+}
+
+ENTRY %main.15 (Arg_0.1: c128[1,656,24,24,80]) -> c128[1,656,24,24,80] {
+  %Arg_0.1 = c128[1,656,24,24,80]{4,3,2,1,0} parameter(0), sharding={devices=[1,16,1,1,1]<=[16]}, metadata={op_name="x_local"}
+  %custom-call.2 = c128[1,656,24,24,80]{4,3,2,1,0} custom-call(%Arg_0.1), custom_call_target="Sharding", sharding={devices=[1,16,1,1,1]<=[16]}, metadata={op_name="jit(_local_fftn)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/v_q_tile.py" source_line=305}
+  %custom-call.3 = c128[1,41,24,24,80]{4,3,2,1,0} custom-call(%custom-call.2), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_local_fftn)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/v_q_tile.py" source_line=305}
+  %call.10 = c128[1,41,24,24,80]{4,3,2,1,0} call(%custom-call.3), to_apply=%shmap_body.7
+  %custom-call.11 = c128[1,41,24,24,80]{4,3,2,1,0} custom-call(%call.10), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_local_fftn)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/v_q_tile.py" source_line=305}
+  %custom-call.12 = c128[1,656,24,24,80]{4,3,2,1,0} custom-call(%custom-call.11), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,16,1,1,1]<=[16]}, metadata={op_name="jit(_local_fftn)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/v_q_tile.py" source_line=305}
+  %tuple.13 = (c128[1,656,24,24,80]{4,3,2,1,0}) tuple(%custom-call.12)
+  ROOT %get-tuple-element.14 = c128[1,656,24,24,80]{4,3,2,1,0} get-tuple-element(%tuple.13), index=0, sharding={devices=[1,16,1,1,1]<=[16]}
+}
+

@@ -1,0 +1,102 @@
+BufferAssignment:
+allocation 0: size 235929600, output shape is |c128[480,480,4,4,4]|, maybe-live-out:
+ value: <7 all-gather-start{1} @0> (size=117964800,offset=0): c128[240,480,4,4,4]{4,3,2,0,1}
+ value: <11 fft.0.0 @0> (size=235929600,offset=0): c128[480,480,4,4,4]{4,3,2,1,0}
+allocation 1: size 58982400, parameter 0, shape |c128[240,240,4,4,4]| at ShapeIndex {}:
+ value: <4 param.1 @0> (size=58982400,offset=0): c128[240,240,4,4,4]{4,3,2,1,0}
+allocation 2: size 353894656, preallocated-temp:
+ value: <5 loop_transpose_fusion.1 @0> (size=58982400,offset=256): c128[240,240,64]{2,1,0}
+ value: <6 all-gather-start{} @0> (size=16,offset=0): (c128[240,240,4,4,4]{4,3,2,0,1}, c128[240,480,4,4,4]{4,3,2,0,1})
+ value: <8 loop_transpose_fusion @0> (size=117964800,offset=235929856): c128[240,480,64]{2,1,0}
+ value: <9 all-gather-start.1{} @0> (size=16,offset=128): (c128[240,480,4,4,4]{4,3,2,1,0}, c128[480,480,4,4,4]{4,3,2,1,0})
+ value: <10 all-gather-start.1{1} @0> (size=235929600,offset=256): c128[480,480,4,4,4]{4,3,2,1,0}
+
+Total bytes used: 648806656 (618.75MiB)
+
+Used values:
+<4 param.1 @0>
+ positions:
+  param.1
+ uses:
+  loop_transpose_fusion.1, operand 0
+ from instruction: %param.1 = c128[240,240,4,4,4]{4,3,2,1,0} parameter(0), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="x" scheduling_name="param.1"}
+<5 loop_transpose_fusion.1 @0>
+ positions:
+  loop_transpose_fusion.1
+  bitcast.35.0
+  all-gather-start {0}
+ uses:
+  bitcast.35.0, operand 0
+  all-gather-start, operand 0
+  all-gather-done, operand 0 {0}
+ from instruction: %loop_transpose_fusion.1 = c128[240,240,64]{2,1,0} fusion(%param.1), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="x" scheduling_name="loop_transpose_fusion.1"}
+<6 all-gather-start{} @0>
+ positions:
+  all-gather-start {}
+ uses:
+  all-gather-done, operand 0 {}
+ from instruction: %all-gather-start = (c128[240,240,4,4,4]{4,3,2,0,1}, c128[240,480,4,4,4]{4,3,2,0,1}) all-gather-start(%bitcast.35.0), channel_id=1, replica_groups=[2,2]<=[4], dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<7 all-gather-start{1} @0>
+ positions:
+  all-gather-start {1}
+  all-gather-done
+ uses:
+  all-gather-done, operand 0 {1}
+  loop_transpose_fusion, operand 0
+ from instruction: %all-gather-start = (c128[240,240,4,4,4]{4,3,2,0,1}, c128[240,480,4,4,4]{4,3,2,0,1}) all-gather-start(%bitcast.35.0), channel_id=1, replica_groups=[2,2]<=[4], dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<8 loop_transpose_fusion @0>
+ positions:
+  loop_transpose_fusion
+  bitcast.42.0
+  all-gather-start.1 {0}
+ uses:
+  bitcast.42.0, operand 0
+  all-gather-start.1, operand 0
+  all-gather-done.1, operand 0 {0}
+ from instruction: %loop_transpose_fusion = c128[240,480,64]{2,1,0} fusion(%all-gather-done), kind=kLoop, calls=%fused_transpose, metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="loop_transpose_fusion"}
+<9 all-gather-start.1{} @0>
+ positions:
+  all-gather-start.1 {}
+ uses:
+  all-gather-done.1, operand 0 {}
+ from instruction: %all-gather-start.1 = (c128[240,480,4,4,4]{4,3,2,1,0}, c128[480,480,4,4,4]{4,3,2,1,0}) all-gather-start(%bitcast.42.0), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={0}, use_global_device_ids=true, metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<10 all-gather-start.1{1} @0>
+ positions:
+  all-gather-start.1 {1}
+  all-gather-done.1
+ uses:
+  all-gather-done.1, operand 0 {1}
+  fft.0.0, operand 0
+ from instruction: %all-gather-start.1 = (c128[240,480,4,4,4]{4,3,2,1,0}, c128[480,480,4,4,4]{4,3,2,1,0}) all-gather-start(%bitcast.42.0), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={0}, use_global_device_ids=true, metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<11 fft.0.0 @0>
+ positions:
+  fft.0.0
+ uses:
+ from instruction: %fft.0.0 = c128[480,480,4,4,4]{4,3,2,1,0} fft(%all-gather-done.1), fft_type=IFFT, fft_length={4,4,4}, metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="fft.0.0"}
+
+
+HloLiveRange (max 10):
+  InstructionSequence:
+    0:param.1
+    1:loop_transpose_fusion.1
+    2:bitcast.35.0
+    3:all-gather-start
+    4:all-gather-done
+    5:loop_transpose_fusion
+    6:bitcast.42.0
+    7:all-gather-start.1
+    8:all-gather-done.1
+    9:fft.0.0
+  BufferLiveRange:
+    param.1{}:0-10
+    loop_transpose_fusion.1{}:1-4
+    all-gather-start{}:3-4
+    all-gather-start{1}:3-5
+    loop_transpose_fusion{}:5-8
+    all-gather-start.1{}:7-8
+    all-gather-start.1{1}:7-9
+    fft.0.0{}:9-10
+  Live ranges at 9 (peak):
+    param.1: 58982400 bytes
+    all-gather-start.1: 16 bytes
+    fft.0.0: 235929600 bytes

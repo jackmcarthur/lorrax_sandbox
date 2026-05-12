@@ -1,0 +1,85 @@
+BufferAssignment:
+allocation 0: size 31457280, parameter 0, shape |c128[4,4,4,120,256]| at ShapeIndex {}, output shape is |c128[4,4,4,120,256]|, maybe-live-out:
+ value: <15 param.1.0 @0> (size=31457280,offset=0): c128[4,4,4,120,256]{4,3,2,1,0}
+ value: <17 fft.4.0 @0> (size=31457280,offset=0): c128[120,256,4,4,4]{4,3,2,1,0}
+ value: <18 input_transpose_fusion.2 @0> (size=31457280,offset=0): c128[120,256,4,4,4]{4,3,2,1,0}
+ value: <20 input_transpose_fusion @0> (size=31457280,offset=0): c128[64,30720]{1,0}
+allocation 1: size 31457280, parameter 1, shape |c128[4,4,4,120,256]| at ShapeIndex {}:
+ value: <14 param.2 @0> (size=31457280,offset=0): c128[4,4,4,120,256]{4,3,2,1,0}
+allocation 2: size 31457280, preallocated-temp:
+ value: <16 input_transpose_fusion.1 @0> (size=31457280,offset=0): c128[30720,64]{1,0}
+ value: <19 fft.5.0 @0> (size=31457280,offset=0): c128[120,256,4,4,4]{4,3,2,1,0}
+
+Total bytes used: 94371840 (90.00MiB)
+
+Used values:
+<14 param.2 @0>
+ positions:
+  param.2
+ uses:
+  input_transpose_fusion.2, operand 0
+ from instruction: %param.2 = c128[4,4,4,120,256]{4,3,2,1,0} parameter(1), sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="P_l_Rt" scheduling_name="param.2"}
+<15 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  input_transpose_fusion.1, operand 0
+ from instruction: %param.1.0 = c128[4,4,4,120,256]{4,3,2,1,0} parameter(0), sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="P_r_3d" scheduling_name="param.1.0"}
+<16 input_transpose_fusion.1 @0>
+ positions:
+  input_transpose_fusion.1
+  bitcast.59.0
+ uses:
+  bitcast.59.0, operand 0
+  fft.4.0, operand 0
+ from instruction: %input_transpose_fusion.1 = c128[30720,64]{1,0} fusion(%param.1.0), kind=kInput, calls=%fused_transpose.1, metadata={op_name="P_r_3d" scheduling_name="input_transpose_fusion.1"}
+<17 fft.4.0 @0>
+ positions:
+  fft.4.0
+ uses:
+  input_transpose_fusion.2, operand 1
+ from instruction: %fft.4.0 = c128[120,256,4,4,4]{4,3,2,1,0} fft(%bitcast.59.0), fft_type=IFFT, fft_length={4,4,4}, metadata={op_name="jit(_right_ifft_mul_fft)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax/src/common/fft_helpers.py" source_line=86 scheduling_name="fft.4.0"}
+<18 input_transpose_fusion.2 @0>
+ positions:
+  input_transpose_fusion.2
+ uses:
+  fft.5.0, operand 0
+ from instruction: %input_transpose_fusion.2 = c128[120,256,4,4,4]{4,3,2,1,0} fusion(%param.2, %fft.4.0), kind=kInput, calls=%fused_transpose.2, metadata={op_name="jit(_right_ifft_mul_fft)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=341 scheduling_name="input_transpose_fusion.2"}
+<19 fft.5.0 @0>
+ positions:
+  fft.5.0
+ uses:
+  input_transpose_fusion, operand 0
+ from instruction: %fft.5.0 = c128[120,256,4,4,4]{4,3,2,1,0} fft(%input_transpose_fusion.2), fft_type=FFT, fft_length={4,4,4}, metadata={op_name="jit(_right_ifft_mul_fft)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax/src/common/fft_helpers.py" source_line=104 scheduling_name="fft.5.0"}
+<20 input_transpose_fusion @0>
+ positions:
+  input_transpose_fusion
+  bitcast.45.0
+ uses:
+  bitcast.45.0, operand 0
+ from instruction: %input_transpose_fusion = c128[64,30720]{1,0} fusion(%fft.5.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_right_ifft_mul_fft)/jit(main)/jit(shmap_body)/transpose" source_file="/global/u2/j/jackm/software/lorrax/src/common/fft_helpers.py" source_line=104 scheduling_name="input_transpose_fusion"}
+
+
+HloLiveRange (max 9):
+  InstructionSequence:
+    0:param.1.0
+    1:param.2
+    2:input_transpose_fusion.1
+    3:bitcast.59.0
+    4:fft.4.0
+    5:input_transpose_fusion.2
+    6:fft.5.0
+    7:input_transpose_fusion
+    8:bitcast.45.0
+  BufferLiveRange:
+    param.2{}:0-9
+    param.1.0{}:0-2
+    input_transpose_fusion.1{}:2-4
+    fft.4.0{}:4-5
+    input_transpose_fusion.2{}:5-6
+    fft.5.0{}:6-7
+    input_transpose_fusion{}:7-9
+  Live ranges at 5 (peak):
+    param.2: 31457280 bytes
+    fft.4.0: 31457280 bytes
+    input_transpose_fusion.2: 31457280 bytes

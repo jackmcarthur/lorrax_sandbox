@@ -1,0 +1,790 @@
+HloModule jit__batched_chol, is_scheduled=true, entry_computation_layout={(c128[9,2,1,160,160]{4,3,2,1,0})->c128[9,2,1,160,160]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=8, frontend_attributes={fingerprint_before_lhs="1c6eebc4d0d7984c7050959112cefe54"}
+
+%and.reduce_sub_computation (lhs: pred[], rhs: pred[]) -> pred[] {
+  %rhs = pred[] parameter(1), metadata={scheduling_name="rhs"}
+  %lhs = pred[] parameter(0), metadata={scheduling_name="lhs"}
+  ROOT %and.114 = pred[] and(%lhs, %rhs), metadata={scheduling_name="and.114"}
+}
+
+%fused_dynamic_update_slice (param_0.8: c128[4,160,160], param_1.37: c128[2,1,160,160], param_2.25: s64[], param_3.23: s32[], param_4.19: pred[], param_5.18: s64[], param_6.13: s32[3]) -> c128[4,160,160] {
+  %param_0.8 = c128[4,160,160]{2,1,0} parameter(0), metadata={scheduling_name="param_0.8"}
+  %param_4.19 = pred[] parameter(4), metadata={scheduling_name="param_4.19"}
+  %param_3.23 = s32[] parameter(3), metadata={scheduling_name="param_3.23"}
+  %param_2.25 = s64[] parameter(2), metadata={scheduling_name="param_2.25"}
+  %convert.119.11 = s32[] convert(%param_2.25), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=186 scheduling_name="convert.119.11"}
+  %add.217.11 = s32[] add(%param_3.23, %convert.119.11), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=186 scheduling_name="add.217.11"}
+  %convert.120.3 = s64[] convert(%add.217.11), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=187 scheduling_name="convert.120.3"}
+  %param_5.18 = s64[] parameter(5), metadata={scheduling_name="param_5.18"}
+  %compare.324.3 = pred[] compare(%convert.120.3, %param_5.18), direction=GE, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=187 scheduling_name="compare.324.3"}
+  %and.115.3 = pred[] and(%param_4.19, %compare.324.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=187 scheduling_name="and.115.3"}
+  %broadcast.256.1 = pred[1,160,160]{2,1,0} broadcast(%and.115.3), dimensions={}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=189 scheduling_name="broadcast.256.1"}
+  %constant_489_1 = s32[] constant(0)
+  %broadcast.257.5 = s32[3]{0} broadcast(%constant_489_1), dimensions={}, metadata={scheduling_name="broadcast.257.5"}
+  %compare.326.6 = pred[] compare(%add.217.11, %constant_489_1), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=190 scheduling_name="compare.326.6"}
+  %constant_491_1 = s32[] constant(4)
+  %add.218.6 = s32[] add(%add.217.11, %constant_491_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=190 scheduling_name="add.218.6"}
+  %select.230.6 = s32[] select(%compare.326.6, %add.218.6, %add.217.11), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=190 scheduling_name="select.230.6"}
+  %bitcast.1282.5 = s32[1]{0} bitcast(%select.230.6), metadata={scheduling_name="bitcast.1282.5"}
+  %constant_492_1 = s32[1]{0} constant({0})
+  %concatenate.41.5 = s32[3]{0} concatenate(%bitcast.1282.5, %constant_492_1, %constant_492_1), dimensions={0}, metadata={scheduling_name="concatenate.41.5"}
+  %compare.328.5 = pred[3]{0} compare(%broadcast.257.5, %concatenate.41.5), direction=LE, metadata={scheduling_name="compare.328.5"}
+  %param_6.13 = s32[3]{0} parameter(6), metadata={scheduling_name="param_6.13"}
+  %compare.330.3 = pred[3]{0} compare(%param_6.13, %concatenate.41.5), direction=GE, metadata={scheduling_name="compare.330.3"}
+  %and.116.3 = pred[3]{0} and(%compare.328.5, %compare.330.3), metadata={scheduling_name="and.116.3"}
+  %constant_494_1 = pred[] constant(true)
+  %reduce.21.1 = pred[] reduce(%and.116.3, %constant_494_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.21.1"}
+  %broadcast.258.1 = pred[1,160,160]{2,1,0} broadcast(%reduce.21.1), dimensions={}, metadata={scheduling_name="broadcast.258.1"}
+  %param_1.37 = c128[2,1,160,160]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1.37"}
+  %constant_495_1 = s64[] constant(0)
+  %compare.331.1 = pred[] compare(%param_2.25, %constant_495_1), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=188 scheduling_name="compare.331.1"}
+  %constant_496_1 = s64[] constant(2)
+  %add.219.1 = s64[] add(%param_2.25, %constant_496_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=188 scheduling_name="add.219.1"}
+  %select.231.1 = s64[] select(%compare.331.1, %add.219.1, %param_2.25), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=188 scheduling_name="select.231.1"}
+  %dynamic-slice.138.1 = c128[1,1,160,160]{3,2,1,0} dynamic-slice(%param_1.37, %select.231.1, %constant_495_1, %constant_495_1, %constant_495_1), dynamic_slice_sizes={1,1,160,160}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=188 scheduling_name="dynamic-slice.138.1"}
+  %bitcast.1308.5 = c128[1,160,160]{2,1,0} bitcast(%dynamic-slice.138.1), metadata={scheduling_name="bitcast.1308.5"}
+  %dynamic-slice.139.1 = c128[1,160,160]{2,1,0} dynamic-slice(%param_0.8, %select.230.6, %constant_489_1, %constant_489_1), dynamic_slice_sizes={1,160,160}, metadata={scheduling_name="dynamic-slice.139.1"}
+  %select.232.5 = c128[1,160,160]{2,1,0} select(%broadcast.258.1, %bitcast.1308.5, %dynamic-slice.139.1), metadata={scheduling_name="select.232.5"}
+  %select.233.3 = c128[1,160,160]{2,1,0} select(%broadcast.256.1, %select.232.5, %dynamic-slice.139.1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=189 scheduling_name="select.233.3"}
+  ROOT %dynamic-update-slice.45.1 = c128[4,160,160]{2,1,0} dynamic-update-slice(%param_0.8, %select.233.3, %select.230.6, %constant_489_1, %constant_489_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=189 scheduling_name="dynamic-update-slice.45.1"}
+}
+
+%fused_add (param_0.25: s64[]) -> s64[] {
+  %param_0.25 = s64[] parameter(0), metadata={scheduling_name="param_0.25"}
+  %constant_488_1 = s64[] constant(1)
+  ROOT %add.216.1 = s64[] add(%param_0.25, %constant_488_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=193 scheduling_name="add.216.1"}
+}
+
+%region_7.253.clone.clone.clone.clone_spmd (param.13.0: (s64[], c128[4,160,160], s32[], s64[], pred[], /*index=5*/c128[2,1,160,160])) -> (s64[], c128[4,160,160], s32[], s64[], pred[], /*index=5*/c128[2,1,160,160]) {
+  %param.13.0 = (s64[], c128[4,160,160]{2,1,0}, s32[], s64[], pred[], /*index=5*/c128[2,1,160,160]{3,2,1,0}) parameter(0), metadata={scheduling_name="param.13.0"}
+  %constant_493_0 = s32[3]{0} constant({3, 0, 0})
+  %get-tuple-element.645 = s64[] get-tuple-element(%param.13.0), index=0, metadata={scheduling_name="get-tuple-element.645"}
+  %get-tuple-element.653 = s32[] get-tuple-element(%param.13.0), index=2, metadata={scheduling_name="get-tuple-element.653"}
+  %get-tuple-element.654 = s64[] get-tuple-element(%param.13.0), index=3, metadata={scheduling_name="get-tuple-element.654"}
+  %get-tuple-element.655 = pred[] get-tuple-element(%param.13.0), index=4, metadata={scheduling_name="get-tuple-element.655"}
+  %get-tuple-element.656 = c128[2,1,160,160]{3,2,1,0} get-tuple-element(%param.13.0), index=5, metadata={scheduling_name="get-tuple-element.656"}
+  %get-tuple-element.646 = c128[4,160,160]{2,1,0} get-tuple-element(%param.13.0), index=1, metadata={scheduling_name="get-tuple-element.646"}
+  %loop_dynamic_update_slice_fusion = c128[4,160,160]{2,1,0} fusion(%get-tuple-element.646, %get-tuple-element.656, %get-tuple-element.645, %get-tuple-element.653, %get-tuple-element.655, /*index=5*/%get-tuple-element.654, %constant_493_0), kind=kLoop, calls=%fused_dynamic_update_slice, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=189 scheduling_name="loop_dynamic_update_slice_fusion"}
+  %loop_add_fusion = s64[] fusion(%get-tuple-element.645), kind=kLoop, calls=%fused_add, control-predecessors={%loop_dynamic_update_slice_fusion}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=193 deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion"}
+  ROOT %tuple.107 = (s64[], c128[4,160,160]{2,1,0}, s32[], s64[], pred[], /*index=5*/c128[2,1,160,160]{3,2,1,0}) tuple(%loop_add_fusion, %loop_dynamic_update_slice_fusion, %get-tuple-element.653, %get-tuple-element.654, %get-tuple-element.655, /*index=5*/%get-tuple-element.656), metadata={scheduling_name="tuple.107"}
+}
+
+%fused_compare.2 (param_0.2: s64[]) -> pred[] {
+  %param_0.2 = s64[] parameter(0), metadata={scheduling_name="param_0.2"}
+  %constant_485_1 = s64[] constant(2)
+  ROOT %compare.322.1 = pred[] compare(%param_0.2, %constant_485_1), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=193 scheduling_name="compare.322.1"}
+}
+
+%region_9.269.clone.clone.clone_spmd (param.12.0: (s64[], c128[4,160,160], s32[], s64[], pred[], /*index=5*/c128[2,1,160,160])) -> pred[] {
+  %param.12.0 = (s64[], c128[4,160,160]{2,1,0}, s32[], s64[], pred[], /*index=5*/c128[2,1,160,160]{3,2,1,0}) parameter(0), metadata={scheduling_name="param.12.0"}
+  %get-tuple-element.538.0 = s64[] get-tuple-element(%param.12.0), index=0, metadata={scheduling_name="get-tuple-element.538.0"}
+  ROOT %loop_compare_fusion.2 = pred[] fusion(%get-tuple-element.538.0), kind=kLoop, calls=%fused_compare.2, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=193 deduplicated_name="loop_compare_fusion.2" scheduling_name="loop_compare_fusion.2"}
+}
+
+%fused_slice (param_0_0: c128[160,160], param_1_0: c128[4,160,160], param_1_1: s32[], param_1_2: s64[]) -> (c128[25600], c128[25600]) {
+  %param_0_0 = c128[160,160]{1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %real.24.2 = f64[160,160]{1,0} real(%param_0_0), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=204 scheduling_name="real.24.2"}
+  %imag.24.2 = f64[160,160]{1,0} imag(%param_0_0), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=204 scheduling_name="imag.24.2"}
+  %negate.48.2 = f64[160,160]{1,0} negate(%imag.24.2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=204 scheduling_name="negate.48.2"}
+  %complex.24.2 = c128[160,160]{1,0} complex(%real.24.2, %negate.48.2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=204 scheduling_name="complex.24.2"}
+  %reshape.360 = c128[25600]{0} reshape(%complex.24.2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=204 scheduling_name="reshape.360"}
+  %param_1_0 = c128[4,160,160]{2,1,0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %param_1_1 = s32[] parameter(2), metadata={scheduling_name="param_1_1"}
+  %param_1_2 = s64[] parameter(3), metadata={scheduling_name="param_1_2"}
+  %convert.121.5 = s32[] convert(%param_1_2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=202 scheduling_name="convert.121.5"}
+  %add.221.5 = s32[] add(%param_1_1, %convert.121.5), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=202 scheduling_name="add.221.5"}
+  %constant_509_4 = s32[] constant(0)
+  %compare.341.2 = pred[] compare(%add.221.5, %constant_509_4), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=203 scheduling_name="compare.341.2"}
+  %constant_522_2 = s32[] constant(4)
+  %add.223.2 = s32[] add(%add.221.5, %constant_522_2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=203 scheduling_name="add.223.2"}
+  %select.235.2 = s32[] select(%compare.341.2, %add.223.2, %add.221.5), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=203 scheduling_name="select.235.2"}
+  %dynamic-slice.141.2 = c128[1,160,160]{2,1,0} dynamic-slice(%param_1_0, %select.235.2, %constant_509_4, %constant_509_4), dynamic_slice_sizes={1,160,160}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=203 scheduling_name="dynamic-slice.141.2"}
+  %reshape.361 = c128[25600]{0} reshape(%dynamic-slice.141.2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=203 scheduling_name="reshape.361"}
+  %concatenate.45 = c128[51200]{0} concatenate(%reshape.360, %reshape.361), dimensions={0}, metadata={scheduling_name="concatenate.45"}
+  %slice.186 = c128[25600]{0} slice(%concatenate.45), slice={[0:25600]}, metadata={scheduling_name="slice.186"}
+  %slice.187 = c128[25600]{0} slice(%concatenate.45), slice={[25600:51200]}, metadata={scheduling_name="slice.187"}
+  ROOT %tuple.100 = (c128[25600]{0}, c128[25600]{0}) tuple(%slice.186, %slice.187), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=203 scheduling_name="tuple.100"}
+}
+
+%fused_dynamic_slice (param_0.49: c128[2,1,160,160], param_1.82: s64[]) -> c128[1,1,160,160] {
+  %param_0.49 = c128[2,1,160,160]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.49"}
+  %param_1.82 = s64[] parameter(1), metadata={scheduling_name="param_1.82"}
+  %constant_510_1 = s64[] constant(0)
+  %compare.337.2 = pred[] compare(%param_1.82, %constant_510_1), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="compare.337.2"}
+  %constant_511_3 = s64[] constant(2)
+  %add.222.2 = s64[] add(%param_1.82, %constant_511_3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="add.222.2"}
+  %select.234.1 = s64[] select(%compare.337.2, %add.222.2, %param_1.82), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="select.234.1"}
+  ROOT %dynamic-slice.140.1 = c128[1,1,160,160]{3,2,1,0} dynamic-slice(%param_0.49, %select.234.1, %constant_510_1, %constant_510_1, %constant_510_1), dynamic_slice_sizes={1,1,160,160}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="dynamic-slice.140.1"}
+}
+
+%fused_reduce (param_0.55: s32[4], param_1.83: s64[]) -> pred[] {
+  %constant_509_2 = s32[] constant(0)
+  %broadcast.260.5 = s32[4]{0} broadcast(%constant_509_2), dimensions={}, metadata={scheduling_name="broadcast.260.5"}
+  %param_1.83 = s64[] parameter(1), metadata={scheduling_name="param_1.83"}
+  %constant_510_3 = s64[] constant(0)
+  %compare.337.1 = pred[] compare(%param_1.83, %constant_510_3), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="compare.337.1"}
+  %constant_511_2 = s64[] constant(2)
+  %add.222.1 = s64[] add(%param_1.83, %constant_511_2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="add.222.1"}
+  %select.234.3 = s64[] select(%compare.337.1, %add.222.1, %param_1.83), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="select.234.3"}
+  %convert.124.1 = s32[] convert(%select.234.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="convert.124.1"}
+  %bitcast.1366.3 = s32[1]{0} bitcast(%convert.124.1), metadata={scheduling_name="bitcast.1366.3"}
+  %constant_512_1 = s32[1]{0} constant({0}), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211}
+  %concatenate.42.3 = s32[4]{0} concatenate(%bitcast.1366.3, %constant_512_1, %constant_512_1, %constant_512_1), dimensions={0}, metadata={scheduling_name="concatenate.42.3"}
+  %compare.339.5 = pred[4]{0} compare(%broadcast.260.5, %concatenate.42.3), direction=LE, metadata={scheduling_name="compare.339.5"}
+  %param_0.55 = s32[4]{0} parameter(0), metadata={scheduling_name="param_0.55"}
+  %compare.340.1 = pred[4]{0} compare(%param_0.55, %concatenate.42.3), direction=GE, metadata={scheduling_name="compare.340.1"}
+  %and.119.3 = pred[4]{0} and(%compare.339.5, %compare.340.1), metadata={scheduling_name="and.119.3"}
+  %constant_515_1 = pred[] constant(true)
+  ROOT %reduce.22.1 = pred[] reduce(%and.119.3, %constant_515_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.22.1"}
+}
+
+%fused_dynamic_update_slice.1 (param_0.34: c128[2,1,160,160], param_1.79: c128[160,160], param_2.55: c128[1,1,160,160], param_3.50: pred[], param_4.38: s64[], param_5.31: s32[], param_6.30: s64[], param_7.20: s32[]) -> c128[2,1,160,160] {
+  %param_0.34 = c128[2,1,160,160]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.34"}
+  %param_7.20 = s32[] parameter(7), metadata={scheduling_name="param_7.20"}
+  %param_4.38 = s64[] parameter(4), metadata={scheduling_name="param_4.38"}
+  %convert.121.4 = s32[] convert(%param_4.38), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=202 scheduling_name="convert.121.4"}
+  %add.221.4 = s32[] add(%param_7.20, %convert.121.4), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=202 scheduling_name="add.221.4"}
+  %convert.122.3 = s64[] convert(%add.221.4), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=207 scheduling_name="convert.122.3"}
+  %param_6.30 = s64[] parameter(6), metadata={scheduling_name="param_6.30"}
+  %compare.334.3 = pred[] compare(%convert.122.3, %param_6.30), direction=GT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/gt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=207 scheduling_name="compare.334.3"}
+  %param_5.31 = s32[] parameter(5), metadata={scheduling_name="param_5.31"}
+  %convert.123.3 = s64[] convert(%param_5.31), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=207 scheduling_name="convert.123.3"}
+  %compare.335.3 = pred[] compare(%convert.123.3, %param_6.30), direction=GT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/gt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=207 scheduling_name="compare.335.3"}
+  %and.117.3 = pred[] and(%compare.334.3, %compare.335.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=207 scheduling_name="and.117.3"}
+  %compare.336.3 = pred[] compare(%add.221.4, %param_5.31), direction=GE, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=208 scheduling_name="compare.336.3"}
+  %and.118.3 = pred[] and(%and.117.3, %compare.336.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=206 scheduling_name="and.118.3"}
+  %broadcast.259.1 = pred[1,1,160,160]{3,2,1,0} broadcast(%and.118.3), dimensions={}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="broadcast.259.1"}
+  %param_3.50 = pred[] parameter(3), metadata={scheduling_name="param_3.50"}
+  %broadcast.261.1 = pred[1,1,160,160]{3,2,1,0} broadcast(%param_3.50), dimensions={}, metadata={scheduling_name="broadcast.261.1"}
+  %param_2.55 = c128[1,1,160,160]{3,2,1,0} parameter(2), metadata={scheduling_name="param_2.55"}
+  %bitcast.1387.3 = c128[160,160]{1,0} bitcast(%param_2.55), metadata={scheduling_name="bitcast.1387.3"}
+  %param_1.79 = c128[160,160]{1,0} parameter(1), metadata={scheduling_name="param_1.79"}
+  %subtract.13.3 = c128[160,160]{1,0} subtract(%bitcast.1387.3, %param_1.79), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="subtract.13.3"}
+  %bitcast.1415.5 = c128[1,1,160,160]{3,2,1,0} bitcast(%subtract.13.3), metadata={scheduling_name="bitcast.1415.5"}
+  %constant_510_2 = s64[] constant(0)
+  %compare.337.3 = pred[] compare(%param_4.38, %constant_510_2), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="compare.337.3"}
+  %constant_511_1 = s64[] constant(2)
+  %add.222.3 = s64[] add(%param_4.38, %constant_511_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="add.222.3"}
+  %select.234.2 = s64[] select(%compare.337.3, %add.222.3, %param_4.38), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="select.234.2"}
+  %convert.124.2 = s32[] convert(%select.234.2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="convert.124.2"}
+  %constant_509_1 = s32[] constant(0)
+  %dynamic-slice.142.1 = c128[1,1,160,160]{3,2,1,0} dynamic-slice(%param_0.34, %convert.124.2, %constant_509_1, %constant_509_1, %constant_509_1), dynamic_slice_sizes={1,1,160,160}, metadata={scheduling_name="dynamic-slice.142.1"}
+  %select.236.5 = c128[1,1,160,160]{3,2,1,0} select(%broadcast.261.1, %bitcast.1415.5, %dynamic-slice.142.1), metadata={scheduling_name="select.236.5"}
+  %select.237.3 = c128[1,1,160,160]{3,2,1,0} select(%broadcast.259.1, %select.236.5, %dynamic-slice.142.1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="select.237.3"}
+  ROOT %dynamic-update-slice.46.1 = c128[2,1,160,160]{3,2,1,0} dynamic-update-slice(%param_0.34, %select.237.3, %convert.124.2, %constant_509_1, %constant_509_1, /*index=5*/%constant_509_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="dynamic-update-slice.46.1"}
+}
+
+%fused_add.1 (param_0.54: s64[]) -> s64[] {
+  %param_0.54 = s64[] parameter(0), metadata={scheduling_name="param_0.54"}
+  %constant_508_1 = s64[] constant(1)
+  ROOT %add.220.1 = s64[] add(%param_0.54, %constant_508_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=214 scheduling_name="add.220.1"}
+}
+
+%command_buffer.4 (p.24: c128[160,160], p.25: c128[4,160,160], p.26: s32[], p.27: s64[], p.28: (s64[], c128[2,1,160,160], s32[], c128[4,160,160], c128[160,160], /*index=5*/s64[], s32[]), p.29: s32[4]) -> (s64[], s32[], c128[2,1,160,160], s64[]) {
+  %p.24 = c128[160,160]{1,0} parameter(0)
+  %p.25 = c128[4,160,160]{2,1,0} parameter(1)
+  %p.26 = s32[] parameter(2)
+  %p.27 = s64[] parameter(3)
+  %p.28 = (s64[], c128[2,1,160,160]{3,2,1,0}, s32[], c128[4,160,160]{2,1,0}, c128[160,160]{1,0}, /*index=5*/s64[], s32[]) parameter(4)
+  %p.29 = s32[4]{0} parameter(5)
+  %input_slice_fusion = (c128[25600]{0}, c128[25600]{0}) fusion(%p.24, %p.25, %p.26, %p.27), kind=kInput, calls=%fused_slice, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=203 scheduling_name="input_slice_fusion"}
+  %get-tuple-element.618 = c128[25600]{0} get-tuple-element(%input_slice_fusion), index=1, metadata={scheduling_name="get-tuple-element.618"}
+  %bitcast.1403.0 = c128[160,160]{1,0} bitcast(%get-tuple-element.618), metadata={scheduling_name="bitcast.1403.0"}
+  %get-tuple-element.617 = c128[25600]{0} get-tuple-element(%input_slice_fusion), index=0, metadata={scheduling_name="get-tuple-element.617"}
+  %bitcast.1836 = c128[160,160]{1,0} bitcast(%get-tuple-element.617), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=204 scheduling_name="bitcast.1836"}
+  %custom-call.6.0 = (c128[160,160]{1,0}, s8[819200]{0}) custom-call(%bitcast.1403.0, %bitcast.1836), custom_call_target="__cublas$gemm", metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=204 scheduling_name="custom-call.6.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"25600","rhs_stride":"25600","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.611.0 = c128[160,160]{1,0} get-tuple-element(%custom-call.6.0), index=0, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=204 scheduling_name="get-tuple-element.611.0"}
+  %get-tuple-element.665 = c128[2,1,160,160]{3,2,1,0} get-tuple-element(%p.28), index=1, metadata={scheduling_name="get-tuple-element.665"}
+  %loop_dynamic_slice_fusion = c128[1,1,160,160]{3,2,1,0} fusion(%get-tuple-element.665, %p.27), kind=kLoop, calls=%fused_dynamic_slice, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=211 scheduling_name="loop_dynamic_slice_fusion"}
+  %input_reduce_fusion = pred[] fusion(%p.29, %p.27), kind=kInput, calls=%fused_reduce, metadata={deduplicated_name="input_reduce_fusion" scheduling_name="input_reduce_fusion"}
+  %get-tuple-element.676 = s64[] get-tuple-element(%p.28), index=5, metadata={scheduling_name="get-tuple-element.676"}
+  %get-tuple-element.677 = s32[] get-tuple-element(%p.28), index=6, metadata={scheduling_name="get-tuple-element.677"}
+  %loop_dynamic_update_slice_fusion.1 = c128[2,1,160,160]{3,2,1,0} fusion(%get-tuple-element.665, %get-tuple-element.611.0, %loop_dynamic_slice_fusion, %input_reduce_fusion, %p.27, /*index=5*/%get-tuple-element.677, %get-tuple-element.676, %p.26), kind=kLoop, calls=%fused_dynamic_update_slice.1, control-predecessors={%loop_dynamic_slice_fusion}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="loop_dynamic_update_slice_fusion.1"}
+  %loop_add_fusion.1 = s64[] fusion(%p.27), kind=kLoop, calls=%fused_add.1, control-predecessors={%input_slice_fusion, %loop_dynamic_slice_fusion, %input_reduce_fusion, %loop_dynamic_update_slice_fusion.1}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=214 deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.1"}
+  ROOT %tuple.121 = (s64[], s32[], c128[2,1,160,160]{3,2,1,0}, s64[]) tuple(%get-tuple-element.676, %get-tuple-element.677, %loop_dynamic_update_slice_fusion.1, %loop_add_fusion.1)
+}
+
+%region_12.352.clone.clone.sunk.clone.clone_spmd (param.15.0: (s64[], c128[2,1,160,160], s32[], c128[4,160,160], c128[160,160], /*index=5*/s64[], s32[])) -> (s64[], c128[2,1,160,160], s32[], c128[4,160,160], c128[160,160], /*index=5*/s64[], s32[]) {
+  %param.15.0 = (s64[], c128[2,1,160,160]{3,2,1,0}, s32[], c128[4,160,160]{2,1,0}, c128[160,160]{1,0}, /*index=5*/s64[], s32[]) parameter(0), metadata={scheduling_name="param.15.0"}
+  %constant_514_0 = s32[4]{0} constant({1, 0, 0, 0})
+  %get-tuple-element.664 = s64[] get-tuple-element(%param.15.0), index=0, metadata={scheduling_name="get-tuple-element.664"}
+  %get-tuple-element.673 = s32[] get-tuple-element(%param.15.0), index=2, metadata={scheduling_name="get-tuple-element.673"}
+  %get-tuple-element.674 = c128[4,160,160]{2,1,0} get-tuple-element(%param.15.0), index=3, metadata={scheduling_name="get-tuple-element.674"}
+  %get-tuple-element.675 = c128[160,160]{1,0} get-tuple-element(%param.15.0), index=4, metadata={scheduling_name="get-tuple-element.675"}
+  %call.7 = (s64[], s32[], c128[2,1,160,160]{3,2,1,0}, s64[]) call(%get-tuple-element.675, %get-tuple-element.674, %get-tuple-element.673, %get-tuple-element.664, %param.15.0, /*index=5*/%constant_514_0), to_apply=%command_buffer.4
+  %get-tuple-element.730 = s64[] get-tuple-element(%call.7), index=0
+  %get-tuple-element.731 = s32[] get-tuple-element(%call.7), index=1
+  %get-tuple-element.732 = c128[2,1,160,160]{3,2,1,0} get-tuple-element(%call.7), index=2
+  %get-tuple-element.733 = s64[] get-tuple-element(%call.7), index=3
+  ROOT %tuple.110 = (s64[], c128[2,1,160,160]{3,2,1,0}, s32[], c128[4,160,160]{2,1,0}, c128[160,160]{1,0}, /*index=5*/s64[], s32[]) tuple(%get-tuple-element.733, %get-tuple-element.732, %get-tuple-element.673, %get-tuple-element.674, %get-tuple-element.675, /*index=5*/%get-tuple-element.730, %get-tuple-element.731), metadata={scheduling_name="tuple.110"}
+}
+
+%fused_compare.3 (param_0.26: s64[]) -> pred[] {
+  %param_0.26 = s64[] parameter(0), metadata={scheduling_name="param_0.26"}
+  %constant_502_1 = s64[] constant(2)
+  ROOT %compare.333.1 = pred[] compare(%param_0.26, %constant_502_1), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=214 scheduling_name="compare.333.1"}
+}
+
+%region_14.369.clone.clone.clone_spmd (param.14.0: (s64[], c128[2,1,160,160], s32[], c128[4,160,160], c128[160,160], /*index=5*/s64[], s32[])) -> pred[] {
+  %param.14.0 = (s64[], c128[2,1,160,160]{3,2,1,0}, s32[], c128[4,160,160]{2,1,0}, c128[160,160]{1,0}, /*index=5*/s64[], s32[]) parameter(0), metadata={scheduling_name="param.14.0"}
+  %get-tuple-element.548.0 = s64[] get-tuple-element(%param.14.0), index=0, metadata={scheduling_name="get-tuple-element.548.0"}
+  ROOT %loop_compare_fusion.3 = pred[] fusion(%get-tuple-element.548.0), kind=kLoop, calls=%fused_compare.3, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=214 deduplicated_name="loop_compare_fusion.2" scheduling_name="loop_compare_fusion.3"}
+}
+
+%fused_dynamic_update_slice.2 (param_0.66: c128[2,1,160,160], param_1.122: c128[160,160], param_2.85: pred[], param_3.71: s64[], param_4.56: pred[], param_5.47: s64[], param_6.42: s32[]) -> c128[2,1,160,160] {
+  %param_0.66 = c128[2,1,160,160]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.66"}
+  %param_4.56 = pred[] parameter(4), metadata={scheduling_name="param_4.56"}
+  %param_6.42 = s32[] parameter(6), metadata={scheduling_name="param_6.42"}
+  %param_3.71 = s64[] parameter(3), metadata={scheduling_name="param_3.71"}
+  %convert.125.3 = s32[] convert(%param_3.71), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=171 scheduling_name="convert.125.3"}
+  %add.225.3 = s32[] add(%param_6.42, %convert.125.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=171 scheduling_name="add.225.3"}
+  %convert.126.3 = s64[] convert(%add.225.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=172 scheduling_name="convert.126.3"}
+  %param_5.47 = s64[] parameter(5), metadata={scheduling_name="param_5.47"}
+  %compare.344.3 = pred[] compare(%convert.126.3, %param_5.47), direction=GT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/gt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=172 scheduling_name="compare.344.3"}
+  %and.120.3 = pred[] and(%param_4.56, %compare.344.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=172 scheduling_name="and.120.3"}
+  %broadcast.262.1 = pred[1,1,160,160]{3,2,1,0} broadcast(%and.120.3), dimensions={}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="broadcast.262.1"}
+  %param_2.85 = pred[] parameter(2), metadata={scheduling_name="param_2.85"}
+  %broadcast.264.1 = pred[1,1,160,160]{3,2,1,0} broadcast(%param_2.85), dimensions={}, metadata={scheduling_name="broadcast.264.1"}
+  %param_1.122 = c128[160,160]{0,1} parameter(1), metadata={scheduling_name="param_1.122"}
+  %bitcast.1500.5 = c128[1,1,160,160]{3,2,1,0} bitcast(%param_1.122), metadata={scheduling_name="bitcast.1500.5"}
+  %constant_616_2 = s64[] constant(0)
+  %compare.345.3 = pred[] compare(%param_3.71, %constant_616_2), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=175 scheduling_name="compare.345.3"}
+  %constant_617_1 = s64[] constant(2)
+  %add.226.3 = s64[] add(%param_3.71, %constant_617_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=175 scheduling_name="add.226.3"}
+  %select.238.2 = s64[] select(%compare.345.3, %add.226.3, %param_3.71), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=175 scheduling_name="select.238.2"}
+  %convert.127.2 = s32[] convert(%select.238.2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=175 scheduling_name="convert.127.2"}
+  %constant_615_1 = s32[] constant(0)
+  %dynamic-slice.144.1 = c128[1,1,160,160]{3,2,1,0} dynamic-slice(%param_0.66, %convert.127.2, %constant_615_1, %constant_615_1, %constant_615_1), dynamic_slice_sizes={1,1,160,160}, metadata={scheduling_name="dynamic-slice.144.1"}
+  %select.239.5 = c128[1,1,160,160]{3,2,1,0} select(%broadcast.264.1, %bitcast.1500.5, %dynamic-slice.144.1), metadata={scheduling_name="select.239.5"}
+  %select.241.3 = c128[1,1,160,160]{3,2,1,0} select(%broadcast.262.1, %select.239.5, %dynamic-slice.144.1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="select.241.3"}
+  ROOT %dynamic-update-slice.47.1 = c128[2,1,160,160]{3,2,1,0} dynamic-update-slice(%param_0.66, %select.241.3, %convert.127.2, %constant_615_1, %constant_615_1, /*index=5*/%constant_615_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="dynamic-update-slice.47.1"}
+}
+
+%fused_reduce.1 (param_0.89: s32[4], param_1.125: s64[]) -> pred[] {
+  %constant_615_2 = s32[] constant(0)
+  %broadcast.263.5 = s32[4]{0} broadcast(%constant_615_2), dimensions={}, metadata={scheduling_name="broadcast.263.5"}
+  %param_1.125 = s64[] parameter(1), metadata={scheduling_name="param_1.125"}
+  %constant_616_3 = s64[] constant(0)
+  %compare.345.1 = pred[] compare(%param_1.125, %constant_616_3), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=175 scheduling_name="compare.345.1"}
+  %constant_617_2 = s64[] constant(2)
+  %add.226.1 = s64[] add(%param_1.125, %constant_617_2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=175 scheduling_name="add.226.1"}
+  %select.238.3 = s64[] select(%compare.345.1, %add.226.1, %param_1.125), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=175 scheduling_name="select.238.3"}
+  %convert.127.1 = s32[] convert(%select.238.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=175 scheduling_name="convert.127.1"}
+  %bitcast.1463.3 = s32[1]{0} bitcast(%convert.127.1), metadata={scheduling_name="bitcast.1463.3"}
+  %constant_618_1 = s32[1]{0} constant({0})
+  %concatenate.43.3 = s32[4]{0} concatenate(%bitcast.1463.3, %constant_618_1, %constant_618_1, %constant_618_1), dimensions={0}, metadata={scheduling_name="concatenate.43.3"}
+  %compare.346.5 = pred[4]{0} compare(%broadcast.263.5, %concatenate.43.3), direction=LE, metadata={scheduling_name="compare.346.5"}
+  %param_0.89 = s32[4]{0} parameter(0), metadata={scheduling_name="param_0.89"}
+  %compare.347.1 = pred[4]{0} compare(%param_0.89, %concatenate.43.3), direction=GE, metadata={scheduling_name="compare.347.1"}
+  %and.121.3 = pred[4]{0} and(%compare.346.5, %compare.347.1), metadata={scheduling_name="and.121.3"}
+  %constant_620_1 = pred[] constant(true)
+  ROOT %reduce.25.1 = pred[] reduce(%and.121.3, %constant_620_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.25.1"}
+}
+
+%fused_add.2 (param_0.88: s64[]) -> s64[] {
+  %param_0.88 = s64[] parameter(0), metadata={scheduling_name="param_0.88"}
+  %constant_614_1 = s64[] constant(1)
+  ROOT %add.224.1 = s64[] add(%param_0.88, %constant_614_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=178 scheduling_name="add.224.1"}
+}
+
+%fused_slice.1 (param_0_0.1: c128[160,160], param_1_0.1: c128[2,1,160,160], param_1_1.1: s64[]) -> (c128[25600], c128[25600]) {
+  %param_0_0.1 = c128[160,160]{0,1} parameter(0), metadata={scheduling_name="param_0_0.1"}
+  %bitcast.1479.9 = c128[160,160]{1,0} bitcast(%param_0_0.1), metadata={scheduling_name="bitcast.1479.9"}
+  %real.25.4 = f64[160,160]{1,0} real(%bitcast.1479.9), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=143 scheduling_name="real.25.4"}
+  %imag.25.6 = f64[160,160]{1,0} imag(%bitcast.1479.9), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=143 scheduling_name="imag.25.6"}
+  %negate.49.4 = f64[160,160]{1,0} negate(%imag.25.6), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=143 scheduling_name="negate.49.4"}
+  %complex.25.2 = c128[160,160]{1,0} complex(%real.25.4, %negate.49.4), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=143 scheduling_name="complex.25.2"}
+  %reshape.362 = c128[25600]{0} reshape(%complex.25.2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=143 scheduling_name="reshape.362"}
+  %param_1_0.1 = c128[2,1,160,160]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1_0.1"}
+  %param_1_1.1 = s64[] parameter(2), metadata={scheduling_name="param_1_1.1"}
+  %constant_616_4 = s64[] constant(0)
+  %compare.345.4 = pred[] compare(%param_1_1.1, %constant_616_4), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=175 scheduling_name="compare.345.4"}
+  %constant_617_4 = s64[] constant(2)
+  %add.226.4 = s64[] add(%param_1_1.1, %constant_617_4), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=175 scheduling_name="add.226.4"}
+  %select.238.4 = s64[] select(%compare.345.4, %add.226.4, %param_1_1.1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=175 scheduling_name="select.238.4"}
+  %dynamic-slice.143.2 = c128[1,1,160,160]{3,2,1,0} dynamic-slice(%param_1_0.1, %select.238.4, %constant_616_4, %constant_616_4, %constant_616_4), dynamic_slice_sizes={1,1,160,160}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=173 scheduling_name="dynamic-slice.143.2"}
+  %reshape.363 = c128[25600]{0} reshape(%dynamic-slice.143.2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=173 scheduling_name="reshape.363"}
+  %concatenate.46 = c128[51200]{0} concatenate(%reshape.362, %reshape.363), dimensions={0}, metadata={scheduling_name="concatenate.46"}
+  %slice.188 = c128[25600]{0} slice(%concatenate.46), slice={[0:25600]}, metadata={scheduling_name="slice.188"}
+  %slice.189 = c128[25600]{0} slice(%concatenate.46), slice={[25600:51200]}, metadata={scheduling_name="slice.189"}
+  ROOT %tuple.101 = (c128[25600]{0}, c128[25600]{0}) tuple(%slice.188, %slice.189), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=173 scheduling_name="tuple.101"}
+}
+
+%region_4.182.clone.clone.clone_spmd.sunk.clone (param.21.0: (s64[], c128[2,1,160,160], s32[], s64[], pred[], /*index=5*/c128[160,160])) -> (s64[], c128[2,1,160,160], s32[], s64[], pred[], /*index=5*/c128[160,160]) {
+  %param.21.0 = (s64[], c128[2,1,160,160]{3,2,1,0}, s32[], s64[], pred[], /*index=5*/c128[160,160]{0,1}) parameter(0), metadata={scheduling_name="param.21.0"}
+  %constant_619_0 = s32[4]{0} constant({1, 0, 0, 0})
+  %get-tuple-element.627 = s64[] get-tuple-element(%param.21.0), index=0, metadata={scheduling_name="get-tuple-element.627"}
+  %get-tuple-element.635 = s32[] get-tuple-element(%param.21.0), index=2, metadata={scheduling_name="get-tuple-element.635"}
+  %get-tuple-element.636 = s64[] get-tuple-element(%param.21.0), index=3, metadata={scheduling_name="get-tuple-element.636"}
+  %get-tuple-element.637 = pred[] get-tuple-element(%param.21.0), index=4, metadata={scheduling_name="get-tuple-element.637"}
+  %get-tuple-element.628 = c128[2,1,160,160]{3,2,1,0} get-tuple-element(%param.21.0), index=1, metadata={scheduling_name="get-tuple-element.628"}
+  %get-tuple-element.638 = c128[160,160]{0,1} get-tuple-element(%param.21.0), index=5, metadata={scheduling_name="get-tuple-element.638"}
+  %input_reduce_fusion.1 = pred[] fusion(%constant_619_0, %get-tuple-element.627), kind=kInput, calls=%fused_reduce.1, metadata={deduplicated_name="input_reduce_fusion" scheduling_name="input_reduce_fusion.1"}
+  %input_slice_fusion.1 = (c128[25600]{0}, c128[25600]{0}) fusion(%get-tuple-element.638, %get-tuple-element.628, %get-tuple-element.627), kind=kInput, calls=%fused_slice.1, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=173 scheduling_name="input_slice_fusion.1"}
+  %get-tuple-element.620 = c128[25600]{0} get-tuple-element(%input_slice_fusion.1), index=1, metadata={scheduling_name="get-tuple-element.620"}
+  %get-tuple-element.619 = c128[25600]{0} get-tuple-element(%input_slice_fusion.1), index=0, metadata={scheduling_name="get-tuple-element.619"}
+  %bitcast.1488.0 = c128[160,160]{0,1} bitcast(%get-tuple-element.619), metadata={scheduling_name="bitcast.1488.0"}
+  %bitcast.1497.0 = c128[160,160]{0,1} bitcast(%get-tuple-element.620), metadata={scheduling_name="bitcast.1497.0"}
+  %triangular-solve.8.0 = (c128[160,160]{0,1}, s8[0]{0}) custom-call(%bitcast.1488.0, %bitcast.1497.0), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/jit(_solve_triangular)/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=143 scheduling_name="triangular-solve.8.0"}, backend_config={"left_side":true,"lower":true,"unit_diagonal":false,"transpose_a":"NO_TRANSPOSE"}
+  %get-tuple-element.612.0 = c128[160,160]{0,1} get-tuple-element(%triangular-solve.8.0), index=0, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/jit(_solve_triangular)/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=143 scheduling_name="get-tuple-element.612.0"}
+  %loop_dynamic_update_slice_fusion.2 = c128[2,1,160,160]{3,2,1,0} fusion(%get-tuple-element.628, %get-tuple-element.612.0, %input_reduce_fusion.1, %get-tuple-element.627, %get-tuple-element.637, /*index=5*/%get-tuple-element.636, %get-tuple-element.635), kind=kLoop, calls=%fused_dynamic_update_slice.2, control-predecessors={%input_slice_fusion.1}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="loop_dynamic_update_slice_fusion.2"}
+  %loop_add_fusion.2 = s64[] fusion(%get-tuple-element.627), kind=kLoop, calls=%fused_add.2, control-predecessors={%input_reduce_fusion.1, %input_slice_fusion.1, %loop_dynamic_update_slice_fusion.2}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=178 deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.2"}
+  ROOT %tuple.104 = (s64[], c128[2,1,160,160]{3,2,1,0}, s32[], s64[], pred[], /*index=5*/c128[160,160]{0,1}) tuple(%loop_add_fusion.2, %loop_dynamic_update_slice_fusion.2, %get-tuple-element.635, %get-tuple-element.636, %get-tuple-element.637, /*index=5*/%get-tuple-element.638), metadata={scheduling_name="tuple.104"}
+}
+
+%fused_compare.4 (param_0.56: s64[]) -> pred[] {
+  %param_0.56 = s64[] parameter(0), metadata={scheduling_name="param_0.56"}
+  %constant_613_1 = s64[] constant(2)
+  ROOT %compare.343.1 = pred[] compare(%param_0.56, %constant_613_1), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=178 scheduling_name="compare.343.1"}
+}
+
+%region_6.198.clone.clone_spmd.clone (param.20.0: (s64[], c128[2,1,160,160], s32[], s64[], pred[], /*index=5*/c128[160,160])) -> pred[] {
+  %param.20.0 = (s64[], c128[2,1,160,160]{3,2,1,0}, s32[], s64[], pred[], /*index=5*/c128[160,160]{0,1}) parameter(0), metadata={scheduling_name="param.20.0"}
+  %get-tuple-element.592.0 = s64[] get-tuple-element(%param.20.0), index=0, metadata={scheduling_name="get-tuple-element.592.0"}
+  ROOT %loop_compare_fusion.4 = pred[] fusion(%get-tuple-element.592.0), kind=kLoop, calls=%fused_compare.4, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=178 deduplicated_name="loop_compare_fusion.2" scheduling_name="loop_compare_fusion.4"}
+}
+
+%fused_compare.5 (param_0.164: s32[], param_1.206: s64[4], param_2.168: s64[]) -> pred[] {
+  %param_0.164 = s32[] parameter(0), metadata={scheduling_name="param_0.164"}
+  %convert.129.1 = s64[] convert(%param_0.164), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=151 scheduling_name="convert.129.1"}
+  %param_1.206 = s64[4]{0} parameter(1), metadata={scheduling_name="param_1.206"}
+  %param_2.168 = s64[] parameter(2), metadata={scheduling_name="param_2.168"}
+  %dynamic-slice.145.4 = s64[1]{0} dynamic-slice(%param_1.206, %param_2.168), dynamic_slice_sizes={1}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="dynamic-slice.145.4"}
+  %bitcast.1529.5 = s64[] bitcast(%dynamic-slice.145.4), metadata={scheduling_name="bitcast.1529.5"}
+  ROOT %compare.352.1 = pred[] compare(%convert.129.1, %bitcast.1529.5), direction=EQ, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/eq" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=151 scheduling_name="compare.352.1"}
+}
+
+%fused_select_transpose (param_0.191: c128[160,160], param_1.239: s32[], param_2.205: pred[], param_3.151: s64[4], param_4.146: s64[], param_5.129: s32[], param_6.114: c128[2,1,160,160]) -> (c128[160,160], c128[160,160]) {
+  %param_5.129 = s32[] parameter(5), metadata={scheduling_name="param_5.129"}
+  %convert.128.3 = s64[] convert(%param_5.129), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=151 scheduling_name="convert.128.3"}
+  %param_3.151 = s64[4]{0} parameter(3), metadata={scheduling_name="param_3.151"}
+  %param_4.146 = s64[] parameter(4), metadata={scheduling_name="param_4.146"}
+  %dynamic-slice.145.44 = s64[1]{0} dynamic-slice(%param_3.151, %param_4.146), dynamic_slice_sizes={1}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="dynamic-slice.145.44"}
+  %bitcast.1529.69 = s64[] bitcast(%dynamic-slice.145.44), metadata={scheduling_name="bitcast.1529.69"}
+  %sign.12.13 = s64[] sign(%bitcast.1529.69), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/sign" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="sign.12.13"}
+  %constant_537_1 = s64[] constant(1)
+  %compare.348.11 = pred[] compare(%sign.12.13, %constant_537_1), direction=NE, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="compare.348.11"}
+  %constant_538_1 = s64[] constant(0), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148}
+  %compare.349.27 = pred[] compare(%bitcast.1529.69, %constant_538_1), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="compare.349.27"}
+  %negate.50.15 = s64[] negate(%bitcast.1529.69), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="negate.50.15"}
+  %select.242.13 = s64[] select(%compare.349.27, %negate.50.15, %bitcast.1529.69), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="select.242.13"}
+  %and.122.13 = s64[] and(%select.242.13, %constant_537_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="and.122.13"}
+  %negate.51.13 = s64[] negate(%and.122.13), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="negate.51.13"}
+  %select.244.13 = s64[] select(%compare.349.27, %negate.51.13, %and.122.13), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="select.244.13"}
+  %compare.350.7 = pred[] compare(%select.244.13, %constant_538_1), direction=NE, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="compare.350.7"}
+  %and.123.9 = pred[] and(%compare.348.11, %compare.350.7), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="and.123.9"}
+  %shift-right-logical.8.3 = s64[] shift-right-logical(%select.242.13, %constant_537_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="shift-right-logical.8.3"}
+  %negate.52.3 = s64[] negate(%shift-right-logical.8.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="negate.52.3"}
+  %select.245.3 = s64[] select(%compare.349.27, %negate.52.3, %shift-right-logical.8.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="select.245.3"}
+  %constant_546_2 = s64[] constant(-1)
+  %add.228.3 = s64[] add(%select.245.3, %constant_546_2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="add.228.3"}
+  %select.246.7 = s64[] select(%and.123.9, %add.228.3, %select.245.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="select.246.7"}
+  %compare.351.5 = pred[] compare(%convert.128.3, %select.246.7), direction=EQ, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/eq" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=151 scheduling_name="compare.351.5"}
+  %param_2.205 = pred[] parameter(2), metadata={scheduling_name="param_2.205"}
+  %and.124.3 = pred[] and(%compare.351.5, %param_2.205), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=151 scheduling_name="and.124.3"}
+  %broadcast.272.1 = pred[160,160]{1,0} broadcast(%and.124.3), dimensions={}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=166 scheduling_name="broadcast.272.1"}
+  %iota.17.5 = s32[160,160]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="iota.17.5"}
+  %iota.18.5 = s32[160,160]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="iota.18.5"}
+  %compare.357.5 = pred[160,160]{1,0} compare(%iota.17.5, %iota.18.5), direction=GE, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="compare.357.5"}
+  %param_1.239 = s32[] parameter(1), metadata={scheduling_name="param_1.239"}
+  %constant_553_1 = s32[] constant(0)
+  %compare.358.1 = pred[] compare(%param_1.239, %constant_553_1), direction=EQ, metadata={scheduling_name="compare.358.1"}
+  %broadcast.269.2 = pred[160,160]{1,0} broadcast(%compare.358.1), dimensions={}, metadata={scheduling_name="broadcast.269.2"}
+  %param_0.191 = c128[160,160]{0,1} parameter(0), metadata={scheduling_name="param_0.191"}
+  %bitcast.1646.5 = c128[160,160]{1,0} bitcast(%param_0.191), metadata={scheduling_name="bitcast.1646.5"}
+  %constant_629_2 = c128[] constant((nan, nan))
+  %broadcast.270.3 = c128[160,160]{1,0} broadcast(%constant_629_2), dimensions={}, metadata={scheduling_name="broadcast.270.3"}
+  %select.250.5 = c128[160,160]{1,0} select(%broadcast.269.2, %bitcast.1646.5, %broadcast.270.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/cholesky" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="select.250.5"}
+  %constant_575_2 = c128[] constant((0, 0))
+  %broadcast.271.4 = c128[160,160]{1,0} broadcast(%constant_575_2), dimensions={}, metadata={scheduling_name="broadcast.271.4"}
+  %select.251.3 = c128[160,160]{1,0} select(%compare.357.5, %select.250.5, %broadcast.271.4), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="select.251.3"}
+  %select.254.1 = c128[160,160]{1,0} select(%broadcast.272.1, %select.251.3, %broadcast.271.4), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=166 scheduling_name="select.254.1"}
+  %param_6.114 = c128[2,1,160,160]{3,2,1,0} parameter(6), metadata={scheduling_name="param_6.114"}
+  %compare.353.1.clone.1 = pred[] compare(%select.244.13, %constant_538_1), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="compare.353.1.clone.1"}
+  %and.125.4.clone.1 = pred[] and(%compare.353.1.clone.1, %compare.350.7), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="and.125.4.clone.1"}
+  %constant_560_3_clone_1 = s64[] constant(2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148}
+  %add.229.4.clone.1 = s64[] add(%select.244.13, %constant_560_3_clone_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="add.229.4.clone.1"}
+  %select.247.3.clone.1 = s64[] select(%and.125.4.clone.1, %add.229.4.clone.1, %select.244.13), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="select.247.3.clone.1"}
+  %compare.354.1.clone.1 = pred[] compare(%select.247.3.clone.1, %constant_538_1), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="compare.354.1.clone.1"}
+  %add.230.1.clone.1 = s64[] add(%select.247.3.clone.1, %constant_560_3_clone_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="add.230.1.clone.1"}
+  %select.249.4.clone.1 = s64[] select(%compare.354.1.clone.1, %add.230.1.clone.1, %select.247.3.clone.1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="select.249.4.clone.1"}
+  %convert.130.2.clone.1 = s32[] convert(%select.249.4.clone.1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="convert.130.2.clone.1"}
+  %dynamic-slice.147.1.clone.1 = c128[1,1,160,160]{3,2,1,0} dynamic-slice(%param_6.114, %convert.130.2.clone.1, %constant_553_1, %constant_553_1, %constant_553_1), dynamic_slice_sizes={1,1,160,160}, metadata={scheduling_name="dynamic-slice.147.1.clone.1"}
+  %bitcast.1663.1.clone.1 = c128[160,160]{1,0} bitcast(%dynamic-slice.147.1.clone.1), metadata={scheduling_name="bitcast.1663.1.clone.1"}
+  %transpose.59.1.clone.1 = c128[160,160]{1,0} transpose(%bitcast.1663.1.clone.1), dimensions={1,0}, metadata={scheduling_name="transpose.59.1.clone.1"}
+  ROOT %tuple.98 = (c128[160,160]{1,0}, c128[160,160]{1,0}) tuple(%select.254.1, %transpose.59.1.clone.1), metadata={scheduling_name="tuple.98"}
+}
+
+%fused_transpose (param_0.188: c128[2,1,160,160], param_1.237: s64[4], param_2.203: s64[]) -> c128[160,160] {
+  %param_0.188 = c128[2,1,160,160]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.188"}
+  %param_1.237 = s64[4]{0} parameter(1), metadata={scheduling_name="param_1.237"}
+  %param_2.203 = s64[] parameter(2), metadata={scheduling_name="param_2.203"}
+  %dynamic-slice.145.16 = s64[1]{0} dynamic-slice(%param_1.237, %param_2.203), dynamic_slice_sizes={1}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="dynamic-slice.145.16"}
+  %bitcast.1529.29 = s64[] bitcast(%dynamic-slice.145.16), metadata={scheduling_name="bitcast.1529.29"}
+  %constant_538_5 = s64[] constant(0), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148}
+  %compare.349.13 = pred[] compare(%bitcast.1529.29, %constant_538_5), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="compare.349.13"}
+  %negate.50.13 = s64[] negate(%bitcast.1529.29), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="negate.50.13"}
+  %select.242.11 = s64[] select(%compare.349.13, %negate.50.13, %bitcast.1529.29), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="select.242.11"}
+  %constant_537_6 = s64[] constant(1)
+  %and.122.9 = s64[] and(%select.242.11, %constant_537_6), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="and.122.9"}
+  %negate.51.9 = s64[] negate(%and.122.9), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="negate.51.9"}
+  %select.244.9 = s64[] select(%compare.349.13, %negate.51.9, %and.122.9), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="select.244.9"}
+  %compare.353.2 = pred[] compare(%select.244.9, %constant_538_5), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="compare.353.2"}
+  %compare.350.3 = pred[] compare(%select.244.9, %constant_538_5), direction=NE, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="compare.350.3"}
+  %and.125.1 = pred[] and(%compare.353.2, %compare.350.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="and.125.1"}
+  %constant_560_4 = s64[] constant(2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148}
+  %add.229.1 = s64[] add(%select.244.9, %constant_560_4), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="add.229.1"}
+  %select.247.4 = s64[] select(%and.125.1, %add.229.1, %select.244.9), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="select.247.4"}
+  %compare.354.2 = pred[] compare(%select.247.4, %constant_538_5), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="compare.354.2"}
+  %add.230.2 = s64[] add(%select.247.4, %constant_560_4), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="add.230.2"}
+  %select.249.1 = s64[] select(%compare.354.2, %add.230.2, %select.247.4), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="select.249.1"}
+  %dynamic-slice.146.11 = c128[1,1,160,160]{3,2,1,0} dynamic-slice(%param_0.188, %select.249.1, %constant_538_5, %constant_538_5, %constant_538_5), dynamic_slice_sizes={1,1,160,160}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=159 scheduling_name="dynamic-slice.146.11"}
+  %bitcast.1621.11 = c128[160,160]{1,0} bitcast(%dynamic-slice.146.11), metadata={scheduling_name="bitcast.1621.11"}
+  %transpose.58.3 = c128[160,160]{1,0} transpose(%bitcast.1621.11), dimensions={1,0}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/squeeze" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=159 scheduling_name="transpose.58.3"}
+  %real.26.3 = f64[160,160]{1,0} real(%bitcast.1621.11), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="real.26.3"}
+  %imag.26.5 = f64[160,160]{1,0} imag(%bitcast.1621.11), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="imag.26.5"}
+  %negate.53.3 = f64[160,160]{1,0} negate(%imag.26.5), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="negate.53.3"}
+  %complex.26.1 = c128[160,160]{1,0} complex(%real.26.3, %negate.53.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="complex.26.1"}
+  %add.231.1 = c128[160,160]{1,0} add(%transpose.58.3, %complex.26.1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="add.231.1"}
+  %constant_574_1 = c128[] constant((0.5, 0))
+  %broadcast.268.1 = c128[160,160]{1,0} broadcast(%constant_574_1), dimensions={}, metadata={scheduling_name="broadcast.268.1"}
+  ROOT %multiply.22.1 = c128[160,160]{1,0} multiply(%add.231.1, %broadcast.268.1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="multiply.22.1"}
+}
+
+%fused_dynamic_slice.1 (param_0.137: c128[4,160,160], param_1.232: s32[]) -> c128[1,160,160] {
+  %param_0.137 = c128[4,160,160]{2,1,0} parameter(0), metadata={scheduling_name="param_0.137"}
+  %param_1.232 = s32[] parameter(1), metadata={scheduling_name="param_1.232"}
+  %constant_553_4 = s32[] constant(0)
+  %compare.359.1 = pred[] compare(%param_1.232, %constant_553_4), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=199 scheduling_name="compare.359.1"}
+  %constant_583_1 = s32[] constant(4)
+  %add.233.1 = s32[] add(%param_1.232, %constant_583_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=199 scheduling_name="add.233.1"}
+  %select.255.1 = s32[] select(%compare.359.1, %add.233.1, %param_1.232), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=199 scheduling_name="select.255.1"}
+  ROOT %dynamic-slice.148.1 = c128[1,160,160]{2,1,0} dynamic-slice(%param_0.137, %select.255.1, %constant_553_4, %constant_553_4), dynamic_slice_sizes={1,160,160}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=199 scheduling_name="dynamic-slice.148.1"}
+}
+
+%fused_add.3 (param_0.186: s64[]) -> s64[] {
+  %param_0.186 = s64[] parameter(0), metadata={scheduling_name="param_0.186"}
+  %constant_537_2 = s64[] constant(1)
+  ROOT %add.227.1 = s64[] add(%param_0.186, %constant_537_2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="add.227.1"}
+}
+
+%region_3.119 (Arg_0.120: c128[], Arg_1.121: c128[]) -> c128[] {
+  %Arg_1.121 = c128[] parameter(1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/psum2" scheduling_name="Arg_1.121"}
+  %Arg_0.120 = c128[] parameter(0), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/psum2" scheduling_name="Arg_0.120"}
+  ROOT %add.214 = c128[] add(%Arg_0.120, %Arg_1.121), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=167 scheduling_name="add.214"}
+}
+
+%region_10.281 (Arg_0.282: c128[], Arg_1.283: c128[]) -> c128[] {
+  %Arg_1.283 = c128[] parameter(1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/psum2" scheduling_name="Arg_1.283"}
+  %Arg_0.282 = c128[] parameter(0), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/psum2" scheduling_name="Arg_0.282"}
+  ROOT %add.215 = c128[] add(%Arg_0.282, %Arg_1.283), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=194 scheduling_name="add.215"}
+}
+
+%fused_reduce.2 (param_0.187: s32[4], param_1.236: s64[4], param_2.202: s64[]) -> pred[] {
+  %constant_553_2 = s32[] constant(0)
+  %broadcast.266.5 = s32[4]{0} broadcast(%constant_553_2), dimensions={}, metadata={scheduling_name="broadcast.266.5"}
+  %param_1.236 = s64[4]{0} parameter(1), metadata={scheduling_name="param_1.236"}
+  %param_2.202 = s64[] parameter(2), metadata={scheduling_name="param_2.202"}
+  %dynamic-slice.145.6 = s64[1]{0} dynamic-slice(%param_1.236, %param_2.202), dynamic_slice_sizes={1}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="dynamic-slice.145.6"}
+  %bitcast.1529.19 = s64[] bitcast(%dynamic-slice.145.6), metadata={scheduling_name="bitcast.1529.19"}
+  %constant_538_2 = s64[] constant(0), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148}
+  %compare.349.3 = pred[] compare(%bitcast.1529.19, %constant_538_2), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="compare.349.3"}
+  %negate.50.7 = s64[] negate(%bitcast.1529.19), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="negate.50.7"}
+  %select.242.5 = s64[] select(%compare.349.3, %negate.50.7, %bitcast.1529.19), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="select.242.5"}
+  %constant_537_3 = s64[] constant(1)
+  %and.122.11 = s64[] and(%select.242.5, %constant_537_3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="and.122.11"}
+  %negate.51.11 = s64[] negate(%and.122.11), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="negate.51.11"}
+  %select.244.11 = s64[] select(%compare.349.3, %negate.51.11, %and.122.11), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="select.244.11"}
+  %compare.353.3 = pred[] compare(%select.244.11, %constant_538_2), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="compare.353.3"}
+  %compare.350.4 = pred[] compare(%select.244.11, %constant_538_2), direction=NE, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="compare.350.4"}
+  %and.125.2 = pred[] and(%compare.353.3, %compare.350.4), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="and.125.2"}
+  %constant_560_1 = s64[] constant(2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148}
+  %add.229.2 = s64[] add(%select.244.11, %constant_560_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="add.229.2"}
+  %select.247.1 = s64[] select(%and.125.2, %add.229.2, %select.244.11), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="select.247.1"}
+  %compare.354.4 = pred[] compare(%select.247.1, %constant_538_2), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="compare.354.4"}
+  %add.230.4 = s64[] add(%select.247.1, %constant_560_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="add.230.4"}
+  %select.249.3 = s64[] select(%compare.354.4, %add.230.4, %select.247.1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="select.249.3"}
+  %convert.130.1 = s32[] convert(%select.249.3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="convert.130.1"}
+  %bitcast.1597.3 = s32[1]{0} bitcast(%convert.130.1), metadata={scheduling_name="bitcast.1597.3"}
+  %constant_566_1 = s32[1]{0} constant({0})
+  %concatenate.44.3 = s32[4]{0} concatenate(%bitcast.1597.3, %constant_566_1, %constant_566_1, %constant_566_1), dimensions={0}, metadata={scheduling_name="concatenate.44.3"}
+  %compare.355.5 = pred[4]{0} compare(%broadcast.266.5, %concatenate.44.3), direction=LE, metadata={scheduling_name="compare.355.5"}
+  %param_0.187 = s32[4]{0} parameter(0), metadata={scheduling_name="param_0.187"}
+  %compare.356.1 = pred[4]{0} compare(%param_0.187, %concatenate.44.3), direction=GE, metadata={scheduling_name="compare.356.1"}
+  %and.126.3 = pred[4]{0} and(%compare.355.5, %compare.356.1), metadata={scheduling_name="and.126.3"}
+  %constant_568_1 = pred[] constant(true)
+  ROOT %reduce.23.1 = pred[] reduce(%and.126.3, %constant_568_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.23.1"}
+}
+
+%wrapped_dynamic-slice_computation (param_0.208: s64[4], param_1.254: s64[]) -> s64[1] {
+  %param_0.208 = s64[4]{0} parameter(0), metadata={scheduling_name="param_0.208"}
+  %param_1.254 = s64[] parameter(1), metadata={scheduling_name="param_1.254"}
+  ROOT %dynamic-slice.145.53 = s64[1]{0} dynamic-slice(%param_0.208, %param_1.254), dynamic_slice_sizes={1}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="dynamic-slice.145.53"}
+}
+
+%fused_broadcast () -> c128[4,160,160] {
+  %constant_575_1 = c128[] constant((0, 0))
+  ROOT %broadcast.274.1 = c128[4,160,160]{2,1,0} broadcast(%constant_575_1), dimensions={}, metadata={scheduling_name="broadcast.274.1"}
+}
+
+%fused_dynamic_update_slice.3 (param_0.90: c128[2,1,160,160], param_1.234: s64[4], param_2.198: s64[], param_3.147: c128[160,160], param_4.145: c128[160,160], param_5.128: s32[], param_6.111: pred[], param_7.86: pred[], param_8.67: s32[]) -> c128[2,1,160,160] {
+  %param_0.90 = c128[2,1,160,160]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.90"}
+  %param_8.67 = s32[] parameter(8), metadata={scheduling_name="param_8.67"}
+  %convert.128.5 = s64[] convert(%param_8.67), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=151 scheduling_name="convert.128.5"}
+  %param_1.234 = s64[4]{0} parameter(1), metadata={scheduling_name="param_1.234"}
+  %param_2.198 = s64[] parameter(2), metadata={scheduling_name="param_2.198"}
+  %dynamic-slice.145.52 = s64[1]{0} dynamic-slice(%param_1.234, %param_2.198), dynamic_slice_sizes={1}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="dynamic-slice.145.52"}
+  %bitcast.1529.79 = s64[] bitcast(%dynamic-slice.145.52), metadata={scheduling_name="bitcast.1529.79"}
+  %sign.12.15 = s64[] sign(%bitcast.1529.79), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/sign" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="sign.12.15"}
+  %constant_537_4 = s64[] constant(1)
+  %compare.348.13 = pred[] compare(%sign.12.15, %constant_537_4), direction=NE, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="compare.348.13"}
+  %constant_538_4 = s64[] constant(0), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148}
+  %compare.349.31 = pred[] compare(%bitcast.1529.79, %constant_538_4), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="compare.349.31"}
+  %negate.50.17 = s64[] negate(%bitcast.1529.79), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="negate.50.17"}
+  %select.242.15 = s64[] select(%compare.349.31, %negate.50.17, %bitcast.1529.79), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="select.242.15"}
+  %and.122.15 = s64[] and(%select.242.15, %constant_537_4), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="and.122.15"}
+  %negate.51.15 = s64[] negate(%and.122.15), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="negate.51.15"}
+  %select.244.15 = s64[] select(%compare.349.31, %negate.51.15, %and.122.15), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="select.244.15"}
+  %compare.350.9 = pred[] compare(%select.244.15, %constant_538_4), direction=NE, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="compare.350.9"}
+  %and.123.11 = pred[] and(%compare.348.13, %compare.350.9), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="and.123.11"}
+  %shift-right-logical.8.5 = s64[] shift-right-logical(%select.242.15, %constant_537_4), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="shift-right-logical.8.5"}
+  %negate.52.5 = s64[] negate(%shift-right-logical.8.5), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="negate.52.5"}
+  %select.245.5 = s64[] select(%compare.349.31, %negate.52.5, %shift-right-logical.8.5), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="select.245.5"}
+  %constant_546_1 = s64[] constant(-1)
+  %add.228.5 = s64[] add(%select.245.5, %constant_546_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="add.228.5"}
+  %select.246.9 = s64[] select(%and.123.11, %add.228.5, %select.245.5), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148 scheduling_name="select.246.9"}
+  %compare.351.7 = pred[] compare(%convert.128.5, %select.246.9), direction=EQ, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/eq" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=151 scheduling_name="compare.351.7"}
+  %param_7.86 = pred[] parameter(7), metadata={scheduling_name="param_7.86"}
+  %and.124.5 = pred[] and(%compare.351.7, %param_7.86), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=151 scheduling_name="and.124.5"}
+  %broadcast.265.3 = pred[1,1,160,160]{3,2,1,0} broadcast(%and.124.5), dimensions={}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="broadcast.265.3"}
+  %param_6.111 = pred[] parameter(6), metadata={scheduling_name="param_6.111"}
+  %broadcast.267.3 = pred[1,1,160,160]{3,2,1,0} broadcast(%param_6.111), dimensions={}, metadata={scheduling_name="broadcast.267.3"}
+  %iota.17.7 = s32[160,160]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="iota.17.7"}
+  %iota.18.7 = s32[160,160]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="iota.18.7"}
+  %compare.357.7 = pred[160,160]{1,0} compare(%iota.17.7, %iota.18.7), direction=GE, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="compare.357.7"}
+  %param_5.128 = s32[] parameter(5), metadata={scheduling_name="param_5.128"}
+  %constant_553_5 = s32[] constant(0)
+  %compare.358.4 = pred[] compare(%param_5.128, %constant_553_5), direction=EQ, metadata={scheduling_name="compare.358.4"}
+  %broadcast.269.4 = pred[160,160]{1,0} broadcast(%compare.358.4), dimensions={}, metadata={scheduling_name="broadcast.269.4"}
+  %param_4.145 = c128[160,160]{0,1} parameter(4), metadata={scheduling_name="param_4.145"}
+  %bitcast.1646.9 = c128[160,160]{1,0} bitcast(%param_4.145), metadata={scheduling_name="bitcast.1646.9"}
+  %constant_629_1 = c128[] constant((nan, nan))
+  %broadcast.270.7 = c128[160,160]{1,0} broadcast(%constant_629_1), dimensions={}, metadata={scheduling_name="broadcast.270.7"}
+  %select.250.9 = c128[160,160]{1,0} select(%broadcast.269.4, %bitcast.1646.9, %broadcast.270.7), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/cholesky" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="select.250.9"}
+  %constant_575_3 = c128[] constant((0, 0))
+  %broadcast.271.8 = c128[160,160]{1,0} broadcast(%constant_575_3), dimensions={}, metadata={scheduling_name="broadcast.271.8"}
+  %select.251.7 = c128[160,160]{1,0} select(%compare.357.7, %select.250.9, %broadcast.271.8), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="select.251.7"}
+  %bitcast.1654.5 = c128[1,1,160,160]{3,2,1,0} bitcast(%select.251.7), metadata={scheduling_name="bitcast.1654.5"}
+  %param_3.147 = c128[160,160]{1,0} parameter(3), metadata={scheduling_name="param_3.147"}
+  %bitcast.1666.8 = c128[1,1,160,160]{3,2,1,0} bitcast(%param_3.147), metadata={scheduling_name="bitcast.1666.8"}
+  %select.252.5 = c128[1,1,160,160]{3,2,1,0} select(%broadcast.267.3, %bitcast.1654.5, %bitcast.1666.8), metadata={scheduling_name="select.252.5"}
+  %select.253.3 = c128[1,1,160,160]{3,2,1,0} select(%broadcast.265.3, %select.252.5, %bitcast.1666.8), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="select.253.3"}
+  %bitcast.1670.3 = c128[160,160]{1,0} bitcast(%select.253.3), metadata={scheduling_name="bitcast.1670.3"}
+  %transpose.60.3 = c128[160,160]{1,0} transpose(%bitcast.1670.3), dimensions={1,0}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="transpose.60.3"}
+  %bitcast.1673.1 = c128[1,1,160,160]{3,2,1,0} bitcast(%transpose.60.3), metadata={scheduling_name="bitcast.1673.1"}
+  %compare.353.4 = pred[] compare(%select.244.15, %constant_538_4), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="compare.353.4"}
+  %and.125.3 = pred[] and(%compare.353.4, %compare.350.9), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="and.125.3"}
+  %constant_560_2 = s64[] constant(2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148}
+  %add.229.3 = s64[] add(%select.244.15, %constant_560_2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="add.229.3"}
+  %select.247.2 = s64[] select(%and.125.3, %add.229.3, %select.244.15), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(remainder)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=155 scheduling_name="select.247.2"}
+  %compare.354.3 = pred[] compare(%select.247.2, %constant_538_4), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="compare.354.3"}
+  %add.230.3 = s64[] add(%select.247.2, %constant_560_2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="add.230.3"}
+  %select.249.2 = s64[] select(%compare.354.3, %add.230.3, %select.247.2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="select.249.2"}
+  %convert.130.3 = s32[] convert(%select.249.2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=162 scheduling_name="convert.130.3"}
+  ROOT %dynamic-update-slice.48.1 = c128[2,1,160,160]{3,2,1,0} dynamic-update-slice(%param_0.90, %bitcast.1673.1, %convert.130.3, %constant_553_5, %constant_553_5, /*index=5*/%constant_553_5), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="dynamic-update-slice.48.1"}
+}
+
+%command_buffer.2 (p.4: s64[], p.5: s32[4], p.6: s64[4], p.7: s64[], p.8: (c128[160,160], c128[160,160]), p.9: c128[2,1,160,160], p.10: c128[160,160], p.11: s32[], p.12: pred[], p.13: s32[]) -> (s64[], s64[1], c128[4,160,160], c128[2,1,160,160], s64[]) {
+  %p.4 = s64[] parameter(0)
+  %p.5 = s32[4]{0} parameter(1)
+  %p.6 = s64[4]{0} parameter(2)
+  %p.7 = s64[] parameter(3)
+  %p.8 = (c128[160,160]{1,0}, c128[160,160]{1,0}) parameter(4)
+  %p.9 = c128[2,1,160,160]{3,2,1,0} parameter(5)
+  %p.10 = c128[160,160]{0,1} parameter(6)
+  %p.11 = s32[] parameter(7)
+  %p.12 = pred[] parameter(8)
+  %p.13 = s32[] parameter(9)
+  %copy.53 = s64[] copy(%p.4)
+  %input_reduce_fusion.2 = pred[] fusion(%p.5, %p.6, %p.7), kind=kInput, calls=%fused_reduce.2, metadata={scheduling_name="input_reduce_fusion.2"}
+  %wrapped_dynamic-slice = s64[1]{0} fusion(%p.6, %p.7), kind=kLoop, calls=%wrapped_dynamic-slice_computation, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="wrapped_dynamic-slice"}
+  %loop_broadcast_fusion = c128[4,160,160]{2,1,0} fusion(), kind=kLoop, calls=%fused_broadcast, metadata={scheduling_name="loop_broadcast_fusion"}
+  %get-tuple-element.614 = c128[160,160]{1,0} get-tuple-element(%p.8), index=1, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=166 scheduling_name="get-tuple-element.614"}
+  %loop_dynamic_update_slice_fusion.3 = c128[2,1,160,160]{3,2,1,0} fusion(%p.9, %p.6, %p.7, %get-tuple-element.614, %p.10, /*index=5*/%p.11, %input_reduce_fusion.2, %p.12, %p.13), kind=kLoop, calls=%fused_dynamic_update_slice.3, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=161 scheduling_name="loop_dynamic_update_slice_fusion.3"}
+  %copy.18 = s64[] copy(%copy.53), metadata={scheduling_name="copy.18"}
+  ROOT %tuple.119 = (s64[], s64[1]{0}, c128[4,160,160]{2,1,0}, c128[2,1,160,160]{3,2,1,0}, s64[]) tuple(%copy.53, %wrapped_dynamic-slice, %loop_broadcast_fusion, %loop_dynamic_update_slice_fusion.3, %copy.18)
+}
+
+%region_1.498_spmd (param.16.0: (s64[], c128[2,1,160,160], s64[4], s32[], s32[], /*index=5*/s32[])) -> (s64[], c128[2,1,160,160], s64[4], s32[], s32[], /*index=5*/s32[]) {
+  %param.16.0 = (s64[], c128[2,1,160,160]{3,2,1,0}, s64[4]{0}, s32[], s32[], /*index=5*/s32[]) parameter(0), metadata={scheduling_name="param.16.0"}
+  %constant_538_0 = s64[] constant(0), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=148}
+  %constant_567_0 = s32[4]{0} constant({1, 0, 0, 0})
+  %get-tuple-element.684 = s64[] get-tuple-element(%param.16.0), index=0, metadata={scheduling_name="get-tuple-element.684"}
+  %get-tuple-element.692 = s64[4]{0} get-tuple-element(%param.16.0), index=2, metadata={scheduling_name="get-tuple-element.692"}
+  %get-tuple-element.685 = c128[2,1,160,160]{3,2,1,0} get-tuple-element(%param.16.0), index=1, metadata={scheduling_name="get-tuple-element.685"}
+  %input_transpose_fusion = c128[160,160]{1,0} fusion(%get-tuple-element.685, %get-tuple-element.692, %get-tuple-element.684), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="input_transpose_fusion"}
+  %bitcast.1637.0 = c128[160,160]{0,1} bitcast(%input_transpose_fusion), metadata={scheduling_name="bitcast.1637.0"}
+  %custom-call.4.0 = (c128[160,160]{0,1}, c128[256]{0}, s32[]) custom-call(%bitcast.1637.0), custom_call_target="__cusolver$cholesky", operand_layout_constraints={c128[160,160]{0,1}}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(cholesky)/cholesky" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=160 scheduling_name="custom-call.4.0"}, backend_config={"lower":true}
+  %get-tuple-element.694 = s32[] get-tuple-element(%param.16.0), index=4, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=198 scheduling_name="get-tuple-element.694"}
+  %loop_compare_fusion.5 = pred[] fusion(%get-tuple-element.694, %get-tuple-element.692, %get-tuple-element.684), kind=kLoop, calls=%fused_compare.5, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/eq" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=151 scheduling_name="loop_compare_fusion.5"}
+  %get-tuple-element.693 = s32[] get-tuple-element(%param.16.0), index=3, metadata={scheduling_name="get-tuple-element.693"}
+  %get-tuple-element.607.0 = s32[] get-tuple-element(%custom-call.4.0), index=2, metadata={scheduling_name="get-tuple-element.607.0"}
+  %get-tuple-element.606.0 = c128[160,160]{0,1} get-tuple-element(%custom-call.4.0), index=0, metadata={scheduling_name="get-tuple-element.606.0"}
+  %input_select_transpose_fusion = (c128[160,160]{1,0}, c128[160,160]{1,0}) fusion(%get-tuple-element.606.0, %get-tuple-element.607.0, %loop_compare_fusion.5, %get-tuple-element.692, %get-tuple-element.684, /*index=5*/%get-tuple-element.693, %get-tuple-element.685), kind=kInput, calls=%fused_select_transpose, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=166 scheduling_name="input_select_transpose_fusion"}
+  %get-tuple-element.613 = c128[160,160]{1,0} get-tuple-element(%input_select_transpose_fusion), index=0, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=166 scheduling_name="get-tuple-element.613"}
+  %bitcast.1688.0 = c128[160,160]{0,1} bitcast(%get-tuple-element.613), metadata={scheduling_name="bitcast.1688.0"}
+  %all-reduce-start = c128[160,160]{0,1} all-reduce-start(%bitcast.1688.0), channel_id=1, replica_groups={{0,1,2,3,4,5,6,7}}, use_global_device_ids=true, to_apply=%region_3.119, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/psum2" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=167 scheduling_name="all-reduce-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":true,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %call.6 = (s64[], s64[1]{0}, c128[4,160,160]{2,1,0}, c128[2,1,160,160]{3,2,1,0}, s64[]) call(%constant_538_0, %constant_567_0, %get-tuple-element.692, %get-tuple-element.684, %input_select_transpose_fusion, /*index=5*/%get-tuple-element.685, %get-tuple-element.606.0, %get-tuple-element.607.0, %loop_compare_fusion.5, %get-tuple-element.693), to_apply=%command_buffer.2
+  %get-tuple-element.720 = s64[] get-tuple-element(%call.6), index=0
+  %get-tuple-element.721 = s64[1]{0} get-tuple-element(%call.6), index=1
+  %get-tuple-element.722 = c128[4,160,160]{2,1,0} get-tuple-element(%call.6), index=2
+  %get-tuple-element.723 = c128[2,1,160,160]{3,2,1,0} get-tuple-element(%call.6), index=3
+  %get-tuple-element.724 = s64[] get-tuple-element(%call.6), index=4
+  %all-reduce-done = c128[160,160]{0,1} all-reduce-done(%all-reduce-start), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/psum2" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=167 scheduling_name="all-reduce-done"}
+  %get-tuple-element.695 = s32[] get-tuple-element(%param.16.0), index=5, metadata={scheduling_name="get-tuple-element.695"}
+  %bitcast.1529.0 = s64[] bitcast(%get-tuple-element.721), metadata={scheduling_name="bitcast.1529.0"}
+  %tuple.102 = (s64[], c128[2,1,160,160]{3,2,1,0}, s32[], s64[], pred[], /*index=5*/c128[160,160]{0,1}) tuple(%get-tuple-element.724, %get-tuple-element.723, %get-tuple-element.695, %bitcast.1529.0, %loop_compare_fusion.5, /*index=5*/%all-reduce-done), metadata={scheduling_name="tuple.102"}
+  %while.24.0 = (s64[], c128[2,1,160,160]{3,2,1,0}, s32[], s64[], pred[], /*index=5*/c128[160,160]{0,1}) while(%tuple.102), condition=%region_6.198.clone.clone_spmd.clone, body=%region_4.182.clone.clone.clone_spmd.sunk.clone, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=178 scheduling_name="while.24.0"}, backend_config={"known_trip_count":{"n":"2"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %copy.24 = s64[] copy(%get-tuple-element.720), metadata={scheduling_name="copy.24"}
+  %get-tuple-element.658 = c128[2,1,160,160]{3,2,1,0} get-tuple-element(%while.24.0), index=1, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=178 scheduling_name="get-tuple-element.658"}
+  %tuple.105 = (s64[], c128[4,160,160]{2,1,0}, s32[], s64[], pred[], /*index=5*/c128[2,1,160,160]{3,2,1,0}) tuple(%copy.24, %get-tuple-element.722, %get-tuple-element.695, %bitcast.1529.0, %loop_compare_fusion.5, /*index=5*/%get-tuple-element.658), metadata={scheduling_name="tuple.105"}
+  %while.20.0 = (s64[], c128[4,160,160]{2,1,0}, s32[], s64[], pred[], /*index=5*/c128[2,1,160,160]{3,2,1,0}) while(%tuple.105), condition=%region_9.269.clone.clone.clone_spmd, body=%region_7.253.clone.clone.clone.clone_spmd, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=193 scheduling_name="while.20.0"}, backend_config={"known_trip_count":{"n":"2"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %get-tuple-element.570.0 = c128[4,160,160]{2,1,0} get-tuple-element(%while.20.0), index=1, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=193 scheduling_name="get-tuple-element.570.0"}
+  %all-reduce-start.1 = c128[4,160,160]{2,1,0} all-reduce-start(%get-tuple-element.570.0), channel_id=2, replica_groups={{0,1,2,3,4,5,6,7}}, use_global_device_ids=true, to_apply=%region_10.281, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/psum2" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=194 scheduling_name="all-reduce-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-reduce-done.1 = c128[4,160,160]{2,1,0} all-reduce-done(%all-reduce-start.1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/psum2" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=194 scheduling_name="all-reduce-done.1"}
+  %loop_dynamic_slice_fusion.1 = c128[1,160,160]{2,1,0} fusion(%all-reduce-done.1, %get-tuple-element.694), kind=kLoop, calls=%fused_dynamic_slice.1, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=199 scheduling_name="loop_dynamic_slice_fusion.1"}
+  %bitcast.1724.0 = c128[160,160]{1,0} bitcast(%loop_dynamic_slice_fusion.1), metadata={scheduling_name="bitcast.1724.0"}
+  %tuple.108 = (s64[], c128[2,1,160,160]{3,2,1,0}, s32[], c128[4,160,160]{2,1,0}, c128[160,160]{1,0}, /*index=5*/s64[], s32[]) tuple(%get-tuple-element.720, %get-tuple-element.658, %get-tuple-element.695, %all-reduce-done.1, %bitcast.1724.0, /*index=5*/%bitcast.1529.0, %get-tuple-element.694), metadata={scheduling_name="tuple.108"}
+  %while.21.0 = (s64[], c128[2,1,160,160]{3,2,1,0}, s32[], c128[4,160,160]{2,1,0}, c128[160,160]{1,0}, /*index=5*/s64[], s32[]) while(%tuple.108), condition=%region_14.369.clone.clone.clone_spmd, body=%region_12.352.clone.clone.sunk.clone.clone_spmd, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=214 scheduling_name="while.21.0"}, backend_config={"known_trip_count":{"n":"2"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %loop_add_fusion.3 = s64[] fusion(%get-tuple-element.684), kind=kLoop, calls=%fused_add.3, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.3"}
+  %get-tuple-element.691 = c128[2,1,160,160]{3,2,1,0} get-tuple-element(%while.21.0), index=1, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/body/while/body/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=214 scheduling_name="get-tuple-element.691"}
+  ROOT %tuple.113 = (s64[], c128[2,1,160,160]{3,2,1,0}, s64[4]{0}, s32[], s32[], /*index=5*/s32[]) tuple(%loop_add_fusion.3, %get-tuple-element.691, %get-tuple-element.692, %get-tuple-element.693, %get-tuple-element.694, /*index=5*/%get-tuple-element.695), metadata={scheduling_name="tuple.113"}
+}
+
+%fused_compare.1 (param_0.1: s64[]) -> pred[] {
+  %param_0.1 = s64[] parameter(0), metadata={scheduling_name="param_0.1"}
+  %constant_464_1 = s64[] constant(4)
+  ROOT %compare.321.1 = pred[] compare(%param_0.1, %constant_464_1), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="compare.321.1"}
+}
+
+%region_16.512_spmd (param.9.0: (s64[], c128[2,1,160,160], s64[4], s32[], s32[], /*index=5*/s32[])) -> pred[] {
+  %param.9.0 = (s64[], c128[2,1,160,160]{3,2,1,0}, s64[4]{0}, s32[], s32[], /*index=5*/s32[]) parameter(0), metadata={scheduling_name="param.9.0"}
+  %get-tuple-element.528.0 = s64[] get-tuple-element(%param.9.0), index=0, metadata={scheduling_name="get-tuple-element.528.0"}
+  ROOT %loop_compare_fusion.1 = pred[] fusion(%get-tuple-element.528.0), kind=kLoop, calls=%fused_compare.1, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="loop_compare_fusion.1"}
+}
+
+%fused_dynamic_update_slice.4 (param_0.195: s64[], param_1.250: c128[2,1,160,160], param_2.212: c128[9,2,1,160,160]) -> c128[9,1,2,160,160] {
+  %param_2.212 = c128[9,2,1,160,160]{4,3,1,2,0} parameter(2), metadata={scheduling_name="param_2.212"}
+  %bitcast.1733.1 = c128[9,1,2,160,160]{4,3,2,1,0} bitcast(%param_2.212), metadata={scheduling_name="bitcast.1733.1"}
+  %param_1.250 = c128[2,1,160,160]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1.250"}
+  %bitcast.1766.1 = c128[1,1,2,160,160]{4,3,2,1,0} bitcast(%param_1.250), metadata={scheduling_name="bitcast.1766.1"}
+  %param_0.195 = s64[] parameter(0), metadata={scheduling_name="param_0.195"}
+  %constant_587_2 = s64[] constant(0)
+  ROOT %dynamic-update-slice.49.1 = c128[9,1,2,160,160]{4,3,2,1,0} dynamic-update-slice(%bitcast.1733.1, %bitcast.1766.1, %param_0.195, %constant_587_2, %constant_587_2, /*index=5*/%constant_587_2, %constant_587_2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/dynamic_update_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=253 scheduling_name="dynamic-update-slice.49.1"}
+}
+
+%fused_add.4 (param_0.201: s64[]) -> s64[] {
+  %param_0.201 = s64[] parameter(0), metadata={scheduling_name="param_0.201"}
+  %constant_586_1 = s64[] constant(1)
+  ROOT %add.235.1 = s64[] add(%param_0.201, %constant_586_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=253 scheduling_name="add.235.1"}
+}
+
+%fused_convert (param_0.197: u32[]) -> s32[] {
+  %param_0.197 = u32[] parameter(0), metadata={scheduling_name="param_0.197"}
+  %constant_596_1 = u32[] constant(3), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/axis_index" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=134}
+  %and.128.1 = u32[] and(%param_0.197, %constant_596_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/axis_index" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=134 scheduling_name="and.128.1"}
+  ROOT %convert.132.1 = s32[] convert(%and.128.1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/axis_index" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=134 scheduling_name="convert.132.1"}
+}
+
+%fused_convert_multiply (param_0.207: u32[]) -> (s32[], s32[]) {
+  %param_0.207 = u32[] parameter(0), metadata={scheduling_name="param_0.207"}
+  %constant_594_1_clone_1 = u32[] constant(2), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/axis_index" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=133}
+  %shift-right-logical.9.1.clone.1 = u32[] shift-right-logical(%param_0.207, %constant_594_1_clone_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/axis_index" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=133 scheduling_name="shift-right-logical.9.1.clone.1"}
+  %constant_595_1_clone_1 = u32[] constant(1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/axis_index" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=133}
+  %and.127.1.clone.1 = u32[] and(%shift-right-logical.9.1.clone.1, %constant_595_1_clone_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/axis_index" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=133 scheduling_name="and.127.1.clone.1"}
+  %convert.131.1.clone.1 = s32[] convert(%and.127.1.clone.1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/axis_index" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=133 scheduling_name="convert.131.1.clone.1"}
+  %constant_597_1 = s32[] constant(2)
+  %multiply.23.1 = s32[] multiply(%convert.131.1.clone.1, %constant_597_1), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=138 scheduling_name="multiply.23.1"}
+  ROOT %tuple.99 = (s32[], s32[]) tuple(%multiply.23.1, %convert.131.1.clone.1), metadata={scheduling_name="tuple.99"}
+}
+
+%wrapped_iota_computation () -> s64[4] {
+  ROOT %iota.19.1 = s64[4]{0} iota(), iota_dimension=0, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="iota.19.1"}
+}
+
+%fused_dynamic_slice.2 (param_0.194: s64[], param_1.249: c128[9,2,1,160,160]) -> c128[1,1,2,160,160] {
+  %param_1.249 = c128[9,2,1,160,160]{4,3,1,2,0} parameter(1), metadata={scheduling_name="param_1.249"}
+  %bitcast.1738.1 = c128[9,1,2,160,160]{4,3,2,1,0} bitcast(%param_1.249), metadata={scheduling_name="bitcast.1738.1"}
+  %param_0.194 = s64[] parameter(0), metadata={scheduling_name="param_0.194"}
+  %constant_587_1 = s64[] constant(0)
+  ROOT %dynamic-slice.149.1 = c128[1,1,2,160,160]{4,3,2,1,0} dynamic-slice(%bitcast.1738.1, %param_0.194, %constant_587_1, %constant_587_1, %constant_587_1, /*index=5*/%constant_587_1), dynamic_slice_sizes={1,1,2,160,160}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=253 scheduling_name="dynamic-slice.149.1"}
+}
+
+%command_buffer (p: s64[], p.1: (s64[], c128[9,2,1,160,160], c128[9,2,1,160,160])) -> (s32[], s64[], s64[], c128[9,2,1,160,160], c128[9,2,1,160,160], /*index=5*/s32[], s32[], s64[4], c128[1,1,2,160,160]) {
+  %p = s64[] parameter(0)
+  %p.1 = (s64[], c128[9,2,1,160,160]{4,3,1,2,0}, c128[9,2,1,160,160]{4,3,1,2,0}) parameter(1)
+  %partition-id.14.0 = u32[] partition-id(), metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/axis_index" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=133 scheduling_name="partition-id.14.0"}
+  %loop_convert_fusion = s32[] fusion(%partition-id.14.0), kind=kLoop, calls=%fused_convert, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/axis_index" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=134 scheduling_name="loop_convert_fusion"}
+  %copy.54 = s64[] copy(%p)
+  %get-tuple-element.699 = s64[] get-tuple-element(%p.1), index=0, metadata={scheduling_name="get-tuple-element.699"}
+  %get-tuple-element.704 = c128[9,2,1,160,160]{4,3,1,2,0} get-tuple-element(%p.1), index=2, metadata={scheduling_name="get-tuple-element.704"}
+  %get-tuple-element.700 = c128[9,2,1,160,160]{4,3,1,2,0} get-tuple-element(%p.1), index=1, metadata={scheduling_name="get-tuple-element.700"}
+  %loop_convert_multiply_fusion = (s32[], s32[]) fusion(%partition-id.14.0), kind=kLoop, calls=%fused_convert_multiply, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=138 scheduling_name="loop_convert_multiply_fusion"}
+  %get-tuple-element.681 = s32[] get-tuple-element(%loop_convert_multiply_fusion), index=1, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=138 scheduling_name="get-tuple-element.681"}
+  %get-tuple-element.683 = s32[] get-tuple-element(%loop_convert_multiply_fusion), index=0, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=138 scheduling_name="get-tuple-element.683"}
+  %wrapped_iota = s64[4]{0} fusion(), kind=kLoop, calls=%wrapped_iota_computation, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="wrapped_iota"}
+  %loop_dynamic_slice_fusion.2 = c128[1,1,2,160,160]{4,3,2,1,0} fusion(%get-tuple-element.699, %get-tuple-element.704), kind=kLoop, calls=%fused_dynamic_slice.2, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=253 scheduling_name="loop_dynamic_slice_fusion.2"}
+  ROOT %tuple.117 = (s32[], s64[], s64[], c128[9,2,1,160,160]{4,3,1,2,0}, c128[9,2,1,160,160]{4,3,1,2,0}, /*index=5*/s32[], s32[], s64[4]{0}, c128[1,1,2,160,160]{4,3,2,1,0}) tuple(%loop_convert_fusion, %copy.54, %get-tuple-element.699, %get-tuple-element.704, %get-tuple-element.700, /*index=5*/%get-tuple-element.681, %get-tuple-element.683, %wrapped_iota, %loop_dynamic_slice_fusion.2)
+}
+
+%region_0.550_spmd (param.17.0: (s64[], c128[9,2,1,160,160], c128[9,2,1,160,160])) -> (s64[], c128[9,2,1,160,160], c128[9,2,1,160,160]) {
+  %constant_587_0 = s64[] constant(0)
+  %param.17.0 = (s64[], c128[9,2,1,160,160]{4,3,1,2,0}, c128[9,2,1,160,160]{4,3,1,2,0}) parameter(0), metadata={scheduling_name="param.17.0"}
+  %call.5 = (s32[], s64[], s64[], c128[9,2,1,160,160]{4,3,1,2,0}, c128[9,2,1,160,160]{4,3,1,2,0}, /*index=5*/s32[], s32[], s64[4]{0}, c128[1,1,2,160,160]{4,3,2,1,0}) call(%constant_587_0, %param.17.0), to_apply=%command_buffer
+  %get-tuple-element.710 = s32[] get-tuple-element(%call.5), index=0
+  %get-tuple-element.711 = s64[] get-tuple-element(%call.5), index=1
+  %get-tuple-element.712 = s64[] get-tuple-element(%call.5), index=2
+  %get-tuple-element.713 = c128[9,2,1,160,160]{4,3,1,2,0} get-tuple-element(%call.5), index=3
+  %get-tuple-element.714 = c128[9,2,1,160,160]{4,3,1,2,0} get-tuple-element(%call.5), index=4
+  %get-tuple-element.715 = s32[] get-tuple-element(%call.5), index=5
+  %get-tuple-element.716 = s32[] get-tuple-element(%call.5), index=6
+  %get-tuple-element.717 = s64[4]{0} get-tuple-element(%call.5), index=7
+  %get-tuple-element.718 = c128[1,1,2,160,160]{4,3,2,1,0} get-tuple-element(%call.5), index=8
+  %bitcast.1746.0 = c128[2,1,160,160]{3,2,1,0} bitcast(%get-tuple-element.718), metadata={scheduling_name="bitcast.1746.0"}
+  %tuple.111 = (s64[], c128[2,1,160,160]{3,2,1,0}, s64[4]{0}, s32[], s32[], /*index=5*/s32[]) tuple(%get-tuple-element.711, %bitcast.1746.0, %get-tuple-element.717, %get-tuple-element.715, %get-tuple-element.710, /*index=5*/%get-tuple-element.716), metadata={scheduling_name="tuple.111"}
+  %while.22.0 = (s64[], c128[2,1,160,160]{3,2,1,0}, s64[4]{0}, s32[], s32[], /*index=5*/s32[]) while(%tuple.111), condition=%region_16.512_spmd, body=%region_1.498_spmd, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="while.22.0"}, backend_config={"known_trip_count":{"n":"4"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %get-tuple-element.577.0 = c128[2,1,160,160]{3,2,1,0} get-tuple-element(%while.22.0), index=1, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/jit(shmap_body)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=221 scheduling_name="get-tuple-element.577.0"}
+  %loop_dynamic_update_slice_fusion.4 = c128[9,1,2,160,160]{4,3,2,1,0} fusion(%get-tuple-element.712, %get-tuple-element.577.0, %get-tuple-element.714), kind=kLoop, calls=%fused_dynamic_update_slice.4, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/dynamic_update_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=253 scheduling_name="loop_dynamic_update_slice_fusion.4"}
+  %loop_add_fusion.4 = s64[] fusion(%get-tuple-element.712), kind=kLoop, calls=%fused_add.4, control-predecessors={%loop_dynamic_update_slice_fusion.4, %call.5}, metadata={op_name="jit(_batched_chol)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=253 deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.4"}
+  %bitcast.1770.0 = c128[9,2,1,160,160]{4,3,1,2,0} bitcast(%loop_dynamic_update_slice_fusion.4), metadata={scheduling_name="bitcast.1770.0"}
+  ROOT %tuple.116 = (s64[], c128[9,2,1,160,160]{4,3,1,2,0}, c128[9,2,1,160,160]{4,3,1,2,0}) tuple(%loop_add_fusion.4, %bitcast.1770.0, %get-tuple-element.713), metadata={scheduling_name="tuple.116"}
+}
+
+%fused_compare (param_0: s64[]) -> pred[] {
+  %param_0 = s64[] parameter(0), metadata={scheduling_name="param_0"}
+  %constant_463_1 = s64[] constant(9)
+  ROOT %compare.320.1 = pred[] compare(%param_0, %constant_463_1), direction=LT, metadata={op_name="jit(_batched_chol)/jit(main)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=253 scheduling_name="compare.320.1"}
+}
+
+%region_17.564_spmd (param.8.0: (s64[], c128[9,2,1,160,160], c128[9,2,1,160,160])) -> pred[] {
+  %param.8.0 = (s64[], c128[9,2,1,160,160]{4,3,1,2,0}, c128[9,2,1,160,160]{4,3,1,2,0}) parameter(0), metadata={scheduling_name="param.8.0"}
+  %get-tuple-element.527.0 = s64[] get-tuple-element(%param.8.0), index=0, metadata={scheduling_name="get-tuple-element.527.0"}
+  ROOT %loop_compare_fusion = pred[] fusion(%get-tuple-element.527.0), kind=kLoop, calls=%fused_compare, metadata={op_name="jit(_batched_chol)/jit(main)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=253 scheduling_name="loop_compare_fusion"}
+}
+
+%fused_broadcast.1 () -> c128[9,2,1,160,160] {
+  %constant_604_1 = c128[] constant((0, 0))
+  ROOT %broadcast.276.1 = c128[9,2,1,160,160]{4,3,1,2,0} broadcast(%constant_604_1), dimensions={}, metadata={scheduling_name="broadcast.276.1"}
+}
+
+ENTRY %main.574_spmd (param.18.0: c128[9,2,1,160,160]) -> c128[9,2,1,160,160] {
+  %constant_603_0 = s64[] constant(0)
+  %param.18.0 = c128[9,2,1,160,160]{4,3,2,1,0} parameter(0), sharding={devices=[1,2,4,1,1]<=[8]}, metadata={op_name="all_C_q" scheduling_name="param.18.0"}
+  %copy.55 = s64[] copy(%constant_603_0)
+  %bitcast.1777.0 = c128[9,2,1,160,160]{4,3,1,2,0} bitcast(%param.18.0), metadata={scheduling_name="bitcast.1777.0"}
+  %loop_broadcast_fusion.1 = c128[9,2,1,160,160]{4,3,1,2,0} fusion(), kind=kLoop, calls=%fused_broadcast.1, metadata={scheduling_name="loop_broadcast_fusion.1"}
+  %tuple.114 = (s64[], c128[9,2,1,160,160]{4,3,1,2,0}, c128[9,2,1,160,160]{4,3,1,2,0}) tuple(%copy.55, %loop_broadcast_fusion.1, %bitcast.1777.0), metadata={scheduling_name="tuple.114"}
+  %while.23.0 = (s64[], c128[9,2,1,160,160]{4,3,1,2,0}, c128[9,2,1,160,160]{4,3,1,2,0}) while(%tuple.114), condition=%region_17.564_spmd, body=%region_0.550_spmd, metadata={op_name="jit(_batched_chol)/jit(main)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=253 scheduling_name="while.23.0"}, backend_config={"known_trip_count":{"n":"9"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %get-tuple-element.578.0 = c128[9,2,1,160,160]{4,3,1,2,0} get-tuple-element(%while.23.0), index=1, metadata={op_name="jit(_batched_chol)/jit(main)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=253 scheduling_name="get-tuple-element.578.0"}
+  ROOT %bitcast.605.0 = c128[9,2,1,160,160]{4,3,2,1,0} bitcast(%get-tuple-element.578.0), metadata={op_name="jit(_batched_chol)/jit(main)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/cholesky_2d.py" source_line=253 scheduling_name="bitcast.605.0"}
+}
+

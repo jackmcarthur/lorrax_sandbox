@@ -1,0 +1,102 @@
+BufferAssignment:
+allocation 0: size 58982400, parameter 0, shape |c128[16,480,480]| at ShapeIndex {}:
+ value: <19 param.1 @0> (size=58982400,offset=0): c128[16,480,480]{2,1,0}
+allocation 1: size 3686400, output shape is |c128[480,480]|, maybe-live-out:
+ value: <21 loop_complex_fusion @0> (size=3686400,offset=0): c128[1,480,480]{2,1,0}
+ value: <24 input_transpose_fusion @0> (size=3686400,offset=0): c128[1,480,480]{2,1,0}
+allocation 2: size 16, thread-local:
+ value: <2 add.7 @0> (size=16,offset=0): c128[]
+allocation 3: size 16, thread-local:
+ value: <1 scalar_rhs.1 @0> (size=16,offset=0): c128[]
+allocation 4: size 16, thread-local:
+ value: <0 scalar_lhs.1 @0> (size=16,offset=0): c128[]
+allocation 5: size 7372816, preallocated-temp:
+ value: <20 input_transpose_fusion.1 @0> (size=3686400,offset=0): c128[480,480]{1,0}
+ value: <22 collective-permute-start{} @0> (size=16,offset=7372800): (c128[1,480,480]{2,1,0}, c128[1,480,480]{2,1,0})
+ value: <23 collective-permute-start{1} @0> (size=3686400,offset=3686400): c128[1,480,480]{2,1,0}
+
+Total bytes used: 70041664 (66.80MiB)
+
+Used values:
+<0 scalar_lhs.1 @0>
+ positions:
+  scalar_lhs.1
+ uses:
+  add.7, operand 0
+ from instruction: %scalar_lhs.1 = c128[] parameter(0), metadata={scheduling_name="scalar_lhs.1"}
+<1 scalar_rhs.1 @0>
+ positions:
+  scalar_rhs.1
+ uses:
+  add.7, operand 1
+ from instruction: %scalar_rhs.1 = c128[] parameter(1), metadata={scheduling_name="scalar_rhs.1"}
+<2 add.7 @0>
+ positions:
+  add.7
+ uses:
+ from instruction: %add.7 = c128[] add(%scalar_lhs.1, %scalar_rhs.1), metadata={scheduling_name="add.7"}
+<19 param.1 @0>
+ positions:
+  param.1
+ uses:
+  input_transpose_fusion.1, operand 0
+ from instruction: %param.1 = c128[16,480,480]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="fH_R" scheduling_name="param.1"}
+<20 input_transpose_fusion.1 @0>
+ positions:
+  input_transpose_fusion.1
+ uses:
+  loop_complex_fusion, operand 0
+  input_transpose_fusion, operand 1
+ from instruction: %input_transpose_fusion.1 = c128[480,480]{1,0} fusion(%param.1), kind=kInput, calls=%fused_transpose.1, metadata={op_name="jit(_gamma_rt)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=671 scheduling_name="input_transpose_fusion.1"}
+<21 loop_complex_fusion @0>
+ positions:
+  loop_complex_fusion
+  collective-permute-start {0}
+ uses:
+  collective-permute-start, operand 0
+  collective-permute-done, operand 0 {0}
+ from instruction: %loop_complex_fusion = c128[1,480,480]{2,1,0} fusion(%input_transpose_fusion.1), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(_gamma_rt)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=672 scheduling_name="loop_complex_fusion"}
+<22 collective-permute-start{} @0>
+ positions:
+  collective-permute-start {}
+ uses:
+  collective-permute-done, operand 0 {}
+ from instruction: %collective-permute-start = (c128[1,480,480]{2,1,0}, c128[1,480,480]{2,1,0}) collective-permute-start(%loop_complex_fusion), channel_id=1, source_target_pairs={{0,0},{2,1},{1,2},{3,3}}, metadata={op_name="jit(_gamma_rt)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=672 scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<23 collective-permute-start{1} @0>
+ positions:
+  collective-permute-start {1}
+  collective-permute-done
+ uses:
+  collective-permute-done, operand 0 {1}
+  input_transpose_fusion, operand 0
+ from instruction: %collective-permute-start = (c128[1,480,480]{2,1,0}, c128[1,480,480]{2,1,0}) collective-permute-start(%loop_complex_fusion), channel_id=1, source_target_pairs={{0,0},{2,1},{1,2},{3,3}}, metadata={op_name="jit(_gamma_rt)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=672 scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<24 input_transpose_fusion @0>
+ positions:
+  input_transpose_fusion
+  bitcast.1.0
+ uses:
+  bitcast.1.0, operand 0
+ from instruction: %input_transpose_fusion = c128[1,480,480]{2,1,0} fusion(%collective-permute-done, %input_transpose_fusion.1), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_gamma_rt)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=672 scheduling_name="input_transpose_fusion"}
+
+
+HloLiveRange (max 7):
+  InstructionSequence:
+    0:param.1
+    1:input_transpose_fusion.1
+    2:loop_complex_fusion
+    3:collective-permute-start
+    4:collective-permute-done
+    5:input_transpose_fusion
+    6:bitcast.1.0
+  BufferLiveRange:
+    param.1{}:0-7
+    input_transpose_fusion.1{}:1-5
+    loop_complex_fusion{}:2-4
+    collective-permute-start{}:3-4
+    collective-permute-start{1}:3-5
+    input_transpose_fusion{}:5-7
+  Live ranges at 5 (peak):
+    param.1: 58982400 bytes
+    input_transpose_fusion.1: 3686400 bytes
+    collective-permute-start: 16 bytes
+    input_transpose_fusion: 3686400 bytes

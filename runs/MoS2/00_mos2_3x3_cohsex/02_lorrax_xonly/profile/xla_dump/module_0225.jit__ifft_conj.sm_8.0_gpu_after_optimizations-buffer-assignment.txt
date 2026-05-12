@@ -1,0 +1,56 @@
+BufferAssignment:
+allocation 0: size 58982400, parameter 0, shape |c128[9,2,2,320,320]| at ShapeIndex {}, output shape is |c128[9,2,2,320,320]|, maybe-live-out:
+ value: <11 param.1 @0> (size=58982400,offset=0): c128[9,2,2,320,320]{4,3,2,1,0}
+ value: <14 input_transpose_fusion @0> (size=58982400,offset=0): c128[9,409600]{1,0}
+allocation 1: size 117964800, preallocated-temp:
+ value: <12 input_transpose_fusion.1 @0> (size=58982400,offset=0): c128[409600,9]{1,0}
+ value: <13 fft.2.0 @0> (size=58982400,offset=58982400): c128[2,2,320,320,3,3,1]{6,5,4,3,2,1,0}
+
+Total bytes used: 176947200 (168.75MiB)
+
+Used values:
+<11 param.1 @0>
+ positions:
+  param.1
+ uses:
+  input_transpose_fusion.1, operand 0
+ from instruction: %param.1 = c128[9,2,2,320,320]{4,3,2,1,0} parameter(0), sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="P_l" scheduling_name="param.1"}
+<12 input_transpose_fusion.1 @0>
+ positions:
+  input_transpose_fusion.1
+  bitcast.62.0
+ uses:
+  bitcast.62.0, operand 0
+  fft.2.0, operand 0
+ from instruction: %input_transpose_fusion.1 = c128[409600,9]{1,0} fusion(%param.1), kind=kInput, calls=%fused_transpose.1, metadata={op_name="P_l" scheduling_name="input_transpose_fusion.1"}
+<13 fft.2.0 @0>
+ positions:
+  fft.2.0
+ uses:
+  input_transpose_fusion, operand 0
+ from instruction: %fft.2.0 = c128[2,2,320,320,3,3,1]{6,5,4,3,2,1,0} fft(%bitcast.62.0), fft_type=IFFT, fft_length={3,3,1}, metadata={op_name="jit(_ifft_conj)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/fft_helpers.py" source_line=325 scheduling_name="fft.2.0"}
+<14 input_transpose_fusion @0>
+ positions:
+  input_transpose_fusion
+  bitcast.53.0
+ uses:
+  bitcast.53.0, operand 0
+ from instruction: %input_transpose_fusion = c128[9,409600]{1,0} fusion(%fft.2.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_ifft_conj)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/isdf_fitting.py" source_line=235 scheduling_name="input_transpose_fusion"}
+
+
+HloLiveRange (max 6):
+  InstructionSequence:
+    0:param.1
+    1:input_transpose_fusion.1
+    2:bitcast.62.0
+    3:fft.2.0
+    4:input_transpose_fusion
+    5:bitcast.53.0
+  BufferLiveRange:
+    param.1{}:0-1
+    input_transpose_fusion.1{}:1-3
+    fft.2.0{}:3-4
+    input_transpose_fusion{}:4-6
+  Live ranges at 4 (peak):
+    fft.2.0: 58982400 bytes
+    input_transpose_fusion: 58982400 bytes

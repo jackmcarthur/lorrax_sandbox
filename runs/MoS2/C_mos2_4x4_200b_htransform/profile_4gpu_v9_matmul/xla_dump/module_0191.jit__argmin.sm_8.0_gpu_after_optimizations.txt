@@ -1,0 +1,33 @@
+HloModule jit__argmin, is_scheduled=true, entry_computation_layout={(f64[192]{0})->s64[]}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="915e2648e1178a415efbe815403e16fc"}
+
+%region_0.2 (Arg_0.3: f64[], Arg_1.4: s64[], Arg_2.5: f64[], Arg_3.6: s64[]) -> (f64[], s64[]) {
+  %Arg_3.6 = s64[] parameter(3), metadata={op_name="jit(_argmin)/jit(main)/reduce" scheduling_name="Arg_3.6"}
+  %Arg_2.5 = f64[] parameter(2), metadata={op_name="jit(_argmin)/jit(main)/reduce" scheduling_name="Arg_2.5"}
+  %Arg_1.4 = s64[] parameter(1), metadata={op_name="jit(_argmin)/jit(main)/reduce" scheduling_name="Arg_1.4"}
+  %Arg_0.3 = f64[] parameter(0), metadata={op_name="jit(_argmin)/jit(main)/reduce" scheduling_name="Arg_0.3"}
+  %compare.15 = pred[] compare(%Arg_1.4, %Arg_3.6), direction=LT, metadata={op_name="/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="compare.15"}
+  %compare.13 = pred[] compare(%Arg_0.3, %Arg_0.3), direction=NE, metadata={op_name="/ne" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="compare.13"}
+  %compare.14 = pred[] compare(%Arg_0.3, %Arg_2.5), direction=EQ, metadata={op_name="/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="compare.14"}
+  %and.2 = pred[] and(%compare.14, %compare.15), metadata={op_name="/and" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="and.2"}
+  %compare.12 = pred[] compare(%Arg_0.3, %Arg_2.5), direction=LT, metadata={op_name="/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="compare.12"}
+  %or.4 = pred[] or(%compare.12, %compare.13), metadata={op_name="/or" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="or.4"}
+  %select.4 = f64[] select(%or.4, %Arg_0.3, %Arg_2.5), metadata={op_name="/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="select.4"}
+  %or.5 = pred[] or(%or.4, %and.2), metadata={op_name="/or" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="or.5"}
+  %select.5 = s64[] select(%or.5, %Arg_1.4, %Arg_3.6), metadata={op_name="/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="select.5"}
+  ROOT %tuple.16 = (f64[], s64[]) tuple(%select.4, %select.5), metadata={scheduling_name="tuple.16"}
+}
+
+%fused_reduce (param_0: f64[192]) -> (f64[], s64[]) {
+  %param_0 = f64[192]{0} parameter(0), metadata={scheduling_name="param_0"}
+  %iota.3.1 = s64[192]{0} iota(), iota_dimension=0, metadata={op_name="jit(_argmin)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="iota.3.1"}
+  %constant_0_1 = f64[] constant(inf)
+  %constant_1_1 = s64[] constant(0)
+  ROOT %reduce.0.1 = (f64[], s64[]) reduce(%param_0, %iota.3.1, %constant_0_1, %constant_1_1), dimensions={0}, to_apply=%region_0.2, metadata={op_name="jit(_argmin)/jit(main)/reduce" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="reduce.0.1"}
+}
+
+ENTRY %main.26 (Arg_0.1.0: f64[192]) -> s64[] {
+  %Arg_0.1.0 = f64[192]{0} parameter(0), metadata={op_name="a" scheduling_name="Arg_0.1.0"}
+  %input_reduce_fusion = (f64[], s64[]) fusion(%Arg_0.1.0), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_argmin)/jit(main)/reduce" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="input_reduce_fusion"}
+  ROOT %get-tuple-element.1.0 = s64[] get-tuple-element(%input_reduce_fusion), index=1, metadata={op_name="jit(_argmin)/jit(main)/reduce" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=725 scheduling_name="get-tuple-element.1.0"}
+}
+

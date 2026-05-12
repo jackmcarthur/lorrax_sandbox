@@ -1,0 +1,31 @@
+HloModule jit_eigh, entry_computation_layout={(c128[64,60,60]{2,1,0})->(f64[64,60]{1,0}, c128[64,60,60]{2,1,0})}, allow_spmd_sharding_propagation_to_output={true,true}, num_partitions=4
+
+ENTRY %main.33 (Arg_0.1: c128[64,60,60]) -> (f64[64,60], c128[64,60,60]) {
+  %Arg_0.1 = c128[64,60,60]{2,1,0} parameter(0), sharding={replicated}, metadata={op_name="a"}
+  %real.0 = f64[64,60,60]{2,1,0} real(%Arg_0.1), metadata={op_name="jit(eigh)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %imag.0 = f64[64,60,60]{2,1,0} imag(%Arg_0.1), metadata={op_name="jit(eigh)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %negate.0 = f64[64,60,60]{2,1,0} negate(%imag.0), metadata={op_name="jit(eigh)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %complex.0 = c128[64,60,60]{2,1,0} complex(%real.0, %negate.0), metadata={op_name="jit(eigh)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %transpose.12 = c128[64,60,60]{1,2,0} transpose(%complex.0), dimensions={0,2,1}, metadata={op_name="jit(eigh)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %add.15 = c128[64,60,60]{2,1,0} add(%Arg_0.1, %transpose.12), metadata={op_name="jit(eigh)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %constant = c128[] constant((0.5, 0))
+  %broadcast = c128[64,60,60]{2,1,0} broadcast(%constant), dimensions={}
+  %multiply = c128[64,60,60]{2,1,0} multiply(%add.15, %broadcast), metadata={op_name="jit(eigh)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %custom-call.17 = (c128[64,60,60]{1,2,0}, f64[64,60]{1,0}, s32[64]{0}) custom-call(%multiply), custom_call_target="cusolver_syevd_ffi", operand_layout_constraints={c128[64,60,60]{1,2,0}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}, backend_config={algorithm = 0 : ui8, lower = true}
+  %get-tuple-element.20 = s32[64]{0} get-tuple-element(%custom-call.17), index=2, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %constant.6 = s32[] constant(0)
+  %broadcast.7 = s32[64]{0} broadcast(%constant.6), dimensions={}
+  %compare.21 = pred[64]{0} compare(%get-tuple-element.20, %broadcast.7), direction=EQ, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %broadcast.30 = pred[64,60]{1,0} broadcast(%compare.21), dimensions={0}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %get-tuple-element.19 = f64[64,60]{1,0} get-tuple-element(%custom-call.17), index=1, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %constant.2 = f64[] constant(nan)
+  %broadcast.3 = f64[64,60]{1,0} broadcast(%constant.2), dimensions={}
+  %select.31 = f64[64,60]{1,0} select(%broadcast.30, %get-tuple-element.19, %broadcast.3), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %broadcast.25 = pred[64,60,60]{2,1,0} broadcast(%compare.21), dimensions={0}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %get-tuple-element.18 = c128[64,60,60]{1,2,0} get-tuple-element(%custom-call.17), index=0, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  %constant.4 = c128[] constant((nan, nan))
+  %broadcast.5 = c128[64,60,60]{2,1,0} broadcast(%constant.4), dimensions={}
+  %select.26 = c128[64,60,60]{2,1,0} select(%broadcast.25, %get-tuple-element.18, %broadcast.5), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_jax.py" source_line=560}
+  ROOT %tuple.32 = (f64[64,60]{1,0}, c128[64,60,60]{2,1,0}) tuple(%select.31, %select.26)
+}
+

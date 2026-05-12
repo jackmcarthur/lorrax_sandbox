@@ -1,0 +1,16 @@
+HloModule jit__power, is_scheduled=true, entry_computation_layout={(c128[], s32[102]{0})->c128[102]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="7d0fff933105b9025b76021ef455ea75"}
+
+%fused_power (param_0.2: c128[], param_1.2: s32[102]) -> c128[102] {
+  %param_0.2 = c128[] parameter(0), metadata={scheduling_name="param_0.2"}
+  %broadcast.2.1 = c128[102]{0} broadcast(%param_0.2), dimensions={}, metadata={op_name="jit(_power)/jit(main)/pow" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=374 scheduling_name="broadcast.2.1"}
+  %param_1.2 = s32[102]{0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %convert.2.1 = c128[102]{0} convert(%param_1.2), metadata={op_name="jit(_power)/jit(main)/pow" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=374 scheduling_name="convert.2.1"}
+  ROOT %power.2.1 = c128[102]{0} power(%broadcast.2.1, %convert.2.1), metadata={op_name="jit(_power)/jit(main)/pow" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=374 scheduling_name="power.2.1"}
+}
+
+ENTRY %main.6 (Arg_0.1.0: c128[], Arg_1.2.0: s32[102]) -> c128[102] {
+  %Arg_0.1.0 = c128[] parameter(0), metadata={op_name="x1" scheduling_name="Arg_0.1.0"}
+  %Arg_1.2.0 = s32[102]{0} parameter(1), metadata={op_name="x2" scheduling_name="Arg_1.2.0"}
+  ROOT %loop_power_fusion = c128[102]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_power, metadata={op_name="jit(_power)/jit(main)/pow" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=374 scheduling_name="loop_power_fusion"}
+}
+

@@ -1,0 +1,54 @@
+HloModule jit_scatter-add, is_scheduled=true, entry_computation_layout={(c128[9,3,3]{2,1,0}, s32[2]{0}, c128[9]{0})->c128[9,3,3]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="bf3e325de4e4cda0ce76078f109df2d6"}
+
+%and.reduce_sub_computation (lhs: pred[], rhs: pred[]) -> pred[] {
+  %rhs = pred[] parameter(1), metadata={scheduling_name="rhs"}
+  %lhs = pred[] parameter(0), metadata={scheduling_name="lhs"}
+  ROOT %and.10 = pred[] and(%lhs, %rhs), metadata={scheduling_name="and.10"}
+}
+
+%fused_complex (param_0.34: c128[9,3,3], param_1.37: c128[9], param_2.33: s32[2], param_3.25: s32[3]) -> c128[9,3,3] {
+  %param_0.34 = c128[9,3,3]{2,1,0} parameter(0), metadata={scheduling_name="param_0.34"}
+  %real.6.4 = f64[9,3,3]{2,1,0} real(%param_0.34), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=569 scheduling_name="real.6.4"}
+  %constant_13_1 = s32[] constant(0)
+  %broadcast.49.3 = s32[3]{0} broadcast(%constant_13_1), dimensions={}, metadata={scheduling_name="broadcast.49.3"}
+  %param_2.33 = s32[2]{0} parameter(2), metadata={scheduling_name="param_2.33"}
+  %bitcast.206.7 = s32[1,2]{1,0} bitcast(%param_2.33), metadata={scheduling_name="bitcast.206.7"}
+  %slice.38.7 = s32[1,1]{1,0} slice(%bitcast.206.7), slice={[0:1], [0:1]}, metadata={scheduling_name="slice.38.7"}
+  %bitcast.209.3 = s32[1]{0} bitcast(%slice.38.7), metadata={scheduling_name="bitcast.209.3"}
+  %slice.39.4 = s32[1]{0} slice(%param_2.33), slice={[1:2]}, metadata={scheduling_name="slice.39.4"}
+  %constant_38_1 = s32[1]{0} constant({0})
+  %concatenate.6.3 = s32[3]{0} concatenate(%bitcast.209.3, %slice.39.4, %constant_38_1), dimensions={0}, metadata={scheduling_name="concatenate.6.3"}
+  %compare.14.3 = pred[3]{0} compare(%broadcast.49.3, %concatenate.6.3), direction=LE, metadata={scheduling_name="compare.14.3"}
+  %param_3.25 = s32[3]{0} parameter(3), metadata={scheduling_name="param_3.25"}
+  %compare.15.1 = pred[3]{0} compare(%param_3.25, %concatenate.6.3), direction=GE, metadata={scheduling_name="compare.15.1"}
+  %and.11.1 = pred[3]{0} and(%compare.14.3, %compare.15.1), metadata={scheduling_name="and.11.1"}
+  %constant_40_1 = pred[] constant(true)
+  %reduce.2.1 = pred[] reduce(%and.11.1, %constant_40_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.2.1"}
+  %broadcast.50.1 = pred[9,1,1]{2,1,0} broadcast(%reduce.2.1), dimensions={}, metadata={scheduling_name="broadcast.50.1"}
+  %bitcast.257.12 = s32[] bitcast(%slice.38.7), metadata={scheduling_name="bitcast.257.12"}
+  %bitcast.259.12 = s32[] bitcast(%slice.39.4), metadata={scheduling_name="bitcast.259.12"}
+  %dynamic-slice.16.3 = f64[9,1,1]{2,1,0} dynamic-slice(%real.6.4, %constant_13_1, %bitcast.257.12, %bitcast.259.12), dynamic_slice_sizes={9,1,1}, metadata={scheduling_name="dynamic-slice.16.3"}
+  %param_1.37 = c128[9]{0} parameter(1), metadata={scheduling_name="param_1.37"}
+  %real.7.1 = f64[9]{0} real(%param_1.37), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=569 scheduling_name="real.7.1"}
+  %bitcast.242.5 = f64[9,1,1]{2,1,0} bitcast(%real.7.1), metadata={scheduling_name="bitcast.242.5"}
+  %add.13.5 = f64[9,1,1]{2,1,0} add(%dynamic-slice.16.3, %bitcast.242.5), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=569 scheduling_name="add.13.5"}
+  %select.8.3 = f64[9,1,1]{2,1,0} select(%broadcast.50.1, %add.13.5, %dynamic-slice.16.3), metadata={scheduling_name="select.8.3"}
+  %dynamic-update-slice.10.3 = f64[9,3,3]{2,1,0} dynamic-update-slice(%real.6.4, %select.8.3, %constant_13_1, %bitcast.257.12, %bitcast.259.12), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=569 scheduling_name="dynamic-update-slice.10.3"}
+  %imag.4.4 = f64[9,3,3]{2,1,0} imag(%param_0.34), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=569 scheduling_name="imag.4.4"}
+  %dynamic-slice.17.3 = f64[9,1,1]{2,1,0} dynamic-slice(%imag.4.4, %constant_13_1, %bitcast.257.12, %bitcast.259.12), dynamic_slice_sizes={9,1,1}, metadata={scheduling_name="dynamic-slice.17.3"}
+  %imag.5.1 = f64[9]{0} imag(%param_1.37), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=569 scheduling_name="imag.5.1"}
+  %bitcast.264.5 = f64[9,1,1]{2,1,0} bitcast(%imag.5.1), metadata={scheduling_name="bitcast.264.5"}
+  %add.14.5 = f64[9,1,1]{2,1,0} add(%dynamic-slice.17.3, %bitcast.264.5), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=569 scheduling_name="add.14.5"}
+  %select.9.3 = f64[9,1,1]{2,1,0} select(%broadcast.50.1, %add.14.5, %dynamic-slice.17.3), metadata={scheduling_name="select.9.3"}
+  %dynamic-update-slice.11.3 = f64[9,3,3]{2,1,0} dynamic-update-slice(%imag.4.4, %select.9.3, %constant_13_1, %bitcast.257.12, %bitcast.259.12), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=569 scheduling_name="dynamic-update-slice.11.3"}
+  ROOT %complex.3.1 = c128[9,3,3]{2,1,0} complex(%dynamic-update-slice.10.3, %dynamic-update-slice.11.3), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=569 scheduling_name="complex.3.1"}
+}
+
+ENTRY %main.19 (Arg_0.1.0: c128[9,3,3], Arg_1.2.0: s32[2], Arg_2.3.0: c128[9]) -> c128[9,3,3] {
+  %constant_39_0 = s32[3]{0} constant({2, 2, 0})
+  %Arg_2.3.0 = c128[9]{0} parameter(2), metadata={op_name="args[2]" scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = s32[2]{0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[9,3,3]{2,1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_complex_fusion = c128[9,3,3]{2,1,0} fusion(%Arg_0.1.0, %Arg_2.3.0, %Arg_1.2.0, %constant_39_0), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=569 scheduling_name="loop_complex_fusion"}
+}
+

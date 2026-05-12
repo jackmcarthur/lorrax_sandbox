@@ -1,0 +1,29 @@
+HloModule jit_remainder, is_scheduled=true, entry_computation_layout={(s32[1]{0}, s64[])->s32[1]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="99c9a8a16d5adce441fc75480dcaed8b"}
+
+%fused_select (param_0.17: s32[1], param_1.22: s64[]) -> s32[1] {
+  %param_0.17 = s32[1]{0} parameter(0), metadata={scheduling_name="param_0.17"}
+  %param_1.22 = s64[] parameter(1), metadata={scheduling_name="param_1.22"}
+  %convert.2.3 = s32[] convert(%param_1.22), metadata={op_name="jit(remainder)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=95 scheduling_name="convert.2.3"}
+  %constant_5_1 = s32[] constant(0)
+  %compare.11.3 = pred[] compare(%convert.2.3, %constant_5_1), direction=EQ, metadata={op_name="jit(remainder)/jit(main)/eq" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=95 scheduling_name="compare.11.3"}
+  %constant_4_1 = s32[] constant(1)
+  %select.5.3 = s32[] select(%compare.11.3, %constant_4_1, %convert.2.3), metadata={op_name="jit(remainder)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=804 scheduling_name="select.5.3"}
+  %bitcast.88.6 = s32[1]{0} bitcast(%select.5.3), metadata={scheduling_name="bitcast.88.6"}
+  %remainder.2.3 = s32[1]{0} remainder(%param_0.17, %bitcast.88.6), metadata={op_name="jit(remainder)/jit(main)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=95 scheduling_name="remainder.2.3"}
+  %constant_3_1 = s32[1]{0} constant({0})
+  %compare.12.1 = pred[1]{0} compare(%remainder.2.3, %constant_3_1), direction=LT, metadata={op_name="jit(remainder)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=95 scheduling_name="compare.12.1"}
+  %compare.13.1 = pred[] compare(%select.5.3, %constant_5_1), direction=LT, metadata={op_name="jit(remainder)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=95 scheduling_name="compare.13.1"}
+  %bitcast.98.5 = pred[1]{0} bitcast(%compare.13.1), metadata={scheduling_name="bitcast.98.5"}
+  %compare.14.5 = pred[1]{0} compare(%compare.12.1, %bitcast.98.5), direction=NE, metadata={op_name="jit(remainder)/jit(main)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=95 scheduling_name="compare.14.5"}
+  %compare.15.1 = pred[1]{0} compare(%remainder.2.3, %constant_3_1), direction=NE, metadata={op_name="jit(remainder)/jit(main)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=95 scheduling_name="compare.15.1"}
+  %and.2.3 = pred[1]{0} and(%compare.14.5, %compare.15.1), metadata={op_name="jit(remainder)/jit(main)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=95 scheduling_name="and.2.3"}
+  %add.2.3 = s32[1]{0} add(%remainder.2.3, %bitcast.88.6), metadata={op_name="jit(remainder)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=95 scheduling_name="add.2.3"}
+  ROOT %select.6.1 = s32[1]{0} select(%and.2.3, %add.2.3, %remainder.2.3), metadata={op_name="jit(remainder)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=95 scheduling_name="select.6.1"}
+}
+
+ENTRY %main.25 (Arg_0.1.0: s32[1], Arg_1.2.0: s64[]) -> s32[1] {
+  %Arg_1.2.0 = s64[] parameter(1), metadata={op_name="x2" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = s32[1]{0} parameter(0), metadata={op_name="x1" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_select_fusion = s32[1]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(remainder)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=95 scheduling_name="loop_select_fusion"}
+}
+

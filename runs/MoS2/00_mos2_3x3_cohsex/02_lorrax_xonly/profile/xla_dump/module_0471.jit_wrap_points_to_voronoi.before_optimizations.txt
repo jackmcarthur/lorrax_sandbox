@@ -1,0 +1,82 @@
+HloModule jit_wrap_points_to_voronoi, entry_computation_layout={(f64[262144,3]{1,0}, f64[3,3]{1,0})->f64[262144,3]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}
+
+%region_0.27 (Arg_0.28: f64[], Arg_1.29: f64[]) -> f64[] {
+  %Arg_0.28 = f64[] parameter(0), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/jit(norm)/reduce_sum"}
+  %Arg_1.29 = f64[] parameter(1), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/jit(norm)/reduce_sum"}
+  ROOT %add.30 = f64[] add(%Arg_0.28, %Arg_1.29), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/jit(norm)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=37}
+}
+
+%norm.31 (Arg_0.32: f64[262144,27,3]) -> f64[262144,27] {
+  %Arg_0.32 = f64[262144,27,3]{2,1,0} parameter(0), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/pjit"}
+  %multiply.34 = f64[262144,27,3]{2,1,0} multiply(%Arg_0.32, %Arg_0.32), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/jit(norm)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=37}
+  %constant.33 = f64[] constant(0)
+  %reduce.35 = f64[262144,27]{1,0} reduce(%multiply.34, %constant.33), dimensions={2}, to_apply=%region_0.27, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/jit(norm)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=37}
+  ROOT %sqrt.36 = f64[262144,27]{1,0} sqrt(%reduce.35), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/jit(norm)/sqrt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=37}
+}
+
+%region_1.38 (Arg_0.39: f64[], Arg_1.40: s64[], Arg_2.41: f64[], Arg_3.42: s64[]) -> (f64[], s64[]) {
+  %Arg_0.39 = f64[] parameter(0), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/reduce"}
+  %Arg_2.41 = f64[] parameter(2), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/reduce"}
+  %compare.43 = pred[] compare(%Arg_0.39, %Arg_2.41), direction=LT, metadata={op_name="/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  %compare.44 = pred[] compare(%Arg_0.39, %Arg_0.39), direction=NE, metadata={op_name="/ne" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  %or.45 = pred[] or(%compare.43, %compare.44), metadata={op_name="/or" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  %select.50 = f64[] select(%or.45, %Arg_0.39, %Arg_2.41), metadata={op_name="/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  %compare.46 = pred[] compare(%Arg_0.39, %Arg_2.41), direction=EQ, metadata={op_name="/eq" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  %Arg_1.40 = s64[] parameter(1), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/reduce"}
+  %Arg_3.42 = s64[] parameter(3), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/reduce"}
+  %compare.47 = pred[] compare(%Arg_1.40, %Arg_3.42), direction=LT, metadata={op_name="/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  %and.48 = pred[] and(%compare.46, %compare.47), metadata={op_name="/and" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  %or.49 = pred[] or(%or.45, %and.48), metadata={op_name="/or" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  %select.51 = s64[] select(%or.49, %Arg_1.40, %Arg_3.42), metadata={op_name="/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  ROOT %tuple.52 = (f64[], s64[]) tuple(%select.50, %select.51)
+}
+
+%argmin.53 (Arg_0.54: f64[262144,27]) -> s64[262144] {
+  %Arg_0.54 = f64[262144,27]{1,0} parameter(0), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/argmin"}
+  %iota.57 = s64[27]{0} iota(), iota_dimension=0, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/iota" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  %broadcast.58 = s64[262144,27]{1,0} broadcast(%iota.57), dimensions={1}, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/iota" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  %constant.56 = f64[] constant(inf)
+  %constant.55 = s64[] constant(0)
+  %reduce.59 = (f64[262144]{0}, s64[262144]{0}) reduce(%Arg_0.54, %broadcast.58, %constant.56, %constant.55), dimensions={1}, to_apply=%region_1.38, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/reduce" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  %get-tuple-element.60 = f64[262144]{0} get-tuple-element(%reduce.59), index=0, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/reduce" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+  ROOT %get-tuple-element.61 = s64[262144]{0} get-tuple-element(%reduce.59), index=1, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/reduce" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=38}
+}
+
+ENTRY %main.70 (Arg_0.1: f64[262144,3], Arg_1.2: f64[3,3]) -> f64[262144,3] {
+  %Arg_0.1 = f64[262144,3]{1,0} parameter(0), metadata={op_name="randcart"}
+  %constant.7 = s64[3]{0} constant({-1, 0, 1})
+  %broadcast.8 = s64[3,3,3]{2,1,0} broadcast(%constant.7), dimensions={0}, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=33}
+  %reshape.11 = s64[3,3,3,1]{3,2,1,0} reshape(%broadcast.8), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=33}
+  %broadcast.9 = s64[3,3,3]{2,1,0} broadcast(%constant.7), dimensions={1}, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=33}
+  %reshape.12 = s64[3,3,3,1]{3,2,1,0} reshape(%broadcast.9), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=33}
+  %broadcast.10 = s64[3,3,3]{2,1,0} broadcast(%constant.7), dimensions={2}, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=33}
+  %reshape.13 = s64[3,3,3,1]{3,2,1,0} reshape(%broadcast.10), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=33}
+  %concatenate.14 = s64[3,3,3,3]{3,2,1,0} concatenate(%reshape.11, %reshape.12, %reshape.13), dimensions={3}, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/concatenate" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=33}
+  %reshape.15 = s64[27,3]{1,0} reshape(%concatenate.14), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/reshape" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=33}
+  %convert.16 = f64[27,3]{1,0} convert(%reshape.15), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=34}
+  %Arg_1.2 = f64[3,3]{1,0} parameter(1), metadata={op_name="bvec"}
+  %dot.17 = f64[27,3]{1,0} dot(%convert.16, %Arg_1.2), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=34}
+  %reshape.18 = f64[262144,1,3]{2,1,0} reshape(%Arg_0.1), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=36}
+  %broadcast.20 = f64[262144,1,3]{2,1,0} broadcast(%reshape.18), dimensions={0,1,2}, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=36}
+  %reshape.21 = f64[262144,3]{1,0} reshape(%broadcast.20), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=36}
+  %broadcast.22 = f64[262144,27,3]{2,1,0} broadcast(%reshape.21), dimensions={0,2}, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=36}
+  %reshape.19 = f64[1,27,3]{2,1,0} reshape(%dot.17), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=36}
+  %broadcast.23 = f64[1,27,3]{2,1,0} broadcast(%reshape.19), dimensions={0,1,2}, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=36}
+  %reshape.24 = f64[27,3]{1,0} reshape(%broadcast.23), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=36}
+  %broadcast.25 = f64[262144,27,3]{2,1,0} broadcast(%reshape.24), dimensions={1,2}, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=36}
+  %subtract.26 = f64[262144,27,3]{2,1,0} subtract(%broadcast.22, %broadcast.25), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=36}
+  %call.37 = f64[262144,27]{1,0} call(%subtract.26), to_apply=%norm.31
+  %call.62 = s64[262144]{0} call(%call.37), to_apply=%argmin.53
+  %constant.5 = s64[] constant(0)
+  %broadcast.6 = s64[262144]{0} broadcast(%constant.5), dimensions={}
+  %compare.63 = pred[262144]{0} compare(%call.62, %broadcast.6), direction=LT, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=39}
+  %constant.3 = s64[] constant(27)
+  %broadcast.4 = s64[262144]{0} broadcast(%constant.3), dimensions={}
+  %add.64 = s64[262144]{0} add(%call.62, %broadcast.4), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=39}
+  %select.65 = s64[262144]{0} select(%compare.63, %add.64, %call.62), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=39}
+  %convert.66 = s32[262144]{0} convert(%select.65), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=39}
+  %reshape.67 = s32[262144,1]{1,0} reshape(%convert.66), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=39}
+  %gather.68 = f64[262144,3]{1,0} gather(%dot.17, %reshape.67), offset_dims={1}, collapsed_slice_dims={0}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,3}, metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=39}
+  ROOT %subtract.69 = f64[262144,3]{1,0} subtract(%Arg_0.1, %gather.68), metadata={op_name="jit(wrap_points_to_voronoi)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/vcoul.py" source_line=39}
+}
+

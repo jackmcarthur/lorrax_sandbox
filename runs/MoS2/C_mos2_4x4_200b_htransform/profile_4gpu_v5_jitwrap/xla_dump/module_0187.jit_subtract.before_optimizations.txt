@@ -1,0 +1,12 @@
+HloModule jit_subtract, entry_computation_layout={(c128[16,960,960]{2,1,0}, c128[960,960]{1,0})->c128[16,960,960]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+ENTRY %main.8 (Arg_0.1: c128[16,960,960], Arg_1.2: c128[960,960]) -> c128[16,960,960] {
+  %Arg_0.1 = c128[16,960,960]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="x"}
+  %Arg_1.2 = c128[960,960]{1,0} parameter(1), sharding={devices=[2,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="y"}
+  %reshape.3 = c128[1,960,960]{2,1,0} reshape(%Arg_1.2), metadata={op_name="jit(subtract)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=652}
+  %broadcast.4 = c128[1,960,960]{2,1,0} broadcast(%reshape.3), dimensions={0,1,2}, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=652}
+  %reshape.5 = c128[960,960]{1,0} reshape(%broadcast.4), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=652}
+  %broadcast.6 = c128[16,960,960]{2,1,0} broadcast(%reshape.5), dimensions={1,2}, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=652}
+  ROOT %subtract.7 = c128[16,960,960]{2,1,0} subtract(%Arg_0.1, %broadcast.6), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=652}
+}
+

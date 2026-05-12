@@ -1,0 +1,15 @@
+HloModule jit_conjugate, is_scheduled=true, entry_computation_layout={(c128[48,2,2120]{2,1,0})->c128[48,2,2120]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="5b4dec73a5b556647194389fd9b74f48"}
+
+%fused_complex (param_0.1: c128[48,2,2120]) -> c128[48,2,2120] {
+  %param_0.1 = c128[48,2,2120]{2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %real.3.1 = f64[48,2,2120]{2,1,0} real(%param_0.1), metadata={op_name="jit(conjugate)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=55 scheduling_name="real.3.1"}
+  %imag.2.1 = f64[48,2,2120]{2,1,0} imag(%param_0.1), metadata={op_name="jit(conjugate)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=55 scheduling_name="imag.2.1"}
+  %negate.2.1 = f64[48,2,2120]{2,1,0} negate(%imag.2.1), metadata={op_name="jit(conjugate)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=55 scheduling_name="negate.2.1"}
+  ROOT %complex.2.1 = c128[48,2,2120]{2,1,0} complex(%real.3.1, %negate.2.1), metadata={op_name="jit(conjugate)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=55 scheduling_name="complex.2.1"}
+}
+
+ENTRY %main.6 (Arg_0.1.0: c128[48,2,2120]) -> c128[48,2,2120] {
+  %Arg_0.1.0 = c128[48,2,2120]{2,1,0} parameter(0), metadata={op_name="x" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_complex_fusion = c128[48,2,2120]{2,1,0} fusion(%Arg_0.1.0), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(conjugate)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=55 scheduling_name="loop_complex_fusion"}
+}
+

@@ -1,0 +1,35 @@
+HloModule jit__reduce_min, is_scheduled=true, entry_computation_layout={(f64[9,320,320]{2,1,0})->f64[]}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="b359af702fdcfda728287e43c03d7faa"}
+
+%region_0.3 (Arg_0.4: f64[], Arg_1.5: f64[]) -> f64[] {
+  %Arg_1.5 = f64[] parameter(1), metadata={op_name="jit(_reduce_min)/jit(main)/reduce_min" scheduling_name="Arg_1.5"}
+  %Arg_0.4 = f64[] parameter(0), metadata={op_name="jit(_reduce_min)/jit(main)/reduce_min" scheduling_name="Arg_0.4"}
+  ROOT %minimum.7 = f64[] minimum(%Arg_0.4, %Arg_1.5), metadata={op_name="jit(_reduce_min)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=192 scheduling_name="minimum.7"}
+}
+
+%fused_reduce (param_0.2: f64[9,320,320]) -> f64[512] {
+  %param_0.2 = f64[9,320,320]{2,1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %bitcast.47.1 = f64[512,1800]{1,0} bitcast(%param_0.2), metadata={scheduling_name="bitcast.47.1"}
+  %constant_3 = f64[] constant(inf)
+  ROOT %reduce.2.1 = f64[512]{0} reduce(%bitcast.47.1, %constant_3), dimensions={1}, to_apply=%region_0.3, metadata={op_name="jit(_reduce_min)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=192 scheduling_name="reduce.2.1"}
+}
+
+%fused_reduce.1 (param_0.3: f64[512]) -> f64[] {
+  %param_0.3 = f64[512]{0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %constant_4 = f64[] constant(inf)
+  ROOT %reduce.5 = f64[] reduce(%param_0.3, %constant_4), dimensions={0}, to_apply=%region_0.3, metadata={op_name="jit(_reduce_min)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=192 scheduling_name="reduce.5"}
+}
+
+%region_0.3.clone (Arg_0.0: f64[], Arg_1.0: f64[]) -> f64[] {
+  %Arg_1.0 = f64[] parameter(1), metadata={op_name="jit(_reduce_min)/jit(main)/reduce_min" scheduling_name="Arg_1.0"}
+  %Arg_0.0 = f64[] parameter(0), metadata={op_name="jit(_reduce_min)/jit(main)/reduce_min" scheduling_name="Arg_0.0"}
+  ROOT %minimum.8 = f64[] minimum(%Arg_0.0, %Arg_1.0), metadata={op_name="jit(_reduce_min)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=192 scheduling_name="minimum.8"}
+}
+
+ENTRY %main.8_spmd (param.1: f64[9,320,320]) -> f64[] {
+  %param.1 = f64[9,320,320]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="a" scheduling_name="param.1"}
+  %input_reduce_fusion = f64[512]{0} fusion(%param.1), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_reduce_min)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=192 scheduling_name="input_reduce_fusion"}
+  %input_reduce_fusion.1 = f64[] fusion(%input_reduce_fusion), kind=kInput, calls=%fused_reduce.1, metadata={op_name="jit(_reduce_min)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=192 scheduling_name="input_reduce_fusion.1"}
+  %all-reduce-start = f64[] all-reduce-start(%input_reduce_fusion.1), channel_id=3, replica_groups={{0,1,2,3}}, use_global_device_ids=true, to_apply=%region_0.3.clone, metadata={scheduling_name="all-reduce-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  ROOT %all-reduce-done = f64[] all-reduce-done(%all-reduce-start), metadata={scheduling_name="all-reduce-done"}
+}
+

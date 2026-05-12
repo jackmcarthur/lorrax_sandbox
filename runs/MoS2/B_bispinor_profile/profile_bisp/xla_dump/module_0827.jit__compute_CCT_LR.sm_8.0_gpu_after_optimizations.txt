@@ -1,0 +1,52 @@
+HloModule jit__compute_CCT_LR, is_scheduled=true, input_output_alias={ {}: (0, {}, may-alias) }, entry_computation_layout={(c128[9,334,167]{2,1,0}, c128[9,334,167]{2,1,0})->c128[9,334,167]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, num_partitions=8, frontend_attributes={fingerprint_before_lhs="549e9fd33866e0e320833f5674bd8115"}
+
+%fused_transpose (param_0.11: c128[334,167,3,3,1]) -> c128[9,55778] {
+  %param_0.11 = c128[334,167,3,3,1]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.11"}
+  %constant_23_1 = c128[] constant((0.1111111111111111, 0)), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343}
+  %broadcast.14.1 = c128[334,167,3,3,1]{4,3,2,1,0} broadcast(%constant_23_1), dimensions={}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343 scheduling_name="broadcast.14.1"}
+  %multiply.21.1 = c128[334,167,3,3,1]{4,3,2,1,0} multiply(%param_0.11, %broadcast.14.1), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343 scheduling_name="multiply.21.1"}
+  %bitcast.137.1 = c128[55778,9]{1,0} bitcast(%multiply.21.1), metadata={scheduling_name="bitcast.137.1"}
+  ROOT %transpose.44.1 = c128[9,55778]{1,0} transpose(%bitcast.137.1), dimensions={1,0}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404 scheduling_name="transpose.44.1"}
+}
+
+%fused_transpose.1 (param_0.3: c128[9,334,167]) -> c128[55778,9] {
+  %param_0.3 = c128[9,334,167]{2,1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.120.1 = c128[9,55778]{1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.120.1"}
+  ROOT %transpose.43.1 = c128[55778,9]{1,0} transpose(%bitcast.120.1), dimensions={1,0}, metadata={op_name="P_r" scheduling_name="transpose.43.1"}
+}
+
+%fused_transpose.2 (param_0.5: c128[9,334,167]) -> c128[55778,9] {
+  %param_0.5 = c128[9,334,167]{2,1,0} parameter(0), metadata={scheduling_name="param_0.5"}
+  %bitcast.102.1 = c128[9,55778]{1,0} bitcast(%param_0.5), metadata={scheduling_name="bitcast.102.1"}
+  ROOT %transpose.42.1 = c128[55778,9]{1,0} transpose(%bitcast.102.1), dimensions={1,0}, metadata={op_name="P_l" scheduling_name="transpose.42.1"}
+}
+
+%fused_multiply (param_0.10: c128[334,167,3,3,1], param_1.21: c128[334,167,3,3,1]) -> c128[334,167,3,3,1] {
+  %param_1.21 = c128[334,167,3,3,1]{4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1.21"}
+  %constant_22_1 = c128[] constant((9, 0)), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325}
+  %broadcast.12.12 = c128[334,167,3,3,1]{4,3,2,1,0} broadcast(%constant_22_1), dimensions={}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325 scheduling_name="broadcast.12.12"}
+  %multiply.18.9 = c128[334,167,3,3,1]{4,3,2,1,0} multiply(%param_1.21, %broadcast.12.12), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325 scheduling_name="multiply.18.9"}
+  %real.5.3 = f64[334,167,3,3,1]{4,3,2,1,0} real(%multiply.18.9), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=388 scheduling_name="real.5.3"}
+  %imag.5.5 = f64[334,167,3,3,1]{4,3,2,1,0} imag(%multiply.18.9), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=388 scheduling_name="imag.5.5"}
+  %negate.5.3 = f64[334,167,3,3,1]{4,3,2,1,0} negate(%imag.5.5), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=388 scheduling_name="negate.5.3"}
+  %complex.5.1 = c128[334,167,3,3,1]{4,3,2,1,0} complex(%real.5.3, %negate.5.3), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=388 scheduling_name="complex.5.1"}
+  %param_0.10 = c128[334,167,3,3,1]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.10"}
+  %multiply.19.3 = c128[334,167,3,3,1]{4,3,2,1,0} multiply(%param_0.10, %broadcast.12.12), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325 scheduling_name="multiply.19.3"}
+  ROOT %multiply.20.1 = c128[334,167,3,3,1]{4,3,2,1,0} multiply(%complex.5.1, %multiply.19.3), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=388 scheduling_name="multiply.20.1"}
+}
+
+ENTRY %main.93_spmd (param.2: c128[9,334,167], param.1.0: c128[9,334,167]) -> c128[9,334,167] {
+  %param.1.0 = c128[9,334,167]{2,1,0} parameter(1), sharding={devices=[1,2,4]<=[8]}, metadata={op_name="P_r" scheduling_name="param.1.0"}
+  %param.2 = c128[9,334,167]{2,1,0} parameter(0), sharding={devices=[1,2,4]<=[8]}, metadata={op_name="P_l" scheduling_name="param.2"}
+  %input_transpose_fusion.2 = c128[55778,9]{1,0} fusion(%param.2), kind=kInput, calls=%fused_transpose.2, metadata={op_name="P_l" deduplicated_name="input_transpose_fusion.1" scheduling_name="input_transpose_fusion.2"}
+  %bitcast.106.0 = c128[334,167,3,3,1]{4,3,2,1,0} bitcast(%input_transpose_fusion.2), metadata={scheduling_name="bitcast.106.0"}
+  %fft.6.0 = c128[334,167,3,3,1]{4,3,2,1,0} fft(%bitcast.106.0), fft_type=IFFT, fft_length={3,3,1}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325 scheduling_name="fft.6.0"}
+  %input_transpose_fusion.1 = c128[55778,9]{1,0} fusion(%param.1.0), kind=kInput, calls=%fused_transpose.1, metadata={op_name="P_r" deduplicated_name="input_transpose_fusion.1" scheduling_name="input_transpose_fusion.1"}
+  %bitcast.124.0 = c128[334,167,3,3,1]{4,3,2,1,0} bitcast(%input_transpose_fusion.1), metadata={scheduling_name="bitcast.124.0"}
+  %fft.7.0 = c128[334,167,3,3,1]{4,3,2,1,0} fft(%bitcast.124.0), fft_type=IFFT, fft_length={3,3,1}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325 scheduling_name="fft.7.0"}
+  %loop_multiply_fusion = c128[334,167,3,3,1]{4,3,2,1,0} fusion(%fft.7.0, %fft.6.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=388 scheduling_name="loop_multiply_fusion"}
+  %fft.8.0 = c128[334,167,3,3,1]{4,3,2,1,0} fft(%loop_multiply_fusion), fft_type=FFT, fft_length={3,3,1}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343 scheduling_name="fft.8.0"}
+  %input_transpose_fusion = c128[9,55778]{1,0} fusion(%fft.8.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404 scheduling_name="input_transpose_fusion"}
+  ROOT %bitcast.96.0 = c128[9,334,167]{2,1,0} bitcast(%input_transpose_fusion), metadata={op_name="jit(_compute_CCT_LR)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404 scheduling_name="bitcast.96.0"}
+}
+

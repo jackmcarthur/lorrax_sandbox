@@ -1,0 +1,21 @@
+HloModule jit__unstack, is_scheduled=true, entry_computation_layout={(c128[2,9,80,80]{3,2,1,0})->(c128[9,80,80]{2,1,0}, c128[9,80,80]{2,1,0})}, allow_spmd_sharding_propagation_to_output={true,true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="4d6d7b9904e5257caaefec991a3e78b4"}
+
+%wrapped_slice_computation (param_0: c128[2,9,80,80]) -> c128[1,9,80,80] {
+  %param_0 = c128[2,9,80,80]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  ROOT %slice.8.1 = c128[1,9,80,80]{3,2,1,0} slice(%param_0), slice={[0:1], [0:9], [0:80], [0:80]}, metadata={op_name="jit(_unstack)/jit(main)/split" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=1057 scheduling_name="slice.8.1"}
+}
+
+%wrapped_slice_computation.1 (param_0.1: c128[2,9,80,80]) -> c128[1,9,80,80] {
+  %param_0.1 = c128[2,9,80,80]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  ROOT %slice.9.1 = c128[1,9,80,80]{3,2,1,0} slice(%param_0.1), slice={[1:2], [0:9], [0:80], [0:80]}, metadata={op_name="jit(_unstack)/jit(main)/split" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=1057 scheduling_name="slice.9.1"}
+}
+
+ENTRY %main.7_spmd (param.1: c128[2,9,80,80]) -> (c128[9,80,80], c128[9,80,80]) {
+  %param.1 = c128[2,9,80,80]{3,2,1,0} parameter(0), sharding={replicated}, metadata={op_name="x" scheduling_name="param.1"}
+  %wrapped_slice.1 = c128[1,9,80,80]{3,2,1,0} fusion(%param.1), kind=kLoop, calls=%wrapped_slice_computation.1, metadata={op_name="jit(_unstack)/jit(main)/split" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=1057 scheduling_name="wrapped_slice.1"}
+  %bitcast.39.0 = c128[9,80,80]{2,1,0} bitcast(%wrapped_slice.1), metadata={scheduling_name="bitcast.39.0"}
+  %wrapped_slice = c128[1,9,80,80]{3,2,1,0} fusion(%param.1), kind=kLoop, calls=%wrapped_slice_computation, metadata={op_name="jit(_unstack)/jit(main)/split" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=1057 scheduling_name="wrapped_slice"}
+  %bitcast.34.0 = c128[9,80,80]{2,1,0} bitcast(%wrapped_slice), metadata={scheduling_name="bitcast.34.0"}
+  ROOT %tuple.1 = (c128[9,80,80]{2,1,0}, c128[9,80,80]{2,1,0}) tuple(%bitcast.34.0, %bitcast.39.0), metadata={scheduling_name="tuple.1"}
+}
+

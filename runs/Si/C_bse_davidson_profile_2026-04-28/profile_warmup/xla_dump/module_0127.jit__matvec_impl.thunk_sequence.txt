@@ -1,0 +1,72 @@
+kCommandBuffer     	
+kWhile             	  
+condition:
+    kKernel	, kernel = loop_compare_fusion_2, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+  body:
+    kCopy                  	
+    kCollectivePermuteStart	
+    kKernel                	, kernel = loop_negate_real_fusion_1, launch dimensions = blocks: {240, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kKernel                	, kernel = loop_add_fusion_4, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+    kKernel                	, kernel = loop_add_fusion_3, launch dimensions = blocks: {2400, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kCollectivePermuteDone 	
+
+kKernel            	, kernel = loop_broadcast_fusion_3, launch dimensions = blocks: {288000, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kKernel            	, kernel = loop_transpose_fusion_4, launch dimensions = blocks: {2400, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kKernel            	, kernel = copy_fusion_1, launch dimensions = blocks: {980, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kCopy              	
+kWhile             	  
+condition:
+    kKernel	, kernel = loop_compare_fusion_2, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+  body:
+    kCopy                  	
+    kCollectivePermuteStart	
+    kKernel                	, kernel = loop_negate_real_fusion, launch dimensions = blocks: {960, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kKernel                	, kernel = input_reduce_fusion, launch dimensions = blocks: {4800, 1, 1}, threads/block: {256, 1, 1}, cluster_dim = nullopt
+    kKernel                	, kernel = loop_add_fusion_4, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+    kKernel                	, kernel = wrapped_add, launch dimensions = blocks: {1200, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kCollectivePermuteDone 	
+
+kCopy              	
+kWhile             	  
+condition:
+    kKernel	, kernel = loop_compare_fusion_2, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+  body:
+    kCopy                  	
+    kCollectivePermuteStart	
+    kKernel                	, kernel = loop_add_fusion_4, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+    kKernel                	, kernel = loop_add_fusion_1, launch dimensions = blocks: {1200, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kCollectivePermuteDone 	
+
+kKernel            	, kernel = input_transpose_fusion_3, launch dimensions = blocks: {160, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kWhile             	  
+condition:
+    kKernel	, kernel = loop_compare_fusion_2, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+  body:
+    kCopy                  	
+    kCollectivePermuteStart	
+    kCopy                  	
+    kKernel                	, kernel = loop_add_fusion_5, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+    kKernel                	, kernel = loop_dynamic_slice_fusion, launch dimensions = blocks: {960, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kGemm                  	
+    kCollectivePermuteDone 	
+
+kGemm              	
+kKernel            	, kernel = input_transpose_fusion_2, launch dimensions = blocks: {153600, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kAllReduceStart    	
+kFft               	
+kKernel            	, kernel = loop_multiply_fusion, launch dimensions = blocks: {288000, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kFft               	
+kCommandBuffer     	
+kAllReduceDone     	
+kGemm              	
+kKernel            	, kernel = input_transpose_fusion, launch dimensions = blocks: {9600, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kKernel            	, kernel = loop_transpose_fusion_6, launch dimensions = blocks: {40, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kReduceScatterStart	
+kKernel            	, kernel = wrapped_transpose_1, launch dimensions = blocks: {480, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kReduceScatterDone 	
+kKernel            	, kernel = loop_transpose_fusion_2, launch dimensions = blocks: {2400, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kGemm              	
+kKernel            	, kernel = loop_transpose_fusion_1, launch dimensions = blocks: {40, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kReduceScatterStart	
+kReduceScatterDone 	
+kKernel            	, kernel = loop_transpose_fusion, launch dimensions = blocks: {20, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt

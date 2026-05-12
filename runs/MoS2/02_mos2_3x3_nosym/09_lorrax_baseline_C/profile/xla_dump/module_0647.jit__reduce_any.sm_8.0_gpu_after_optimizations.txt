@@ -1,0 +1,20 @@
+HloModule jit__reduce_any, is_scheduled=true, entry_computation_layout={(pred[9,80]{1,0})->pred[]}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="fb8738d318075f46dbf2b1b662a4bb19"}
+
+%region_0.3 (Arg_0.4: pred[], Arg_1.5: pred[]) -> pred[] {
+  %Arg_1.5 = pred[] parameter(1), metadata={op_name="jit(_reduce_any)/jit(main)/reduce_or" scheduling_name="Arg_1.5"}
+  %Arg_0.4 = pred[] parameter(0), metadata={op_name="jit(_reduce_any)/jit(main)/reduce_or" scheduling_name="Arg_0.4"}
+  ROOT %or.2 = pred[] or(%Arg_0.4, %Arg_1.5), metadata={op_name="jit(_reduce_any)/jit(main)/reduce_or" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=777 scheduling_name="or.2"}
+}
+
+%fused_reduce (param_0.2: pred[9,80]) -> pred[] {
+  %param_0.2 = pred[9,80]{1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %bitcast.25.1 = pred[720]{0} bitcast(%param_0.2), metadata={scheduling_name="bitcast.25.1"}
+  %constant_3 = pred[] constant(false)
+  ROOT %reduce.3 = pred[] reduce(%bitcast.25.1, %constant_3), dimensions={0}, to_apply=%region_0.3, metadata={op_name="jit(_reduce_any)/jit(main)/reduce_or" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=777 scheduling_name="reduce.3"}
+}
+
+ENTRY %main.8_spmd (param.1: pred[9,80]) -> pred[] {
+  %param.1 = pred[9,80]{1,0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.1"}
+  ROOT %input_reduce_fusion = pred[] fusion(%param.1), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_reduce_any)/jit(main)/reduce_or" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=777 scheduling_name="input_reduce_fusion"}
+}
+

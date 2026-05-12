@@ -1,0 +1,21 @@
+HloModule jit__reduce_sum, is_scheduled=true, entry_computation_layout={(pred[4,4]{1,0})->s64[]}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="bb03b685929e3fa35b491de00753aef2"}
+
+%region_0.4 (Arg_0.5: s64[], Arg_1.6: s64[]) -> s64[] {
+  %Arg_1.6 = s64[] parameter(1), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_1.6"}
+  %Arg_0.5 = s64[] parameter(0), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_0.5"}
+  ROOT %add.2 = s64[] add(%Arg_0.5, %Arg_1.6), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="add.2"}
+}
+
+%fused_reduce (param_0.2: pred[4,4]) -> s64[] {
+  %param_0.2 = pred[4,4]{1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %convert.2.1 = s64[4,4]{1,0} convert(%param_0.2), metadata={op_name="jit(_reduce_sum)/jit(main)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="convert.2.1"}
+  %bitcast.28.1 = s64[16]{0} bitcast(%convert.2.1), metadata={scheduling_name="bitcast.28.1"}
+  %constant_2_1 = s64[] constant(0)
+  ROOT %reduce.8.1 = s64[] reduce(%bitcast.28.1, %constant_2_1), dimensions={0}, to_apply=%region_0.4, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="reduce.8.1"}
+}
+
+ENTRY %main.9 (Arg_0.1.0: pred[4,4]) -> s64[] {
+  %Arg_0.1.0 = pred[4,4]{1,0} parameter(0), metadata={op_name="a" scheduling_name="Arg_0.1.0"}
+  ROOT %input_reduce_fusion = s64[] fusion(%Arg_0.1.0), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="input_reduce_fusion"}
+}
+

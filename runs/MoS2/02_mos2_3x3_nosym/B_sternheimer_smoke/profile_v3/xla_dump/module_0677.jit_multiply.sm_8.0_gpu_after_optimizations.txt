@@ -1,0 +1,30 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(f64[], f64[9,1963]{1,0}, f64[3,1963]{1,0})->(f64[9,1963]{1,0}, f64[3,1963]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="7bb2ce54606a93980820ddd4e9b0998e"}
+
+%fused_slice (param_0_0: f64[3,1963], param_0_1: f64[], param_1_0: f64[9,1963]) -> (f64[5889], f64[17667]) {
+  %param_0_1 = f64[] parameter(1), metadata={scheduling_name="param_0_1"}
+  %broadcast.7.2 = f64[3,1963]{1,0} broadcast(%param_0_1), dimensions={}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=86 scheduling_name="broadcast.7.2"}
+  %param_0_0 = f64[3,1963]{1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %multiply.6.2 = f64[3,1963]{1,0} multiply(%broadcast.7.2, %param_0_0), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=86 scheduling_name="multiply.6.2"}
+  %reshape = f64[5889]{0} reshape(%multiply.6.2), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=86 scheduling_name="reshape"}
+  %broadcast.5.2 = f64[9,1963]{1,0} broadcast(%param_0_1), dimensions={}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=86 scheduling_name="broadcast.5.2"}
+  %param_1_0 = f64[9,1963]{1,0} parameter(2), metadata={scheduling_name="param_1_0"}
+  %multiply.4.2 = f64[9,1963]{1,0} multiply(%broadcast.5.2, %param_1_0), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=86 scheduling_name="multiply.4.2"}
+  %reshape.1 = f64[17667]{0} reshape(%multiply.4.2), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=86 scheduling_name="reshape.1"}
+  %concatenate = f64[23556]{0} concatenate(%reshape, %reshape.1), dimensions={0}, metadata={scheduling_name="concatenate"}
+  %slice = f64[5889]{0} slice(%concatenate), slice={[0:5889]}, metadata={scheduling_name="slice"}
+  %slice.1 = f64[17667]{0} slice(%concatenate), slice={[5889:23556]}, metadata={scheduling_name="slice.1"}
+  ROOT %tuple = (f64[5889]{0}, f64[17667]{0}) tuple(%slice, %slice.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=86 scheduling_name="tuple"}
+}
+
+ENTRY %main.9 (Arg_0.1.0: f64[], Arg_1.2.0: f64[9,1963], Arg_2.3.0: f64[3,1963]) -> (f64[9,1963], f64[3,1963]) {
+  %Arg_0.1.0 = f64[] parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %Arg_2.3.0 = f64[3,1963]{1,0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = f64[9,1963]{1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %input_slice_fusion = (f64[5889]{0}, f64[17667]{0}) fusion(%Arg_2.3.0, %Arg_0.1.0, %Arg_1.2.0), kind=kInput, calls=%fused_slice, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=86 scheduling_name="input_slice_fusion"}
+  %get-tuple-element.1 = f64[17667]{0} get-tuple-element(%input_slice_fusion), index=1, metadata={scheduling_name="get-tuple-element.1"}
+  %get-tuple-element = f64[5889]{0} get-tuple-element(%input_slice_fusion), index=0, metadata={scheduling_name="get-tuple-element"}
+  %bitcast.36 = f64[3,1963]{1,0} bitcast(%get-tuple-element), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=86 scheduling_name="bitcast.36"}
+  %bitcast.37 = f64[9,1963]{1,0} bitcast(%get-tuple-element.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=86 scheduling_name="bitcast.37"}
+  ROOT %tuple.8.0 = (f64[9,1963]{1,0}, f64[3,1963]{1,0}) tuple(%bitcast.37, %bitcast.36), metadata={scheduling_name="tuple.8.0"}
+}
+

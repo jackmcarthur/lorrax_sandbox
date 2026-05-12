@@ -1,0 +1,16 @@
+HloModule jit_add, is_scheduled=true, entry_computation_layout={(c128[41,1000,60,60]{3,2,1,0}, c128[1,1000,60,60]{3,2,1,0})->c128[41,1000,60,60]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="1bde3e666c5a971d4eb8e9d95ffef5ee"}
+
+%fused_add (param_0.2: c128[41,1000,60,60], param_1.2: c128[1,1000,60,60]) -> c128[41,1000,60,60] {
+  %param_0.2 = c128[41,1000,60,60]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %param_1.2 = c128[1,1000,60,60]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %bitcast.23.3 = c128[1000,60,60]{2,1,0} bitcast(%param_1.2), metadata={scheduling_name="bitcast.23.3"}
+  %broadcast.4.3 = c128[41,1000,60,60]{3,2,1,0} broadcast(%bitcast.23.3), dimensions={1,2,3}, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/sigma_output.py" source_line=403 scheduling_name="broadcast.4.3"}
+  ROOT %add.3.1 = c128[41,1000,60,60]{3,2,1,0} add(%param_0.2, %broadcast.4.3), metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/sigma_output.py" source_line=403 scheduling_name="add.3.1"}
+}
+
+ENTRY %main.7_spmd (param.2: c128[41,1000,60,60], param.1.0: c128[1,1000,60,60]) -> c128[41,1000,60,60] {
+  %param.1.0 = c128[1,1000,60,60]{3,2,1,0} parameter(1), sharding={replicated}, metadata={op_name="y" scheduling_name="param.1.0"}
+  %param.2 = c128[41,1000,60,60]{3,2,1,0} parameter(0), sharding={replicated}, metadata={op_name="x" scheduling_name="param.2"}
+  ROOT %loop_add_fusion = c128[41,1000,60,60]{3,2,1,0} fusion(%param.2, %param.1.0), kind=kLoop, calls=%fused_add, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/sigma_output.py" source_line=403 scheduling_name="loop_add_fusion"}
+}
+

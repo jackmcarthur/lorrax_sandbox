@@ -1,0 +1,38 @@
+HloModule jit_f, is_scheduled=true, entry_computation_layout={(c128[9,2419,42]{2,1,0}, c128[9,2419]{1,0}, c128[9,168,168]{2,1,0})->c128[9,168,168]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16, frontend_attributes={fingerprint_before_lhs="23d81bf23bc453f17f4e7bb8fa700a29"}
+
+%fused_transpose (param_0.3: c128[9,2419,42]) -> c128[42,21771] {
+  %param_0.3 = c128[9,2419,42]{2,1,0} parameter(0)
+  %bitcast.67.1 = c128[21771,42]{1,0} bitcast(%param_0.3)
+  ROOT %transpose.7.1 = c128[42,21771]{1,0} transpose(%bitcast.67.1), dimensions={1,0}, metadata={op_name="zeta_disk"}
+}
+
+%fused_complex (param_0.17: c128[9,2419], param_1.18: c128[9,168,2419]) -> c128[168,9,2419] {
+  %param_1.18 = c128[9,168,2419]{2,0,1} parameter(1)
+  %bitcast.74.7 = c128[168,9,2419]{2,1,0} bitcast(%param_1.18)
+  %param_0.17 = c128[9,2419]{1,0} parameter(0)
+  %broadcast.4.7 = c128[168,9,2419]{2,1,0} broadcast(%param_0.17), dimensions={1,2}, metadata={op_name="jit(f)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=262}
+  %multiply.3.7 = c128[168,9,2419]{2,1,0} multiply(%bitcast.74.7, %broadcast.4.7), metadata={op_name="jit(f)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=262}
+  %real.3.3 = f64[168,9,2419]{2,1,0} real(%multiply.3.7), metadata={op_name="jit(f)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+  %imag.3.3 = f64[168,9,2419]{2,1,0} imag(%multiply.3.7), metadata={op_name="jit(f)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+  %negate.3.1 = f64[168,9,2419]{2,1,0} negate(%imag.3.3), metadata={op_name="jit(f)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+  ROOT %complex.3.1 = c128[168,9,2419]{2,1,0} complex(%real.3.3, %negate.3.1), metadata={op_name="jit(f)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+}
+
+ENTRY %main.21_spmd (param.1.0: c128[9,2419,42], param.2.0: c128[9,2419], param.3: c128[9,168,168]) -> c128[9,168,168] {
+  %param.3 = c128[9,168,168]{2,1,0} parameter(2), sharding={devices=[1,4,4]<=[16]}, metadata={op_name="V_acc"}
+  %param.1.0 = c128[9,2419,42]{2,1,0} parameter(0), sharding={devices=[1,1,16]<=[16]}, metadata={op_name="zeta_disk"}
+  %param.2.0 = c128[9,2419]{1,0} parameter(1), sharding={replicated}, metadata={op_name="v_per_G"}
+  %input_transpose_fusion = c128[42,21771]{1,0} fusion(%param.1.0), kind=kInput, calls=%fused_transpose, metadata={op_name="zeta_disk"}
+  %bitcast.87.0 = c128[9,42,2419]{2,0,1} bitcast(%input_transpose_fusion)
+  %collective-permute-start = (c128[9,42,2419]{2,0,1}, c128[9,42,2419]{2,0,1}) collective-permute-start(%bitcast.87.0), channel_id=2, source_target_pairs={{0,0},{1,4},{2,8},{3,12},{4,1},{5,5},{6,9},{7,13},{8,2},{9,6},{10,10},{11,14},{12,3},{13,7},{14,11},{15,15}}, metadata={op_name="jit(f)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-start = (c128[9,42,2419]{2,0,1}, c128[9,168,2419]{2,0,1}) all-gather-start(%bitcast.87.0), channel_id=1, replica_groups={{0,1,2,3},{4,5,6,7},{8,9,10,11},{12,13,14,15}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(f)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=259}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done = c128[9,168,2419]{2,0,1} all-gather-done(%all-gather-start), metadata={op_name="jit(f)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=259}
+  %loop_complex_fusion = c128[168,9,2419]{2,1,0} fusion(%param.2.0, %all-gather-done), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(f)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+  %collective-permute-done = c128[9,42,2419]{2,0,1} collective-permute-done(%collective-permute-start), metadata={op_name="jit(f)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}
+  %all-gather-start.1 = (c128[9,42,2419]{2,0,1}, c128[9,168,2419]{2,0,1}) all-gather-start(%collective-permute-done), channel_id=3, replica_groups={{0,4,8,12},{1,5,9,13},{2,6,10,14},{3,7,11,15}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(f)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done.1 = c128[9,168,2419]{2,0,1} all-gather-done(%all-gather-start.1), metadata={op_name="jit(f)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}
+  %bitcast.93.0 = c128[168,9,2419]{2,1,0} bitcast(%all-gather-done.1)
+  %custom-call.1.0 = (c128[9,168,168]{2,1,0}, s8[4194304]{0}) custom-call(%loop_complex_fusion, %bitcast.93.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(f)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=263}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["2"],"lhs_batch_dimensions":["1"],"rhs_batch_dimensions":["1"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"21771","rhs_stride":"21771","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  ROOT %get-tuple-element.1 = c128[9,168,168]{2,1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(f)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=263}
+}
+

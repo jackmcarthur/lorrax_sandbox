@@ -1,0 +1,24 @@
+HloModule jit_fft, entry_computation_layout={(c128[9,24,24,80]{3,2,1,0}, c128[3,9,24,24,80]{4,3,2,1,0})->(c128[9,24,24,80]{3,2,1,0}, c128[3,9,24,24,80]{4,3,2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true,true}
+
+%fft_0.3 (Arg_0.4: c128[3,9,24,24,80]) -> c128[3,9,24,24,80] {
+  %Arg_0.4 = c128[3,9,24,24,80]{4,3,2,1,0} parameter(0), metadata={op_name="jit(fft)/jit(main)/jit(fft)/pjit"}
+  ROOT %fft.5 = c128[3,9,24,24,80]{4,3,2,1,0} fft(%Arg_0.4), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(fft)/jit(main)/jit(fft)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=196}
+}
+
+%fft.6 (Arg_0.7: c128[9,24,24,80], Arg_1.8: c128[3,9,24,24,80]) -> (c128[9,24,24,80], c128[3,9,24,24,80]) {
+  %Arg_0.7 = c128[9,24,24,80]{3,2,1,0} parameter(0), metadata={op_name="jit(fft)/jit(main)/pjit"}
+  %fft.9 = c128[9,24,24,80]{3,2,1,0} fft(%Arg_0.7), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(fft)/jit(main)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=196}
+  %Arg_1.8 = c128[3,9,24,24,80]{4,3,2,1,0} parameter(1), metadata={op_name="jit(fft)/jit(main)/pjit"}
+  %call.10 = c128[3,9,24,24,80]{4,3,2,1,0} call(%Arg_1.8), to_apply=%fft_0.3
+  ROOT %tuple.11 = (c128[9,24,24,80]{3,2,1,0}, c128[3,9,24,24,80]{4,3,2,1,0}) tuple(%fft.9, %call.10)
+}
+
+ENTRY %main.16 (Arg_0.1: c128[9,24,24,80], Arg_1.2: c128[3,9,24,24,80]) -> (c128[9,24,24,80], c128[3,9,24,24,80]) {
+  %Arg_0.1 = c128[9,24,24,80]{3,2,1,0} parameter(0)
+  %Arg_1.2 = c128[3,9,24,24,80]{4,3,2,1,0} parameter(1)
+  %call.12 = (c128[9,24,24,80]{3,2,1,0}, c128[3,9,24,24,80]{4,3,2,1,0}) call(%Arg_0.1, %Arg_1.2), to_apply=%fft.6
+  %get-tuple-element.13 = c128[9,24,24,80]{3,2,1,0} get-tuple-element(%call.12), index=0
+  %get-tuple-element.14 = c128[3,9,24,24,80]{4,3,2,1,0} get-tuple-element(%call.12), index=1
+  ROOT %tuple.15 = (c128[9,24,24,80]{3,2,1,0}, c128[3,9,24,24,80]{4,3,2,1,0}) tuple(%get-tuple-element.13, %get-tuple-element.14)
+}
+

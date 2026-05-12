@@ -1,0 +1,18 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(c128[240,1]{1,0}, c128[1,240]{1,0})->c128[240,240]{1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="6ef5f3bef79fdf6280c916f92017235a"}
+
+%fused_multiply (param_0.8: c128[240,1], param_1.4: c128[1,240]) -> c128[240,240] {
+  %param_0.8 = c128[240,1]{1,0} parameter(0), metadata={scheduling_name="param_0.8"}
+  %bitcast.30.3 = c128[240]{0} bitcast(%param_0.8), metadata={scheduling_name="bitcast.30.3"}
+  %broadcast.10.3 = c128[240,240]{1,0} broadcast(%bitcast.30.3), dimensions={0}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=648 scheduling_name="broadcast.10.3"}
+  %param_1.4 = c128[1,240]{1,0} parameter(1), metadata={scheduling_name="param_1.4"}
+  %bitcast.35.3 = c128[240]{0} bitcast(%param_1.4), metadata={scheduling_name="bitcast.35.3"}
+  %broadcast.11.3 = c128[240,240]{1,0} broadcast(%bitcast.35.3), dimensions={1}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=648 scheduling_name="broadcast.11.3"}
+  ROOT %multiply.3.1 = c128[240,240]{1,0} multiply(%broadcast.10.3, %broadcast.11.3), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=648 scheduling_name="multiply.3.1"}
+}
+
+ENTRY %main.10_spmd (param.2: c128[240,1], param.1.0: c128[1,240]) -> c128[240,240] {
+  %param.1.0 = c128[1,240]{1,0} parameter(1), sharding={devices=[1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="y" scheduling_name="param.1.0"}
+  %param.2 = c128[240,1]{1,0} parameter(0), sharding={devices=[2,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="x" scheduling_name="param.2"}
+  ROOT %loop_multiply_fusion = c128[240,240]{1,0} fusion(%param.2, %param.1.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=648 scheduling_name="loop_multiply_fusion"}
+}
+

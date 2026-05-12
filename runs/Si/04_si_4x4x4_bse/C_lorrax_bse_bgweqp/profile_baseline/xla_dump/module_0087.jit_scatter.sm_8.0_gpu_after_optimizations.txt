@@ -1,0 +1,57 @@
+HloModule jit_scatter, is_scheduled=true, entry_computation_layout={(c128[1024,200]{1,0}, s32[1]{0}, c128[1024]{0})->c128[1024,200]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="ea6f5c4a7f0b680145f9be1d5c8ee267"}
+
+%fused_dynamic_slice (param_0: c128[1024,200], param_1.10: s32[1]) -> c128[1024,1] {
+  %param_0 = c128[1024,200]{1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %constant_12_1 = s32[] constant(0)
+  %param_1.10 = s32[1]{0} parameter(1), metadata={scheduling_name="param_1.10"}
+  %bitcast.127.1 = s32[] bitcast(%param_1.10), metadata={scheduling_name="bitcast.127.1"}
+  ROOT %dynamic-slice.7.1 = c128[1024,1]{1,0} dynamic-slice(%param_0, %constant_12_1, %bitcast.127.1), dynamic_slice_sizes={1024,1}, metadata={scheduling_name="dynamic-slice.7.1"}
+}
+
+%fused_dynamic_update_slice (param_0.1: c128[1024,200], param_1.11: s32[1], param_2.13: c128[1024,1], param_3.10: c128[1024], param_4.7: pred[]) -> c128[1024,200] {
+  %param_0.1 = c128[1024,200]{1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %param_4.7 = pred[] parameter(4), metadata={scheduling_name="param_4.7"}
+  %broadcast.22.1 = pred[1024,1]{1,0} broadcast(%param_4.7), dimensions={}, metadata={scheduling_name="broadcast.22.1"}
+  %param_3.10 = c128[1024]{0} parameter(3), metadata={scheduling_name="param_3.10"}
+  %bitcast.118.3 = c128[1024,1]{1,0} bitcast(%param_3.10), metadata={scheduling_name="bitcast.118.3"}
+  %param_2.13 = c128[1024,1]{1,0} parameter(2), metadata={scheduling_name="param_2.13"}
+  %select.4.3 = c128[1024,1]{1,0} select(%broadcast.22.1, %bitcast.118.3, %param_2.13), metadata={scheduling_name="select.4.3"}
+  %constant_12_3 = s32[] constant(0)
+  %param_1.11 = s32[1]{0} parameter(1), metadata={scheduling_name="param_1.11"}
+  %bitcast.127.2 = s32[] bitcast(%param_1.11), metadata={scheduling_name="bitcast.127.2"}
+  ROOT %dynamic-update-slice.5.1 = c128[1024,200]{1,0} dynamic-update-slice(%param_0.1, %select.4.3, %constant_12_3, %bitcast.127.2), metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=252 scheduling_name="dynamic-update-slice.5.1"}
+}
+
+%and.reduce_sub_computation (lhs: pred[], rhs: pred[]) -> pred[] {
+  %rhs = pred[] parameter(1), metadata={scheduling_name="rhs"}
+  %lhs = pred[] parameter(0), metadata={scheduling_name="lhs"}
+  ROOT %and.7 = pred[] and(%lhs, %rhs), metadata={scheduling_name="and.7"}
+}
+
+%fused_reduce (param_0.6: s32[1]) -> pred[] {
+  %constant_12_2 = s32[] constant(0)
+  %broadcast.20.1 = s32[2]{0} broadcast(%constant_12_2), dimensions={}, metadata={scheduling_name="broadcast.20.1"}
+  %constant_18_1 = s32[1]{0} constant({0})
+  %param_0.6 = s32[1]{0} parameter(0), metadata={scheduling_name="param_0.6"}
+  %concatenate.4.1 = s32[2]{0} concatenate(%constant_18_1, %param_0.6), dimensions={0}, metadata={scheduling_name="concatenate.4.1"}
+  %compare.9.1 = pred[2]{0} compare(%broadcast.20.1, %concatenate.4.1), direction=LE, metadata={scheduling_name="compare.9.1"}
+  %iota.4.1 = s32[2]{0} iota(), iota_dimension=0, metadata={scheduling_name="iota.4.1"}
+  %constant_19_1 = s32[] constant(199)
+  %broadcast.21.1 = s32[2]{0} broadcast(%constant_19_1), dimensions={}, metadata={scheduling_name="broadcast.21.1"}
+  %multiply.4.1 = s32[2]{0} multiply(%iota.4.1, %broadcast.21.1), metadata={scheduling_name="multiply.4.1"}
+  %compare.10.1 = pred[2]{0} compare(%multiply.4.1, %concatenate.4.1), direction=GE, metadata={scheduling_name="compare.10.1"}
+  %and.8.1 = pred[2]{0} and(%compare.9.1, %compare.10.1), metadata={scheduling_name="and.8.1"}
+  %constant_20_1 = pred[] constant(true)
+  ROOT %reduce.1.1 = pred[] reduce(%and.8.1, %constant_20_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.1.1"}
+}
+
+ENTRY %main.8 (Arg_0.1.0: c128[1024,200], Arg_1.2.0: s32[1], Arg_2.3.0: c128[1024]) -> c128[1024,200] {
+  %Arg_1.2.0 = s32[1]{0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_2.3.0 = c128[1024]{0} parameter(2), metadata={op_name="args[2]" scheduling_name="Arg_2.3.0"}
+  %Arg_0.1.0 = c128[1024,200]{1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  %input_reduce_fusion = pred[] fusion(%Arg_1.2.0), kind=kInput, calls=%fused_reduce, metadata={scheduling_name="input_reduce_fusion"}
+  %copy.2 = c128[1024,200]{1,0} copy(%Arg_0.1.0)
+  %loop_dynamic_slice_fusion = c128[1024,1]{1,0} fusion(%copy.2, %Arg_1.2.0), kind=kLoop, calls=%fused_dynamic_slice, metadata={scheduling_name="loop_dynamic_slice_fusion"}
+  ROOT %loop_dynamic_update_slice_fusion = c128[1024,200]{1,0} fusion(%copy.2, %Arg_1.2.0, %loop_dynamic_slice_fusion, %Arg_2.3.0, %input_reduce_fusion), kind=kLoop, calls=%fused_dynamic_update_slice, metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=252 scheduling_name="loop_dynamic_update_slice_fusion"}
+}
+

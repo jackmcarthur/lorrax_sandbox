@@ -1,0 +1,23 @@
+HloModule jit__accum, entry_computation_layout={(c128[960,960]{1,0}, f64[960,1]{1,0}, c128[16,60,2,46080]{3,2,1,0}, c128[960,960]{1,0})->c128[960,960]{1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false}, num_partitions=4
+
+ENTRY %main.22 (Arg_0.1: c128[960,960], Arg_1.2: f64[960,1], Arg_2.3: c128[16,60,2,46080], Arg_3.4: c128[960,960]) -> c128[960,960] {
+  %Arg_3.4 = c128[960,960]{1,0} parameter(3), sharding={devices=[2,2]<=[4]}, metadata={op_name="G_in"}
+  %Arg_1.2 = f64[960,1]{1,0} parameter(1), sharding={replicated}, metadata={op_name="inv_s"}
+  %convert.7 = c128[960,1]{1,0} convert(%Arg_1.2), metadata={op_name="jit(_accum)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=148}
+  %reshape.9 = c128[960]{0} reshape(%convert.7), metadata={op_name="jit(_accum)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=148}
+  %broadcast.10 = c128[960,92160]{1,0} broadcast(%reshape.9), dimensions={0}, metadata={op_name="jit(_accum)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=148}
+  %Arg_0.1 = c128[960,960]{1,0} parameter(0), sharding={replicated}, metadata={op_name="UH_bc"}
+  %Arg_2.3 = c128[16,60,2,46080]{3,2,1,0} parameter(2), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="psi_bc"}
+  %reshape.5 = c128[960,92160]{1,0} reshape(%Arg_2.3), metadata={op_name="jit(_accum)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=147}
+  %dot.6 = c128[960,92160]{1,0} dot(%Arg_0.1, %reshape.5), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=148}
+  %multiply.11 = c128[960,92160]{1,0} multiply(%broadcast.10, %dot.6), metadata={op_name="jit(_accum)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=148}
+  %custom-call.12 = c128[960,92160]{1,0} custom-call(%multiply.11), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_accum)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149}
+  %real.13 = f64[960,92160]{1,0} real(%custom-call.12), metadata={op_name="jit(_accum)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=150}
+  %imag.14 = f64[960,92160]{1,0} imag(%custom-call.12), metadata={op_name="jit(_accum)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=150}
+  %negate.15 = f64[960,92160]{1,0} negate(%imag.14), metadata={op_name="jit(_accum)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=150}
+  %complex.16 = c128[960,92160]{1,0} complex(%real.13, %negate.15), metadata={op_name="jit(_accum)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=150}
+  %transpose.17 = c128[92160,960]{0,1} transpose(%complex.16), dimensions={1,0}, metadata={op_name="jit(_accum)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=150}
+  %dot.18 = c128[960,960]{1,0} dot(%custom-call.12, %transpose.17), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=150}
+  ROOT %add.19 = c128[960,960]{1,0} add(%Arg_3.4, %dot.18), sharding={devices=[2,2]<=[4]}, metadata={op_name="jit(_accum)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=150}
+}
+

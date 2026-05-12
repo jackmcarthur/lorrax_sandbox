@@ -1,0 +1,149 @@
+HloModule jit__local_ifftn, entry_computation_layout={(c128[480,480,4,4,4]{4,3,2,1,0})->c128[480,480,4,4,4]{4,3,2,1,0}}, num_partitions=4
+
+%region_0.11 (Arg_0.12: c128[], Arg_1.13: c128[]) -> c128[] {
+  %Arg_0.12 = c128[] parameter(0), metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/reduce_prod"}
+  %Arg_1.13 = c128[] parameter(1), metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/reduce_prod"}
+  ROOT %multiply.14 = c128[] multiply(%Arg_0.12, %Arg_1.13), metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+}
+
+ENTRY %main.128 (Arg_0.1: c128[480,480,4,4,4]) -> c128[480,480,4,4,4] {
+  %Arg_0.1 = c128[480,480,4,4,4]{4,3,2,1,0} parameter(0), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="x_local"}
+  %copy.2 = c128[480,480,4,4,4]{4,3,2,1,0} copy(%Arg_0.1), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="jit(_local_ifftn)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/davidson_absorption.py" source_line=125}
+  %custom-call.7 = c128[240,240,4,4,4]{4,3,2,1,0} custom-call(%copy.2), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/davidson_absorption.py" source_line=125}
+  %fft.1 = c128[240,240,4,4,4]{4,3,2,1,0} fft(%custom-call.7), fft_type=IFFT, fft_length={4,4,4}, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.2 = c128[] constant((4, 0)), sharding={replicated}
+  %broadcast.3 = c128[3]{0} broadcast(%constant.2), dimensions={}, sharding={replicated}
+  %copy.1 = c128[3]{0} copy(%broadcast.3), sharding={replicated}, metadata={op_name="jit(_local_ifftn)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/davidson_absorption.py" source_line=125}
+  %custom-call.5 = c128[3]{0} custom-call(%copy.1), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/davidson_absorption.py" source_line=125}
+  %constant.0 = c128[] constant((1, 0)), sharding={manual}
+  %reduce.0 = c128[] reduce(%custom-call.5, %constant.0), dimensions={0}, to_apply=%region_0.11, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %real.0 = f64[] real(%reduce.0), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.26 = f64[] constant(0), sharding={manual}
+  %compare.0 = pred[] compare(%real.0, %constant.26), direction=GE, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %abs.0 = f64[] abs(%real.0), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %imag.0 = f64[] imag(%reduce.0), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %abs.1 = f64[] abs(%imag.0), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %compare.1 = pred[] compare(%abs.0, %abs.1), direction=EQ, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %sqrt.0 = f64[] sqrt(%abs.0), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.17 = f64[] constant(1.0986841134678098), sharding={manual}
+  %multiply.17 = f64[] multiply(%sqrt.0, %constant.17), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %maximum.0 = f64[] maximum(%abs.0, %abs.1), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %minimum.0 = f64[] minimum(%abs.0, %abs.1), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %compare.2 = pred[] compare(%maximum.0, %minimum.0), direction=EQ, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.33 = f64[] constant(1.4142135623730951), sharding={manual}
+  %multiply.1 = f64[] multiply(%maximum.0, %constant.33), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %divide.1 = f64[] divide(%minimum.0, %maximum.0), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %multiply.2 = f64[] multiply(%divide.1, %divide.1), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.36 = f64[] constant(1), sharding={manual}
+  %add.0 = f64[] add(%multiply.2, %constant.36), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %sqrt.1 = f64[] sqrt(%add.0), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.37 = f64[] constant(1), sharding={manual}
+  %compare.3 = pred[] compare(%sqrt.1, %constant.37), direction=EQ, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.27 = f64[] constant(0), sharding={manual}
+  %compare.4 = pred[] compare(%multiply.2, %constant.27), direction=GT, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %and.0 = pred[] and(%compare.3, %compare.4), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %multiply.3 = f64[] multiply(%maximum.0, %multiply.2), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.10 = f64[] constant(0.5), sharding={manual}
+  %multiply.18 = f64[] multiply(%multiply.3, %constant.10), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %add.1 = f64[] add(%maximum.0, %multiply.18), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %multiply.4 = f64[] multiply(%maximum.0, %sqrt.1), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.0 = f64[] select(%and.0, %add.1, %multiply.4), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.1 = f64[] select(%compare.2, %multiply.1, %select.0), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.11 = f64[] constant(0.5), sharding={manual}
+  %multiply.19 = f64[] multiply(%select.1, %constant.11), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.12 = f64[] constant(0.5), sharding={manual}
+  %multiply.20 = f64[] multiply(%abs.0, %constant.12), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %add.2 = f64[] add(%multiply.19, %multiply.20), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %sqrt.2 = f64[] sqrt(%add.2), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.28 = f64[] constant(0), sharding={manual}
+  %compare.5 = pred[] compare(%sqrt.2, %constant.28), direction=EQ, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.7 = f64[] constant(inf), sharding={manual}
+  %compare.6 = pred[] compare(%sqrt.2, %constant.7), direction=EQ, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %or.0 = pred[] or(%compare.5, %compare.6), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %compare.7 = pred[] compare(%abs.0, %abs.1), direction=GT, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.38 = f64[] constant(1), sharding={manual}
+  %compare.8 = pred[] compare(%abs.0, %abs.1), direction=LT, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %divide.5 = f64[] divide(%abs.0, %abs.1), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %divide.6 = f64[] divide(%abs.1, %abs.0), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.2 = f64[] select(%compare.8, %divide.5, %divide.6), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.3 = f64[] select(%compare.1, %constant.38, %select.2), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %abs.2 = f64[] abs(%select.3), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.39 = f64[] constant(1), sharding={manual}
+  %maximum.1 = f64[] maximum(%abs.2, %constant.39), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.40 = f64[] constant(1), sharding={manual}
+  %minimum.1 = f64[] minimum(%abs.2, %constant.40), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %compare.9 = pred[] compare(%maximum.1, %minimum.1), direction=EQ, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.34 = f64[] constant(1.4142135623730951), sharding={manual}
+  %multiply.5 = f64[] multiply(%maximum.1, %constant.34), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %divide.7 = f64[] divide(%minimum.1, %maximum.1), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %multiply.6 = f64[] multiply(%divide.7, %divide.7), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.41 = f64[] constant(1), sharding={manual}
+  %add.3 = f64[] add(%multiply.6, %constant.41), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %sqrt.3 = f64[] sqrt(%add.3), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.42 = f64[] constant(1), sharding={manual}
+  %compare.10 = pred[] compare(%sqrt.3, %constant.42), direction=EQ, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.29 = f64[] constant(0), sharding={manual}
+  %compare.11 = pred[] compare(%multiply.6, %constant.29), direction=GT, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %and.1 = pred[] and(%compare.10, %compare.11), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %multiply.7 = f64[] multiply(%maximum.1, %multiply.6), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.13 = f64[] constant(0.5), sharding={manual}
+  %multiply.21 = f64[] multiply(%multiply.7, %constant.13), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %add.4 = f64[] add(%maximum.1, %multiply.21), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %multiply.8 = f64[] multiply(%maximum.1, %sqrt.3), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.4 = f64[] select(%and.1, %add.4, %multiply.8), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.5 = f64[] select(%compare.9, %multiply.5, %select.4), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.43 = f64[] constant(1), sharding={manual}
+  %add.5 = f64[] add(%select.5, %constant.43), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %sqrt.4 = f64[] sqrt(%add.5), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.14 = f64[] constant(0.70710678118654746), sharding={manual}
+  %multiply.22 = f64[] multiply(%sqrt.4, %constant.14), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %multiply.9 = f64[] multiply(%sqrt.0, %multiply.22), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %sqrt.5 = f64[] sqrt(%abs.1), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %add.6 = f64[] add(%select.3, %select.5), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %sqrt.6 = f64[] sqrt(%add.6), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.15 = f64[] constant(0.70710678118654746), sharding={manual}
+  %multiply.23 = f64[] multiply(%sqrt.6, %constant.15), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %multiply.10 = f64[] multiply(%sqrt.5, %multiply.23), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.6 = f64[] select(%compare.7, %multiply.9, %multiply.10), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.7 = f64[] select(%or.0, %select.6, %sqrt.2), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.8 = f64[] select(%compare.1, %multiply.17, %select.7), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.16 = f64[] constant(0.45508986056222733), sharding={manual}
+  %multiply.24 = f64[] multiply(%sqrt.5, %constant.16), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.44 = f64[] constant(1), sharding={manual}
+  %divide.12 = f64[] divide(%sqrt.0, %sqrt.5), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %divide.13 = f64[] divide(%sqrt.5, %sqrt.0), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.9 = f64[] select(%compare.8, %divide.12, %divide.13), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.10 = f64[] select(%compare.1, %constant.44, %select.9), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %multiply.11 = f64[] multiply(%sqrt.5, %select.10), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.35 = f64[] constant(1.4142135623730951), sharding={manual}
+  %multiply.12 = f64[] multiply(%sqrt.4, %constant.35), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %divide.14 = f64[] divide(%multiply.11, %multiply.12), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.32 = f64[] constant(1.4142135623730951), sharding={manual}
+  %multiply.13 = f64[] multiply(%sqrt.6, %constant.32), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %divide.15 = f64[] divide(%sqrt.5, %multiply.13), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.11 = f64[] select(%compare.7, %divide.14, %divide.15), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.6 = f64[] constant(2), sharding={manual}
+  %multiply.15 = f64[] multiply(%sqrt.2, %constant.6), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %divide.16 = f64[] divide(%abs.1, %multiply.15), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.12 = f64[] select(%or.0, %select.11, %divide.16), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.13 = f64[] select(%compare.1, %multiply.24, %select.12), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.14 = f64[] select(%compare.0, %select.8, %select.13), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.30 = f64[] constant(0), sharding={manual}
+  %compare.12 = pred[] compare(%real.0, %constant.30), direction=LT, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %constant.31 = f64[] constant(0), sharding={manual}
+  %compare.13 = pred[] compare(%imag.0, %constant.31), direction=LT, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %negate.0 = f64[] negate(%select.8), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.15 = f64[] select(%compare.13, %negate.0, %select.8), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %negate.1 = f64[] negate(%select.13), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.16 = f64[] select(%compare.13, %negate.1, %select.13), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %select.17 = f64[] select(%compare.12, %select.15, %select.16), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %complex.0 = c128[] complex(%select.14, %select.17), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %broadcast.0 = c128[240,240,4,4,4]{4,3,2,1,0} broadcast(%complex.0), dimensions={}, sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %multiply.16 = c128[240,240,4,4,4]{4,3,2,1,0} multiply(%fft.1, %broadcast.0), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %copy = c128[240,240,4,4,4]{4,3,2,1,0} copy(%multiply.16), sharding={manual}, metadata={op_name="jit(_local_ifftn)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/davidson_absorption.py" source_line=125}
+  ROOT %custom-call.125 = c128[480,480,4,4,4]{4,3,2,1,0} custom-call(%copy), custom_call_target="SPMDShardToFullShape", sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="jit(_local_ifftn)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/davidson_absorption.py" source_line=125}
+  %constant.1 = f64[] constant(0)
+  %constant.4 = f64[] constant(1.4142135623730951)
+  %constant.5 = f64[] constant(1)
+}
+

@@ -1,0 +1,26 @@
+HloModule jit__squeeze, is_scheduled=true, entry_computation_layout={(f64[9,1963]{1,0}, f64[3,9,1963]{2,1,0})->(f64[9,1963]{1,0}, f64[3,9,1963]{2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="93cb75277d1e54215ac906bd58aebca3"}
+
+%copy_horizontally_fused_computation (param_0_0: f64[9,1963], param_1_0: f64[3,9,1963]) -> (f64[17667], f64[53001]) {
+  %param_0_0 = f64[9,1963]{1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %copy.4 = f64[9,1963]{1,0} copy(%param_0_0), metadata={scheduling_name="copy.4"}
+  %reshape = f64[17667]{0} reshape(%copy.4), metadata={scheduling_name="reshape"}
+  %param_1_0 = f64[3,9,1963]{2,1,0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %copy.5 = f64[3,9,1963]{2,1,0} copy(%param_1_0), metadata={scheduling_name="copy.5"}
+  %reshape.1 = f64[53001]{0} reshape(%copy.5), metadata={scheduling_name="reshape.1"}
+  %concatenate = f64[70668]{0} concatenate(%reshape, %reshape.1), dimensions={0}, metadata={scheduling_name="concatenate"}
+  %slice = f64[17667]{0} slice(%concatenate), slice={[0:17667]}, metadata={scheduling_name="slice"}
+  %slice.1 = f64[53001]{0} slice(%concatenate), slice={[17667:70668]}, metadata={scheduling_name="slice.1"}
+  ROOT %tuple.1 = (f64[17667]{0}, f64[53001]{0}) tuple(%slice, %slice.1), metadata={scheduling_name="tuple.1"}
+}
+
+ENTRY %main.4 (Arg_0.1.0: f64[9,1963], Arg_1.2.0: f64[3,9,1963]) -> (f64[9,1963], f64[3,9,1963]) {
+  %Arg_1.2.0 = f64[3,9,1963]{2,1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[9,1963]{1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %copy_fusion = (f64[17667]{0}, f64[53001]{0}) fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kInput, calls=%copy_horizontally_fused_computation, metadata={scheduling_name="copy_fusion"}
+  %get-tuple-element.3 = f64[53001]{0} get-tuple-element(%copy_fusion), index=1, metadata={scheduling_name="get-tuple-element.3"}
+  %get-tuple-element.2 = f64[17667]{0} get-tuple-element(%copy_fusion), index=0, metadata={scheduling_name="get-tuple-element.2"}
+  %bitcast.12 = f64[9,1963]{1,0} bitcast(%get-tuple-element.2), metadata={scheduling_name="bitcast.12"}
+  %bitcast.13 = f64[3,9,1963]{2,1,0} bitcast(%get-tuple-element.3), metadata={scheduling_name="bitcast.13"}
+  ROOT %tuple = (f64[9,1963]{1,0}, f64[3,9,1963]{2,1,0}) tuple(%bitcast.12, %bitcast.13), metadata={scheduling_name="tuple"}
+}
+

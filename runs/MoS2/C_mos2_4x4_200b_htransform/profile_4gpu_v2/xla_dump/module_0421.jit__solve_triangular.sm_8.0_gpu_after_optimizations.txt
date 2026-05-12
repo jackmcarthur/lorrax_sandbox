@@ -1,0 +1,32 @@
+HloModule jit__solve_triangular, is_scheduled=true, entry_computation_layout={(c128[960,960]{1,0}, c128[32,960,960]{2,1,0})->c128[960,960,32]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="ff3bf86fee1b3aa3bd4d9934501a5cdd"}
+
+%fused_transpose (param_0.1: c128[960,30720]) -> c128[960,30720] {
+  %param_0.1 = c128[960,30720]{0,1} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.61.1 = c128[30720,960]{1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.61.1"}
+  ROOT %transpose.12.1 = c128[960,30720]{1,0} transpose(%bitcast.61.1), dimensions={1,0}, metadata={op_name="jit(_solve_triangular)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="transpose.12.1"}
+}
+
+%fused_transpose.1 (param_0.3: c128[32,960,960]) -> c128[960,30720] {
+  %param_0.3 = c128[32,960,960]{2,1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.54.1 = c128[30720,960]{1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.54.1"}
+  ROOT %transpose.11.1 = c128[960,30720]{1,0} transpose(%bitcast.54.1), dimensions={1,0}, metadata={op_name="jit(_solve_triangular)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="transpose.11.1"}
+}
+
+%wrapped_transpose_computation (param_0.4: c128[960,960]) -> c128[960,960] {
+  %param_0.4 = c128[960,960]{1,0} parameter(0), metadata={scheduling_name="param_0.4"}
+  ROOT %transpose.10.1 = c128[960,960]{1,0} transpose(%param_0.4), dimensions={1,0}, metadata={op_name="a" scheduling_name="transpose.10.1"}
+}
+
+ENTRY %main.7_spmd (param.2: c128[960,960], param.1.0: c128[32,960,960]) -> c128[960,960,32] {
+  %param.1.0 = c128[32,960,960]{2,1,0} parameter(1), sharding={replicated}, metadata={op_name="b" scheduling_name="param.1.0"}
+  %param.2 = c128[960,960]{1,0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.2"}
+  %wrapped_transpose = c128[960,960]{1,0} fusion(%param.2), kind=kInput, calls=%wrapped_transpose_computation, metadata={op_name="a" scheduling_name="wrapped_transpose"}
+  %bitcast.51.0 = c128[960,960]{0,1} bitcast(%wrapped_transpose), metadata={scheduling_name="bitcast.51.0"}
+  %input_transpose_fusion.1 = c128[960,30720]{1,0} fusion(%param.1.0), kind=kInput, calls=%fused_transpose.1, metadata={op_name="jit(_solve_triangular)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="input_transpose_fusion.1"}
+  %bitcast.58.0 = c128[960,30720]{0,1} bitcast(%input_transpose_fusion.1), metadata={scheduling_name="bitcast.58.0"}
+  %triangular-solve.1.0 = (c128[960,30720]{0,1}, s8[0]{0}) custom-call(%bitcast.51.0, %bitcast.58.0), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_solve_triangular)/jit(main)/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="triangular-solve.1.0"}, backend_config={"left_side":true,"lower":true,"unit_diagonal":false,"transpose_a":"NO_TRANSPOSE"}
+  %get-tuple-element.1 = c128[960,30720]{0,1} get-tuple-element(%triangular-solve.1.0), index=0, metadata={op_name="jit(_solve_triangular)/jit(main)/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="get-tuple-element.1"}
+  %input_transpose_fusion = c128[960,30720]{1,0} fusion(%get-tuple-element.1), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_solve_triangular)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="input_transpose_fusion"}
+  ROOT %bitcast.44.0 = c128[960,960,32]{2,1,0} bitcast(%input_transpose_fusion), metadata={op_name="jit(_solve_triangular)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="bitcast.44.0"}
+}
+

@@ -1,0 +1,15 @@
+HloModule jit_matmul, is_scheduled=true, entry_computation_layout={(c128[1024,200]{1,0}, f64[200,20]{1,0})->c128[1024,20]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="4d62ab7f739391d94991c29fb00f4856"}
+
+%wrapped_convert_computation (param_0: f64[200,20]) -> c128[200,20] {
+  %param_0 = f64[200,20]{1,0} parameter(0), metadata={scheduling_name="param_0"}
+  ROOT %convert.2.1 = c128[200,20]{1,0} convert(%param_0), metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=296 scheduling_name="convert.2.1"}
+}
+
+ENTRY %main.5 (Arg_0.1.0: c128[1024,200], Arg_1.2.0: f64[200,20]) -> c128[1024,20] {
+  %Arg_1.2.0 = f64[200,20]{1,0} parameter(1), metadata={op_name="b" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[1024,200]{1,0} parameter(0), metadata={op_name="a" scheduling_name="Arg_0.1.0"}
+  %wrapped_convert = c128[200,20]{1,0} fusion(%Arg_1.2.0), kind=kLoop, calls=%wrapped_convert_computation, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=296 scheduling_name="wrapped_convert"}
+  %custom-call.1.0 = (c128[1024,20]{1,0}, s8[3340800]{0}) custom-call(%Arg_0.1.0, %wrapped_convert), custom_call_target="__cublas$gemm", metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=296 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"204800","rhs_stride":"4000","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  ROOT %get-tuple-element.1 = c128[1024,20]{1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=296 scheduling_name="get-tuple-element.1"}
+}
+

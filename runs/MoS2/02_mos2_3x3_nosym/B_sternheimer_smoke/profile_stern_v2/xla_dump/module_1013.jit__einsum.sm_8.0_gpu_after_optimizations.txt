@@ -1,0 +1,53 @@
+HloModule jit__einsum, is_scheduled=true, entry_computation_layout={(f64[9,1963,3]{2,1,0}, f64[3,3]{1,0}, f64[9,1963,3]{2,1,0}, f64[1963,3]{1,0}, f64[1963,3]{1,0})->(f64[9,1963]{1,0}, f64[1963,9]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="ffd8c848411a19781482ea91be207ac2"}
+
+%scalar_add_computation (scalar_lhs: f64[], scalar_rhs: f64[]) -> f64[] {
+  %scalar_rhs = f64[] parameter(1), metadata={scheduling_name="scalar_rhs"}
+  %scalar_lhs = f64[] parameter(0), metadata={scheduling_name="scalar_lhs"}
+  ROOT %add.5 = f64[] add(%scalar_lhs, %scalar_rhs), metadata={scheduling_name="add.5"}
+}
+
+%fused_transpose (param_0.10: f64[1963,9], param_1.24: f64[9,1963,3], param_2.14: f64[1963,3]) -> f64[1963,9] {
+  %param_0.10 = f64[1963,9]{1,0} parameter(0), metadata={scheduling_name="param_0.10"}
+  %param_1.24 = f64[9,1963,3]{2,1,0} parameter(1), metadata={scheduling_name="param_1.24"}
+  %param_2.14 = f64[1963,3]{1,0} parameter(2), metadata={scheduling_name="param_2.14"}
+  %broadcast.9.3 = f64[9,1963,3]{2,1,0} broadcast(%param_2.14), dimensions={1,2}, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="broadcast.9.3"}
+  %multiply.13.3 = f64[9,1963,3]{2,1,0} multiply(%param_1.24, %broadcast.9.3), metadata={scheduling_name="multiply.13.3"}
+  %constant_10 = f64[] constant(0)
+  %reduce.6.3 = f64[9,1963]{1,0} reduce(%multiply.13.3, %constant_10), dimensions={2}, to_apply=%scalar_add_computation, metadata={scheduling_name="reduce.6.3"}
+  %transpose.22.1 = f64[1963,9]{1,0} transpose(%reduce.6.3), dimensions={1,0}, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="transpose.22.1"}
+  ROOT %add.6.1 = f64[1963,9]{1,0} add(%param_0.10, %transpose.22.1), metadata={op_name="jit(_einsum)/jit(main)/add_any" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="add.6.1"}
+}
+
+%fused_reduce_transpose (param_0.17: f64[3,17667], param_1.23: f64[1963,3], param_2.16: f64[9,1963,3]) -> (f64[1963,9], f64[9,1963]) {
+  %param_1.23 = f64[1963,3]{1,0} parameter(1), metadata={scheduling_name="param_1.23"}
+  %broadcast.8.3 = f64[9,1963,3]{2,1,0} broadcast(%param_1.23), dimensions={1,2}, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="broadcast.8.3"}
+  %param_0.17 = f64[3,17667]{0,1} parameter(0), metadata={scheduling_name="param_0.17"}
+  %bitcast.140.8 = f64[9,1963,3]{2,1,0} bitcast(%param_0.17), metadata={scheduling_name="bitcast.140.8"}
+  %multiply.12.5 = f64[9,1963,3]{2,1,0} multiply(%broadcast.8.3, %bitcast.140.8), metadata={scheduling_name="multiply.12.5"}
+  %constant_9 = f64[] constant(0)
+  %reduce.7.3 = f64[9,1963]{1,0} reduce(%multiply.12.5, %constant_9), dimensions={2}, to_apply=%scalar_add_computation, metadata={scheduling_name="reduce.7.3"}
+  %transpose.21.1 = f64[1963,9]{1,0} transpose(%reduce.7.3), dimensions={1,0}, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="transpose.21.1"}
+  %param_2.16 = f64[9,1963,3]{2,1,0} parameter(2), metadata={scheduling_name="param_2.16"}
+  %multiply.11.3.clone.1 = f64[9,1963,3]{2,1,0} multiply(%param_2.16, %bitcast.140.8), metadata={scheduling_name="multiply.11.3.clone.1"}
+  %reduce.9.clone.1 = f64[9,1963]{1,0} reduce(%multiply.11.3.clone.1, %constant_9), dimensions={2}, to_apply=%scalar_add_computation, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="reduce.9.clone.1"}
+  ROOT %tuple = (f64[1963,9]{1,0}, f64[9,1963]{1,0}) tuple(%transpose.21.1, %reduce.9.clone.1), metadata={scheduling_name="tuple"}
+}
+
+ENTRY %main.13 (Arg_0.1.0: f64[9,1963,3], Arg_1.2.0: f64[3,3], Arg_2.3.0: f64[9,1963,3], Arg_3.4.0: f64[1963,3], Arg_4.5.0: f64[1963,3]) -> (f64[9,1963], f64[1963,9]) {
+  %Arg_1.2.0 = f64[3,3]{1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[9,1963,3]{2,1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %Arg_2.3.0 = f64[9,1963,3]{2,1,0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %Arg_4.5.0 = f64[1963,3]{1,0} parameter(4), metadata={scheduling_name="Arg_4.5.0"}
+  %Arg_3.4.0 = f64[1963,3]{1,0} parameter(3), metadata={scheduling_name="Arg_3.4.0"}
+  %bitcast.137.0 = f64[3,17667]{0,1} bitcast(%Arg_0.1.0), metadata={scheduling_name="bitcast.137.0"}
+  %custom-call.2.0 = (f64[3,17667]{0,1}, s8[424080]{0}) custom-call(%Arg_1.2.0, %bitcast.137.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="custom-call.2.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["0"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"9","rhs_stride":"53001","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.2 = f64[3,17667]{0,1} get-tuple-element(%custom-call.2.0), index=0, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="get-tuple-element.2"}
+  %input_reduce_transpose_fusion = (f64[1963,9]{1,0}, f64[9,1963]{1,0}) fusion(%get-tuple-element.2, %Arg_4.5.0, %Arg_2.3.0), kind=kInput, calls=%fused_reduce_transpose, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="input_reduce_transpose_fusion"}
+  %get-tuple-element.3 = f64[1963,9]{1,0} get-tuple-element(%input_reduce_transpose_fusion), index=0, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="get-tuple-element.3"}
+  %custom-call.3.0 = (f64[1963,3]{1,0}, s8[47184]{0}) custom-call(%Arg_3.4.0, %Arg_1.2.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="custom-call.3.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"5889","rhs_stride":"9","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.1.0 = f64[1963,3]{1,0} get-tuple-element(%custom-call.3.0), index=0, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="get-tuple-element.1.0"}
+  %input_transpose_fusion = f64[1963,9]{1,0} fusion(%get-tuple-element.3, %Arg_2.3.0, %get-tuple-element.1.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_einsum)/jit(main)/add_any" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="input_transpose_fusion"}
+  %get-tuple-element.4 = f64[9,1963]{1,0} get-tuple-element(%input_reduce_transpose_fusion), index=1, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="get-tuple-element.4"}
+  ROOT %tuple.12.0 = (f64[9,1963]{1,0}, f64[1963,9]{1,0}) tuple(%get-tuple-element.4, %input_transpose_fusion), metadata={scheduling_name="tuple.12.0"}
+}
+

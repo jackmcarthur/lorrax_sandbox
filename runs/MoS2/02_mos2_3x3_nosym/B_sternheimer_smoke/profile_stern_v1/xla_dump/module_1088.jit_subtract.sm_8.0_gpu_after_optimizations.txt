@@ -1,0 +1,23 @@
+HloModule jit_subtract, is_scheduled=true, entry_computation_layout={(c128[26,2,1917]{2,1,0}, c128[26,2,1917]{2,1,0}, c128[26,2,1917]{2,1,0})->(c128[26,2,1917]{2,1,0}, c128[26,2,1917]{2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="df8e2d4a387982d2e3ae05ff209d8794"}
+
+%copy_horizontally_fused_computation (param_0_0: c128[26,2,1917], param_0_1: c128[26,2,1917], param_1_0: c128[26,2,1917]) -> (c128[26,2,1917], c128[26,2,1917]) {
+  %param_0_0 = c128[26,2,1917]{2,1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %param_0_1 = c128[26,2,1917]{2,1,0} parameter(1), metadata={scheduling_name="param_0_1"}
+  %subtract.2.2 = c128[26,2,1917]{2,1,0} subtract(%param_0_0, %param_0_1), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=107 scheduling_name="subtract.2.2"}
+  %param_1_0 = c128[26,2,1917]{2,1,0} parameter(2), metadata={scheduling_name="param_1_0"}
+  %copy.2 = c128[26,2,1917]{2,1,0} copy(%param_1_0), metadata={scheduling_name="copy.2"}
+  ROOT %tuple.1 = (c128[26,2,1917]{2,1,0}, c128[26,2,1917]{2,1,0}) tuple(%subtract.2.2, %copy.2), metadata={scheduling_name="tuple.1"}
+}
+
+ENTRY %main.6 (Arg_0.1.0: c128[26,2,1917], Arg_1.2.0: c128[26,2,1917], Arg_2.3.0: c128[26,2,1917]) -> (c128[26,2,1917], c128[26,2,1917]) {
+  %Arg_2.3.0 = c128[26,2,1917]{2,1,0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = c128[26,2,1917]{2,1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[26,2,1917]{2,1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %copy_fusion = (c128[26,2,1917]{2,1,0}, c128[26,2,1917]{2,1,0}) fusion(%Arg_0.1.0, %Arg_1.2.0, %Arg_2.3.0), kind=kLoop, calls=%copy_horizontally_fused_computation, metadata={scheduling_name="copy_fusion"}
+  %get-tuple-element.3 = c128[26,2,1917]{2,1,0} get-tuple-element(%copy_fusion), index=1, metadata={scheduling_name="get-tuple-element.3"}
+  %get-tuple-element.2 = c128[26,2,1917]{2,1,0} get-tuple-element(%copy_fusion), index=0, metadata={scheduling_name="get-tuple-element.2"}
+  %bitcast.21 = c128[26,2,1917]{2,1,0} bitcast(%get-tuple-element.2), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=107 scheduling_name="bitcast.21"}
+  %bitcast.22 = c128[26,2,1917]{2,1,0} bitcast(%get-tuple-element.3), metadata={scheduling_name="bitcast.22"}
+  ROOT %tuple = (c128[26,2,1917]{2,1,0}, c128[26,2,1917]{2,1,0}) tuple(%bitcast.21, %bitcast.22), metadata={scheduling_name="tuple"}
+}
+

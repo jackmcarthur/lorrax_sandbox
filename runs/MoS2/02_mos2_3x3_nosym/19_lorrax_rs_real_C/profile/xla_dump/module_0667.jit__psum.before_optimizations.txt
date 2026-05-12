@@ -1,0 +1,16 @@
+HloModule jit__psum, entry_computation_layout={(c128[4,21,9,80,80]{4,3,2,1,0})->c128[21,9,80,80]{3,2,1,0}}, num_partitions=4
+
+%region_0.3 (Arg_0.4: c128[], Arg_1.5: c128[]) -> c128[] {
+  %Arg_0.4 = c128[] parameter(0), metadata={op_name="jit(_psum)/jit(main)/reduce_sum"}
+  %Arg_1.5 = c128[] parameter(1), metadata={op_name="jit(_psum)/jit(main)/reduce_sum"}
+  ROOT %add.6 = c128[] add(%Arg_0.4, %Arg_1.5), metadata={op_name="jit(_psum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=917}
+}
+
+ENTRY %main.10 (Arg_0.1: c128[4,21,9,80,80]) -> c128[21,9,80,80] {
+  %Arg_0.1 = c128[4,21,9,80,80]{4,3,2,1,0} parameter(0), sharding={devices=[4,1,1,1,1]<=[4]}, metadata={op_name="x"}
+  %constant.2 = c128[] constant((0, 0))
+  %reduce.7 = c128[21,9,80,80]{3,2,1,0} reduce(%Arg_0.1, %constant.2), dimensions={0}, to_apply=%region_0.3, metadata={op_name="jit(_psum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=917}
+  %tuple.8 = (c128[21,9,80,80]{3,2,1,0}) tuple(%reduce.7)
+  ROOT %get-tuple-element.9 = c128[21,9,80,80]{3,2,1,0} get-tuple-element(%tuple.8), index=0, sharding={replicated}
+}
+

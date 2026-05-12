@@ -1,0 +1,17 @@
+HloModule jit__where, is_scheduled=true, entry_computation_layout={(pred[9,320,320]{2,1,0}, f64[9,320,320]{2,1,0}, f64[])->f64[9,320,320]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="cc5de76853e4dad1149ba422859c4032"}
+
+%fused_select (param_0: pred[9,320,320], param_1: f64[9,320,320], param_2.1: f64[]) -> f64[9,320,320] {
+  %param_0 = pred[9,320,320]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1 = f64[9,320,320]{2,1,0} parameter(1), metadata={scheduling_name="param_1"}
+  %param_2.1 = f64[] parameter(2), metadata={scheduling_name="param_2.1"}
+  %broadcast.3.1 = f64[9,320,320]{2,1,0} broadcast(%param_2.1), dimensions={}, metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/minimax_screening.py" source_line=454 scheduling_name="broadcast.3.1"}
+  ROOT %select.3.1 = f64[9,320,320]{2,1,0} select(%param_0, %param_1, %broadcast.3.1), metadata={op_name="jit(_where)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/minimax_screening.py" source_line=454 scheduling_name="select.3.1"}
+}
+
+ENTRY %main.6_spmd (param.3: pred[9,320,320], param.1.0: f64[9,320,320], param.2.0: f64[]) -> f64[9,320,320] {
+  %param.2.0 = f64[] parameter(2), sharding={replicated}, metadata={op_name="y" scheduling_name="param.2.0"}
+  %param.1.0 = f64[9,320,320]{2,1,0} parameter(1), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="x" scheduling_name="param.1.0"}
+  %param.3 = pred[9,320,320]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="condition" scheduling_name="param.3"}
+  ROOT %loop_select_fusion = f64[9,320,320]{2,1,0} fusion(%param.3, %param.1.0, %param.2.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_where)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/minimax_screening.py" source_line=454 scheduling_name="loop_select_fusion"}
+}
+

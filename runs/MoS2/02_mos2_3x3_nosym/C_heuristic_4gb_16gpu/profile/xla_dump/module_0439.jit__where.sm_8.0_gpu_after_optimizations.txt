@@ -1,0 +1,17 @@
+HloModule jit__where, is_scheduled=true, entry_computation_layout={(pred[1,9,54,26]{3,2,1,0}, c128[1,9,54,26]{3,2,1,0}, c128[])->c128[1,9,54,26]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="8a7c1106429a6606d3964b5edeada2a1"}
+
+%fused_select (param_0: pred[1,9,54,26], param_1: c128[1,9,54,26], param_2.1: c128[]) -> c128[1,9,54,26] {
+  %param_0 = pred[1,9,54,26]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1 = c128[1,9,54,26]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1"}
+  %param_2.1 = c128[] parameter(2), metadata={scheduling_name="param_2.1"}
+  %broadcast.5.1 = c128[1,9,54,26]{3,2,1,0} broadcast(%param_2.1), dimensions={}, metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/chi_from_dipole.py" source_line=55 scheduling_name="broadcast.5.1"}
+  ROOT %select.2.1 = c128[1,9,54,26]{3,2,1,0} select(%param_0, %param_1, %broadcast.5.1), metadata={op_name="jit(_where)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/chi_from_dipole.py" source_line=55 scheduling_name="select.2.1"}
+}
+
+ENTRY %main.7 (Arg_0.1.0: pred[1,9,54,26], Arg_1.2.0: c128[1,9,54,26], Arg_2.3.0: c128[]) -> c128[1,9,54,26] {
+  %Arg_2.3.0 = c128[] parameter(2), metadata={op_name="y" scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = c128[1,9,54,26]{3,2,1,0} parameter(1), metadata={op_name="x" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = pred[1,9,54,26]{3,2,1,0} parameter(0), metadata={op_name="condition" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_select_fusion = c128[1,9,54,26]{3,2,1,0} fusion(%Arg_0.1.0, %Arg_1.2.0, %Arg_2.3.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_where)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/chi_from_dipole.py" source_line=55 scheduling_name="loop_select_fusion"}
+}
+

@@ -1,0 +1,18 @@
+HloModule jit__init_accum, is_scheduled=true, entry_computation_layout={()->(c128[64,240,240]{2,1,0}, c128[64,240]{1,0})}, allow_spmd_sharding_propagation_to_output={false,false}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="05a841436338be6ba416758089f9c93b"}
+
+%fused_broadcast () -> c128[64,240] {
+  %constant_5 = c128[] constant((0, 0))
+  ROOT %broadcast.11.1 = c128[64,240]{1,0} broadcast(%constant_5), dimensions={}, metadata={scheduling_name="broadcast.11.1"}
+}
+
+%fused_broadcast.1 () -> c128[64,240,240] {
+  %constant_6 = c128[] constant((0, 0))
+  ROOT %broadcast.10.1 = c128[64,240,240]{2,1,0} broadcast(%constant_6), dimensions={}, metadata={scheduling_name="broadcast.10.1"}
+}
+
+ENTRY %main.8_spmd () -> (c128[64,240,240], c128[64,240]) {
+  %loop_broadcast_fusion = c128[64,240]{1,0} fusion(), kind=kLoop, calls=%fused_broadcast, metadata={scheduling_name="loop_broadcast_fusion"}
+  %loop_broadcast_fusion.1 = c128[64,240,240]{2,1,0} fusion(), kind=kLoop, calls=%fused_broadcast.1, metadata={scheduling_name="loop_broadcast_fusion.1"}
+  ROOT %tuple.1 = (c128[64,240,240]{2,1,0}, c128[64,240]{1,0}) tuple(%loop_broadcast_fusion.1, %loop_broadcast_fusion), metadata={scheduling_name="tuple.1"}
+}
+

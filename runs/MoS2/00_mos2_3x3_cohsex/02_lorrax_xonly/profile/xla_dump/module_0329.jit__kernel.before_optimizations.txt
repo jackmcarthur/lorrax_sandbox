@@ -1,0 +1,252 @@
+HloModule jit__kernel, input_output_alias={ {0}: (0, {}, may-alias), {1}: (1, {}, may-alias) }, entry_computation_layout={(c128[9,640,640]{2,1,0}, c128[9,640]{1,0}, c128[9,46080,640]{2,1,0}, c128[9,2419]{1,0}, f64[9,3]{1,0}, /*index=5*/s32[], s32[], s32[])->(c128[9,640,640]{2,1,0}, c128[9,640]{1,0})}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,false,false,false,false}, allow_spmd_sharding_propagation_to_output={false,false}, num_partitions=4
+
+%fft.151 (Arg_0.152: c128[9,160,24,24,80]) -> c128[9,160,24,24,80] {
+  %Arg_0.152 = c128[9,160,24,24,80]{4,3,2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/pjit"}
+  ROOT %fft.153 = c128[9,160,24,24,80]{4,3,2,1,0} fft(%Arg_0.152), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/fft_helpers.py" source_line=343}
+}
+
+%shmap_body.154 (Arg_0.155: c128[9,160,24,24,80]) -> c128[9,160,24,24,80] {
+  %Arg_0.155 = c128[9,160,24,24,80]{4,3,2,1,0} parameter(0), metadata={op_name="[None, (\'x\', \'y\'), None, None, None]"}
+  ROOT %call.156 = c128[9,160,24,24,80]{4,3,2,1,0} call(%Arg_0.155), to_apply=%fft.151
+}
+
+%_where.164 (Arg_0.165: pred[2419], Arg_1.166: s32[2419], Arg_2.167: s32[2419]) -> s32[2419] {
+  %Arg_0.165 = pred[2419]{0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/pjit"}
+  %Arg_1.166 = s32[2419]{0} parameter(1), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/pjit"}
+  %Arg_2.167 = s32[2419]{0} parameter(2), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/pjit"}
+  ROOT %select.168 = s32[2419]{0} select(%Arg_0.165, %Arg_1.166, %Arg_2.167), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/jit(_where)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+}
+
+%region_0.169 (Arg_0.170: pred[], Arg_1.171: pred[]) -> pred[] {
+  %Arg_0.170 = pred[] parameter(0), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/reduce_and"}
+  %Arg_1.171 = pred[] parameter(1), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/reduce_and"}
+  ROOT %and.172 = pred[] and(%Arg_0.170, %Arg_1.171), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/reduce_and" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+}
+
+%_take.173 (Arg_0.174: c128[9,640,46080], Arg_1.175: s32[2419]) -> c128[9,640,2419] {
+  %Arg_1.175 = s32[2419]{0} parameter(1), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %constant.185 = s32[] constant(0)
+  %broadcast.186 = s32[2419]{0} broadcast(%constant.185), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+  %compare.187 = pred[2419]{0} compare(%Arg_1.175, %broadcast.186), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+  %constant.182 = s32[] constant(46080)
+  %broadcast.183 = s32[2419]{0} broadcast(%constant.182), dimensions={}
+  %add.188 = s32[2419]{0} add(%Arg_1.175, %broadcast.183), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+  %call.189 = s32[2419]{0} call(%compare.187, %add.188, %Arg_1.175), to_apply=%_where.164
+  %reshape.190 = s32[2419,1]{1,0} reshape(%call.189), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+  %convert.191 = s64[2419,1]{1,0} convert(%reshape.190), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+  %constant.180 = s64[] constant(0)
+  %broadcast.181 = s64[2419,1]{1,0} broadcast(%constant.180), dimensions={}
+  %compare.192 = pred[2419,1]{1,0} compare(%convert.191, %broadcast.181), direction=GE, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/ge" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+  %constant.178 = s64[] constant(46079)
+  %broadcast.179 = s64[2419,1]{1,0} broadcast(%constant.178), dimensions={}
+  %compare.193 = pred[2419,1]{1,0} compare(%convert.191, %broadcast.179), direction=LE, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/le" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+  %and.194 = pred[2419,1]{1,0} and(%compare.192, %compare.193), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/and" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+  %constant.184 = pred[] constant(true)
+  %reduce.195 = pred[2419]{0} reduce(%and.194, %constant.184), dimensions={1}, to_apply=%region_0.169, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/reduce_and" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+  %broadcast.197 = pred[9,640,2419]{2,1,0} broadcast(%reduce.195), dimensions={2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+  %Arg_0.174 = c128[9,640,46080]{2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %gather.196 = c128[9,640,2419]{2,1,0} gather(%Arg_0.174, %convert.191), offset_dims={0,1}, collapsed_slice_dims={2}, start_index_map={2}, index_vector_dim=1, slice_sizes={9,640,1}, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+  %constant.176 = c128[] constant((nan, 0))
+  %broadcast.177 = c128[9,640,2419]{2,1,0} broadcast(%constant.176), dimensions={}
+  ROOT %select.198 = c128[9,640,2419]{2,1,0} select(%broadcast.197, %gather.196, %broadcast.177), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=692}
+}
+
+ENTRY %main.238 (Arg_0.1: c128[9,640,640], Arg_1.2: c128[9,640], Arg_2.3: c128[9,46080,640], Arg_3.4: c128[9,2419], Arg_4.5: f64[9,3], Arg_5.6: s32[], Arg_6.7: s32[], Arg_7.8: s32[]) -> (c128[9,640,640], c128[9,640]) {
+  %Arg_0.1 = c128[9,640,640]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="V_acc"}
+  %Arg_2.3 = c128[9,46080,640]{2,1,0} parameter(2), sharding={devices=[1,1,4]<=[4]}, metadata={op_name="zeta_L_disk"}
+  %transpose.31 = c128[9,640,46080]{1,2,0} transpose(%Arg_2.3), dimensions={0,2,1}, metadata={op_name="jit(_kernel)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=681}
+  %custom-call.32 = c128[9,640,46080]{2,1,0} custom-call(%transpose.31), custom_call_target="Sharding", sharding={devices=[1,4,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=680}
+  %reshape.33 = c128[9,640,24,24,80]{4,3,2,1,0} reshape(%custom-call.32), metadata={op_name="jit(_kernel)/jit(main)/reshape" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=683}
+  %Arg_4.5 = f64[9,3]{1,0} parameter(4), sharding={replicated}, metadata={op_name="qvec_batch_frac"}
+  %slice.40 = f64[9,1]{1,0} slice(%Arg_4.5), slice={[0:9], [0:1]}, metadata={op_name="jit(_kernel)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %convert.41 = c128[9,1]{1,0} convert(%slice.40), metadata={op_name="jit(_kernel)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %constant.9 = c128[] constant((0, -6.2831853071795862))
+  %broadcast.10 = c128[9,1]{1,0} broadcast(%constant.9), dimensions={}
+  %multiply.42 = c128[9,1]{1,0} multiply(%convert.41, %broadcast.10), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %broadcast.45 = c128[9,1]{1,0} broadcast(%multiply.42), dimensions={0,1}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %reshape.46 = c128[9]{0} reshape(%broadcast.45), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %broadcast.47 = c128[9,24]{1,0} broadcast(%reshape.46), dimensions={0}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %iota.34 = f64[24]{0} iota(), iota_dimension=0, metadata={op_name="jit(_kernel)/jit(main)/iota" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=398}
+  %constant.13 = f64[] constant(24)
+  %broadcast.14 = f64[24]{0} broadcast(%constant.13), dimensions={}
+  %divide.35 = f64[24]{0} divide(%iota.34, %broadcast.14), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=398}
+  %reshape.43 = f64[1,24]{1,0} reshape(%divide.35), metadata={op_name="jit(_kernel)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %convert.44 = c128[1,24]{1,0} convert(%reshape.43), metadata={op_name="jit(_kernel)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %broadcast.48 = c128[1,24]{1,0} broadcast(%convert.44), dimensions={0,1}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %reshape.49 = c128[24]{0} reshape(%broadcast.48), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %broadcast.50 = c128[9,24]{1,0} broadcast(%reshape.49), dimensions={1}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %multiply.51 = c128[9,24]{1,0} multiply(%broadcast.47, %broadcast.50), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %real.52 = f64[9,24]{1,0} real(%multiply.51), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %exponential.53 = f64[9,24]{1,0} exponential(%real.52), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %constant.25 = f64[] constant(inf)
+  %broadcast.26 = f64[9,24]{1,0} broadcast(%constant.25), dimensions={}
+  %compare.54 = pred[9,24]{1,0} compare(%exponential.53, %broadcast.26), direction=EQ, metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %constant.23 = f64[] constant(0.5)
+  %broadcast.24 = f64[9,24]{1,0} broadcast(%constant.23), dimensions={}
+  %multiply.55 = f64[9,24]{1,0} multiply(%real.52, %broadcast.24), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %exponential.56 = f64[9,24]{1,0} exponential(%multiply.55), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %imag.57 = f64[9,24]{1,0} imag(%multiply.51), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %cosine.58 = f64[9,24]{1,0} cosine(%imag.57), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %multiply.59 = f64[9,24]{1,0} multiply(%exponential.56, %cosine.58), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %multiply.60 = f64[9,24]{1,0} multiply(%multiply.59, %exponential.56), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %multiply.61 = f64[9,24]{1,0} multiply(%exponential.53, %cosine.58), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %select.62 = f64[9,24]{1,0} select(%compare.54, %multiply.60, %multiply.61), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %constant.21 = f64[] constant(0)
+  %broadcast.22 = f64[9,24]{1,0} broadcast(%constant.21), dimensions={}
+  %compare.63 = pred[9,24]{1,0} compare(%imag.57, %broadcast.22), direction=EQ, metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %sine.64 = f64[9,24]{1,0} sine(%imag.57), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %multiply.65 = f64[9,24]{1,0} multiply(%exponential.56, %sine.64), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %multiply.66 = f64[9,24]{1,0} multiply(%multiply.65, %exponential.56), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %multiply.67 = f64[9,24]{1,0} multiply(%exponential.53, %sine.64), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %select.68 = f64[9,24]{1,0} select(%compare.54, %multiply.66, %multiply.67), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %select.69 = f64[9,24]{1,0} select(%compare.63, %broadcast.22, %select.68), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %complex.70 = c128[9,24]{1,0} complex(%select.62, %select.69), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=404}
+  %reshape.133 = c128[9,1,24,1,1]{4,3,2,1,0} reshape(%complex.70), metadata={op_name="jit(_kernel)/jit(main)/reshape" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=412}
+  %broadcast.136 = c128[9,1,24,1,1]{4,3,2,1,0} broadcast(%reshape.133), dimensions={0,1,2,3,4}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416}
+  %reshape.137 = c128[9,24]{1,0} reshape(%broadcast.136), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416}
+  %broadcast.138 = c128[9,640,24,24,80]{4,3,2,1,0} broadcast(%reshape.137), dimensions={0,2}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416}
+  %multiply.139 = c128[9,640,24,24,80]{4,3,2,1,0} multiply(%reshape.33, %broadcast.138), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416}
+  %slice.71 = f64[9,1]{1,0} slice(%Arg_4.5), slice={[0:9], [1:2]}, metadata={op_name="jit(_kernel)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %convert.72 = c128[9,1]{1,0} convert(%slice.71), metadata={op_name="jit(_kernel)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %multiply.73 = c128[9,1]{1,0} multiply(%convert.72, %broadcast.10), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %broadcast.76 = c128[9,1]{1,0} broadcast(%multiply.73), dimensions={0,1}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %reshape.77 = c128[9]{0} reshape(%broadcast.76), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %broadcast.78 = c128[9,24]{1,0} broadcast(%reshape.77), dimensions={0}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %iota.36 = f64[24]{0} iota(), iota_dimension=0, metadata={op_name="jit(_kernel)/jit(main)/iota" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=399}
+  %divide.37 = f64[24]{0} divide(%iota.36, %broadcast.14), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=399}
+  %reshape.74 = f64[1,24]{1,0} reshape(%divide.37), metadata={op_name="jit(_kernel)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %convert.75 = c128[1,24]{1,0} convert(%reshape.74), metadata={op_name="jit(_kernel)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %broadcast.79 = c128[1,24]{1,0} broadcast(%convert.75), dimensions={0,1}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %reshape.80 = c128[24]{0} reshape(%broadcast.79), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %broadcast.81 = c128[9,24]{1,0} broadcast(%reshape.80), dimensions={1}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %multiply.82 = c128[9,24]{1,0} multiply(%broadcast.78, %broadcast.81), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %real.83 = f64[9,24]{1,0} real(%multiply.82), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %exponential.84 = f64[9,24]{1,0} exponential(%real.83), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %compare.85 = pred[9,24]{1,0} compare(%exponential.84, %broadcast.26), direction=EQ, metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %multiply.86 = f64[9,24]{1,0} multiply(%real.83, %broadcast.24), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %exponential.87 = f64[9,24]{1,0} exponential(%multiply.86), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %imag.88 = f64[9,24]{1,0} imag(%multiply.82), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %cosine.89 = f64[9,24]{1,0} cosine(%imag.88), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %multiply.90 = f64[9,24]{1,0} multiply(%exponential.87, %cosine.89), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %multiply.91 = f64[9,24]{1,0} multiply(%multiply.90, %exponential.87), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %multiply.92 = f64[9,24]{1,0} multiply(%exponential.84, %cosine.89), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %select.93 = f64[9,24]{1,0} select(%compare.85, %multiply.91, %multiply.92), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %compare.94 = pred[9,24]{1,0} compare(%imag.88, %broadcast.22), direction=EQ, metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %sine.95 = f64[9,24]{1,0} sine(%imag.88), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %multiply.96 = f64[9,24]{1,0} multiply(%exponential.87, %sine.95), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %multiply.97 = f64[9,24]{1,0} multiply(%multiply.96, %exponential.87), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %multiply.98 = f64[9,24]{1,0} multiply(%exponential.84, %sine.95), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %select.99 = f64[9,24]{1,0} select(%compare.85, %multiply.97, %multiply.98), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %select.100 = f64[9,24]{1,0} select(%compare.94, %broadcast.22, %select.99), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %complex.101 = c128[9,24]{1,0} complex(%select.93, %select.100), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=405}
+  %reshape.134 = c128[9,1,1,24,1]{4,3,2,1,0} reshape(%complex.101), metadata={op_name="jit(_kernel)/jit(main)/reshape" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=413}
+  %broadcast.140 = c128[9,1,1,24,1]{4,3,2,1,0} broadcast(%reshape.134), dimensions={0,1,2,3,4}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416}
+  %reshape.141 = c128[9,24]{1,0} reshape(%broadcast.140), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416}
+  %broadcast.142 = c128[9,640,24,24,80]{4,3,2,1,0} broadcast(%reshape.141), dimensions={0,3}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416}
+  %multiply.143 = c128[9,640,24,24,80]{4,3,2,1,0} multiply(%multiply.139, %broadcast.142), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416}
+  %slice.102 = f64[9,1]{1,0} slice(%Arg_4.5), slice={[0:9], [2:3]}, metadata={op_name="jit(_kernel)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %convert.103 = c128[9,1]{1,0} convert(%slice.102), metadata={op_name="jit(_kernel)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %multiply.104 = c128[9,1]{1,0} multiply(%convert.103, %broadcast.10), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %broadcast.107 = c128[9,1]{1,0} broadcast(%multiply.104), dimensions={0,1}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %reshape.108 = c128[9]{0} reshape(%broadcast.107), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %broadcast.109 = c128[9,80]{1,0} broadcast(%reshape.108), dimensions={0}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %iota.38 = f64[80]{0} iota(), iota_dimension=0, metadata={op_name="jit(_kernel)/jit(main)/iota" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=400}
+  %constant.11 = f64[] constant(80)
+  %broadcast.12 = f64[80]{0} broadcast(%constant.11), dimensions={}
+  %divide.39 = f64[80]{0} divide(%iota.38, %broadcast.12), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=400}
+  %reshape.105 = f64[1,80]{1,0} reshape(%divide.39), metadata={op_name="jit(_kernel)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %convert.106 = c128[1,80]{1,0} convert(%reshape.105), metadata={op_name="jit(_kernel)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %broadcast.110 = c128[1,80]{1,0} broadcast(%convert.106), dimensions={0,1}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %reshape.111 = c128[80]{0} reshape(%broadcast.110), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %broadcast.112 = c128[9,80]{1,0} broadcast(%reshape.111), dimensions={1}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %multiply.113 = c128[9,80]{1,0} multiply(%broadcast.109, %broadcast.112), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %real.114 = f64[9,80]{1,0} real(%multiply.113), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %exponential.115 = f64[9,80]{1,0} exponential(%real.114), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %constant.19 = f64[] constant(inf)
+  %broadcast.20 = f64[9,80]{1,0} broadcast(%constant.19), dimensions={}
+  %compare.116 = pred[9,80]{1,0} compare(%exponential.115, %broadcast.20), direction=EQ, metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %constant.17 = f64[] constant(0.5)
+  %broadcast.18 = f64[9,80]{1,0} broadcast(%constant.17), dimensions={}
+  %multiply.117 = f64[9,80]{1,0} multiply(%real.114, %broadcast.18), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %exponential.118 = f64[9,80]{1,0} exponential(%multiply.117), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %imag.119 = f64[9,80]{1,0} imag(%multiply.113), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %cosine.120 = f64[9,80]{1,0} cosine(%imag.119), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %multiply.121 = f64[9,80]{1,0} multiply(%exponential.118, %cosine.120), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %multiply.122 = f64[9,80]{1,0} multiply(%multiply.121, %exponential.118), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %multiply.123 = f64[9,80]{1,0} multiply(%exponential.115, %cosine.120), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %select.124 = f64[9,80]{1,0} select(%compare.116, %multiply.122, %multiply.123), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %constant.15 = f64[] constant(0)
+  %broadcast.16 = f64[9,80]{1,0} broadcast(%constant.15), dimensions={}
+  %compare.125 = pred[9,80]{1,0} compare(%imag.119, %broadcast.16), direction=EQ, metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %sine.126 = f64[9,80]{1,0} sine(%imag.119), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %multiply.127 = f64[9,80]{1,0} multiply(%exponential.118, %sine.126), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %multiply.128 = f64[9,80]{1,0} multiply(%multiply.127, %exponential.118), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %multiply.129 = f64[9,80]{1,0} multiply(%exponential.115, %sine.126), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %select.130 = f64[9,80]{1,0} select(%compare.116, %multiply.128, %multiply.129), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %select.131 = f64[9,80]{1,0} select(%compare.125, %broadcast.16, %select.130), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %complex.132 = c128[9,80]{1,0} complex(%select.124, %select.131), metadata={op_name="jit(_kernel)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=406}
+  %reshape.135 = c128[9,1,1,1,80]{4,3,2,1,0} reshape(%complex.132), metadata={op_name="jit(_kernel)/jit(main)/reshape" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=414}
+  %broadcast.144 = c128[9,1,1,1,80]{4,3,2,1,0} broadcast(%reshape.135), dimensions={0,1,2,3,4}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416}
+  %reshape.145 = c128[9,80]{1,0} reshape(%broadcast.144), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416}
+  %broadcast.146 = c128[9,640,24,24,80]{4,3,2,1,0} broadcast(%reshape.145), dimensions={0,4}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416}
+  %multiply.147 = c128[9,640,24,24,80]{4,3,2,1,0} multiply(%multiply.143, %broadcast.146), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/wfn_transforms.py" source_line=416}
+  %custom-call.148 = c128[9,640,24,24,80]{4,3,2,1,0} custom-call(%multiply.147), custom_call_target="Sharding", sharding={devices=[1,4,1,1,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=686}
+  %custom-call.149 = c128[9,640,24,24,80]{4,3,2,1,0} custom-call(%custom-call.148), custom_call_target="Sharding", sharding={devices=[1,4,1,1,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=687}
+  %custom-call.150 = c128[9,160,24,24,80]{4,3,2,1,0} custom-call(%custom-call.149), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=687}
+  %call.157 = c128[9,160,24,24,80]{4,3,2,1,0} call(%custom-call.150), to_apply=%shmap_body.154
+  %custom-call.158 = c128[9,160,24,24,80]{4,3,2,1,0} custom-call(%call.157), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=687}
+  %custom-call.159 = c128[9,640,24,24,80]{4,3,2,1,0} custom-call(%custom-call.158), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,4,1,1,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=687}
+  %reshape.160 = c128[9,640,46080]{2,1,0} reshape(%custom-call.159), metadata={op_name="jit(_kernel)/jit(main)/reshape" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=689}
+  %custom-call.161 = c128[9,640,46080]{2,1,0} custom-call(%reshape.160), custom_call_target="Sharding", sharding={devices=[1,4,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=688}
+  %constant.30 = s32[2419]{0} constant({...})
+  %call.199 = c128[9,640,2419]{2,1,0} call(%custom-call.161, %constant.30), to_apply=%_take.173
+  %custom-call.200 = c128[9,640,2419]{2,1,0} custom-call(%call.199), custom_call_target="Sharding", sharding={devices=[1,4,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=695}
+  %custom-call.201 = c128[9,640,2419]{2,1,0} custom-call(%custom-call.200), custom_call_target="Sharding", sharding={devices=[1,2,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=717}
+  %Arg_3.4 = c128[9,2419]{1,0} parameter(3), sharding={replicated}, metadata={op_name="v_per_G_batch"}
+  %reshape.203 = c128[9,1,2419]{2,1,0} reshape(%Arg_3.4), metadata={op_name="jit(_kernel)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=724}
+  %broadcast.204 = c128[9,1,2419]{2,1,0} broadcast(%reshape.203), dimensions={0,1,2}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=724}
+  %reshape.205 = c128[9,2419]{1,0} reshape(%broadcast.204), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=724}
+  %broadcast.206 = c128[9,640,2419]{2,1,0} broadcast(%reshape.205), dimensions={0,2}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=724}
+  %multiply.207 = c128[9,640,2419]{2,1,0} multiply(%custom-call.201, %broadcast.206), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=724}
+  %custom-call.208 = c128[9,640,2419]{2,1,0} custom-call(%multiply.207), custom_call_target="Sharding", sharding={devices=[1,2,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=723}
+  %real.209 = f64[9,640,2419]{2,1,0} real(%custom-call.208), metadata={op_name="jit(_kernel)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=727}
+  %imag.210 = f64[9,640,2419]{2,1,0} imag(%custom-call.208), metadata={op_name="jit(_kernel)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=727}
+  %negate.211 = f64[9,640,2419]{2,1,0} negate(%imag.210), metadata={op_name="jit(_kernel)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=727}
+  %complex.212 = c128[9,640,2419]{2,1,0} complex(%real.209, %negate.211), metadata={op_name="jit(_kernel)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=727}
+  %custom-call.202 = c128[9,640,2419]{2,1,0} custom-call(%custom-call.200), custom_call_target="Sharding", sharding={devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=718}
+  %dot.213 = c128[9,640,640]{2,1,0} dot(%complex.212, %custom-call.202), lhs_batch_dims={0}, lhs_contracting_dims={2}, rhs_batch_dims={0}, rhs_contracting_dims={2}, metadata={op_name="jit(_kernel)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=726}
+  %custom-call.214 = c128[9,640,640]{2,1,0} custom-call(%dot.213), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=729}
+  %Arg_5.6 = s32[] parameter(5), metadata={op_name="q_lo_dyn"}
+  %constant.29 = s32[] constant(0)
+  %compare.215 = pred[] compare(%Arg_5.6, %constant.29), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=731}
+  %constant.28 = s32[] constant(9)
+  %add.216 = s32[] add(%Arg_5.6, %constant.28), metadata={op_name="jit(_kernel)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=731}
+  %select.217 = s32[] select(%compare.215, %add.216, %Arg_5.6), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=731}
+  %Arg_6.7 = s32[] parameter(6), metadata={op_name="mu_lo_dyn"}
+  %compare.218 = pred[] compare(%Arg_6.7, %constant.29), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=731}
+  %constant.27 = s32[] constant(640)
+  %add.219 = s32[] add(%Arg_6.7, %constant.27), metadata={op_name="jit(_kernel)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=731}
+  %select.220 = s32[] select(%compare.218, %add.219, %Arg_6.7), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=731}
+  %Arg_7.8 = s32[] parameter(7), metadata={op_name="nu_lo_dyn"}
+  %compare.221 = pred[] compare(%Arg_7.8, %constant.29), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=731}
+  %add.222 = s32[] add(%Arg_7.8, %constant.27), metadata={op_name="jit(_kernel)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=731}
+  %select.223 = s32[] select(%compare.221, %add.222, %Arg_7.8), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=731}
+  %dynamic-update-slice.224 = c128[9,640,640]{2,1,0} dynamic-update-slice(%Arg_0.1, %custom-call.214, %select.217, %select.220, %select.223), metadata={op_name="jit(_kernel)/jit(main)/dynamic_update_slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=731}
+  %custom-call.225 = c128[9,640,640]{2,1,0} custom-call(%dynamic-update-slice.224), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=733}
+  %reshape.235 = c128[9,640,640]{2,1,0} reshape(%custom-call.225), sharding={devices=[1,2,2]<=[4]}
+  %Arg_1.2 = c128[9,640]{1,0} parameter(1), sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="g0_acc"}
+  %slice.162 = c128[9,640,1]{2,1,0} slice(%custom-call.161), slice={[0:9], [0:640], [0:1]}, metadata={op_name="jit(_kernel)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=690}
+  %reshape.163 = c128[9,640]{1,0} reshape(%slice.162), metadata={op_name="jit(_kernel)/jit(main)/squeeze" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=690}
+  %custom-call.226 = c128[9,640]{1,0} custom-call(%reshape.163), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=736}
+  %compare.227 = pred[] compare(%Arg_5.6, %constant.29), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=737}
+  %add.228 = s32[] add(%Arg_5.6, %constant.28), metadata={op_name="jit(_kernel)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=737}
+  %select.229 = s32[] select(%compare.227, %add.228, %Arg_5.6), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=737}
+  %compare.230 = pred[] compare(%Arg_6.7, %constant.29), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=737}
+  %add.231 = s32[] add(%Arg_6.7, %constant.27), metadata={op_name="jit(_kernel)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=737}
+  %select.232 = s32[] select(%compare.230, %add.231, %Arg_6.7), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=737}
+  %dynamic-update-slice.233 = c128[9,640]{1,0} dynamic-update-slice(%Arg_1.2, %custom-call.226, %select.229, %select.232), metadata={op_name="jit(_kernel)/jit(main)/dynamic_update_slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=737}
+  %custom-call.234 = c128[9,640]{1,0} custom-call(%dynamic-update-slice.233), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=739}
+  %reshape.236 = c128[9,640]{1,0} reshape(%custom-call.234), sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}
+  ROOT %tuple.237 = (c128[9,640,640]{2,1,0}, c128[9,640]{1,0}) tuple(%reshape.235, %reshape.236), sharding={{devices=[1,2,2]<=[4]}, {devices=[1,2,2]<=[4] last_tile_dim_replicate}}
+}
+

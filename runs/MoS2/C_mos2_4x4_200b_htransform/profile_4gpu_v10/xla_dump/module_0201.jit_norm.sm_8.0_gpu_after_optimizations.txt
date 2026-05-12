@@ -1,0 +1,21 @@
+HloModule jit_norm, is_scheduled=true, entry_computation_layout={(f64[192,3]{1,0})->f64[192]{0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="5587c2c7001237616257e676146815d7"}
+
+%region_0.4 (Arg_0.5: f64[], Arg_1.6: f64[]) -> f64[] {
+  %Arg_1.6 = f64[] parameter(1), metadata={op_name="jit(norm)/jit(main)/reduce_sum" scheduling_name="Arg_1.6"}
+  %Arg_0.5 = f64[] parameter(0), metadata={op_name="jit(norm)/jit(main)/reduce_sum" scheduling_name="Arg_0.5"}
+  ROOT %add.2 = f64[] add(%Arg_0.5, %Arg_1.6), metadata={op_name="jit(norm)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=728 scheduling_name="add.2"}
+}
+
+%fused_reduce (param_0.3: f64[192,3]) -> f64[192] {
+  %param_0.3 = f64[192,3]{1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %multiply.2.1 = f64[192,3]{1,0} multiply(%param_0.3, %param_0.3), metadata={op_name="jit(norm)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=728 scheduling_name="multiply.2.1"}
+  %constant_2_1 = f64[] constant(0)
+  %reduce.8.1 = f64[192]{0} reduce(%multiply.2.1, %constant_2_1), dimensions={1}, to_apply=%region_0.4, metadata={op_name="jit(norm)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=728 scheduling_name="reduce.8.1"}
+  ROOT %sqrt.2.1 = f64[192]{0} sqrt(%reduce.8.1), metadata={op_name="jit(norm)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=728 scheduling_name="sqrt.2.1"}
+}
+
+ENTRY %main.10 (Arg_0.1.0: f64[192,3]) -> f64[192] {
+  %Arg_0.1.0 = f64[192,3]{1,0} parameter(0), metadata={op_name="x" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_reduce_fusion = f64[192]{0} fusion(%Arg_0.1.0), kind=kLoop, calls=%fused_reduce, metadata={op_name="jit(norm)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=728 scheduling_name="loop_reduce_fusion"}
+}
+

@@ -1,0 +1,33 @@
+HloModule jit_eigvalsh, entry_computation_layout={(c128[960,960]{1,0})->f64[960]{0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%eigh.2 (Arg_0.3: c128[960,960]) -> f64[960] {
+  %Arg_0.3 = c128[960,960]{1,0} parameter(0), metadata={op_name="jit(eigvalsh)/jit(main)/pjit"}
+  %transpose.9 = c128[960,960]{0,1} transpose(%Arg_0.3), dimensions={1,0}, metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %real.10 = f64[960,960]{0,1} real(%transpose.9), metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %imag.11 = f64[960,960]{0,1} imag(%transpose.9), metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %negate.12 = f64[960,960]{0,1} negate(%imag.11), metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %complex.13 = c128[960,960]{0,1} complex(%real.10, %negate.12), metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %add.14 = c128[960,960]{1,0} add(%Arg_0.3, %complex.13), metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %constant.6 = c128[] constant((2, 0))
+  %broadcast.7 = c128[960,960]{1,0} broadcast(%constant.6), dimensions={}
+  %divide.15 = c128[960,960]{1,0} divide(%add.14, %broadcast.7), metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %custom-call.16 = (c128[960,960]{0,1}, f64[960]{0}, s32[]) custom-call(%divide.15), custom_call_target="cusolver_syevd_ffi", operand_layout_constraints={c128[960,960]{0,1}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}, backend_config={algorithm = 0 : ui8, lower = true}
+  %get-tuple-element.17 = c128[960,960]{0,1} get-tuple-element(%custom-call.16), index=0, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %get-tuple-element.19 = s32[] get-tuple-element(%custom-call.16), index=2, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %constant.8 = s32[] constant(0)
+  %compare.20 = pred[] compare(%get-tuple-element.19, %constant.8), direction=EQ, metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %reshape.21 = pred[1]{0} reshape(%compare.20), metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %broadcast.22 = pred[1]{0} broadcast(%reshape.21), dimensions={0}, metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %reshape.23 = pred[] reshape(%broadcast.22), metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %broadcast.24 = pred[960]{0} broadcast(%reshape.23), dimensions={}, metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %get-tuple-element.18 = f64[960]{0} get-tuple-element(%custom-call.16), index=1, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+  %constant.4 = f64[] constant(nan)
+  %broadcast.5 = f64[960]{0} broadcast(%constant.4), dimensions={}
+  ROOT %select.25 = f64[960]{0} select(%broadcast.24, %get-tuple-element.18, %broadcast.5), metadata={op_name="jit(eigvalsh)/jit(main)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584}
+}
+
+ENTRY %main.27 (Arg_0.1: c128[960,960]) -> f64[960] {
+  %Arg_0.1 = c128[960,960]{1,0} parameter(0), sharding={devices=[2,2]<=[4]}, metadata={op_name="a"}
+  ROOT %call.26 = f64[960]{0} call(%Arg_0.1), to_apply=%eigh.2
+}
+

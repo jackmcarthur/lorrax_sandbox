@@ -1,0 +1,105 @@
+HloModule jit__accum, is_scheduled=true, entry_computation_layout={(c128[960,960]{1,0}, f64[960,1]{1,0}, c128[16,60,2,23040]{3,2,1,0}, c128[480,480]{1,0})->c128[480,480]{1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="8376f4e0441c098b41056a56c8c3ed1b"}
+
+%fused_transpose.1 (param_0.5: c128[16,60,2,23040]) -> c128[2,960,23040] {
+  %param_0.5 = c128[16,60,2,23040]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.5"}
+  %bitcast.169.1 = c128[960,2,23040]{2,1,0} bitcast(%param_0.5), metadata={scheduling_name="bitcast.169.1"}
+  ROOT %transpose.13.1 = c128[2,960,23040]{2,1,0} transpose(%bitcast.169.1), dimensions={1,0,2}, metadata={op_name="psi_bc" scheduling_name="transpose.13.1"}
+}
+
+%fused_transpose.2 (param_0.34: c128[480,480], param_1.30: c128[480,480]) -> c128[480,480] {
+  %param_1.30 = c128[480,480]{1,0} parameter(1), metadata={scheduling_name="param_1.30"}
+  %transpose.12.1 = c128[480,480]{1,0} transpose(%param_1.30), dimensions={1,0}, metadata={op_name="G_in" scheduling_name="transpose.12.1"}
+  %param_0.34 = c128[480,480]{0,1} parameter(0), metadata={scheduling_name="param_0.34"}
+  %bitcast.210.3 = c128[480,480]{1,0} bitcast(%param_0.34), metadata={scheduling_name="bitcast.210.3"}
+  %add.8.3 = c128[480,480]{1,0} add(%transpose.12.1, %bitcast.210.3), metadata={op_name="jit(_accum)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="add.8.3"}
+  ROOT %transpose.15.1 = c128[480,480]{1,0} transpose(%add.8.3), dimensions={1,0}, metadata={op_name="jit(_accum)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="transpose.15.1"}
+}
+
+%async_computation (param_0.36: c128[16,60,2,1,23040]) -> c128[16,60,2,1,23040] {
+  %param_0.36 = c128[16,60,2,1,23040]{4,3,1,0,2} parameter(0), metadata={scheduling_name="param_0.36"}
+  ROOT %all-to-all.2 = c128[16,60,2,1,23040]{4,3,1,0,2} all-to-all(%param_0.36), channel_id=1, replica_groups={{0,1},{2,3}}, dimensions={2}, metadata={op_name="jit(_accum)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=146 scheduling_name="all-to-all.2"}
+}
+
+%add.clone (x.1: c128[], y.1: c128[]) -> c128[] {
+  %y.1 = c128[] parameter(1), metadata={scheduling_name="y.1"}
+  %x.1 = c128[] parameter(0), metadata={scheduling_name="x.1"}
+  ROOT %add.7 = c128[] add(%x.1, %y.1), metadata={scheduling_name="add.7"}
+}
+
+%async_computation.1 (param_0.37: c128[480,960]) -> c128[480,480] {
+  %param_0.37 = c128[480,960]{0,1} parameter(0), metadata={scheduling_name="param_0.37"}
+  ROOT %reduce-scatter.2 = c128[480,480]{0,1} reduce-scatter(%param_0.37), channel_id=3, replica_groups=[2,2]<=[4], use_global_device_ids=true, dimensions={1}, to_apply=%add.clone, metadata={scheduling_name="reduce-scatter.2"}
+}
+
+%fused_transpose (param_0.3: c128[16,60,2,1,23040]) -> c128[960,2,23040] {
+  %param_0.3 = c128[16,60,2,1,23040]{4,3,1,0,2} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.176.1 = c128[2,960,23040]{2,1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.176.1"}
+  ROOT %transpose.14.1 = c128[960,2,23040]{2,1,0} transpose(%bitcast.176.1), dimensions={1,0,2}, metadata={op_name="jit(_accum)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=146 scheduling_name="transpose.14.1"}
+}
+
+%fused_complex (param_0.28: c128[960,46080], param_1.26: f64[960,1]) -> c128[960,46080] {
+  %param_1.26 = f64[960,1]{1,0} parameter(1), metadata={scheduling_name="param_1.26"}
+  %bitcast.161.3 = f64[960]{0} bitcast(%param_1.26), metadata={scheduling_name="bitcast.161.3"}
+  %convert.13.3 = c128[960]{0} convert(%bitcast.161.3), metadata={op_name="jit(_accum)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=147 scheduling_name="convert.13.3"}
+  %broadcast.4.13 = c128[960,46080]{1,0} broadcast(%convert.13.3), dimensions={0}, metadata={op_name="jit(_accum)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=147 scheduling_name="broadcast.4.13"}
+  %param_0.28 = c128[960,46080]{1,0} parameter(0), metadata={scheduling_name="param_0.28"}
+  %multiply.13.13 = c128[960,46080]{1,0} multiply(%broadcast.4.13, %param_0.28), metadata={op_name="jit(_accum)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=147 scheduling_name="multiply.13.13"}
+  %real.3.3 = f64[960,46080]{1,0} real(%multiply.13.13), metadata={op_name="jit(_accum)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="real.3.3"}
+  %imag.3.5 = f64[960,46080]{1,0} imag(%multiply.13.13), metadata={op_name="jit(_accum)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="imag.3.5"}
+  %negate.3.3 = f64[960,46080]{1,0} negate(%imag.3.5), metadata={op_name="jit(_accum)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="negate.3.3"}
+  ROOT %complex.3.1 = c128[960,46080]{1,0} complex(%real.3.3, %negate.3.3), metadata={op_name="jit(_accum)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="complex.3.1"}
+}
+
+%fused_dynamic_slice (param_0.35: c128[960,46080], param_1.32: f64[960,1], param_2.10: u32[4], param_3.9: u32[]) -> c128[480,46080] {
+  %param_1.32 = f64[960,1]{1,0} parameter(1), metadata={scheduling_name="param_1.32"}
+  %bitcast.161.5 = f64[960]{0} bitcast(%param_1.32), metadata={scheduling_name="bitcast.161.5"}
+  %convert.13.5 = c128[960]{0} convert(%bitcast.161.5), metadata={op_name="jit(_accum)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=147 scheduling_name="convert.13.5"}
+  %broadcast.4.5 = c128[960,46080]{1,0} broadcast(%convert.13.5), dimensions={0}, metadata={op_name="jit(_accum)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=147 scheduling_name="broadcast.4.5"}
+  %param_0.35 = c128[960,46080]{1,0} parameter(0), metadata={scheduling_name="param_0.35"}
+  %multiply.13.5 = c128[960,46080]{1,0} multiply(%broadcast.4.5, %param_0.35), metadata={op_name="jit(_accum)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=147 scheduling_name="multiply.13.5"}
+  %constant_32_1 = u32[1]{0} constant({0}), metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149}
+  %param_2.10 = u32[4]{0} parameter(2), metadata={scheduling_name="param_2.10"}
+  %param_3.9 = u32[] parameter(3), metadata={scheduling_name="param_3.9"}
+  %dynamic-slice.13.1 = u32[1]{0} dynamic-slice(%param_2.10, %param_3.9), dynamic_slice_sizes={1}, metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="dynamic-slice.13.1"}
+  %constant_33_1 = u32[1]{0} constant({1}), metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149}
+  %clamp.6.1 = u32[1]{0} clamp(%constant_32_1, %dynamic-slice.13.1, %constant_33_1), metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="clamp.6.1"}
+  %convert.14.1 = s32[1]{0} convert(%clamp.6.1), metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="convert.14.1"}
+  %constant_36_1 = s32[1]{0} constant({480}), metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149}
+  %multiply.14.1 = s32[1]{0} multiply(%convert.14.1, %constant_36_1), metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="multiply.14.1"}
+  %bitcast.195.1 = s32[] bitcast(%multiply.14.1), metadata={scheduling_name="bitcast.195.1"}
+  %constant_23_1 = s32[] constant(0), metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149}
+  ROOT %dynamic-slice.14.1 = c128[480,46080]{1,0} dynamic-slice(%multiply.13.5, %bitcast.195.1, %constant_23_1), dynamic_slice_sizes={480,46080}, metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="dynamic-slice.14.1"}
+}
+
+%command_buffer (p: c128[16,60,2,1,23040], p.1: c128[960,960], p.2: f64[960,1], p.3: u32[4]) -> (c128[480,960], s8[4194304]) {
+  %p = c128[16,60,2,1,23040]{4,3,1,0,2} parameter(0)
+  %p.1 = c128[960,960]{1,0} parameter(1)
+  %p.2 = f64[960,1]{1,0} parameter(2)
+  %p.3 = u32[4]{0} parameter(3)
+  %loop_transpose_fusion = c128[960,2,23040]{2,1,0} fusion(%p), kind=kLoop, calls=%fused_transpose, metadata={op_name="jit(_accum)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=146 scheduling_name="loop_transpose_fusion"}
+  %bitcast.180.0 = c128[960,46080]{1,0} bitcast(%loop_transpose_fusion), metadata={scheduling_name="bitcast.180.0"}
+  %custom-call.2.0 = (c128[960,46080]{1,0}, s8[4194304]{0}) custom-call(%p.1, %bitcast.180.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=147 scheduling_name="custom-call.2.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"921600","rhs_stride":"44236800","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %partition-id.2 = u32[] partition-id(), metadata={scheduling_name="partition-id.2"}
+  %get-tuple-element.2 = c128[960,46080]{1,0} get-tuple-element(%custom-call.2.0), index=0, metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=147 scheduling_name="get-tuple-element.2"}
+  %loop_complex_fusion = c128[960,46080]{1,0} fusion(%get-tuple-element.2, %p.2), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(_accum)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="loop_complex_fusion"}
+  %loop_dynamic_slice_fusion = c128[480,46080]{1,0} fusion(%get-tuple-element.2, %p.2, %p.3, %partition-id.2), kind=kLoop, calls=%fused_dynamic_slice, metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="loop_dynamic_slice_fusion"}
+  ROOT %custom-call.3.0 = (c128[480,960]{0,1}, s8[4194304]{0}) custom-call(%loop_dynamic_slice_fusion, %loop_complex_fusion), custom_call_target="__cublas$gemm", metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="custom-call.3.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"22118400","rhs_stride":"44236800","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+}
+
+ENTRY %main.22_spmd (param.2.0: c128[960,960], param.1.0: f64[960,1], param.3.0: c128[16,60,2,23040], param.4: c128[480,480]) -> c128[480,480] {
+  %param.3.0 = c128[16,60,2,23040]{3,2,1,0} parameter(2), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="psi_bc" scheduling_name="param.3.0"}
+  %param.2.0 = c128[960,960]{1,0} parameter(0), sharding={replicated}, metadata={op_name="UH_bc" scheduling_name="param.2.0"}
+  %param.1.0 = f64[960,1]{1,0} parameter(1), sharding={replicated}, metadata={op_name="inv_s" scheduling_name="param.1.0"}
+  %constant_21_0 = u32[4]{0} constant({0, 0, 1, 1}), metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149}
+  %param.4 = c128[480,480]{1,0} parameter(3), sharding={devices=[2,2]<=[4]}, metadata={op_name="G_in" scheduling_name="param.4"}
+  %loop_transpose_fusion.1 = c128[2,960,23040]{2,1,0} fusion(%param.3.0), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="psi_bc" scheduling_name="loop_transpose_fusion.1"}
+  %bitcast.173.0 = c128[16,60,2,1,23040]{4,3,1,0,2} bitcast(%loop_transpose_fusion.1), metadata={scheduling_name="bitcast.173.0"}
+  %all-to-all-start = ((c128[16,60,2,1,23040]{4,3,1,0,2}), c128[16,60,2,1,23040]{4,3,1,0,2}) async-start(%bitcast.173.0), calls=%async_computation, metadata={op_name="jit(_accum)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=146 scheduling_name="all-to-all-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-to-all-done = c128[16,60,2,1,23040]{4,3,1,0,2} async-done(%all-to-all-start), metadata={op_name="jit(_accum)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=146 scheduling_name="all-to-all-done"}
+  %call = (c128[480,960]{0,1}, s8[4194304]{0}) call(%all-to-all-done, %param.2.0, %param.1.0, %constant_21_0), to_apply=%command_buffer
+  %get-tuple-element.1.0 = c128[480,960]{0,1} get-tuple-element(%call), index=0, metadata={op_name="jit(_accum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="get-tuple-element.1.0"}
+  %reduce-scatter-start = ((c128[480,960]{0,1}), c128[480,480]{0,1}) async-start(%get-tuple-element.1.0), calls=%async_computation.1, metadata={scheduling_name="reduce-scatter-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %reduce-scatter-done = c128[480,480]{0,1} async-done(%reduce-scatter-start), metadata={scheduling_name="reduce-scatter-done"}
+  ROOT %input_transpose_fusion = c128[480,480]{1,0} fusion(%reduce-scatter-done, %param.4), kind=kInput, calls=%fused_transpose.2, metadata={op_name="jit(_accum)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=149 scheduling_name="input_transpose_fusion"}
+}
+

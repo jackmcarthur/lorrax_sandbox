@@ -1,0 +1,14 @@
+HloModule jit__per_rank, entry_computation_layout={(s64[5,4]{1,0}, s64[5,4]{1,0})->f64[80,2,5,1963,2]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+ENTRY %main.14 (Arg_0.1: s64[5,4], Arg_1.2: s64[5,4]) -> f64[80,2,5,1963,2] {
+  %Arg_0.1 = s64[5,4]{1,0} parameter(0), sharding={replicated}, metadata={op_name="offset_base_local"}
+  %custom-call.3 = s64[5,4]{1,0} custom-call(%Arg_0.1), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=133}
+  %custom-call.4 = s64[5,4]{1,0} custom-call(%custom-call.3), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=133}
+  %Arg_1.2 = s64[5,4]{1,0} parameter(1), sharding={replicated}, metadata={op_name="count_base_local"}
+  %custom-call.5 = s64[5,4]{1,0} custom-call(%Arg_1.2), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=133}
+  %custom-call.6 = s64[5,4]{1,0} custom-call(%custom-call.5), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=133}
+  %custom-call.0 = f64[20,2,5,1963,2]{4,3,2,1,0} custom-call(%custom-call.4, %custom-call.6), custom_call_target="lorrax_phdf5_read_kchunk_union", operand_layout_constraints={s64[5,4]{1,0}, s64[5,4]{1,0}}, api_version=API_VERSION_TYPED_FFI, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/ffi_call" source_file="/global/homes/j/jackm/software/lorrax_C/src/ffi/phdf5/read.py" source_line=168}, backend_config={axis_count_per_dim = dense<[2, 0, 0, 0]> : tensor<4xi64>, axis_flat = dense<[0, 1]> : tensor<2xi64>, ctx_handle = 183247296 : i64, ds_id = 360287970189639681 : i64, kchunk_axis = 2 : i64, mesh_shape = dense<2> : tensor<2xi64>, n_kchunk = 5 : i64}
+  %custom-call.12 = f64[20,2,5,1963,2]{4,3,2,1,0} custom-call(%custom-call.0), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=133}
+  ROOT %custom-call.13 = f64[80,2,5,1963,2]{4,3,2,1,0} custom-call(%custom-call.12), custom_call_target="SPMDShardToFullShape", sharding={devices=[4,1,1,1,1]<=[4]}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=133}
+}
+

@@ -1,0 +1,39 @@
+HloModule jit_f3, is_scheduled=true, entry_computation_layout={(c128[9,2419,168]{2,1,0})->c128[9,2419]{1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16, frontend_attributes={fingerprint_before_lhs="226f33433b4f1cc7381fc098aa3b82df"}
+
+%region_0.9 (Arg_0.10: c128[], Arg_1.11: c128[]) -> c128[] {
+  %Arg_1.11 = c128[] parameter(1), metadata={op_name="jit(f3)/jit(main)/reduce_sum"}
+  %Arg_0.10 = c128[] parameter(0), metadata={op_name="jit(f3)/jit(main)/reduce_sum"}
+  ROOT %add.5 = c128[] add(%Arg_0.10, %Arg_1.11), metadata={op_name="jit(f3)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=209}
+}
+
+%fused_reduce (param_0.4: c128[9,2419,168], param_1.7: u32[], param_2.3: s32[16]) -> c128[9,2419] {
+  %param_0.4 = c128[9,2419,168]{2,1,0} parameter(0)
+  %constant_13_1 = s32[] constant(0), metadata={op_name="jit(f3)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=208}
+  %param_1.7 = u32[] parameter(1)
+  %convert.3.1 = s32[] convert(%param_1.7), metadata={op_name="jit(f3)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=208}
+  %constant_14_1 = s32[] constant(42), metadata={op_name="jit(f3)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=208}
+  %multiply.4.1 = s32[] multiply(%convert.3.1, %constant_14_1), metadata={op_name="jit(f3)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=208}
+  %param_2.3 = s32[16]{0} parameter(2)
+  %dynamic-slice.8.1 = s32[1]{0} dynamic-slice(%param_2.3, %param_1.7), dynamic_slice_sizes={1}, metadata={op_name="jit(f3)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=208}
+  %bitcast.83.3 = s32[] bitcast(%dynamic-slice.8.1)
+  %subtract.5.3 = s32[] subtract(%multiply.4.1, %bitcast.83.3), metadata={op_name="jit(f3)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=208}
+  %dynamic-slice.9.1 = c128[9,2419,42]{2,1,0} dynamic-slice(%param_0.4, %constant_13_1, %constant_13_1, %subtract.5.3), dynamic_slice_sizes={9,2419,42}, metadata={op_name="jit(f3)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=208}
+  %constant_12_1 = c128[] constant((0, 0))
+  ROOT %reduce.2 = c128[9,2419]{1,0} reduce(%dynamic-slice.9.1, %constant_12_1), dimensions={2}, to_apply=%region_0.9, metadata={op_name="jit(f3)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=209}
+}
+
+%region_0.9.clone (Arg_0.0: c128[], Arg_1.0: c128[]) -> c128[] {
+  %Arg_1.0 = c128[] parameter(1), metadata={op_name="jit(f3)/jit(main)/reduce_sum"}
+  %Arg_0.0 = c128[] parameter(0), metadata={op_name="jit(f3)/jit(main)/reduce_sum"}
+  ROOT %add.6 = c128[] add(%Arg_0.0, %Arg_1.0), metadata={op_name="jit(f3)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=209}
+}
+
+ENTRY %main.14_spmd (param.1: c128[9,2419,168]) -> c128[9,2419] {
+  %constant_11_0 = s32[16]{0} constant({...}), metadata={op_name="jit(f3)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=208}
+  %param.1 = c128[9,2419,168]{2,1,0} parameter(0), sharding={devices=[1,1,4,4]<=[16] last_tile_dim_replicate}, metadata={op_name="x"}
+  %partition-id.1 = u32[] partition-id(), metadata={op_name="jit(f3)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=208}
+  %input_reduce_fusion = c128[9,2419]{1,0} fusion(%param.1, %partition-id.1, %constant_11_0), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(f3)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=209}
+  %all-reduce-start = c128[9,2419]{1,0} all-reduce-start(%input_reduce_fusion), channel_id=1, replica_groups=[1,16]<=[16], use_global_device_ids=true, to_apply=%region_0.9.clone, metadata={op_name="jit(f3)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=209}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  ROOT %all-reduce-done = c128[9,2419]{1,0} all-reduce-done(%all-reduce-start), metadata={op_name="jit(f3)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=209}
+}
+

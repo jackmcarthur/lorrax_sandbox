@@ -1,0 +1,101 @@
+BufferAssignment:
+allocation 0: size 921600, parameter 0, shape |pred[9,320,320]| at ShapeIndex {}:
+ value: <13 param.1 @0> (size=921600,offset=0): pred[9,320,320]{2,1,0}
+allocation 1: size 8, output shape is |s64[]|, maybe-live-out:
+ value: <15 input_reduce_fusion.1 @0> (size=8,offset=0): s64[]
+ value: <16 all-reduce-start @0> (size=8,offset=0): s64[]
+allocation 2: size 8, thread-local:
+ value: <2 add.6 @0> (size=8,offset=0): s64[]
+allocation 3: size 8, thread-local:
+ value: <3 Arg_0.0 @0> (size=8,offset=0): s64[]
+allocation 4: size 8, thread-local:
+ value: <4 Arg_1.0 @0> (size=8,offset=0): s64[]
+allocation 5: size 8, thread-local:
+ value: <5 add.8 @0> (size=8,offset=0): s64[]
+allocation 6: size 8, thread-local:
+ value: <0 Arg_0.5 @0> (size=8,offset=0): s64[]
+allocation 7: size 8, thread-local:
+ value: <1 Arg_1.6 @0> (size=8,offset=0): s64[]
+allocation 8: size 4096, preallocated-temp:
+ value: <14 input_reduce_fusion @0> (size=4096,offset=0): s64[512]{0}
+
+Total bytes used: 925752 (904.1KiB)
+
+Used values:
+<0 Arg_0.5 @0>
+ positions:
+  Arg_0.5
+ uses:
+  add.6, operand 0
+ from instruction: %Arg_0.5 = s64[] parameter(0), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_0.5"}
+<1 Arg_1.6 @0>
+ positions:
+  Arg_1.6
+ uses:
+  add.6, operand 1
+ from instruction: %Arg_1.6 = s64[] parameter(1), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_1.6"}
+<2 add.6 @0>
+ positions:
+  add.6
+ uses:
+ from instruction: %add.6 = s64[] add(%Arg_0.5, %Arg_1.6), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=184 scheduling_name="add.6"}
+<3 Arg_0.0 @0>
+ positions:
+  Arg_0.0
+ uses:
+  add.8, operand 0
+ from instruction: %Arg_0.0 = s64[] parameter(0), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_0.0"}
+<4 Arg_1.0 @0>
+ positions:
+  Arg_1.0
+ uses:
+  add.8, operand 1
+ from instruction: %Arg_1.0 = s64[] parameter(1), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_1.0"}
+<5 add.8 @0>
+ positions:
+  add.8
+ uses:
+ from instruction: %add.8 = s64[] add(%Arg_0.0, %Arg_1.0), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=184 scheduling_name="add.8"}
+<13 param.1 @0>
+ positions:
+  param.1
+ uses:
+  input_reduce_fusion, operand 0
+ from instruction: %param.1 = pred[9,320,320]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="a" scheduling_name="param.1"}
+<14 input_reduce_fusion @0>
+ positions:
+  input_reduce_fusion
+ uses:
+  input_reduce_fusion.1, operand 0
+ from instruction: %input_reduce_fusion = s64[512]{0} fusion(%param.1), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=184 scheduling_name="input_reduce_fusion"}
+<15 input_reduce_fusion.1 @0>
+ positions:
+  input_reduce_fusion.1
+ uses:
+  all-reduce-start, operand 0
+ from instruction: %input_reduce_fusion.1 = s64[] fusion(%input_reduce_fusion), kind=kInput, calls=%fused_reduce.1, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=184 scheduling_name="input_reduce_fusion.1"}
+<16 all-reduce-start @0>
+ positions:
+  all-reduce-start
+  all-reduce-done
+ uses:
+  all-reduce-done, operand 0
+ from instruction: %all-reduce-start = s64[] all-reduce-start(%input_reduce_fusion.1), channel_id=3, replica_groups={{0,1,2,3}}, use_global_device_ids=true, to_apply=%region_0.4.clone, metadata={scheduling_name="all-reduce-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+
+
+HloLiveRange (max 5):
+  InstructionSequence:
+    0:param.1
+    1:input_reduce_fusion
+    2:input_reduce_fusion.1
+    3:all-reduce-start
+    4:all-reduce-done
+  BufferLiveRange:
+    param.1{}:0-5
+    input_reduce_fusion{}:1-2
+    input_reduce_fusion.1{}:2-3
+    all-reduce-start{}:3-5
+  Live ranges at 3 (peak):
+    param.1: 921600 bytes
+    input_reduce_fusion.1: 8 bytes
+    all-reduce-start: 8 bytes

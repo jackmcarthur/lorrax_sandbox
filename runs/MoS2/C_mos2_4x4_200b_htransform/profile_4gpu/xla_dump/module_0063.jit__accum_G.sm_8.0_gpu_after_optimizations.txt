@@ -1,0 +1,47 @@
+HloModule jit__accum_G, is_scheduled=true, entry_computation_layout={(c128[4,960,60]{2,1,0}, c128[4,60,92160]{2,1,0}, f64[960,1]{1,0})->c128[960,960]{1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="bbaada72175fbb1fadccf8b1384d0b8e"}
+
+%fused_multiply (param_0.3: c128[960,92160], param_1.6: f64[960,1]) -> c128[960,92160] {
+  %param_1.6 = f64[960,1]{1,0} parameter(1), metadata={scheduling_name="param_1.6"}
+  %bitcast.87.3 = f64[960]{0} bitcast(%param_1.6), metadata={scheduling_name="bitcast.87.3"}
+  %convert.7.3 = c128[960]{0} convert(%bitcast.87.3), metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=185 scheduling_name="convert.7.3"}
+  %broadcast.5.1 = c128[960,92160]{1,0} broadcast(%convert.7.3), dimensions={0}, metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=185 scheduling_name="broadcast.5.1"}
+  %param_0.3 = c128[960,92160]{1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  ROOT %multiply.4.1 = c128[960,92160]{1,0} multiply(%broadcast.5.1, %param_0.3), metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=185 scheduling_name="multiply.4.1"}
+}
+
+%fused_complex (param_0.5: c128[960,92160]) -> c128[960,92160] {
+  %param_0.5 = c128[960,92160]{1,0} parameter(0), metadata={scheduling_name="param_0.5"}
+  %real.4.1 = f64[960,92160]{1,0} real(%param_0.5), metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=187 scheduling_name="real.4.1"}
+  %imag.4.1 = f64[960,92160]{1,0} imag(%param_0.5), metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=187 scheduling_name="imag.4.1"}
+  %negate.4.1 = f64[960,92160]{1,0} negate(%imag.4.1), metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=187 scheduling_name="negate.4.1"}
+  ROOT %complex.4.1 = c128[960,92160]{1,0} complex(%real.4.1, %negate.4.1), metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=187 scheduling_name="complex.4.1"}
+}
+
+%region_0.10 (Arg_0.11: c128[], Arg_1.12: c128[]) -> c128[] {
+  %Arg_1.12 = c128[] parameter(1), metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/psum" scheduling_name="Arg_1.12"}
+  %Arg_0.11 = c128[] parameter(0), metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/psum" scheduling_name="Arg_0.11"}
+  ROOT %add.2 = c128[] add(%Arg_0.11, %Arg_1.12), metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=186 scheduling_name="add.2"}
+}
+
+%wrapped_transpose_computation (param_0.7: c128[4,960,60]) -> c128[960,4,60] {
+  %param_0.7 = c128[4,960,60]{2,1,0} parameter(0), metadata={scheduling_name="param_0.7"}
+  ROOT %transpose.6.1 = c128[960,4,60]{2,1,0} transpose(%param_0.7), dimensions={1,0,2}, metadata={op_name="jit(_accum_G)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=188 scheduling_name="transpose.6.1"}
+}
+
+ENTRY %main.34_spmd (param.1.0: c128[4,960,60], param.2.0: c128[4,60,92160], param.3: f64[960,1]) -> c128[960,960] {
+  %param.1.0 = c128[4,960,60]{2,1,0} parameter(0), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="UH_k" scheduling_name="param.1.0"}
+  %param.2.0 = c128[4,60,92160]{2,1,0} parameter(1), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="psi_r" scheduling_name="param.2.0"}
+  %param.3 = f64[960,1]{1,0} parameter(2), sharding={replicated}, metadata={op_name="inv_s" scheduling_name="param.3"}
+  %wrapped_transpose = c128[960,4,60]{2,1,0} fusion(%param.1.0), kind=kLoop, calls=%wrapped_transpose_computation, metadata={op_name="jit(_accum_G)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=188 scheduling_name="wrapped_transpose"}
+  %bitcast.99.0 = c128[240,92160]{1,0} bitcast(%param.2.0), metadata={scheduling_name="bitcast.99.0"}
+  %bitcast.95.0 = c128[960,240]{1,0} bitcast(%wrapped_transpose), metadata={scheduling_name="bitcast.95.0"}
+  %custom-call.2.0 = (c128[960,92160]{1,0}, s8[4194304]{0}) custom-call(%bitcast.95.0, %bitcast.99.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/krb,kbt->rt/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=185 scheduling_name="custom-call.2.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"230400","rhs_stride":"22118400","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.2 = c128[960,92160]{1,0} get-tuple-element(%custom-call.2.0), index=0, metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/krb,kbt->rt/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=185 scheduling_name="get-tuple-element.2"}
+  %loop_multiply_fusion = c128[960,92160]{1,0} fusion(%get-tuple-element.2, %param.3), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=185 scheduling_name="loop_multiply_fusion"}
+  %all-reduce-start = c128[960,92160]{1,0} all-reduce-start(%loop_multiply_fusion), channel_id=1, replica_groups={{0,1,2,3}}, use_global_device_ids=true, to_apply=%region_0.10, metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/psum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=186 scheduling_name="all-reduce-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-reduce-done = c128[960,92160]{1,0} all-reduce-done(%all-reduce-start), metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/psum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=186 scheduling_name="all-reduce-done"}
+  %loop_complex_fusion = c128[960,92160]{1,0} fusion(%all-reduce-done), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=187 scheduling_name="loop_complex_fusion"}
+  %custom-call.3.0 = (c128[960,960]{1,0}, s8[4194304]{0}) custom-call(%all-reduce-done, %loop_complex_fusion), custom_call_target="__cublas$gemm", metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=187 scheduling_name="custom-call.3.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"88473600","rhs_stride":"88473600","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  ROOT %get-tuple-element.1.0 = c128[960,960]{1,0} get-tuple-element(%custom-call.3.0), index=0, metadata={op_name="jit(_accum_G)/jit(main)/jit(shmap_body)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=187 scheduling_name="get-tuple-element.1.0"}
+}
+

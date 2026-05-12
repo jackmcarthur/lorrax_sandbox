@@ -1,0 +1,156 @@
+BufferAssignment:
+allocation 0: size 58172112, parameter 0, shape |c128[9,2419,167]| at ShapeIndex {}:
+ value: <39 param.1 @0> (size=58172112,offset=0): c128[9,2419,167]{2,1,0}
+allocation 1: size 348336, output shape is |c128[9,2419]|, maybe-live-out:
+ value: <46 input_reduce_fusion @0> (size=348336,offset=0): c128[9,2419]{1,0}
+ value: <47 all-reduce-start @0> (size=348336,offset=0): c128[9,2419]{1,0}
+allocation 2: size 64, constant:
+ value: <43 constant_12_0 @0> (size=64,offset=0): s32[16]{0}
+allocation 3: size 64, constant:
+ value: <45 constant_24_0 @0> (size=64,offset=0): s32[16]{0}
+allocation 4: size 16, thread-local:
+ value: <2 add.13 @0> (size=16,offset=0): c128[]
+allocation 5: size 16, thread-local:
+ value: <1 Arg_1.13 @0> (size=16,offset=0): c128[]
+allocation 6: size 16, thread-local:
+ value: <3 Arg_0.0 @0> (size=16,offset=0): c128[]
+allocation 7: size 16, thread-local:
+ value: <4 Arg_1.0 @0> (size=16,offset=0): c128[]
+allocation 8: size 16, thread-local:
+ value: <5 add.15 @0> (size=16,offset=0): c128[]
+allocation 9: size 16, thread-local:
+ value: <0 Arg_0.12 @0> (size=16,offset=0): c128[]
+allocation 10: size 2090384, preallocated-temp:
+ value: <40 wrapped_slice @0> (size=1045008,offset=1045120): c128[9,2419,3]{2,1,0}
+ value: <41 collective-permute-start{} @0> (size=16,offset=2090368): (c128[9,2419,3]{2,1,0}, c128[9,2419,3]{2,1,0})
+ value: <42 collective-permute-start{1} @0> (size=1045008,offset=0): c128[9,2419,3]{2,1,0}
+ value: <44 partition-id.1 @0> (size=4,offset=2090240): u32[]
+
+Total bytes used: 60611056 (57.80MiB)
+
+Used values:
+<0 Arg_0.12 @0>
+ positions:
+  Arg_0.12
+ uses:
+  add.13, operand 0
+ from instruction: %Arg_0.12 = c128[] parameter(0), metadata={op_name="jit(f3)/jit(main)/reduce_sum"}
+<1 Arg_1.13 @0>
+ positions:
+  Arg_1.13
+ uses:
+  add.13, operand 1
+ from instruction: %Arg_1.13 = c128[] parameter(1), metadata={op_name="jit(f3)/jit(main)/reduce_sum"}
+<2 add.13 @0>
+ positions:
+  add.13
+ uses:
+ from instruction: %add.13 = c128[] add(%Arg_0.12, %Arg_1.13), metadata={op_name="jit(f3)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=209}
+<3 Arg_0.0 @0>
+ positions:
+  Arg_0.0
+ uses:
+  add.15, operand 0
+ from instruction: %Arg_0.0 = c128[] parameter(0), metadata={op_name="jit(f3)/jit(main)/reduce_sum"}
+<4 Arg_1.0 @0>
+ positions:
+  Arg_1.0
+ uses:
+  add.15, operand 1
+ from instruction: %Arg_1.0 = c128[] parameter(1), metadata={op_name="jit(f3)/jit(main)/reduce_sum"}
+<5 add.15 @0>
+ positions:
+  add.15
+ uses:
+ from instruction: %add.15 = c128[] add(%Arg_0.0, %Arg_1.0), metadata={op_name="jit(f3)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=209}
+<39 param.1 @0>
+ positions:
+  param.1
+ uses:
+  wrapped_slice, operand 0
+  input_reduce_fusion, operand 0
+ from instruction: %param.1 = c128[9,2419,167]{2,1,0} parameter(0), sharding={devices=[1,1,4,4]<=[16] last_tile_dim_replicate}, metadata={op_name="x"}
+<40 wrapped_slice @0>
+ positions:
+  wrapped_slice
+  collective-permute-start {0}
+ uses:
+  collective-permute-start, operand 0
+  collective-permute-done, operand 0 {0}
+ from instruction: %wrapped_slice = c128[9,2419,3]{2,1,0} fusion(%param.1), kind=kLoop, calls=%wrapped_slice_computation, metadata={op_name="jit(f3)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+<41 collective-permute-start{} @0>
+ positions:
+  collective-permute-start {}
+ uses:
+  collective-permute-done, operand 0 {}
+ from instruction: %collective-permute-start = (c128[9,2419,3]{2,1,0}, c128[9,2419,3]{2,1,0}) collective-permute-start(%wrapped_slice), channel_id=1, source_target_pairs={{4,0},{8,4},{12,8},{5,1},{9,5},{13,9},{6,2},{10,6},{14,10},{7,3},{11,7},{15,11}}, metadata={op_name="jit(f3)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<42 collective-permute-start{1} @0>
+ positions:
+  collective-permute-start {1}
+  collective-permute-done
+ uses:
+  collective-permute-done, operand 0 {1}
+  input_reduce_fusion, operand 1
+ from instruction: %collective-permute-start = (c128[9,2419,3]{2,1,0}, c128[9,2419,3]{2,1,0}) collective-permute-start(%wrapped_slice), channel_id=1, source_target_pairs={{4,0},{8,4},{12,8},{5,1},{9,5},{13,9},{6,2},{10,6},{14,10},{7,3},{11,7},{15,11}}, metadata={op_name="jit(f3)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<43 constant_12_0 @0>
+ positions:
+  constant_12_0
+ uses:
+  input_reduce_fusion, operand 2
+ from instruction: %constant_12_0 = s32[16]{0} constant({...}), metadata={op_name="jit(f3)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+<44 partition-id.1 @0>
+ positions:
+  partition-id.1
+ uses:
+  input_reduce_fusion, operand 3
+ from instruction: %partition-id.1 = u32[] partition-id(), metadata={op_name="jit(f3)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+<45 constant_24_0 @0>
+ positions:
+  constant_24_0
+ uses:
+  input_reduce_fusion, operand 4
+ from instruction: %constant_24_0 = s32[16]{0} constant({...}), metadata={op_name="jit(f3)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+<46 input_reduce_fusion @0>
+ positions:
+  input_reduce_fusion
+ uses:
+  all-reduce-start, operand 0
+ from instruction: %input_reduce_fusion = c128[9,2419]{1,0} fusion(%param.1, %collective-permute-done, %constant_12_0, %partition-id.1, %constant_24_0), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(f3)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=209}
+<47 all-reduce-start @0>
+ positions:
+  all-reduce-start
+  all-reduce-done
+ uses:
+  all-reduce-done, operand 0
+ from instruction: %all-reduce-start = c128[9,2419]{1,0} all-reduce-start(%input_reduce_fusion), channel_id=2, replica_groups=[1,16]<=[16], use_global_device_ids=true, to_apply=%region_0.11.clone, metadata={op_name="jit(f3)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=209}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+
+
+HloLiveRange (max 10):
+  InstructionSequence:
+    0:param.1
+    1:constant_24_0
+    2:constant_12_0
+    3:partition-id.1
+    4:wrapped_slice
+    5:collective-permute-start
+    6:collective-permute-done
+    7:input_reduce_fusion
+    8:all-reduce-start
+    9:all-reduce-done
+  BufferLiveRange:
+    param.1{}:0-10
+    wrapped_slice{}:4-6
+    collective-permute-start{}:5-6
+    collective-permute-start{1}:5-7
+    constant_12_0{}:2-7
+    partition-id.1{}:3-7
+    constant_24_0{}:1-7
+    input_reduce_fusion{}:7-8
+    all-reduce-start{}:8-10
+  Live ranges at 7 (peak):
+    param.1: 58172112 bytes
+    collective-permute-start: 16 bytes
+    constant_12_0: 64 bytes
+    partition-id.1: 4 bytes
+    constant_24_0: 64 bytes
+    input_reduce_fusion: 348336 bytes

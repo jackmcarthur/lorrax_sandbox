@@ -1,0 +1,18 @@
+HloModule jit__unnamed_wrapped_function_, entry_computation_layout={(s32[4,1]{1,0})->s32[1]{0}}, num_partitions=4
+
+%shmap_body.4 (Arg_0.5: s32[1,1]) -> s32[1] {
+  %Arg_0.5 = s32[1,1]{1,0} parameter(0), metadata={op_name="[(\'x\', \'y\'), None]"}
+  ROOT %reshape.6 = s32[1]{0} reshape(%Arg_0.5), metadata={op_name="jit(<unnamed wrapped function>)/jit(main)/jit(shmap_body)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/_slab_io_ffi.py" source_line=295}
+}
+
+ENTRY %main.12 (Arg_0.1: s32[4,1]) -> s32[1] {
+  %Arg_0.1 = s32[4,1]{1,0} parameter(0), sharding={devices=[4,1]<=[4]}, metadata={op_name="args[0]"}
+  %custom-call.2 = s32[4,1]{1,0} custom-call(%Arg_0.1), custom_call_target="Sharding", sharding={devices=[4,1]<=[4]}, metadata={op_name="jit(<unnamed wrapped function>)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/_slab_io_ffi.py" source_line=295}
+  %custom-call.3 = s32[1,1]{1,0} custom-call(%custom-call.2), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(<unnamed wrapped function>)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/_slab_io_ffi.py" source_line=295}
+  %call.7 = s32[1]{0} call(%custom-call.3), to_apply=%shmap_body.4
+  %custom-call.8 = s32[1]{0} custom-call(%call.7), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(<unnamed wrapped function>)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/_slab_io_ffi.py" source_line=295}
+  %custom-call.9 = s32[1]{0} custom-call(%custom-call.8), custom_call_target="SPMDShardToFullShape", sharding={replicated}, metadata={op_name="jit(<unnamed wrapped function>)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/_slab_io_ffi.py" source_line=295}
+  %tuple.10 = (s32[1]{0}) tuple(%custom-call.9)
+  ROOT %get-tuple-element.11 = s32[1]{0} get-tuple-element(%tuple.10), index=0, sharding={replicated}
+}
+

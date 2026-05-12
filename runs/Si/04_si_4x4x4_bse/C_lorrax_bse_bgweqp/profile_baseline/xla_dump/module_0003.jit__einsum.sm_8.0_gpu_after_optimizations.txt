@@ -1,0 +1,16 @@
+HloModule jit__einsum, is_scheduled=true, entry_computation_layout={(c128[480]{0}, c128[480]{0})->c128[480,480]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="1ce1a375c74fcbf7d851315b311d11df"}
+
+%fused_multiply (param_0.1: c128[480], param_1.2: c128[480]) -> c128[480,480] {
+  %param_1.2 = c128[480]{0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %broadcast.6.1 = c128[480,480]{1,0} broadcast(%param_1.2), dimensions={0}, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=586 scheduling_name="broadcast.6.1"}
+  %param_0.1 = c128[480]{0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %broadcast.7.1 = c128[480,480]{1,0} broadcast(%param_0.1), dimensions={1}, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=586 scheduling_name="broadcast.7.1"}
+  ROOT %multiply.3.1 = c128[480,480]{1,0} multiply(%broadcast.6.1, %broadcast.7.1), metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=586 scheduling_name="multiply.3.1"}
+}
+
+ENTRY %main.4 (Arg_0.1.0: c128[480], Arg_1.2.0: c128[480]) -> c128[480,480] {
+  %Arg_1.2.0 = c128[480]{0} parameter(1), metadata={op_name="operands[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[480]{0} parameter(0), metadata={op_name="operands[0]" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_multiply_fusion = c128[480,480]{1,0} fusion(%Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=586 scheduling_name="loop_multiply_fusion"}
+}
+

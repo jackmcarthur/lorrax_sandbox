@@ -1,0 +1,25 @@
+HloModule jit__identity_fn, is_scheduled=true, entry_computation_layout={(c128[250,480,480]{2,1,0})->c128[1000,240,240]{2,1,0}}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="34be923bd4884b97514136e0aacc6241"}
+
+%fused_dynamic_slice (param_0: c128[1000,480,480], param_1.1: s32[4], param_2.4: u32[], param_3.5: s32[4]) -> c128[1000,240,240] {
+  %param_0 = c128[1000,480,480]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %constant_4 = s32[] constant(0)
+  %param_3.5 = s32[4]{0} parameter(3), metadata={scheduling_name="param_3.5"}
+  %param_2.4 = u32[] parameter(2), metadata={scheduling_name="param_2.4"}
+  %dynamic-slice.9.1 = s32[1]{0} dynamic-slice(%param_3.5, %param_2.4), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.9.1"}
+  %bitcast.56.1 = s32[] bitcast(%dynamic-slice.9.1), metadata={scheduling_name="bitcast.56.1"}
+  %param_1.1 = s32[4]{0} parameter(1), metadata={scheduling_name="param_1.1"}
+  %dynamic-slice.10.1 = s32[1]{0} dynamic-slice(%param_1.1, %param_2.4), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.10.1"}
+  %bitcast.62.1 = s32[] bitcast(%dynamic-slice.10.1), metadata={scheduling_name="bitcast.62.1"}
+  ROOT %dynamic-slice.11.1 = c128[1000,240,240]{2,1,0} dynamic-slice(%param_0, %constant_4, %bitcast.56.1, %bitcast.62.1), dynamic_slice_sizes={1000,240,240}, metadata={scheduling_name="dynamic-slice.11.1"}
+}
+
+ENTRY %main.4_spmd (param.1: c128[250,480,480]) -> c128[1000,240,240] {
+  %param.1 = c128[250,480,480]{2,1,0} parameter(0), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="x" scheduling_name="param.1"}
+  %constant_2_0 = s32[4]{0} constant({0, 240, 0, 240})
+  %constant_1_0 = s32[4]{0} constant({0, 0, 240, 240})
+  %all-gather-start = (c128[250,480,480]{2,1,0}, c128[1000,480,480]{2,1,0}) all-gather-start(%param.1), channel_id=1, replica_groups=[1,4]<=[4], dimensions={0}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":true,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %partition-id.1 = u32[] partition-id(), metadata={scheduling_name="partition-id.1"}
+  %all-gather-done = c128[1000,480,480]{2,1,0} all-gather-done(%all-gather-start), metadata={scheduling_name="all-gather-done"}
+  ROOT %loop_dynamic_slice_fusion = c128[1000,240,240]{2,1,0} fusion(%all-gather-done, %constant_2_0, %partition-id.1, %constant_1_0), kind=kLoop, calls=%fused_dynamic_slice, metadata={scheduling_name="loop_dynamic_slice_fusion"}
+}
+

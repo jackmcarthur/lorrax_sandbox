@@ -1,0 +1,36 @@
+HloModule jit__diag_stats_fast, entry_computation_layout={(c128[16,960,960]{2,1,0})->(f64[], f64[], f64[])}, allow_spmd_sharding_propagation_to_output={true,true,true}, num_partitions=4
+
+%region_0.5 (Arg_0.6: f64[], Arg_1.7: f64[]) -> f64[] {
+  %Arg_0.6 = f64[] parameter(0), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min"}
+  %Arg_1.7 = f64[] parameter(1), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min"}
+  ROOT %minimum.8 = f64[] minimum(%Arg_0.6, %Arg_1.7), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598}
+}
+
+%region_1.11 (Arg_0.12: f64[], Arg_1.13: f64[]) -> f64[] {
+  %Arg_0.12 = f64[] parameter(0), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max"}
+  %Arg_1.13 = f64[] parameter(1), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max"}
+  ROOT %maximum.14 = f64[] maximum(%Arg_0.12, %Arg_1.13), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=599}
+}
+
+%region_2.18 (Arg_0.19: f64[], Arg_1.20: f64[]) -> f64[] {
+  %Arg_0.19 = f64[] parameter(0), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max"}
+  %Arg_1.20 = f64[] parameter(1), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max"}
+  ROOT %maximum.21 = f64[] maximum(%Arg_0.19, %Arg_1.20), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600}
+}
+
+ENTRY %main.24 (Arg_0.1: c128[16,960,960]) -> (f64[], f64[], f64[]) {
+  %constant.2 = f64[] constant(-inf)
+  %Arg_0.1 = c128[16,960,960]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="fH_k"}
+  %real.4 = f64[16,960,960]{2,1,0} real(%Arg_0.1), metadata={op_name="jit(_diag_stats_fast)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598}
+  %constant.3 = f64[] constant(inf)
+  %reduce.9 = f64[] reduce(%real.4, %constant.3), dimensions={0,1,2}, to_apply=%region_0.5, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598}
+  %real.10 = f64[16,960,960]{2,1,0} real(%Arg_0.1), metadata={op_name="jit(_diag_stats_fast)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=599}
+  %constant.0 = f64[] constant(-inf)
+  %reduce.15 = f64[] reduce(%real.10, %constant.0), dimensions={0,1,2}, to_apply=%region_1.11, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=599}
+  %imag.16 = f64[16,960,960]{2,1,0} imag(%Arg_0.1), metadata={op_name="jit(_diag_stats_fast)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600}
+  %abs.17 = f64[16,960,960]{2,1,0} abs(%imag.16), metadata={op_name="jit(_diag_stats_fast)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600}
+  %constant.1 = f64[] constant(-inf)
+  %reduce.22 = f64[] reduce(%abs.17, %constant.1), dimensions={0,1,2}, to_apply=%region_2.18, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600}
+  ROOT %tuple.23 = (f64[], f64[], f64[]) tuple(%reduce.9, %reduce.15, %reduce.22)
+}
+

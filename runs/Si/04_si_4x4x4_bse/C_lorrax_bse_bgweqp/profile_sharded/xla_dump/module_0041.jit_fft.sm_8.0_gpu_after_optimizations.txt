@@ -1,0 +1,27 @@
+HloModule jit_fft, is_scheduled=true, entry_computation_layout={(c128[240,240,4,4,4]{4,3,2,1,0})->c128[480,480,4,4,4]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="7d66eb4a5796b38d49839aff0c067bf5"}
+
+%fused_transpose (param_0.1: c128[240,480,4,4,4]) -> c128[240,480,64] {
+  %param_0.1 = c128[240,480,4,4,4]{4,3,2,0,1} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.38.1 = c128[480,240,64]{2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.38.1"}
+  ROOT %transpose.7.1 = c128[240,480,64]{2,1,0} transpose(%bitcast.38.1), dimensions={1,0,2}, metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="transpose.7.1"}
+}
+
+%fused_transpose.1 (param_0.3: c128[240,240,4,4,4]) -> c128[240,240,64] {
+  %param_0.3 = c128[240,240,4,4,4]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.31.1 = c128[240,240,64]{2,1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.31.1"}
+  ROOT %transpose.6.1 = c128[240,240,64]{2,1,0} transpose(%bitcast.31.1), dimensions={1,0,2}, metadata={op_name="x" scheduling_name="transpose.6.1"}
+}
+
+ENTRY %main.3_spmd (param.1: c128[240,240,4,4,4]) -> c128[480,480,4,4,4] {
+  %param.1 = c128[240,240,4,4,4]{4,3,2,1,0} parameter(0), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="x" scheduling_name="param.1"}
+  %loop_transpose_fusion.1 = c128[240,240,64]{2,1,0} fusion(%param.1), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="x" scheduling_name="loop_transpose_fusion.1"}
+  %bitcast.35.0 = c128[240,240,4,4,4]{4,3,2,0,1} bitcast(%loop_transpose_fusion.1), metadata={scheduling_name="bitcast.35.0"}
+  %all-gather-start = (c128[240,240,4,4,4]{4,3,2,0,1}, c128[240,480,4,4,4]{4,3,2,0,1}) all-gather-start(%bitcast.35.0), channel_id=1, replica_groups=[2,2]<=[4], dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done = c128[240,480,4,4,4]{4,3,2,0,1} all-gather-done(%all-gather-start), metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="all-gather-done"}
+  %loop_transpose_fusion = c128[240,480,64]{2,1,0} fusion(%all-gather-done), kind=kLoop, calls=%fused_transpose, metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="loop_transpose_fusion"}
+  %bitcast.42.0 = c128[240,480,4,4,4]{4,3,2,1,0} bitcast(%loop_transpose_fusion), metadata={scheduling_name="bitcast.42.0"}
+  %all-gather-start.1 = (c128[240,480,4,4,4]{4,3,2,1,0}, c128[480,480,4,4,4]{4,3,2,1,0}) all-gather-start(%bitcast.42.0), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={0}, use_global_device_ids=true, metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done.1 = c128[480,480,4,4,4]{4,3,2,1,0} all-gather-done(%all-gather-start.1), metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="all-gather-done.1"}
+  ROOT %fft.0.0 = c128[480,480,4,4,4]{4,3,2,1,0} fft(%all-gather-done.1), fft_type=IFFT, fft_length={4,4,4}, metadata={op_name="jit(fft)/jit(main)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_lanczos.py" source_line=149 scheduling_name="fft.0.0"}
+}
+

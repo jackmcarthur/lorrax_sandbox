@@ -1,0 +1,85 @@
+HloModule jit_f5, is_scheduled=true, entry_computation_layout={(c128[9,2419,167]{2,1,0}, c128[9,2419]{1,0}, c128[9,168,168]{2,1,0})->c128[9,168,168]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16, frontend_attributes={fingerprint_before_lhs="71a9e2ce73581aec8824ab9e1b427f18"}
+
+%fused_transpose (param_0.36: c128[9,2419,167]) -> c128[3,21771] {
+  %param_0.36 = c128[9,2419,167]{2,1,0} parameter(0)
+  %slice.4.1 = c128[9,2419,3]{2,1,0} slice(%param_0.36), slice={[0:9], [0:2419], [0:3]}, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %bitcast.199.1 = c128[21771,3]{1,0} bitcast(%slice.4.1)
+  ROOT %transpose.10.1 = c128[3,21771]{1,0} transpose(%bitcast.199.1), dimensions={1,0}, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+}
+
+%fused_complex (param_0.29: c128[9,2419], param_1.29: c128[9,168,2419]) -> c128[168,9,2419] {
+  %param_1.29 = c128[9,168,2419]{2,0,1} parameter(1)
+  %bitcast.244.7 = c128[168,9,2419]{2,1,0} bitcast(%param_1.29)
+  %param_0.29 = c128[9,2419]{1,0} parameter(0)
+  %broadcast.21.7 = c128[168,9,2419]{2,1,0} broadcast(%param_0.29), dimensions={1,2}, metadata={op_name="jit(f5)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=262}
+  %multiply.10.7 = c128[168,9,2419]{2,1,0} multiply(%bitcast.244.7, %broadcast.21.7), metadata={op_name="jit(f5)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=262}
+  %real.3.3 = f64[168,9,2419]{2,1,0} real(%multiply.10.7), metadata={op_name="jit(f5)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+  %imag.3.3 = f64[168,9,2419]{2,1,0} imag(%multiply.10.7), metadata={op_name="jit(f5)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+  %negate.3.1 = f64[168,9,2419]{2,1,0} negate(%imag.3.3), metadata={op_name="jit(f5)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+  ROOT %complex.3.1 = c128[168,9,2419]{2,1,0} complex(%real.3.3, %negate.3.1), metadata={op_name="jit(f5)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+}
+
+%fused_select (param_0.48: c128[9,2419,3], param_1.48: c128[9,2419,167], param_2.23: s32[16], param_3.21: u32[], param_4.14: s32[16]) -> c128[42,9,2419] {
+  %iota.6.3 = s32[42,9,2419]{2,1,0} iota(), iota_dimension=0, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %param_3.21 = u32[] parameter(3)
+  %convert.5.3 = s32[] convert(%param_3.21), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %constant_29_1 = s32[] constant(42), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %multiply.9.3 = s32[] multiply(%convert.5.3, %constant_29_1), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %broadcast.16.3 = s32[42,9,2419]{2,1,0} broadcast(%multiply.9.3), dimensions={}, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %add.8.3 = s32[42,9,2419]{2,1,0} add(%iota.6.3, %broadcast.16.3), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %constant_30_1 = s32[] constant(668), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %broadcast.18.3 = s32[42,9,2419]{2,1,0} broadcast(%constant_30_1), dimensions={}, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %compare.3.3 = pred[42,9,2419]{2,1,0} compare(%add.8.3, %broadcast.18.3), direction=LT, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %param_1.48 = c128[9,2419,167]{2,1,0} parameter(1)
+  %bitcast.191.5 = c128[21771,167]{1,0} bitcast(%param_1.48)
+  %transpose.9.5 = c128[167,21771]{1,0} transpose(%bitcast.191.5), dimensions={1,0}, metadata={op_name="z_logical"}
+  %bitcast.194.5 = c128[167,9,2419]{2,1,0} bitcast(%transpose.9.5)
+  %param_0.48 = c128[9,2419,3]{1,0,2} parameter(0)
+  %bitcast.206.5 = c128[3,9,2419]{2,1,0} bitcast(%param_0.48)
+  %constant_1_1 = c128[] constant((0, 0)), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %pad.4.5 = c128[4,9,2419]{2,1,0} pad(%bitcast.206.5, %constant_1_1), padding=0_1x0_0x0_0, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %concatenate.3.5 = c128[171,9,2419]{2,1,0} concatenate(%bitcast.194.5, %pad.4.5), dimensions={0}, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %param_4.14 = s32[16]{0} parameter(4)
+  %dynamic-slice.21.1 = s32[1]{0} dynamic-slice(%param_4.14, %param_3.21), dynamic_slice_sizes={1}, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %bitcast.217.3 = s32[] bitcast(%dynamic-slice.21.1)
+  %subtract.5.3 = s32[] subtract(%multiply.9.3, %bitcast.217.3), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %constant_58_1 = s32[1]{0} constant({0}), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %param_2.23 = s32[16]{0} parameter(2)
+  %dynamic-slice.22.1 = s32[1]{0} dynamic-slice(%param_2.23, %param_3.21), dynamic_slice_sizes={1}, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %constant_59_1 = s32[1]{0} constant({3}), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %clamp.12.1 = s32[1]{0} clamp(%constant_58_1, %dynamic-slice.22.1, %constant_59_1), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %constant_61_1 = s32[1]{0} constant({129}), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %clamp.13.1 = s32[1]{0} clamp(%constant_58_1, %clamp.12.1, %constant_61_1), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %bitcast.231.3 = s32[] bitcast(%clamp.13.1)
+  %add.9.3 = s32[] add(%subtract.5.3, %bitcast.231.3), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %constant_52_1 = s32[] constant(0), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %dynamic-slice.23.3 = c128[42,9,2419]{2,1,0} dynamic-slice(%concatenate.3.5, %add.9.3, %constant_52_1, %constant_52_1), dynamic_slice_sizes={42,9,2419}, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %broadcast.20.1 = c128[42,9,2419]{2,1,0} broadcast(%constant_1_1), dimensions={}, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  ROOT %select.3.1 = c128[42,9,2419]{2,1,0} select(%compare.3.3, %dynamic-slice.23.3, %broadcast.20.1), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+}
+
+ENTRY %main.29_spmd (param.1.0: c128[9,2419,167], param.2.0: c128[9,2419], param.3: c128[9,168,168]) -> c128[9,168,168] {
+  %param.3 = c128[9,168,168]{2,1,0} parameter(2), sharding={devices=[1,4,4]<=[16]}, metadata={op_name="V_acc"}
+  %param.1.0 = c128[9,2419,167]{2,1,0} parameter(0), sharding={devices=[1,1,4,4]<=[16] last_tile_dim_replicate}, metadata={op_name="z_logical"}
+  %constant_11_0 = s32[16]{0} constant({...}), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %constant_23_0 = s32[16]{0} constant({...}), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %param.2.0 = c128[9,2419]{1,0} parameter(1), sharding={replicated}, metadata={op_name="v"}
+  %loop_transpose_fusion = c128[3,21771]{1,0} fusion(%param.1.0), kind=kLoop, calls=%fused_transpose, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %bitcast.203.0 = c128[9,2419,3]{1,0,2} bitcast(%loop_transpose_fusion)
+  %collective-permute-start = (c128[9,2419,3]{1,0,2}, c128[9,2419,3]{1,0,2}) collective-permute-start(%bitcast.203.0), channel_id=1, source_target_pairs={{4,0},{8,4},{12,8},{5,1},{9,5},{13,9},{6,2},{10,6},{14,10},{7,3},{11,7},{15,11}}, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %partition-id.1 = u32[] partition-id(), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %collective-permute-done = c128[9,2419,3]{1,0,2} collective-permute-done(%collective-permute-start), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %loop_select_fusion = c128[42,9,2419]{2,1,0} fusion(%collective-permute-done, %param.1.0, %constant_11_0, %partition-id.1, %constant_23_0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  %bitcast.257.0 = c128[9,42,2419]{2,0,1} bitcast(%loop_select_fusion)
+  %collective-permute-start.1 = (c128[9,42,2419]{2,0,1}, c128[9,42,2419]{2,0,1}) collective-permute-start(%bitcast.257.0), channel_id=3, source_target_pairs={{0,0},{1,4},{2,8},{3,12},{4,1},{5,5},{6,9},{7,13},{8,2},{9,6},{10,10},{11,14},{12,3},{13,7},{14,11},{15,15}}, metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-start = (c128[9,42,2419]{2,0,1}, c128[9,168,2419]{2,0,1}) all-gather-start(%bitcast.257.0), channel_id=2, replica_groups={{0,1,2,3},{4,5,6,7},{8,9,10,11},{12,13,14,15}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=259}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done = c128[9,168,2419]{2,0,1} all-gather-done(%all-gather-start), metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=259}
+  %loop_complex_fusion = c128[168,9,2419]{2,1,0} fusion(%param.2.0, %all-gather-done), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(f5)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+  %collective-permute-done.1 = c128[9,42,2419]{2,0,1} collective-permute-done(%collective-permute-start.1), metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}
+  %all-gather-start.1 = (c128[9,42,2419]{2,0,1}, c128[9,168,2419]{2,0,1}) all-gather-start(%collective-permute-done.1), channel_id=4, replica_groups={{0,4,8,12},{1,5,9,13},{2,6,10,14},{3,7,11,15}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done.1 = c128[9,168,2419]{2,0,1} all-gather-done(%all-gather-start.1), metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}
+  %bitcast.263.0 = c128[168,9,2419]{2,1,0} bitcast(%all-gather-done.1)
+  %custom-call.1.0 = (c128[9,168,168]{2,1,0}, s8[4194304]{0}) custom-call(%loop_complex_fusion, %bitcast.263.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(f5)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=263}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["2"],"lhs_batch_dimensions":["1"],"rhs_batch_dimensions":["1"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"21771","rhs_stride":"21771","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  ROOT %get-tuple-element.1 = c128[9,168,168]{2,1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(f5)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=263}
+}
+

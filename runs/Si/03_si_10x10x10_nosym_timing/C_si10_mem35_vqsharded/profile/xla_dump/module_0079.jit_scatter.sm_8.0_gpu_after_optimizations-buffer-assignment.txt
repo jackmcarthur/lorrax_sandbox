@@ -1,0 +1,120 @@
+BufferAssignment:
+allocation 0: size 460800000, output shape is |c128[1000,240,60,2]|, maybe-live-out:
+ value: <28 copy.2 @0> (size=460800000,offset=0): c128[1000,240,60,2]{3,2,1,0}
+ value: <34 loop_dynamic_update_slice_fusion @0> (size=460800000,offset=0): c128[1000,240,60,2]{3,2,1,0}
+allocation 1: size 460800000, parameter 0, shape |c128[1000,240,60,2]| at ShapeIndex {}:
+ value: <27 param.2.0 @0> (size=460800000,offset=0): c128[1000,240,60,2]{3,2,1,0}
+allocation 2: size 277401600, parameter 2, shape |c128[602,240,60,2]| at ShapeIndex {}:
+ value: <29 param.4.0 @0> (size=277401600,offset=0): c128[602,240,60,2]{3,2,1,0}
+allocation 3: size 16, constant:
+ value: <31 constant_27_0 @0> (size=16,offset=0): s32[4]{0}
+allocation 4: size 4, parameter 1, shape |s32[1]| at ShapeIndex {}:
+ value: <30 param.3.0 @0> (size=4,offset=0): s32[1]{0}
+allocation 5: size 1, thread-local:
+ value: <2 and.8 @0> (size=1,offset=0): pred[]
+allocation 6: size 1, thread-local:
+ value: <0 lhs @0> (size=1,offset=0): pred[]
+allocation 7: size 1, thread-local:
+ value: <1 rhs @0> (size=1,offset=0): pred[]
+allocation 8: size 277401601, preallocated-temp:
+ value: <32 input_reduce_fusion @0> (size=1,offset=277401600): pred[]
+ value: <33 loop_select_fusion @0> (size=277401600,offset=0): c128[602,240,60,2]{3,2,1,0}
+
+Total bytes used: 1476403224 (1.38GiB)
+
+Used values:
+<0 lhs @0>
+ positions:
+  lhs
+ uses:
+  and.8, operand 0
+ from instruction: %lhs = pred[] parameter(0), metadata={scheduling_name="lhs"}
+<1 rhs @0>
+ positions:
+  rhs
+ uses:
+  and.8, operand 1
+ from instruction: %rhs = pred[] parameter(1), metadata={scheduling_name="rhs"}
+<2 and.8 @0>
+ positions:
+  and.8
+ uses:
+ from instruction: %and.8 = pred[] and(%lhs, %rhs), metadata={scheduling_name="and.8"}
+<27 param.2.0 @0>
+ positions:
+  param.2.0
+ uses:
+  copy.2, operand 0
+ from instruction: %param.2.0 = c128[1000,240,60,2]{3,2,1,0} parameter(0), sharding={devices=[1,2,1,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="args[0]" scheduling_name="param.2.0"}
+<28 copy.2 @0>
+ positions:
+  copy.2
+ uses:
+  loop_dynamic_update_slice_fusion, operand 0
+  loop_select_fusion, operand 1
+ from instruction: %copy.2 = c128[1000,240,60,2]{3,2,1,0} copy(%param.2.0)
+<29 param.4.0 @0>
+ positions:
+  param.4.0
+ uses:
+  loop_select_fusion, operand 0
+ from instruction: %param.4.0 = c128[602,240,60,2]{3,2,1,0} parameter(2), sharding={devices=[1,2,1,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="args[2]" scheduling_name="param.4.0"}
+<30 param.3.0 @0>
+ positions:
+  param.3.0
+ uses:
+  input_reduce_fusion, operand 1
+  loop_dynamic_update_slice_fusion, operand 2
+  loop_select_fusion, operand 2
+ from instruction: %param.3.0 = s32[1]{0} parameter(1), sharding={replicated}, metadata={op_name="args[1]" scheduling_name="param.3.0"}
+<31 constant_27_0 @0>
+ positions:
+  constant_27_0
+ uses:
+  input_reduce_fusion, operand 0
+ from instruction: %constant_27_0 = s32[4]{0} constant({398, 0, 0, 0})
+<32 input_reduce_fusion @0>
+ positions:
+  input_reduce_fusion
+ uses:
+  loop_select_fusion, operand 3
+ from instruction: %input_reduce_fusion = pred[] fusion(%constant_27_0, %param.3.0), kind=kInput, calls=%fused_reduce, metadata={scheduling_name="input_reduce_fusion"}
+<33 loop_select_fusion @0>
+ positions:
+  loop_select_fusion
+ uses:
+  loop_dynamic_update_slice_fusion, operand 1
+ from instruction: %loop_select_fusion = c128[602,240,60,2]{3,2,1,0} fusion(%param.4.0, %copy.2, %param.3.0, %input_reduce_fusion), kind=kLoop, calls=%fused_select, metadata={scheduling_name="loop_select_fusion"}
+<34 loop_dynamic_update_slice_fusion @0>
+ positions:
+  loop_dynamic_update_slice_fusion
+ uses:
+ from instruction: %loop_dynamic_update_slice_fusion = c128[1000,240,60,2]{3,2,1,0} fusion(%copy.2, %loop_select_fusion, %param.3.0), kind=kLoop, calls=%fused_dynamic_update_slice, metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=911 scheduling_name="loop_dynamic_update_slice_fusion"}
+
+
+HloLiveRange (max 8):
+  InstructionSequence:
+    0:param.3.0
+    1:param.4.0
+    2:constant_27_0
+    3:param.2.0
+    4:input_reduce_fusion
+    5:copy.2
+    6:loop_select_fusion
+    7:loop_dynamic_update_slice_fusion
+  BufferLiveRange:
+    param.2.0{}:0-8
+    copy.2{}:5-7
+    param.4.0{}:0-8
+    param.3.0{}:0-8
+    constant_27_0{}:2-4
+    input_reduce_fusion{}:4-6
+    loop_select_fusion{}:6-7
+    loop_dynamic_update_slice_fusion{}:7-8
+  Live ranges at 7 (peak):
+    param.2.0: 460800000 bytes
+    copy.2: 460800000 bytes
+    param.4.0: 277401600 bytes
+    param.3.0: 4 bytes
+    loop_select_fusion: 277401600 bytes
+    loop_dynamic_update_slice_fusion: 460800000 bytes

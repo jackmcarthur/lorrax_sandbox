@@ -1,0 +1,124 @@
+HloModule jit__kernel, input_output_alias={ {0}: (0, {}, may-alias), {1}: (1, {}, may-alias) }, entry_computation_layout={(c128[9,640,640]{2,1,0}, c128[9,640]{1,0}, c128[9,46080,640]{2,1,0}, c128[9,2419]{1,0}, c128[9,1,24,24,80]{4,3,2,1,0}, /*index=5*/s32[], s32[], s32[])->(c128[9,640,640]{2,1,0}, c128[9,640]{1,0})}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,false,false,false,false}, allow_spmd_sharding_propagation_to_output={false,false}, num_partitions=4
+
+%fft.23 (Arg_0.24: c128[9,160,24,24,80]) -> c128[9,160,24,24,80] {
+  %Arg_0.24 = c128[9,160,24,24,80]{4,3,2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/pjit"}
+  ROOT %fft.25 = c128[9,160,24,24,80]{4,3,2,1,0} fft(%Arg_0.24), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343}
+}
+
+%shmap_body.26 (Arg_0.27: c128[9,160,24,24,80]) -> c128[9,160,24,24,80] {
+  %Arg_0.27 = c128[9,160,24,24,80]{4,3,2,1,0} parameter(0), metadata={op_name="[None, (\'x\', \'y\'), None, None, None]"}
+  ROOT %call.28 = c128[9,160,24,24,80]{4,3,2,1,0} call(%Arg_0.27), to_apply=%fft.23
+}
+
+%_where.36 (Arg_0.37: pred[2419], Arg_1.38: s32[2419], Arg_2.39: s32[2419]) -> s32[2419] {
+  %Arg_0.37 = pred[2419]{0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/pjit"}
+  %Arg_1.38 = s32[2419]{0} parameter(1), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/pjit"}
+  %Arg_2.39 = s32[2419]{0} parameter(2), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/pjit"}
+  ROOT %select.40 = s32[2419]{0} select(%Arg_0.37, %Arg_1.38, %Arg_2.39), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+}
+
+%region_0.41 (Arg_0.42: pred[], Arg_1.43: pred[]) -> pred[] {
+  %Arg_0.42 = pred[] parameter(0), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/reduce_and"}
+  %Arg_1.43 = pred[] parameter(1), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/reduce_and"}
+  ROOT %and.44 = pred[] and(%Arg_0.42, %Arg_1.43), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/reduce_and" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+}
+
+%_take.45 (Arg_0.46: c128[9,640,46080], Arg_1.47: s32[2419]) -> c128[9,640,2419] {
+  %Arg_1.47 = s32[2419]{0} parameter(1), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %constant.57 = s32[] constant(0)
+  %broadcast.58 = s32[2419]{0} broadcast(%constant.57), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+  %compare.59 = pred[2419]{0} compare(%Arg_1.47, %broadcast.58), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+  %constant.54 = s32[] constant(46080)
+  %broadcast.55 = s32[2419]{0} broadcast(%constant.54), dimensions={}
+  %add.60 = s32[2419]{0} add(%Arg_1.47, %broadcast.55), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+  %call.61 = s32[2419]{0} call(%compare.59, %add.60, %Arg_1.47), to_apply=%_where.36
+  %reshape.62 = s32[2419,1]{1,0} reshape(%call.61), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+  %convert.63 = s64[2419,1]{1,0} convert(%reshape.62), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+  %constant.52 = s64[] constant(0)
+  %broadcast.53 = s64[2419,1]{1,0} broadcast(%constant.52), dimensions={}
+  %compare.64 = pred[2419,1]{1,0} compare(%convert.63, %broadcast.53), direction=GE, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+  %constant.50 = s64[] constant(46079)
+  %broadcast.51 = s64[2419,1]{1,0} broadcast(%constant.50), dimensions={}
+  %compare.65 = pred[2419,1]{1,0} compare(%convert.63, %broadcast.51), direction=LE, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/le" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+  %and.66 = pred[2419,1]{1,0} and(%compare.64, %compare.65), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+  %constant.56 = pred[] constant(true)
+  %reduce.67 = pred[2419]{0} reduce(%and.66, %constant.56), dimensions={1}, to_apply=%region_0.41, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/reduce_and" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+  %broadcast.69 = pred[9,640,2419]{2,1,0} broadcast(%reduce.67), dimensions={2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+  %Arg_0.46 = c128[9,640,46080]{2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %gather.68 = c128[9,640,2419]{2,1,0} gather(%Arg_0.46, %convert.63), offset_dims={0,1}, collapsed_slice_dims={2}, start_index_map={2}, index_vector_dim=1, slice_sizes={9,640,1}, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+  %constant.48 = c128[] constant((nan, 0))
+  %broadcast.49 = c128[9,640,2419]{2,1,0} broadcast(%constant.48), dimensions={}
+  ROOT %select.70 = c128[9,640,2419]{2,1,0} select(%broadcast.69, %gather.68, %broadcast.49), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+}
+
+ENTRY %main.110 (Arg_0.1: c128[9,640,640], Arg_1.2: c128[9,640], Arg_2.3: c128[9,46080,640], Arg_3.4: c128[9,2419], Arg_4.5: c128[9,1,24,24,80], Arg_5.6: s32[], Arg_6.7: s32[], Arg_7.8: s32[]) -> (c128[9,640,640], c128[9,640]) {
+  %Arg_0.1 = c128[9,640,640]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="V_acc"}
+  %Arg_2.3 = c128[9,46080,640]{2,1,0} parameter(2), sharding={devices=[1,1,4]<=[4]}, metadata={op_name="zeta_mu_disk"}
+  %transpose.13 = c128[9,640,46080]{1,2,0} transpose(%Arg_2.3), dimensions={0,2,1}, metadata={op_name="jit(_kernel)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=356}
+  %custom-call.14 = c128[9,640,46080]{2,1,0} custom-call(%transpose.13), custom_call_target="Sharding", sharding={devices=[1,4,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=355}
+  %reshape.15 = c128[9,640,24,24,80]{4,3,2,1,0} reshape(%custom-call.14), metadata={op_name="jit(_kernel)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=359}
+  %Arg_4.5 = c128[9,1,24,24,80]{4,3,2,1,0} parameter(4), sharding={replicated}, metadata={op_name="phase_batch"}
+  %broadcast.16 = c128[9,1,24,24,80]{4,3,2,1,0} broadcast(%Arg_4.5), dimensions={0,1,2,3,4}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=359}
+  %reshape.17 = c128[9,24,24,80]{3,2,1,0} reshape(%broadcast.16), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=359}
+  %broadcast.18 = c128[9,640,24,24,80]{4,3,2,1,0} broadcast(%reshape.17), dimensions={0,2,3,4}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=359}
+  %multiply.19 = c128[9,640,24,24,80]{4,3,2,1,0} multiply(%reshape.15, %broadcast.18), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=359}
+  %custom-call.20 = c128[9,640,24,24,80]{4,3,2,1,0} custom-call(%multiply.19), custom_call_target="Sharding", sharding={devices=[1,4,1,1,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=358}
+  %custom-call.21 = c128[9,640,24,24,80]{4,3,2,1,0} custom-call(%custom-call.20), custom_call_target="Sharding", sharding={devices=[1,4,1,1,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=361}
+  %custom-call.22 = c128[9,160,24,24,80]{4,3,2,1,0} custom-call(%custom-call.21), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=361}
+  %call.29 = c128[9,160,24,24,80]{4,3,2,1,0} call(%custom-call.22), to_apply=%shmap_body.26
+  %custom-call.30 = c128[9,160,24,24,80]{4,3,2,1,0} custom-call(%call.29), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=361}
+  %custom-call.31 = c128[9,640,24,24,80]{4,3,2,1,0} custom-call(%custom-call.30), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,4,1,1,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=361}
+  %reshape.32 = c128[9,640,46080]{2,1,0} reshape(%custom-call.31), metadata={op_name="jit(_kernel)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=363}
+  %custom-call.33 = c128[9,640,46080]{2,1,0} custom-call(%reshape.32), custom_call_target="Sharding", sharding={devices=[1,4,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=362}
+  %constant.12 = s32[2419]{0} constant({...})
+  %call.71 = c128[9,640,2419]{2,1,0} call(%custom-call.33, %constant.12), to_apply=%_take.45
+  %custom-call.72 = c128[9,640,2419]{2,1,0} custom-call(%call.71), custom_call_target="Sharding", sharding={devices=[1,4,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=369}
+  %custom-call.73 = c128[9,640,2419]{2,1,0} custom-call(%custom-call.72), custom_call_target="Sharding", sharding={devices=[1,2,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=390}
+  %Arg_3.4 = c128[9,2419]{1,0} parameter(3), sharding={replicated}, metadata={op_name="v_per_G_batch"}
+  %reshape.75 = c128[9,1,2419]{2,1,0} reshape(%Arg_3.4), metadata={op_name="jit(_kernel)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=399}
+  %broadcast.76 = c128[9,1,2419]{2,1,0} broadcast(%reshape.75), dimensions={0,1,2}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=399}
+  %reshape.77 = c128[9,2419]{1,0} reshape(%broadcast.76), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=399}
+  %broadcast.78 = c128[9,640,2419]{2,1,0} broadcast(%reshape.77), dimensions={0,2}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=399}
+  %multiply.79 = c128[9,640,2419]{2,1,0} multiply(%custom-call.73, %broadcast.78), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=399}
+  %custom-call.80 = c128[9,640,2419]{2,1,0} custom-call(%multiply.79), custom_call_target="Sharding", sharding={devices=[1,2,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=398}
+  %real.81 = f64[9,640,2419]{2,1,0} real(%custom-call.80), metadata={op_name="jit(_kernel)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=402}
+  %imag.82 = f64[9,640,2419]{2,1,0} imag(%custom-call.80), metadata={op_name="jit(_kernel)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=402}
+  %negate.83 = f64[9,640,2419]{2,1,0} negate(%imag.82), metadata={op_name="jit(_kernel)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=402}
+  %complex.84 = c128[9,640,2419]{2,1,0} complex(%real.81, %negate.83), metadata={op_name="jit(_kernel)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=402}
+  %custom-call.74 = c128[9,640,2419]{2,1,0} custom-call(%custom-call.72), custom_call_target="Sharding", sharding={devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=391}
+  %dot.85 = c128[9,640,640]{2,1,0} dot(%complex.84, %custom-call.74), lhs_batch_dims={0}, lhs_contracting_dims={2}, rhs_batch_dims={0}, rhs_contracting_dims={2}, metadata={op_name="jit(_kernel)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=401}
+  %custom-call.86 = c128[9,640,640]{2,1,0} custom-call(%dot.85), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=404}
+  %Arg_5.6 = s32[] parameter(5), metadata={op_name="q_lo_dyn"}
+  %constant.11 = s32[] constant(0)
+  %compare.87 = pred[] compare(%Arg_5.6, %constant.11), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=406}
+  %constant.10 = s32[] constant(9)
+  %add.88 = s32[] add(%Arg_5.6, %constant.10), metadata={op_name="jit(_kernel)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=406}
+  %select.89 = s32[] select(%compare.87, %add.88, %Arg_5.6), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=406}
+  %Arg_6.7 = s32[] parameter(6), metadata={op_name="mu_lo_dyn"}
+  %compare.90 = pred[] compare(%Arg_6.7, %constant.11), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=406}
+  %constant.9 = s32[] constant(640)
+  %add.91 = s32[] add(%Arg_6.7, %constant.9), metadata={op_name="jit(_kernel)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=406}
+  %select.92 = s32[] select(%compare.90, %add.91, %Arg_6.7), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=406}
+  %Arg_7.8 = s32[] parameter(7), metadata={op_name="nu_lo_dyn"}
+  %compare.93 = pred[] compare(%Arg_7.8, %constant.11), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=406}
+  %add.94 = s32[] add(%Arg_7.8, %constant.9), metadata={op_name="jit(_kernel)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=406}
+  %select.95 = s32[] select(%compare.93, %add.94, %Arg_7.8), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=406}
+  %dynamic-update-slice.96 = c128[9,640,640]{2,1,0} dynamic-update-slice(%Arg_0.1, %custom-call.86, %select.89, %select.92, %select.95), metadata={op_name="jit(_kernel)/jit(main)/dynamic_update_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=406}
+  %custom-call.97 = c128[9,640,640]{2,1,0} custom-call(%dynamic-update-slice.96), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=408}
+  %reshape.107 = c128[9,640,640]{2,1,0} reshape(%custom-call.97), sharding={devices=[1,2,2]<=[4]}
+  %Arg_1.2 = c128[9,640]{1,0} parameter(1), sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="g0_acc"}
+  %slice.34 = c128[9,640,1]{2,1,0} slice(%custom-call.33), slice={[0:9], [0:640], [0:1]}, metadata={op_name="jit(_kernel)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=364}
+  %reshape.35 = c128[9,640]{1,0} reshape(%slice.34), metadata={op_name="jit(_kernel)/jit(main)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=364}
+  %custom-call.98 = c128[9,640]{1,0} custom-call(%reshape.35), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=411}
+  %compare.99 = pred[] compare(%Arg_5.6, %constant.11), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=412}
+  %add.100 = s32[] add(%Arg_5.6, %constant.10), metadata={op_name="jit(_kernel)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=412}
+  %select.101 = s32[] select(%compare.99, %add.100, %Arg_5.6), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=412}
+  %compare.102 = pred[] compare(%Arg_6.7, %constant.11), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=412}
+  %add.103 = s32[] add(%Arg_6.7, %constant.9), metadata={op_name="jit(_kernel)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=412}
+  %select.104 = s32[] select(%compare.102, %add.103, %Arg_6.7), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=412}
+  %dynamic-update-slice.105 = c128[9,640]{1,0} dynamic-update-slice(%Arg_1.2, %custom-call.98, %select.101, %select.104), metadata={op_name="jit(_kernel)/jit(main)/dynamic_update_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=412}
+  %custom-call.106 = c128[9,640]{1,0} custom-call(%dynamic-update-slice.105), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=414}
+  %reshape.108 = c128[9,640]{1,0} reshape(%custom-call.106), sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}
+  ROOT %tuple.109 = (c128[9,640,640]{2,1,0}, c128[9,640]{1,0}) tuple(%reshape.107, %reshape.108), sharding={{devices=[1,2,2]<=[4]}, {devices=[1,2,2]<=[4] last_tile_dim_replicate}}
+}
+

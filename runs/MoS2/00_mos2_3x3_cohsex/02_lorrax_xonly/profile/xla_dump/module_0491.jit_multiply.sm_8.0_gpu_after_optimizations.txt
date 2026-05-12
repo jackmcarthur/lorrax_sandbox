@@ -1,0 +1,15 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(f64[], f64[262144]{0})->f64[262144]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="909a69cb9d8443ac0dc39efe7af90365"}
+
+%fused_multiply (param_0.1: f64[262144], param_1.1: f64[]) -> f64[262144] {
+  %param_1.1 = f64[] parameter(1), metadata={scheduling_name="param_1.1"}
+  %broadcast.2.1 = f64[262144]{0} broadcast(%param_1.1), dimensions={}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/coulomb/slab_2d.py" source_line=76 scheduling_name="broadcast.2.1"}
+  %param_0.1 = f64[262144]{0} parameter(0), metadata={scheduling_name="param_0.1"}
+  ROOT %multiply.2.1 = f64[262144]{0} multiply(%broadcast.2.1, %param_0.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/coulomb/slab_2d.py" source_line=76 scheduling_name="multiply.2.1"}
+}
+
+ENTRY %main.5 (Arg_0.1.0: f64[], Arg_1.2.0: f64[262144]) -> f64[262144] {
+  %Arg_0.1.0 = f64[] parameter(0), metadata={op_name="x" scheduling_name="Arg_0.1.0"}
+  %Arg_1.2.0 = f64[262144]{0} parameter(1), metadata={op_name="y" scheduling_name="Arg_1.2.0"}
+  ROOT %loop_multiply_fusion = f64[262144]{0} fusion(%Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/coulomb/slab_2d.py" source_line=76 scheduling_name="loop_multiply_fusion"}
+}
+

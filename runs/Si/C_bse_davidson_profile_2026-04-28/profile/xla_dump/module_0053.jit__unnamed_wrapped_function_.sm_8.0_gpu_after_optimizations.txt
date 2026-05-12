@@ -1,0 +1,16 @@
+HloModule jit__unnamed_wrapped_function_, is_scheduled=true, entry_computation_layout={(c128[1,240,240,4,4,4]{5,4,3,2,1,0}, c128[1]{0})->c128[1,240,240,4,4,4]{5,4,3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="21a7e916e1e017c3de707040c53afb39"}
+
+%fused_multiply (param_0.2: c128[1,240,240,4,4,4], param_1.2: c128[1]) -> c128[1,240,240,4,4,4] {
+  %param_0.2 = c128[1,240,240,4,4,4]{5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %param_1.2 = c128[1]{0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %bitcast.23.3 = c128[] bitcast(%param_1.2), metadata={scheduling_name="bitcast.23.3"}
+  %broadcast.6.3 = c128[1,240,240,4,4,4]{5,4,3,2,1,0} broadcast(%bitcast.23.3), dimensions={}, metadata={op_name="jit(<unnamed wrapped function>)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325 scheduling_name="broadcast.6.3"}
+  ROOT %multiply.5.1 = c128[1,240,240,4,4,4]{5,4,3,2,1,0} multiply(%param_0.2, %broadcast.6.3), metadata={op_name="jit(<unnamed wrapped function>)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325 scheduling_name="multiply.5.1"}
+}
+
+ENTRY %main.18_spmd (param.2: c128[1,240,240,4,4,4], param.1.0: c128[1]) -> c128[1,240,240,4,4,4] {
+  %param.1.0 = c128[1]{0} parameter(1), sharding={devices=[4]<=[4]}, metadata={op_name="args[1]" scheduling_name="param.1.0"}
+  %param.2 = c128[1,240,240,4,4,4]{5,4,3,2,1,0} parameter(0), sharding={devices=[4,1,1,1,1,1]<=[4]}, metadata={op_name="args[0]" scheduling_name="param.2"}
+  ROOT %loop_multiply_fusion = c128[1,240,240,4,4,4]{5,4,3,2,1,0} fusion(%param.2, %param.1.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(<unnamed wrapped function>)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325 scheduling_name="loop_multiply_fusion"}
+}
+

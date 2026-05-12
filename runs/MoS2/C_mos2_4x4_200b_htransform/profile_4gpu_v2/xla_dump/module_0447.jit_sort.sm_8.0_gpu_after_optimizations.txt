@@ -1,0 +1,28 @@
+HloModule jit_sort, is_scheduled=true, entry_computation_layout={(f64[181,960]{1,0})->f64[181,960]{1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="72e45e3a034a44d53054feb727772125"}
+
+%fused_select (param_0.14: f64[181,960]) -> u64[181,960] {
+  %param_0.14 = f64[181,960]{1,0} parameter(0), metadata={scheduling_name="param_0.14"}
+  %compare.17.7 = pred[181,960]{1,0} compare(%param_0.14, %param_0.14), direction=NE, metadata={op_name="a" scheduling_name="compare.17.7"}
+  %constant_9_1 = f64[] constant(nan), metadata={op_name="a"}
+  %broadcast.16.7 = f64[181,960]{1,0} broadcast(%constant_9_1), dimensions={}, metadata={op_name="a" scheduling_name="broadcast.16.7"}
+  %constant_8_1 = f64[] constant(0), metadata={op_name="a"}
+  %broadcast.17.15 = f64[181,960]{1,0} broadcast(%constant_8_1), dimensions={}, metadata={op_name="a" scheduling_name="broadcast.17.15"}
+  %compare.18.3 = pred[181,960]{1,0} compare(%param_0.14, %broadcast.17.15), direction=EQ, metadata={op_name="a" scheduling_name="compare.18.3"}
+  %select.15.9 = f64[181,960]{1,0} select(%compare.18.3, %broadcast.17.15, %param_0.14), sharding={replicated}, metadata={op_name="a" scheduling_name="select.15.9"}
+  %select.16.7 = f64[181,960]{1,0} select(%compare.17.7, %broadcast.16.7, %select.15.9), sharding={replicated}, metadata={op_name="a" scheduling_name="select.16.7"}
+  %compare.19.3 = pred[181,960]{1,0} compare(%select.16.7, %broadcast.17.15), direction=LT, metadata={op_name="a" scheduling_name="compare.19.3"}
+  %bitcast-convert.5.1 = u64[181,960]{1,0} bitcast-convert(%select.16.7), sharding={replicated}, metadata={op_name="a" scheduling_name="bitcast-convert.5.1"}
+  %not.3.1 = u64[181,960]{1,0} not(%bitcast-convert.5.1), metadata={op_name="a" scheduling_name="not.3.1"}
+  %constant_10_1 = u64[] constant(9223372036854775808), metadata={op_name="a"}
+  %broadcast.20.1 = u64[181,960]{1,0} broadcast(%constant_10_1), dimensions={}, metadata={op_name="a" scheduling_name="broadcast.20.1"}
+  %xor.5.1 = u64[181,960]{1,0} xor(%broadcast.20.1, %bitcast-convert.5.1), metadata={op_name="a" scheduling_name="xor.5.1"}
+  ROOT %select.17.1 = u64[181,960]{1,0} select(%compare.19.3, %not.3.1, %xor.5.1), sharding={replicated}, metadata={op_name="a" scheduling_name="select.17.1"}
+}
+
+ENTRY %main.17_spmd (param.1: f64[181,960]) -> f64[181,960] {
+  %param.1 = f64[181,960]{1,0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.1"}
+  %loop_select_fusion = u64[181,960]{1,0} fusion(%param.1), kind=kLoop, calls=%fused_select, sharding={replicated}, metadata={op_name="a" scheduling_name="loop_select_fusion"}
+  %custom-call.1 = (u64[181,960]{1,0}, f64[181,960]{1,0}, u8[2781144]{0}) custom-call(%loop_select_fusion, %param.1), custom_call_target="__cub$DeviceRadixSort", metadata={op_name="jit(sort)/jit(main)/sort" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=641 scheduling_name="custom-call.1"}, backend_config={"descending":false}
+  ROOT %get-tuple-element.1 = f64[181,960]{1,0} get-tuple-element(%custom-call.1), index=1, metadata={op_name="jit(sort)/jit(main)/sort" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=641 scheduling_name="get-tuple-element.1"}
+}
+

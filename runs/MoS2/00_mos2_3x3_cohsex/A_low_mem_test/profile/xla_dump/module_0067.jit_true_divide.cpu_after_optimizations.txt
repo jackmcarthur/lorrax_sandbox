@@ -1,0 +1,23 @@
+HloModule jit_true_divide, is_scheduled=true, entry_computation_layout={(c128[9,80,2,320]{3,2,1,0}, f64[1,80,1,1]{3,2,1,0})->c128[9,80,2,320]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%fused_computation.clone (param_0.1: c128[9,80,2,320], param_1.4: f64[1,80,1,1]) -> c128[9,80,2,320] {
+  %param_0.1 = c128[9,80,2,320]{3,2,1,0} parameter(0)
+  %param_1.4 = f64[1,80,1,1]{3,2,1,0} parameter(1)
+  %convert.2 = c128[1,80,1,1]{3,2,1,0} convert(%param_1.4), metadata={op_name="jit(true_divide)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1076}
+  %bitcast.2 = c128[80]{0} bitcast(%convert.2), metadata={op_name="jit(true_divide)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1076}
+  %broadcast.3 = c128[9,80,2,320]{3,2,1,0} broadcast(%bitcast.2), dimensions={1}, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1076}
+  ROOT %divide.2 = c128[9,80,2,320]{3,2,1,0} divide(%param_0.1, %broadcast.3), metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1076}
+}
+
+%parallel_broadcast_divide_fusion (p: c128[9,80,2,320], p.1: f64[1,80,1,1]) -> c128[9,80,2,320] {
+  %p = c128[9,80,2,320]{3,2,1,0} parameter(0)
+  %p.1 = f64[1,80,1,1]{3,2,1,0} parameter(1)
+  ROOT %broadcast_divide_fusion.clone = c128[9,80,2,320]{3,2,1,0} fusion(%p, %p.1), kind=kLoop, calls=%fused_computation.clone, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1076}, backend_config={"outer_dimension_partitions":["6"]}
+}
+
+ENTRY %main.8_spmd (param: c128[9,80,2,320], param.1: f64[1,80,1,1]) -> c128[9,80,2,320] {
+  %param = c128[9,80,2,320]{3,2,1,0} parameter(0), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="x1"}
+  %param.1 = f64[1,80,1,1]{3,2,1,0} parameter(1), sharding={replicated}, metadata={op_name="x2"}
+  ROOT %call = c128[9,80,2,320]{3,2,1,0} call(%param, %param.1), to_apply=%parallel_broadcast_divide_fusion
+}
+

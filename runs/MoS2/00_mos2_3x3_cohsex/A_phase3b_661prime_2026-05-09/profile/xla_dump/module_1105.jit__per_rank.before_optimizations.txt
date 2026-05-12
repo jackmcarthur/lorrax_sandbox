@@ -1,0 +1,24 @@
+HloModule jit__per_rank, entry_computation_layout={(c128[9,672,672]{2,1,0}, s64[3]{0}, s64[3]{0})->s32[1]{0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16
+
+%shmap_body.10 (Arg_0.11: c128[9,168,168], Arg_1.12: s64[3], Arg_2.13: s64[3]) -> s32[1] {
+  %Arg_0.11 = c128[9,168,168]{2,1,0} parameter(0), metadata={op_name="[None, (\'x\',), (\'y\',)]"}
+  %Arg_1.12 = s64[3]{0} parameter(1), metadata={op_name="[None]"}
+  %Arg_2.13 = s64[3]{0} parameter(2), metadata={op_name="[None]"}
+  ROOT %custom-call.14 = s32[1]{0} custom-call(%Arg_0.11, %Arg_1.12, %Arg_2.13), custom_call_target="lorrax_phdf5_write", operand_layout_constraints={c128[9,168,168]{2,1,0}, s64[3]{0}, s64[3]{0}}, custom_call_has_side_effect=true, api_version=API_VERSION_TYPED_FFI, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/ffi_call" source_file="/global/u2/j/jackm/software/lorrax_A/src/ffi/phdf5/write.py" source_line=61}, backend_config={axis_count_per_dim = dense<[0, 1, 1]> : tensor<3xi64>, axis_flat = dense<[0, 1]> : tensor<2xi64>, ctx_handle = 387515024 : i64, ds_id = 360287970189639694 : i64, mesh_shape = dense<4> : tensor<2xi64>}
+}
+
+ENTRY %main.18 (Arg_0.1: c128[9,672,672], Arg_1.2: s64[3], Arg_2.3: s64[3]) -> s32[1] {
+  %Arg_0.1 = c128[9,672,672]{2,1,0} parameter(0), sharding={devices=[1,4,4]<=[16]}, metadata={op_name="A_local"}
+  %custom-call.4 = c128[9,672,672]{2,1,0} custom-call(%Arg_0.1), custom_call_target="Sharding", sharding={devices=[1,4,4]<=[16]}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/_slab_io_ffi.py" source_line=585}
+  %custom-call.5 = c128[9,168,168]{2,1,0} custom-call(%custom-call.4), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/_slab_io_ffi.py" source_line=585}
+  %Arg_1.2 = s64[3]{0} parameter(1), sharding={replicated}, metadata={op_name="offset_local"}
+  %custom-call.6 = s64[3]{0} custom-call(%Arg_1.2), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/_slab_io_ffi.py" source_line=585}
+  %custom-call.7 = s64[3]{0} custom-call(%custom-call.6), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/_slab_io_ffi.py" source_line=585}
+  %Arg_2.3 = s64[3]{0} parameter(2), sharding={replicated}, metadata={op_name="valid_shape_local"}
+  %custom-call.8 = s64[3]{0} custom-call(%Arg_2.3), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/_slab_io_ffi.py" source_line=585}
+  %custom-call.9 = s64[3]{0} custom-call(%custom-call.8), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/_slab_io_ffi.py" source_line=585}
+  %call.15 = s32[1]{0} call(%custom-call.5, %custom-call.7, %custom-call.9), to_apply=%shmap_body.10
+  %custom-call.16 = s32[1]{0} custom-call(%call.15), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/_slab_io_ffi.py" source_line=585}
+  ROOT %custom-call.17 = s32[1]{0} custom-call(%custom-call.16), custom_call_target="SPMDShardToFullShape", sharding={replicated}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/_slab_io_ffi.py" source_line=585}
+}
+

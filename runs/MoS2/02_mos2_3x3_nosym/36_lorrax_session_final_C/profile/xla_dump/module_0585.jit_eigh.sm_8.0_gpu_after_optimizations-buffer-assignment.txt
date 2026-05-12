@@ -1,0 +1,112 @@
+BufferAssignment:
+allocation 0: size 921600, maybe-live-out:
+ value: <30 input_transpose_fusion @0> (size=921600,offset=0): c128[9,80,80]{2,1,0}
+ value: <36 input_transpose_fusion.1 @0> (size=921600,offset=0): c128[9,80,80]{2,1,0}
+allocation 1: size 921600, parameter 0, shape |c128[9,80,80]| at ShapeIndex {}:
+ value: <29 param.1 @0> (size=921600,offset=0): c128[9,80,80]{2,1,0}
+allocation 2: size 5760, maybe-live-out:
+ value: <33 custom-call.1{1} @0> (size=5760,offset=0): f64[9,80]{1,0}
+ value: <35 loop_select_fusion @0> (size=5760,offset=0): f64[9,80]{1,0}
+allocation 3: size 16, output shape is |(f64[9,80], c128[9,80,80])|, maybe-live-out:
+ value: <37 tuple.1.0{} @0> (size=16,offset=0): (f64[9,80]{1,0}, c128[9,80,80]{2,1,0})
+allocation 4: size 921764, preallocated-temp:
+ value: <31 custom-call.1{} @0> (size=24,offset=0): (c128[9,80,80]{1,2,0}, f64[9,80]{1,0}, s32[9]{0})
+ value: <32 custom-call.1{0} @0> (size=921600,offset=128): c128[9,80,80]{1,2,0}
+ value: <34 custom-call.1{2} @0> (size=36,offset=921728): s32[9]{0}
+
+Total bytes used: 2770740 (2.64MiB)
+
+Used values:
+<29 param.1 @0>
+ positions:
+  param.1
+ uses:
+  input_transpose_fusion, operand 0
+ from instruction: %param.1 = c128[9,80,80]{2,1,0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.1"}
+<30 input_transpose_fusion @0>
+ positions:
+  input_transpose_fusion
+  bitcast.99.0
+ uses:
+  bitcast.99.0, operand 0
+  custom-call.1, operand 0
+ from instruction: %input_transpose_fusion = c128[9,80,80]{2,1,0} fusion(%param.1), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(eigh)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=600 scheduling_name="input_transpose_fusion"}
+<31 custom-call.1{} @0>
+ positions:
+  custom-call.1 {}
+ uses:
+  get-tuple-element.5, operand 0 {}
+  get-tuple-element.1.0, operand 0 {}
+  get-tuple-element.2.0, operand 0 {}
+ from instruction: %custom-call.1 = (c128[9,80,80]{1,2,0}, f64[9,80]{1,0}, s32[9]{0}) custom-call(%bitcast.99.0), custom_call_target="cusolver_syevd_ffi", operand_layout_constraints={c128[9,80,80]{1,2,0}}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=600 scheduling_name="custom-call.1"}, backend_config={algorithm = 0 : ui8, lower = true}
+<32 custom-call.1{0} @0>
+ positions:
+  custom-call.1 {0}
+  get-tuple-element.2.0
+ uses:
+  input_transpose_fusion.1, operand 0
+ from instruction: %custom-call.1 = (c128[9,80,80]{1,2,0}, f64[9,80]{1,0}, s32[9]{0}) custom-call(%bitcast.99.0), custom_call_target="cusolver_syevd_ffi", operand_layout_constraints={c128[9,80,80]{1,2,0}}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=600 scheduling_name="custom-call.1"}, backend_config={algorithm = 0 : ui8, lower = true}
+<33 custom-call.1{1} @0>
+ positions:
+  custom-call.1 {1}
+  get-tuple-element.1.0
+ uses:
+  loop_select_fusion, operand 0
+ from instruction: %custom-call.1 = (c128[9,80,80]{1,2,0}, f64[9,80]{1,0}, s32[9]{0}) custom-call(%bitcast.99.0), custom_call_target="cusolver_syevd_ffi", operand_layout_constraints={c128[9,80,80]{1,2,0}}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=600 scheduling_name="custom-call.1"}, backend_config={algorithm = 0 : ui8, lower = true}
+<34 custom-call.1{2} @0>
+ positions:
+  custom-call.1 {2}
+  get-tuple-element.5
+ uses:
+  loop_select_fusion, operand 1
+  input_transpose_fusion.1, operand 1
+ from instruction: %custom-call.1 = (c128[9,80,80]{1,2,0}, f64[9,80]{1,0}, s32[9]{0}) custom-call(%bitcast.99.0), custom_call_target="cusolver_syevd_ffi", operand_layout_constraints={c128[9,80,80]{1,2,0}}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=600 scheduling_name="custom-call.1"}, backend_config={algorithm = 0 : ui8, lower = true}
+<35 loop_select_fusion @0>
+ positions:
+  loop_select_fusion
+  tuple.1.0 {0}
+ uses:
+  tuple.1.0, operand 0
+ from instruction: %loop_select_fusion = f64[9,80]{1,0} fusion(%get-tuple-element.1.0, %get-tuple-element.5), kind=kLoop, calls=%fused_select, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=600 scheduling_name="loop_select_fusion"}
+<36 input_transpose_fusion.1 @0>
+ positions:
+  input_transpose_fusion.1
+  tuple.1.0 {1}
+ uses:
+  tuple.1.0, operand 1
+ from instruction: %input_transpose_fusion.1 = c128[9,80,80]{2,1,0} fusion(%get-tuple-element.2.0, %get-tuple-element.5), kind=kInput, calls=%fused_transpose.1, metadata={scheduling_name="input_transpose_fusion.1"}
+<37 tuple.1.0{} @0>
+ positions:
+  tuple.1.0 {}
+ uses:
+ from instruction: %tuple.1.0 = (f64[9,80]{1,0}, c128[9,80,80]{2,1,0}) tuple(%loop_select_fusion, %input_transpose_fusion.1), metadata={scheduling_name="tuple.1.0"}
+
+
+HloLiveRange (max 10):
+  InstructionSequence:
+    0:param.1
+    1:input_transpose_fusion
+    2:bitcast.99.0
+    3:custom-call.1
+    4:get-tuple-element.5
+    5:get-tuple-element.2.0
+    6:get-tuple-element.1.0
+    7:loop_select_fusion
+    8:input_transpose_fusion.1
+    9:tuple.1.0
+  BufferLiveRange:
+    param.1{}:0-10
+    input_transpose_fusion{}:1-3
+    custom-call.1{}:3-6
+    custom-call.1{0}:3-8
+    custom-call.1{1}:3-7
+    custom-call.1{2}:3-8
+    loop_select_fusion{}:7-10
+    input_transpose_fusion.1{}:8-10
+    tuple.1.0{}:9-10
+  Live ranges at 8 (peak):
+    param.1: 921600 bytes
+    custom-call.1: 24 bytes
+    custom-call.1: 24 bytes
+    loop_select_fusion: 5760 bytes
+    input_transpose_fusion.1: 921600 bytes

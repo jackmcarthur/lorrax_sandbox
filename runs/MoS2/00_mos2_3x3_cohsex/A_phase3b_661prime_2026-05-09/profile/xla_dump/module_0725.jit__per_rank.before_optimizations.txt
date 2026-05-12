@@ -1,0 +1,85 @@
+HloModule jit__per_rank, entry_computation_layout={(f64[80,2,9,1963,2]{4,3,2,1,0}, s32[9,24,24,80]{3,2,1,0})->c128[9,80,2,24,24,80]{5,4,3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16
+
+%_where.7 (Arg_0.8: pred[9,24,24,80], Arg_1.9: s32[9,24,24,80], Arg_2.10: s32[9,24,24,80]) -> s32[9,24,24,80] {
+  %Arg_0.8 = pred[9,24,24,80]{3,2,1,0} parameter(0), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/pjit"}
+  %Arg_1.9 = s32[9,24,24,80]{3,2,1,0} parameter(1), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/pjit"}
+  %Arg_2.10 = s32[9,24,24,80]{3,2,1,0} parameter(2), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/pjit"}
+  ROOT %select.11 = s32[9,24,24,80]{3,2,1,0} select(%Arg_0.8, %Arg_1.9, %Arg_2.10), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+}
+
+%region_0.12 (Arg_0.13: pred[], Arg_1.14: pred[]) -> pred[] {
+  %Arg_0.13 = pred[] parameter(0), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/reduce_and"}
+  %Arg_1.14 = pred[] parameter(1), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/reduce_and"}
+  ROOT %and.15 = pred[] and(%Arg_0.13, %Arg_1.14), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/reduce_and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+}
+
+%_take.16 (Arg_0.17: c128[5,2,17676], Arg_1.18: s32[9,24,24,80]) -> c128[5,2,9,24,24,80] {
+  %Arg_1.18 = s32[9,24,24,80]{3,2,1,0} parameter(1), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/pjit"}
+  %constant.28 = s32[] constant(0)
+  %broadcast.29 = s32[9,24,24,80]{3,2,1,0} broadcast(%constant.28), dimensions={}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+  %compare.30 = pred[9,24,24,80]{3,2,1,0} compare(%Arg_1.18, %broadcast.29), direction=LT, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+  %constant.25 = s32[] constant(17676)
+  %broadcast.26 = s32[9,24,24,80]{3,2,1,0} broadcast(%constant.25), dimensions={}
+  %add.31 = s32[9,24,24,80]{3,2,1,0} add(%Arg_1.18, %broadcast.26), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+  %call.32 = s32[9,24,24,80]{3,2,1,0} call(%compare.30, %add.31, %Arg_1.18), to_apply=%_where.7
+  %reshape.33 = s32[9,24,24,80,1]{4,3,2,1,0} reshape(%call.32), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+  %convert.34 = s64[9,24,24,80,1]{4,3,2,1,0} convert(%reshape.33), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+  %constant.23 = s64[] constant(0)
+  %broadcast.24 = s64[9,24,24,80,1]{4,3,2,1,0} broadcast(%constant.23), dimensions={}
+  %compare.35 = pred[9,24,24,80,1]{4,3,2,1,0} compare(%convert.34, %broadcast.24), direction=GE, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/ge" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+  %constant.21 = s64[] constant(17675)
+  %broadcast.22 = s64[9,24,24,80,1]{4,3,2,1,0} broadcast(%constant.21), dimensions={}
+  %compare.36 = pred[9,24,24,80,1]{4,3,2,1,0} compare(%convert.34, %broadcast.22), direction=LE, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/le" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+  %and.37 = pred[9,24,24,80,1]{4,3,2,1,0} and(%compare.35, %compare.36), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+  %constant.27 = pred[] constant(true)
+  %reduce.38 = pred[9,24,24,80]{3,2,1,0} reduce(%and.37, %constant.27), dimensions={4}, to_apply=%region_0.12, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/reduce_and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+  %broadcast.40 = pred[5,2,9,24,24,80]{5,4,3,2,1,0} broadcast(%reduce.38), dimensions={2,3,4,5}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+  %Arg_0.17 = c128[5,2,17676]{2,1,0} parameter(0), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/pjit"}
+  %gather.39 = c128[5,2,9,24,24,80]{5,4,3,2,1,0} gather(%Arg_0.17, %convert.34), offset_dims={0,1}, collapsed_slice_dims={2}, start_index_map={2}, index_vector_dim=4, slice_sizes={5,2,1}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+  %constant.19 = c128[] constant((nan, 0))
+  %broadcast.20 = c128[5,2,9,24,24,80]{5,4,3,2,1,0} broadcast(%constant.19), dimensions={}
+  ROOT %select.41 = c128[5,2,9,24,24,80]{5,4,3,2,1,0} select(%broadcast.40, %gather.39, %broadcast.20), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=120}
+}
+
+%shmap_body.42 (Arg_0.43: f64[5,2,9,1963,2], Arg_1.44: s32[9,24,24,80]) -> c128[9,5,2,24,24,80] {
+  %Arg_0.43 = f64[5,2,9,1963,2]{4,3,2,1,0} parameter(0), metadata={op_name="[(\'x\', \'y\'), None, None, None, None]"}
+  %slice.51 = f64[5,2,9,1963,1]{4,3,2,1,0} slice(%Arg_0.43), slice={[0:5], [0:2], [0:9], [0:1963], [0:1]}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=103}
+  %reshape.52 = f64[5,2,9,1963]{3,2,1,0} reshape(%slice.51), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/squeeze" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=103}
+  %convert.57 = c128[5,2,9,1963]{3,2,1,0} convert(%reshape.52), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=103}
+  %slice.53 = f64[5,2,9,1963,1]{4,3,2,1,0} slice(%Arg_0.43), slice={[0:5], [0:2], [0:9], [0:1963], [1:2]}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=103}
+  %reshape.54 = f64[5,2,9,1963]{3,2,1,0} reshape(%slice.53), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/squeeze" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=103}
+  %convert.55 = c128[5,2,9,1963]{3,2,1,0} convert(%reshape.54), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=103}
+  %constant.49 = c128[] constant((0, 1))
+  %broadcast.50 = c128[5,2,9,1963]{3,2,1,0} broadcast(%constant.49), dimensions={}
+  %multiply.56 = c128[5,2,9,1963]{3,2,1,0} multiply(%convert.55, %broadcast.50), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=103}
+  %add.58 = c128[5,2,9,1963]{3,2,1,0} add(%convert.57, %multiply.56), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=103}
+  %constant.47 = c128[] constant((0, 0))
+  %broadcast.48 = c128[5,2,9,1]{3,2,1,0} broadcast(%constant.47), dimensions={}
+  %concatenate.59 = c128[5,2,9,1964]{3,2,1,0} concatenate(%add.58, %broadcast.48), dimensions={3}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/concatenate" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=108}
+  %reshape.60 = c128[5,2,17676]{2,1,0} reshape(%concatenate.59), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=113}
+  %iota.61 = s32[9]{0} iota(), iota_dimension=0, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=117}
+  %reshape.62 = s32[9,1,1,1]{3,2,1,0} reshape(%iota.61), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=117}
+  %constant.45 = s32[] constant(1964)
+  %broadcast.46 = s32[9,1,1,1]{3,2,1,0} broadcast(%constant.45), dimensions={}
+  %multiply.63 = s32[9,1,1,1]{3,2,1,0} multiply(%reshape.62, %broadcast.46), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=117}
+  %broadcast.64 = s32[9,1,1,1]{3,2,1,0} broadcast(%multiply.63), dimensions={0,1,2,3}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=117}
+  %reshape.65 = s32[9]{0} reshape(%broadcast.64), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=117}
+  %broadcast.66 = s32[9,24,24,80]{3,2,1,0} broadcast(%reshape.65), dimensions={0}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=117}
+  %Arg_1.44 = s32[9,24,24,80]{3,2,1,0} parameter(1), metadata={op_name="[None, None, None, None]"}
+  %add.67 = s32[9,24,24,80]{3,2,1,0} add(%broadcast.66, %Arg_1.44), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=117}
+  %call.68 = c128[5,2,9,24,24,80]{5,4,3,2,1,0} call(%reshape.60, %add.67), to_apply=%_take.16
+  ROOT %transpose.69 = c128[9,5,2,24,24,80]{5,4,3,0,2,1} transpose(%call.68), dimensions={2,0,1,3,4,5}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gvec_fft_box.py" source_line=122}
+}
+
+ENTRY %main.73 (Arg_0.1: f64[80,2,9,1963,2], Arg_1.2: s32[9,24,24,80]) -> c128[9,80,2,24,24,80] {
+  %Arg_0.1 = f64[80,2,9,1963,2]{4,3,2,1,0} parameter(0), sharding={devices=[16,1,1,1,1]<=[16]}, metadata={op_name="cnk_slab"}
+  %custom-call.3 = f64[80,2,9,1963,2]{4,3,2,1,0} custom-call(%Arg_0.1), custom_call_target="Sharding", sharding={devices=[16,1,1,1,1]<=[16]}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=181}
+  %custom-call.4 = f64[5,2,9,1963,2]{4,3,2,1,0} custom-call(%custom-call.3), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=181}
+  %Arg_1.2 = s32[9,24,24,80]{3,2,1,0} parameter(1), sharding={replicated}, metadata={op_name="g_index"}
+  %custom-call.5 = s32[9,24,24,80]{3,2,1,0} custom-call(%Arg_1.2), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=181}
+  %custom-call.6 = s32[9,24,24,80]{3,2,1,0} custom-call(%custom-call.5), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=181}
+  %call.70 = c128[9,5,2,24,24,80]{5,4,3,0,2,1} call(%custom-call.4, %custom-call.6), to_apply=%shmap_body.42
+  %custom-call.71 = c128[9,5,2,24,24,80]{5,4,3,2,1,0} custom-call(%call.70), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=181}
+  ROOT %custom-call.72 = c128[9,80,2,24,24,80]{5,4,3,2,1,0} custom-call(%custom-call.71), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,16,1,1,1,1]<=[16]}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=181}
+}
+

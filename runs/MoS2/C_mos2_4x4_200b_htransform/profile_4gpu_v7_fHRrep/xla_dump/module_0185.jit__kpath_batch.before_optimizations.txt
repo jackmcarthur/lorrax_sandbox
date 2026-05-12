@@ -1,0 +1,113 @@
+HloModule jit__kpath_batch, entry_computation_layout={(f64[32,3]{1,0}, c128[16,960,960]{2,1,0}, c128[960,960]{1,0})->f64[32,960]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,false,true}, num_partitions=4
+
+%_solve_triangular.47 (Arg_0.48: c128[960,960], Arg_1.49: c128[32,960,960]) -> c128[960,960,32] {
+  %Arg_0.48 = c128[960,960]{1,0} parameter(0), metadata={op_name="jit(_kpath_batch)/jit(main)/pjit"}
+  %Arg_1.49 = c128[32,960,960]{2,1,0} parameter(1), metadata={op_name="jit(_kpath_batch)/jit(main)/pjit"}
+  %transpose.50 = c128[960,960,32]{1,0,2} transpose(%Arg_1.49), dimensions={1,2,0}, metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(_solve_triangular))/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=656}
+  %reshape.51 = c128[960,30720]{1,0} reshape(%transpose.50), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(_solve_triangular))/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=656}
+  %triangular-solve.52 = c128[960,30720]{1,0} triangular-solve(%Arg_0.48, %reshape.51), left_side=true, lower=true, transpose_a=NO_TRANSPOSE, metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(_solve_triangular))/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=656}
+  ROOT %reshape.53 = c128[960,960,32]{2,1,0} reshape(%triangular-solve.52), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(_solve_triangular))/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=656}
+}
+
+%_solve_triangular_0.55 (Arg_0.56: c128[960,960], Arg_1.57: c128[960,960,32]) -> c128[960,960,32] {
+  %Arg_0.56 = c128[960,960]{1,0} parameter(0), metadata={op_name="jit(_kpath_batch)/jit(main)/pjit"}
+  %Arg_1.57 = c128[960,960,32]{2,1,0} parameter(1), metadata={op_name="jit(_kpath_batch)/jit(main)/pjit"}
+  %reshape.58 = c128[960,30720]{1,0} reshape(%Arg_1.57), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(_solve_triangular))/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=657}
+  %triangular-solve.59 = c128[960,30720]{1,0} triangular-solve(%Arg_0.56, %reshape.58), left_side=true, lower=true, transpose_a=ADJOINT, metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(_solve_triangular))/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=657}
+  ROOT %reshape.60 = c128[960,960,32]{2,1,0} reshape(%triangular-solve.59), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(_solve_triangular))/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=657}
+}
+
+%eigh.70 (Arg_0.71: c128[32,960,960]) -> f64[32,960] {
+  %Arg_0.71 = c128[32,960,960]{2,1,0} parameter(0), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/pjit"}
+  %transpose.78 = c128[32,960,960]{1,2,0} transpose(%Arg_0.71), dimensions={0,2,1}, metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %real.79 = f64[32,960,960]{1,2,0} real(%transpose.78), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %imag.80 = f64[32,960,960]{1,2,0} imag(%transpose.78), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %negate.81 = f64[32,960,960]{1,2,0} negate(%imag.80), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %complex.82 = c128[32,960,960]{1,2,0} complex(%real.79, %negate.81), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %add.83 = c128[32,960,960]{2,1,0} add(%Arg_0.71, %complex.82), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %constant.76 = c128[] constant((2, 0))
+  %broadcast.77 = c128[32,960,960]{2,1,0} broadcast(%constant.76), dimensions={}
+  %divide.84 = c128[32,960,960]{2,1,0} divide(%add.83, %broadcast.77), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %custom-call.85 = (c128[32,960,960]{1,2,0}, f64[32,960]{1,0}, s32[32]{0}) custom-call(%divide.84), custom_call_target="cusolver_syevd_ffi", operand_layout_constraints={c128[32,960,960]{1,2,0}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}, backend_config={algorithm = 0 : ui8, lower = true}
+  %get-tuple-element.86 = c128[32,960,960]{1,2,0} get-tuple-element(%custom-call.85), index=0, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %get-tuple-element.88 = s32[32]{0} get-tuple-element(%custom-call.85), index=2, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %constant.74 = s32[] constant(0)
+  %broadcast.75 = s32[32]{0} broadcast(%constant.74), dimensions={}
+  %compare.89 = pred[32]{0} compare(%get-tuple-element.88, %broadcast.75), direction=EQ, metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %reshape.90 = pred[32,1]{1,0} reshape(%compare.89), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %broadcast.91 = pred[32,1]{1,0} broadcast(%reshape.90), dimensions={0,1}, metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %reshape.92 = pred[32]{0} reshape(%broadcast.91), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %broadcast.93 = pred[32,960]{1,0} broadcast(%reshape.92), dimensions={0}, metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %get-tuple-element.87 = f64[32,960]{1,0} get-tuple-element(%custom-call.85), index=1, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+  %constant.72 = f64[] constant(nan)
+  %broadcast.73 = f64[32,960]{1,0} broadcast(%constant.72), dimensions={}
+  ROOT %select.94 = f64[32,960]{1,0} select(%broadcast.93, %get-tuple-element.87, %broadcast.73), metadata={op_name="jit(_kpath_batch)/jit(main)/vmap(jit(eigvalsh))/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=597}
+}
+
+%eigvalsh.95 (Arg_0.96: c128[32,960,960]) -> f64[32,960] {
+  %Arg_0.96 = c128[32,960,960]{2,1,0} parameter(0), metadata={op_name="jit(_kpath_batch)/jit(main)/pjit"}
+  ROOT %call.97 = f64[32,960]{1,0} call(%Arg_0.96), to_apply=%eigh.70
+}
+
+ENTRY %main.101 (Arg_0.1: f64[32,3], Arg_1.2: c128[16,960,960], Arg_2.3: c128[960,960]) -> f64[32,960] {
+  %Arg_2.3 = c128[960,960]{1,0} parameter(2), metadata={op_name="S_chol"}
+  %Arg_0.1 = f64[32,3]{1,0} parameter(0), metadata={op_name="batch_k"}
+  %constant.14 = f64[16,3]{1,0} constant({...})
+  %transpose.15 = f64[3,16]{0,1} transpose(%constant.14), dimensions={1,0}, metadata={op_name="jit(_kpath_batch)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %dot.16 = f64[32,16]{1,0} dot(%Arg_0.1, %transpose.15), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(_kpath_batch)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %convert.17 = c128[32,16]{1,0} convert(%dot.16), metadata={op_name="jit(_kpath_batch)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %constant.6 = c128[] constant((0, -6.2831853071795862))
+  %broadcast.7 = c128[32,16]{1,0} broadcast(%constant.6), dimensions={}
+  %multiply.18 = c128[32,16]{1,0} multiply(%convert.17, %broadcast.7), metadata={op_name="jit(_kpath_batch)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %real.19 = f64[32,16]{1,0} real(%multiply.18), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %exponential.20 = f64[32,16]{1,0} exponential(%real.19), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %constant.12 = f64[] constant(inf)
+  %broadcast.13 = f64[32,16]{1,0} broadcast(%constant.12), dimensions={}
+  %compare.21 = pred[32,16]{1,0} compare(%exponential.20, %broadcast.13), direction=EQ, metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %constant.10 = f64[] constant(0.5)
+  %broadcast.11 = f64[32,16]{1,0} broadcast(%constant.10), dimensions={}
+  %multiply.22 = f64[32,16]{1,0} multiply(%real.19, %broadcast.11), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %exponential.23 = f64[32,16]{1,0} exponential(%multiply.22), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %imag.24 = f64[32,16]{1,0} imag(%multiply.18), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %cosine.25 = f64[32,16]{1,0} cosine(%imag.24), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %multiply.26 = f64[32,16]{1,0} multiply(%exponential.23, %cosine.25), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %multiply.27 = f64[32,16]{1,0} multiply(%multiply.26, %exponential.23), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %multiply.28 = f64[32,16]{1,0} multiply(%exponential.20, %cosine.25), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %select.29 = f64[32,16]{1,0} select(%compare.21, %multiply.27, %multiply.28), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %constant.8 = f64[] constant(0)
+  %broadcast.9 = f64[32,16]{1,0} broadcast(%constant.8), dimensions={}
+  %compare.30 = pred[32,16]{1,0} compare(%imag.24, %broadcast.9), direction=EQ, metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %sine.31 = f64[32,16]{1,0} sine(%imag.24), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %multiply.32 = f64[32,16]{1,0} multiply(%exponential.23, %sine.31), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %multiply.33 = f64[32,16]{1,0} multiply(%multiply.32, %exponential.23), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %multiply.34 = f64[32,16]{1,0} multiply(%exponential.20, %sine.31), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %select.35 = f64[32,16]{1,0} select(%compare.21, %multiply.33, %multiply.34), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %select.36 = f64[32,16]{1,0} select(%compare.30, %broadcast.9, %select.35), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %complex.37 = c128[32,16]{1,0} complex(%select.29, %select.36), metadata={op_name="jit(_kpath_batch)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650}
+  %Arg_1.2 = c128[16,960,960]{2,1,0} parameter(1), sharding={replicated}, metadata={op_name="fH_R_rep"}
+  %dot.38 = c128[32,960,960]{2,1,0} dot(%complex.37, %Arg_1.2), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(_kpath_batch)/jit(main)/bk,kij->bij/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=651}
+  %constant.4 = c128[] constant((0.5, 0))
+  %broadcast.5 = c128[32,960,960]{2,1,0} broadcast(%constant.4), dimensions={}
+  %multiply.39 = c128[32,960,960]{2,1,0} multiply(%dot.38, %broadcast.5), metadata={op_name="jit(_kpath_batch)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=651}
+  %transpose.40 = c128[32,960,960]{1,2,0} transpose(%multiply.39), dimensions={0,2,1}, metadata={op_name="jit(_kpath_batch)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=652}
+  %real.41 = f64[32,960,960]{1,2,0} real(%transpose.40), metadata={op_name="jit(_kpath_batch)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=652}
+  %imag.42 = f64[32,960,960]{1,2,0} imag(%transpose.40), metadata={op_name="jit(_kpath_batch)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=652}
+  %negate.43 = f64[32,960,960]{1,2,0} negate(%imag.42), metadata={op_name="jit(_kpath_batch)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=652}
+  %complex.44 = c128[32,960,960]{1,2,0} complex(%real.41, %negate.43), metadata={op_name="jit(_kpath_batch)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=652}
+  %add.45 = c128[32,960,960]{2,1,0} add(%multiply.39, %complex.44), metadata={op_name="jit(_kpath_batch)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=652}
+  %custom-call.46 = c128[32,960,960]{2,1,0} custom-call(%add.45), custom_call_target="Sharding", sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(_kpath_batch)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=653}
+  %call.54 = c128[960,960,32]{2,1,0} call(%Arg_2.3, %custom-call.46), to_apply=%_solve_triangular.47
+  %call.61 = c128[960,960,32]{2,1,0} call(%Arg_2.3, %call.54), to_apply=%_solve_triangular_0.55
+  %transpose.67 = c128[32,960,960]{0,2,1} transpose(%call.61), dimensions={2,0,1}, metadata={op_name="jit(_kpath_batch)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=658}
+  %real.62 = f64[960,960,32]{2,1,0} real(%call.61), metadata={op_name="jit(_kpath_batch)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=658}
+  %imag.63 = f64[960,960,32]{2,1,0} imag(%call.61), metadata={op_name="jit(_kpath_batch)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=658}
+  %negate.64 = f64[960,960,32]{2,1,0} negate(%imag.63), metadata={op_name="jit(_kpath_batch)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=658}
+  %complex.65 = c128[960,960,32]{2,1,0} complex(%real.62, %negate.64), metadata={op_name="jit(_kpath_batch)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=658}
+  %transpose.66 = c128[32,960,960]{0,1,2} transpose(%complex.65), dimensions={2,1,0}, metadata={op_name="jit(_kpath_batch)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=658}
+  %add.68 = c128[32,960,960]{0,2,1} add(%transpose.67, %transpose.66), metadata={op_name="jit(_kpath_batch)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=658}
+  %multiply.69 = c128[32,960,960]{0,2,1} multiply(%add.68, %broadcast.5), metadata={op_name="jit(_kpath_batch)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=658}
+  %call.98 = f64[32,960]{1,0} call(%multiply.69), to_apply=%eigvalsh.95
+  %tuple.99 = (f64[32,960]{1,0}) tuple(%call.98)
+  ROOT %get-tuple-element.100 = f64[32,960]{1,0} get-tuple-element(%tuple.99), index=0, sharding={devices=[4,1]<=[4]}
+}
+

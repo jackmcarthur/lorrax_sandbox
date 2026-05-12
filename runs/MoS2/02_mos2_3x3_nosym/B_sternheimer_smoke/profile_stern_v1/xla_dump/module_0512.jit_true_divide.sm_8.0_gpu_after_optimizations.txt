@@ -1,0 +1,18 @@
+HloModule jit_true_divide, is_scheduled=true, entry_computation_layout={(f64[1,1917]{1,0}, f64[26,1]{1,0})->f64[26,1917]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="cc87feec0e4965c25ce74bafaf784582"}
+
+%fused_divide (param_0.8: f64[1,1917], param_1.4: f64[26,1]) -> f64[26,1917] {
+  %param_0.8 = f64[1,1917]{1,0} parameter(0), metadata={scheduling_name="param_0.8"}
+  %bitcast.30.3 = f64[1917]{0} bitcast(%param_0.8), metadata={scheduling_name="bitcast.30.3"}
+  %broadcast.7.3 = f64[26,1917]{1,0} broadcast(%bitcast.30.3), dimensions={1}, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=94 scheduling_name="broadcast.7.3"}
+  %param_1.4 = f64[26,1]{1,0} parameter(1), metadata={scheduling_name="param_1.4"}
+  %bitcast.35.3 = f64[26]{0} bitcast(%param_1.4), metadata={scheduling_name="bitcast.35.3"}
+  %broadcast.9.3 = f64[26,1917]{1,0} broadcast(%bitcast.35.3), dimensions={0}, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=94 scheduling_name="broadcast.9.3"}
+  ROOT %divide.2.1 = f64[26,1917]{1,0} divide(%broadcast.7.3, %broadcast.9.3), metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=94 scheduling_name="divide.2.1"}
+}
+
+ENTRY %main.10 (Arg_0.1.0: f64[1,1917], Arg_1.2.0: f64[26,1]) -> f64[26,1917] {
+  %Arg_1.2.0 = f64[26,1]{1,0} parameter(1), metadata={op_name="x2" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[1,1917]{1,0} parameter(0), metadata={op_name="x1" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_divide_fusion = f64[26,1917]{1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_divide, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=94 scheduling_name="loop_divide_fusion"}
+}
+

@@ -1,0 +1,111 @@
+BufferAssignment:
+allocation 0: size 3276800, output shape is |c128[1024,200]|, maybe-live-out:
+ value: <31 copy.2 @0> (size=3276800,offset=0): c128[1024,200]{1,0}
+ value: <36 loop_dynamic_update_slice_fusion @0> (size=3276800,offset=0): c128[1024,200]{1,0}
+allocation 1: size 3276800, parameter 0, shape |c128[1024,200]| at ShapeIndex {}:
+ value: <30 Arg_0.1.0 @0> (size=3276800,offset=0): c128[1024,200]{1,0}
+allocation 2: size 16384, parameter 2, shape |c128[1024]| at ShapeIndex {}:
+ value: <34 Arg_2.3.0 @0> (size=16384,offset=0): c128[1024]{0}
+allocation 3: size 4, parameter 1, shape |s32[1]| at ShapeIndex {}:
+ value: <32 Arg_1.2.0 @0> (size=4,offset=0): s32[1]{0}
+allocation 4: size 1, thread-local:
+ value: <2 and.7 @0> (size=1,offset=0): pred[]
+allocation 5: size 1, thread-local:
+ value: <0 lhs @0> (size=1,offset=0): pred[]
+allocation 6: size 1, thread-local:
+ value: <1 rhs @0> (size=1,offset=0): pred[]
+allocation 7: size 16385, preallocated-temp:
+ value: <33 loop_dynamic_slice_fusion @0> (size=16384,offset=0): c128[1024,1]{1,0}
+ value: <35 input_reduce_fusion @0> (size=1,offset=16384): pred[]
+
+Total bytes used: 6586376 (6.28MiB)
+
+Used values:
+<0 lhs @0>
+ positions:
+  lhs
+ uses:
+  and.7, operand 0
+ from instruction: %lhs = pred[] parameter(0), metadata={scheduling_name="lhs"}
+<1 rhs @0>
+ positions:
+  rhs
+ uses:
+  and.7, operand 1
+ from instruction: %rhs = pred[] parameter(1), metadata={scheduling_name="rhs"}
+<2 and.7 @0>
+ positions:
+  and.7
+ uses:
+ from instruction: %and.7 = pred[] and(%lhs, %rhs), metadata={scheduling_name="and.7"}
+<30 Arg_0.1.0 @0>
+ positions:
+  Arg_0.1.0
+ uses:
+  copy.2, operand 0
+ from instruction: %Arg_0.1.0 = c128[1024,200]{1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+<31 copy.2 @0>
+ positions:
+  copy.2
+ uses:
+  loop_dynamic_update_slice_fusion, operand 0
+  loop_dynamic_slice_fusion, operand 0
+ from instruction: %copy.2 = c128[1024,200]{1,0} copy(%Arg_0.1.0)
+<32 Arg_1.2.0 @0>
+ positions:
+  Arg_1.2.0
+ uses:
+  input_reduce_fusion, operand 0
+  loop_dynamic_update_slice_fusion, operand 1
+  loop_dynamic_slice_fusion, operand 1
+ from instruction: %Arg_1.2.0 = s32[1]{0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+<33 loop_dynamic_slice_fusion @0>
+ positions:
+  loop_dynamic_slice_fusion
+ uses:
+  loop_dynamic_update_slice_fusion, operand 2
+ from instruction: %loop_dynamic_slice_fusion = c128[1024,1]{1,0} fusion(%copy.2, %Arg_1.2.0), kind=kLoop, calls=%fused_dynamic_slice, metadata={scheduling_name="loop_dynamic_slice_fusion"}
+<34 Arg_2.3.0 @0>
+ positions:
+  Arg_2.3.0
+ uses:
+  loop_dynamic_update_slice_fusion, operand 3
+ from instruction: %Arg_2.3.0 = c128[1024]{0} parameter(2), metadata={op_name="args[2]" scheduling_name="Arg_2.3.0"}
+<35 input_reduce_fusion @0>
+ positions:
+  input_reduce_fusion
+ uses:
+  loop_dynamic_update_slice_fusion, operand 4
+ from instruction: %input_reduce_fusion = pred[] fusion(%Arg_1.2.0), kind=kInput, calls=%fused_reduce, metadata={scheduling_name="input_reduce_fusion"}
+<36 loop_dynamic_update_slice_fusion @0>
+ positions:
+  loop_dynamic_update_slice_fusion
+ uses:
+ from instruction: %loop_dynamic_update_slice_fusion = c128[1024,200]{1,0} fusion(%copy.2, %Arg_1.2.0, %loop_dynamic_slice_fusion, %Arg_2.3.0, %input_reduce_fusion), kind=kLoop, calls=%fused_dynamic_update_slice, metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=252 scheduling_name="loop_dynamic_update_slice_fusion"}
+
+
+HloLiveRange (max 7):
+  InstructionSequence:
+    0:Arg_1.2.0
+    1:Arg_2.3.0
+    2:Arg_0.1.0
+    3:input_reduce_fusion
+    4:copy.2
+    5:loop_dynamic_slice_fusion
+    6:loop_dynamic_update_slice_fusion
+  BufferLiveRange:
+    Arg_0.1.0{}:0-7
+    copy.2{}:4-6
+    Arg_1.2.0{}:0-7
+    loop_dynamic_slice_fusion{}:5-6
+    Arg_2.3.0{}:0-7
+    input_reduce_fusion{}:3-6
+    loop_dynamic_update_slice_fusion{}:6-7
+  Live ranges at 6 (peak):
+    Arg_0.1.0: 3276800 bytes
+    copy.2: 3276800 bytes
+    Arg_1.2.0: 4 bytes
+    loop_dynamic_slice_fusion: 16384 bytes
+    Arg_2.3.0: 16384 bytes
+    input_reduce_fusion: 1 bytes
+    loop_dynamic_update_slice_fusion: 3276800 bytes

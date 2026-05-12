@@ -1,0 +1,19 @@
+HloModule jit_cumsum, entry_computation_layout={(s64[4]{0})->s64[4]{0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}
+
+%region_0.2 (Arg_0.3: s64[], Arg_1.4: s64[]) -> s64[] {
+  %Arg_0.3 = s64[] parameter(0), metadata={op_name="jit(cumsum)/jit(main)/reduce_window_sum"}
+  %Arg_1.4 = s64[] parameter(1), metadata={op_name="jit(cumsum)/jit(main)/reduce_window_sum"}
+  ROOT %add.5 = s64[] add(%Arg_0.3, %Arg_1.4), metadata={op_name="jit(cumsum)/jit(main)/reduce_window_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+}
+
+%cumsum.6 (Arg_0.7: s64[4]) -> s64[4] {
+  %Arg_0.7 = s64[4]{0} parameter(0), metadata={op_name="jit(cumsum)/jit(main)/cumsum"}
+  %constant.8 = s64[] constant(0)
+  ROOT %reduce-window.9 = s64[4]{0} reduce-window(%Arg_0.7, %constant.8), window={size=4 pad=3_0}, to_apply=%region_0.2, metadata={op_name="jit(cumsum)/jit(main)/reduce_window_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=46}
+}
+
+ENTRY %main.11 (Arg_0.1: s64[4]) -> s64[4] {
+  %Arg_0.1 = s64[4]{0} parameter(0), metadata={op_name="a"}
+  ROOT %call.10 = s64[4]{0} call(%Arg_0.1), to_apply=%cumsum.6
+}
+

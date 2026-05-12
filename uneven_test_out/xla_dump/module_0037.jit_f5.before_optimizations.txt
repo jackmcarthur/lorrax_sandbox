@@ -1,0 +1,35 @@
+HloModule jit_f5, entry_computation_layout={(c128[9,2419,668]{2,1,0}, c128[9,2419]{1,0}, c128[9,672,672]{2,1,0})->c128[9,672,672]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16
+
+%_pad.5 (Arg_0.6: c128[9,2419,668], Arg_1.7: s64[]) -> c128[9,2419,672] {
+  %Arg_0.6 = c128[9,2419,668]{2,1,0} parameter(0), metadata={op_name="jit(f5)/jit(main)/pjit"}
+  %Arg_1.7 = s64[] parameter(1), metadata={op_name="jit(f5)/jit(main)/pjit"}
+  %convert.8 = c128[] convert(%Arg_1.7), metadata={op_name="jit(f5)/jit(main)/jit(_pad)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+  ROOT %pad.9 = c128[9,2419,672]{2,1,0} pad(%Arg_0.6, %convert.8), padding=0_0x0_0x0_4, metadata={op_name="jit(f5)/jit(main)/jit(_pad)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=207}
+}
+
+ENTRY %main.29 (Arg_0.1: c128[9,2419,668], Arg_1.2: c128[9,2419], Arg_2.3: c128[9,672,672]) -> c128[9,672,672] {
+  %Arg_2.3 = c128[9,672,672]{2,1,0} parameter(2), sharding={devices=[1,4,4]<=[16]}, metadata={op_name="V_acc"}
+  %Arg_0.1 = c128[9,2419,668]{2,1,0} parameter(0), sharding={devices=[1,1,4,4]<=[16] last_tile_dim_replicate}, metadata={op_name="z_logical"}
+  %constant.4 = s64[] constant(0)
+  %call.10 = c128[9,2419,672]{2,1,0} call(%Arg_0.1, %constant.4), to_apply=%_pad.5
+  %custom-call.11 = c128[9,2419,672]{2,1,0} custom-call(%call.10), custom_call_target="Sharding", sharding={devices=[1,1,16]<=[16]}, metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=322}
+  %transpose.12 = c128[9,672,2419]{1,2,0} transpose(%custom-call.11), dimensions={0,2,1}, metadata={op_name="jit(f5)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=257}
+  %custom-call.13 = c128[9,672,2419]{2,1,0} custom-call(%transpose.12), custom_call_target="Sharding", sharding={devices=[1,16,1]<=[16]}, metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=256}
+  %custom-call.14 = c128[9,672,2419]{2,1,0} custom-call(%custom-call.13), custom_call_target="Sharding", sharding={devices=[1,4,1,4]<=[16] last_tile_dim_replicate}, metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=259}
+  %Arg_1.2 = c128[9,2419]{1,0} parameter(1), sharding={replicated}, metadata={op_name="v"}
+  %reshape.16 = c128[9,1,2419]{2,1,0} reshape(%Arg_1.2), metadata={op_name="jit(f5)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=262}
+  %broadcast.17 = c128[9,1,2419]{2,1,0} broadcast(%reshape.16), dimensions={0,1,2}, metadata={op_name="jit(f5)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=262}
+  %reshape.18 = c128[9,2419]{1,0} reshape(%broadcast.17), metadata={op_name="jit(f5)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=262}
+  %broadcast.19 = c128[9,672,2419]{2,1,0} broadcast(%reshape.18), dimensions={0,2}, metadata={op_name="jit(f5)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=262}
+  %multiply.20 = c128[9,672,2419]{2,1,0} multiply(%custom-call.14, %broadcast.19), metadata={op_name="jit(f5)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=262}
+  %custom-call.21 = c128[9,672,2419]{2,1,0} custom-call(%multiply.20), custom_call_target="Sharding", sharding={devices=[1,4,1,4]<=[16] last_tile_dim_replicate}, metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=261}
+  %real.22 = f64[9,672,2419]{2,1,0} real(%custom-call.21), metadata={op_name="jit(f5)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+  %imag.23 = f64[9,672,2419]{2,1,0} imag(%custom-call.21), metadata={op_name="jit(f5)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+  %negate.24 = f64[9,672,2419]{2,1,0} negate(%imag.23), metadata={op_name="jit(f5)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+  %complex.25 = c128[9,672,2419]{2,1,0} complex(%real.22, %negate.24), metadata={op_name="jit(f5)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+  %custom-call.15 = c128[9,672,2419]{2,1,0} custom-call(%custom-call.13), custom_call_target="Sharding", sharding={devices=[1,4,1,4]<=[4,4]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}
+  %dot.26 = c128[9,672,672]{2,1,0} dot(%complex.25, %custom-call.15), lhs_batch_dims={0}, lhs_contracting_dims={2}, rhs_batch_dims={0}, rhs_contracting_dims={2}, metadata={op_name="jit(f5)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=263}
+  %custom-call.27 = c128[9,672,672]{2,1,0} custom-call(%dot.26), custom_call_target="Sharding", sharding={devices=[1,4,4]<=[16]}, metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=265}
+  ROOT %custom-call.28 = c128[9,672,672]{2,1,0} custom-call(%custom-call.27), custom_call_target="Sharding", sharding={devices=[1,4,4]<=[16]}, metadata={op_name="jit(f5)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=268}
+}
+

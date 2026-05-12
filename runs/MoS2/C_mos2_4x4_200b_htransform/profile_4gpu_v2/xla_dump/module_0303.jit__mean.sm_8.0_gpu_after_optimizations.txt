@@ -1,0 +1,26 @@
+HloModule jit__mean, is_scheduled=true, entry_computation_layout={(f64[960]{0})->f64[]}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="920e428a0291310e6c857f7273ed1701"}
+
+%region_0.4 (Arg_0.5: f64[], Arg_1.6: f64[]) -> f64[] {
+  %Arg_1.6 = f64[] parameter(1), metadata={op_name="jit(_mean)/jit(main)/reduce_sum" scheduling_name="Arg_1.6"}
+  %Arg_0.5 = f64[] parameter(0), metadata={op_name="jit(_mean)/jit(main)/reduce_sum" scheduling_name="Arg_0.5"}
+  ROOT %add.2 = f64[] add(%Arg_0.5, %Arg_1.6), metadata={op_name="jit(_mean)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=581 scheduling_name="add.2"}
+}
+
+%fused_reduce (param_0: f64[960]) -> f64[] {
+  %param_0 = f64[960]{0} parameter(0), metadata={scheduling_name="param_0"}
+  %constant_3_1 = f64[] constant(0)
+  ROOT %reduce.8.1 = f64[] reduce(%param_0, %constant_3_1), dimensions={0}, to_apply=%region_0.4, metadata={op_name="jit(_mean)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=581 scheduling_name="reduce.8.1"}
+}
+
+%fused_multiply (param_0.1: f64[]) -> f64[] {
+  %param_0.1 = f64[] parameter(0), metadata={scheduling_name="param_0.1"}
+  %constant_4 = f64[] constant(0.0010416666666666667)
+  ROOT %multiply.3.1 = f64[] multiply(%param_0.1, %constant_4), metadata={op_name="jit(_mean)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=581 scheduling_name="multiply.3.1"}
+}
+
+ENTRY %main.10 (Arg_0.1.0: f64[960]) -> f64[] {
+  %Arg_0.1.0 = f64[960]{0} parameter(0), metadata={op_name="a" scheduling_name="Arg_0.1.0"}
+  %input_reduce_fusion = f64[] fusion(%Arg_0.1.0), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_mean)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=581 scheduling_name="input_reduce_fusion"}
+  ROOT %loop_multiply_fusion = f64[] fusion(%input_reduce_fusion), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_mean)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=581 scheduling_name="loop_multiply_fusion"}
+}
+

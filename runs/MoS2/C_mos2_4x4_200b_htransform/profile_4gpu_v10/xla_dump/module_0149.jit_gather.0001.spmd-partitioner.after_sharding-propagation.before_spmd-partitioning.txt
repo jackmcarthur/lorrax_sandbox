@@ -1,0 +1,11 @@
+HloModule jit_gather, entry_computation_layout={(c128[16,960,960]{2,1,0}, s32[1]{0})->c128[960,960]{1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+ENTRY %main.4 (Arg_0.1: c128[16,960,960], Arg_1.2: s32[1]) -> c128[960,960] {
+  %Arg_0.1 = c128[16,960,960]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="args[0]"}
+  %Arg_1.2 = s32[1]{0} parameter(1), metadata={op_name="args[1]"}
+  %reshape.16 = s32[] reshape(%Arg_1.2)
+  %constant.20 = s32[] constant(0)
+  %dynamic-slice.3 = c128[1,960,960]{2,1,0} dynamic-slice(%Arg_0.1, %reshape.16, %constant.20, %constant.20), dynamic_slice_sizes={1,960,960}, sharding={devices=[1,2,2]<=[4]}
+  ROOT %reshape.12 = c128[960,960]{1,0} reshape(%dynamic-slice.3), sharding={devices=[2,2]<=[4]}, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=612}
+}
+

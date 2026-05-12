@@ -1,0 +1,13 @@
+{ lambda ; a:f32[8,16] b:f32[8,16]. let
+    c:f32[8] = pjit[
+      name=kernel
+      jaxpr={ lambda ; a:f32[8,16] b:f32[8,16]. let
+          d:f32[16,8] = transpose[permutation=(1, 0)] b
+          e:f32[8,8] = dot_general[
+            dimension_numbers=(([1], [0]), ([], []))
+            preferred_element_type=float32
+          ] a d
+          c:f32[8] = reduce_sum[axes=(1,)] e
+        in (c,) }
+    ] a b
+  in (c,) }

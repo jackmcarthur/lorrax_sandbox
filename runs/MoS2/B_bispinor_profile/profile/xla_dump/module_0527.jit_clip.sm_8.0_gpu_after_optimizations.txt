@@ -1,0 +1,15 @@
+HloModule jit_clip, is_scheduled=true, entry_computation_layout={(s64[16]{0}, s64[])->s64[16]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="e59f575e25a1393cb7f1b9a8f1fd95e8"}
+
+%fused_maximum (param_0.1: s64[16], param_1.1: s64[]) -> s64[16] {
+  %param_1.1 = s64[] parameter(1), metadata={scheduling_name="param_1.1"}
+  %broadcast.2.1 = s64[16]{0} broadcast(%param_1.1), dimensions={}, metadata={op_name="jit(clip)/jit(main)/max" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/gamma_matrices.py" source_line=45 scheduling_name="broadcast.2.1"}
+  %param_0.1 = s64[16]{0} parameter(0), metadata={scheduling_name="param_0.1"}
+  ROOT %maximum.2.1 = s64[16]{0} maximum(%broadcast.2.1, %param_0.1), metadata={op_name="jit(clip)/jit(main)/max" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/gamma_matrices.py" source_line=45 scheduling_name="maximum.2.1"}
+}
+
+ENTRY %main.5 (Arg_0.1.0: s64[16], Arg_1.2.0: s64[]) -> s64[16] {
+  %Arg_1.2.0 = s64[] parameter(1), metadata={op_name="min" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = s64[16]{0} parameter(0), metadata={op_name="arr" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_maximum_fusion = s64[16]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_maximum, metadata={op_name="jit(clip)/jit(main)/max" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/gamma_matrices.py" source_line=45 scheduling_name="loop_maximum_fusion"}
+}
+

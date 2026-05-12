@@ -1,0 +1,10 @@
+HloModule jit__init_accum, entry_computation_layout={()->(c128[36,1800,1800]{2,1,0}, c128[36,1800]{1,0})}, allow_spmd_sharding_propagation_to_output={false,false}, num_partitions=8
+
+ENTRY %main.8 () -> (c128[36,1800,1800], c128[36,1800]) {
+  %constant.1 = c128[] constant((0, 0)), sharding={replicated}
+  %broadcast = c128[36,1800,1800]{2,1,0} broadcast(%constant.1), dimensions={}, sharding={devices=[1,2,4]<=[8]}
+  %constant.3 = c128[] constant((0, 0)), sharding={replicated}
+  %broadcast.1 = c128[36,1800]{1,0} broadcast(%constant.3), dimensions={}, sharding={devices=[1,2,4]<=[8] last_tile_dim_replicate}
+  ROOT %tuple.7 = (c128[36,1800,1800]{2,1,0}, c128[36,1800]{1,0}) tuple(%broadcast, %broadcast.1), sharding={{devices=[1,2,4]<=[8]}, {devices=[1,2,4]<=[8] last_tile_dim_replicate}}
+}
+

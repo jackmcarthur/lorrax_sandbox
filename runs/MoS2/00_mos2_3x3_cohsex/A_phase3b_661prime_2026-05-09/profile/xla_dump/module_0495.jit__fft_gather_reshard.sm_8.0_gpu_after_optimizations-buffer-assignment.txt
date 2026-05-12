@@ -1,0 +1,268 @@
+BufferAssignment:
+allocation 0: size 132710400, parameter 0, shape |c128[9,5,4,24,24,80]| at ShapeIndex {}:
+ value: <86 param.1 @0> (size=132710400,offset=0): c128[9,5,4,24,24,80]{5,4,3,2,1,0}
+allocation 1: size 7741440, maybe-live-out:
+ value: <91 loop_sine_fusion @0> (size=41472,offset=0): f64[1,9,24,24]{3,2,1,0}
+ value: <96 all-gather-start{1} @0> (size=7614720,offset=0): c128[9,20,4,661]{3,2,0,1}
+ value: <101 input_transpose_fusion{0} @0> (size=7741440,offset=0): c128[9,4,13440]{2,1,0}
+allocation 2: size 7741440, maybe-live-out:
+ value: <92 loop_gather_fusion @0> (size=1903680,offset=0): c128[661,1,9,5,4]{0,4,2,3,1}
+ value: <97 loop_transpose_fusion @0> (size=7741440,offset=0): c128[4,9,20,4,168]{4,3,2,1,0}
+ value: <104 collective-permute-start.1{1} @0> (size=7741440,offset=0): c128[9,80,4,168]{2,1,3,0}
+allocation 3: size 5288, constant:
+ value: <85 constant_52_0 @0> (size=5288,offset=0): s64[661,1]{1,0}
+allocation 4: size 192, constant:
+ value: <88 constant_43_0 @0> (size=192,offset=0): f64[24]{0}
+allocation 5: size 72, constant:
+ value: <89 constant_44_0 @0> (size=72,offset=0): f64[9]{0}
+allocation 6: size 72, constant:
+ value: <90 constant_42_0 @0> (size=72,offset=0): f64[9]{0}
+allocation 7: size 16, output shape is |(c128[9,80,4,168], c128[9,168,80,4])|, maybe-live-out:
+ value: <105 tuple.1{} @0> (size=16,offset=0): (c128[9,80,4,168]{3,2,1,0}, c128[9,168,80,4]{3,2,1,0})
+allocation 8: size 132711168, preallocated-temp:
+ value: <84 all-to-all.2 @0> (size=7741440,offset=768): c128[9,20,4,4,168]{4,2,1,0,3}
+ value: <87 fft.2.0 @0> (size=132710400,offset=768): c128[9,5,4,24,24,80]{5,4,3,2,1,0}
+ value: <93 collective-permute-start{} @0> (size=16,offset=0): (c128[9,5,4,661]{3,2,0,1}, c128[9,5,4,661]{3,2,0,1})
+ value: <94 collective-permute-start{1} @0> (size=1903680,offset=768): c128[9,5,4,661]{3,2,0,1}
+ value: <95 all-gather-start{} @0> (size=16,offset=128): (c128[9,5,4,661]{3,2,0,1}, c128[9,20,4,661]{3,2,0,1})
+ value: <98 all-to-all-start{} @0> (size=16,offset=256): ((c128[9,20,4,4,168]{4,2,1,0,3}), c128[9,20,4,4,168]{4,2,1,0,3})
+ value: <99 all-to-all-start{0} @0> (size=8,offset=640): (c128[9,20,4,4,168]{4,2,1,0,3})
+ value: <100 input_transpose_fusion{} @0> (size=16,offset=384): (c128[9,4,13440]{2,1,0}, c128[9,168,320]{2,1,0})
+ value: <102 input_transpose_fusion{1} @0> (size=7741440,offset=7742208): c128[9,168,320]{2,1,0}
+ value: <103 collective-permute-start.1{} @0> (size=16,offset=512): (c128[9,80,4,168]{2,1,3,0}, c128[9,80,4,168]{2,1,3,0})
+
+Total bytes used: 280910088 (267.90MiB)
+
+Used values:
+<84 all-to-all.2 @0>
+ positions:
+  all-to-all.2
+  all-to-all-start {1}
+  all-to-all-done
+ uses:
+  all-to-all-done, operand 0 {1}
+  input_transpose_fusion, operand 0
+ from instruction: %all-to-all.2 = c128[9,20,4,4,168]{4,2,1,0,3} all-to-all(%param_0.99), channel_id=3, replica_groups={{0,1,2,3},{4,5,6,7},{8,9,10,11},{12,13,14,15}}, dimensions={3}, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=776 scheduling_name="all-to-all.2"}
+<85 constant_52_0 @0>
+ positions:
+  constant_52_0
+ uses:
+  loop_gather_fusion, operand 0
+ from instruction: %constant_52_0 = s64[661,1]{1,0} constant({...}), metadata={op_name="jit(_fft_gather_reshard)/jit(main)/jit(_take)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=757}
+<86 param.1 @0>
+ positions:
+  param.1
+ uses:
+  fft.2.0, operand 0
+ from instruction: %param.1 = c128[9,5,4,24,24,80]{5,4,3,2,1,0} parameter(0), sharding={devices=[1,16,1,1,1,1]<=[16]}, metadata={op_name="psi_G" scheduling_name="param.1"}
+<87 fft.2.0 @0>
+ positions:
+  fft.2.0
+ uses:
+  loop_gather_fusion, operand 1
+ from instruction: %fft.2.0 = c128[9,5,4,24,24,80]{5,4,3,2,1,0} fft(%param.1), fft_type=IFFT, fft_length={24,24,80}, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325 scheduling_name="fft.2.0"}
+<88 constant_43_0 @0>
+ positions:
+  constant_43_0
+ uses:
+  loop_gather_fusion, operand 3
+  loop_sine_fusion, operand 0
+ from instruction: %constant_43_0 = f64[24]{0} constant({...}), metadata={op_name="jit(_fft_gather_reshard)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=745}
+<89 constant_44_0 @0>
+ positions:
+  constant_44_0
+ uses:
+  loop_sine_fusion, operand 1
+  loop_gather_fusion, operand 4
+ from instruction: %constant_44_0 = f64[9]{0} constant({0, 0.33333333333333331, 0.66666666666666663, 0, 0.33333333333333331, 0.66666666666666663, 0, 0.33333333333333331, 0.66666666666666663}), metadata={op_name="jit(_fft_gather_reshard)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=746}
+<90 constant_42_0 @0>
+ positions:
+  constant_42_0
+ uses:
+  loop_sine_fusion, operand 2
+  loop_gather_fusion, operand 5
+ from instruction: %constant_42_0 = f64[9]{0} constant({0, 0, 0, 0.33333333333333331, 0.33333333333333331, 0.33333333333333331, 0.66666666666666663, 0.66666666666666663, 0.66666666666666663}), metadata={op_name="jit(_fft_gather_reshard)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=745}
+<91 loop_sine_fusion @0>
+ positions:
+  loop_sine_fusion
+ uses:
+  loop_gather_fusion, operand 2
+ from instruction: %loop_sine_fusion = f64[1,9,24,24]{3,2,1,0} fusion(%constant_43_0, %constant_44_0, %constant_42_0), kind=kLoop, calls=%fused_sine, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=743 scheduling_name="loop_sine_fusion"}
+<92 loop_gather_fusion @0>
+ positions:
+  loop_gather_fusion
+  bitcast.478.0
+  collective-permute-start {0}
+ uses:
+  bitcast.478.0, operand 0
+  collective-permute-start, operand 0
+  collective-permute-done, operand 0 {0}
+ from instruction: %loop_gather_fusion = c128[661,1,9,5,4]{0,4,2,3,1} fusion(%constant_52_0, %fft.2.0, %loop_sine_fusion, %constant_43_0, %constant_44_0, /*index=5*/%constant_42_0), kind=kLoop, calls=%fused_gather, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/jit(_take)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=757 scheduling_name="loop_gather_fusion"}
+<93 collective-permute-start{} @0>
+ positions:
+  collective-permute-start {}
+ uses:
+  collective-permute-done, operand 0 {}
+ from instruction: %collective-permute-start = (c128[9,5,4,661]{3,2,0,1}, c128[9,5,4,661]{3,2,0,1}) collective-permute-start(%bitcast.478.0), channel_id=1, source_target_pairs={{0,0},{1,4},{2,8},{3,12},{4,1},{5,5},{6,9},{7,13},{8,2},{9,6},{10,10},{11,14},{12,3},{13,7},{14,11},{15,15}}, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/jit(_pad)/pad" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=767 scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<94 collective-permute-start{1} @0>
+ positions:
+  collective-permute-start {1}
+  collective-permute-done
+  all-gather-start {0}
+ uses:
+  collective-permute-done, operand 0 {1}
+  all-gather-start, operand 0
+  all-gather-done, operand 0 {0}
+ from instruction: %collective-permute-start = (c128[9,5,4,661]{3,2,0,1}, c128[9,5,4,661]{3,2,0,1}) collective-permute-start(%bitcast.478.0), channel_id=1, source_target_pairs={{0,0},{1,4},{2,8},{3,12},{4,1},{5,5},{6,9},{7,13},{8,2},{9,6},{10,10},{11,14},{12,3},{13,7},{14,11},{15,15}}, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/jit(_pad)/pad" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=767 scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<95 all-gather-start{} @0>
+ positions:
+  all-gather-start {}
+ uses:
+  all-gather-done, operand 0 {}
+ from instruction: %all-gather-start = (c128[9,5,4,661]{3,2,0,1}, c128[9,20,4,661]{3,2,0,1}) all-gather-start(%collective-permute-done), channel_id=2, replica_groups={{0,4,8,12},{1,5,9,13},{2,6,10,14},{3,7,11,15}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/jit(_pad)/pad" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=767 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<96 all-gather-start{1} @0>
+ positions:
+  all-gather-start {1}
+  all-gather-done
+ uses:
+  all-gather-done, operand 0 {1}
+  loop_transpose_fusion, operand 0
+ from instruction: %all-gather-start = (c128[9,5,4,661]{3,2,0,1}, c128[9,20,4,661]{3,2,0,1}) all-gather-start(%collective-permute-done), channel_id=2, replica_groups={{0,4,8,12},{1,5,9,13},{2,6,10,14},{3,7,11,15}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/jit(_pad)/pad" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=767 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<97 loop_transpose_fusion @0>
+ positions:
+  loop_transpose_fusion
+  bitcast.491.0
+  all-to-all-start {0,0}
+  param_0.99
+ uses:
+  bitcast.491.0, operand 0
+  all-to-all-start, operand 0
+  all-to-all-done, operand 0 {0,0}
+  all-to-all.2, operand 0
+ from instruction: %loop_transpose_fusion = c128[4,9,20,4,168]{4,3,2,1,0} fusion(%all-gather-done), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=776 scheduling_name="loop_transpose_fusion"}
+<98 all-to-all-start{} @0>
+ positions:
+  all-to-all-start {}
+ uses:
+  all-to-all-done, operand 0 {}
+ from instruction: %all-to-all-start = ((c128[9,20,4,4,168]{4,2,1,0,3}), c128[9,20,4,4,168]{4,2,1,0,3}) all-to-all-start(%bitcast.491.0), channel_id=3, replica_groups={{0,1,2,3},{4,5,6,7},{8,9,10,11},{12,13,14,15}}, dimensions={3}, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=776 scheduling_name="all-to-all-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<99 all-to-all-start{0} @0>
+ positions:
+  all-to-all-start {0}
+ uses:
+  all-to-all-done, operand 0 {0}
+ from instruction: %all-to-all-start = ((c128[9,20,4,4,168]{4,2,1,0,3}), c128[9,20,4,4,168]{4,2,1,0,3}) all-to-all-start(%bitcast.491.0), channel_id=3, replica_groups={{0,1,2,3},{4,5,6,7},{8,9,10,11},{12,13,14,15}}, dimensions={3}, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=776 scheduling_name="all-to-all-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<100 input_transpose_fusion{} @0>
+ positions:
+  input_transpose_fusion {}
+ uses:
+  get-tuple-element, operand 0 {}
+  get-tuple-element.1, operand 0 {}
+ from instruction: %input_transpose_fusion = (c128[9,4,13440]{2,1,0}, c128[9,168,320]{2,1,0}) fusion(%all-to-all-done), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=776 scheduling_name="input_transpose_fusion"}
+<101 input_transpose_fusion{0} @0>
+ positions:
+  input_transpose_fusion {0}
+  tuple.1 {0}
+  bitcast.503.0
+  get-tuple-element
+ uses:
+  tuple.1, operand 0
+  bitcast.503.0, operand 0
+ from instruction: %input_transpose_fusion = (c128[9,4,13440]{2,1,0}, c128[9,168,320]{2,1,0}) fusion(%all-to-all-done), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=776 scheduling_name="input_transpose_fusion"}
+<102 input_transpose_fusion{1} @0>
+ positions:
+  input_transpose_fusion {1}
+  bitcast.511.0
+  get-tuple-element.1
+  collective-permute-start.1 {0}
+ uses:
+  collective-permute-start.1, operand 0
+  bitcast.511.0, operand 0
+  collective-permute-done.1, operand 0 {0}
+ from instruction: %input_transpose_fusion = (c128[9,4,13440]{2,1,0}, c128[9,168,320]{2,1,0}) fusion(%all-to-all-done), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=776 scheduling_name="input_transpose_fusion"}
+<103 collective-permute-start.1{} @0>
+ positions:
+  collective-permute-start.1 {}
+ uses:
+  collective-permute-done.1, operand 0 {}
+ from instruction: %collective-permute-start.1 = (c128[9,80,4,168]{2,1,3,0}, c128[9,80,4,168]{2,1,3,0}) collective-permute-start(%bitcast.511.0), channel_id=4, source_target_pairs={{0,0},{4,1},{8,2},{12,3},{1,4},{5,5},{9,6},{13,7},{2,8},{6,9},{10,10},{14,11},{3,12},{7,13},{11,14},{15,15}}, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=779 scheduling_name="collective-permute-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<104 collective-permute-start.1{1} @0>
+ positions:
+  collective-permute-start.1 {1}
+  tuple.1 {1}
+  bitcast.515.0
+  collective-permute-done.1
+ uses:
+  collective-permute-done.1, operand 0 {1}
+  tuple.1, operand 1
+  bitcast.515.0, operand 0
+ from instruction: %collective-permute-start.1 = (c128[9,80,4,168]{2,1,3,0}, c128[9,80,4,168]{2,1,3,0}) collective-permute-start(%bitcast.511.0), channel_id=4, source_target_pairs={{0,0},{4,1},{8,2},{12,3},{1,4},{5,5},{9,6},{13,7},{2,8},{6,9},{10,10},{14,11},{3,12},{7,13},{11,14},{15,15}}, metadata={op_name="jit(_fft_gather_reshard)/jit(main)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=779 scheduling_name="collective-permute-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<105 tuple.1{} @0>
+ positions:
+  tuple.1 {}
+ uses:
+ from instruction: %tuple.1 = (c128[9,80,4,168]{3,2,1,0}, c128[9,168,80,4]{3,2,1,0}) tuple(%bitcast.503.0, %bitcast.515.0), metadata={scheduling_name="tuple.1"}
+
+
+HloLiveRange (max 28):
+  InstructionSequence:
+    0:param.1
+    1:constant_44_0
+    2:constant_43_0
+    3:constant_42_0
+    4:constant_52_0
+    5:fft.2.0
+    6:loop_sine_fusion
+    7:loop_gather_fusion
+    8:bitcast.478.0
+    9:collective-permute-start
+    10:collective-permute-done
+    11:all-gather-start
+    12:all-gather-done
+    13:loop_transpose_fusion
+    14:bitcast.491.0
+    15:param_0.99
+    16:all-to-all.2
+    17:all-to-all-start
+    18:all-to-all-done
+    19:input_transpose_fusion
+    20:get-tuple-element.1
+    21:bitcast.511.0
+    22:collective-permute-start.1
+    23:collective-permute-done.1
+    24:get-tuple-element
+    25:bitcast.503.0
+    26:bitcast.515.0
+    27:tuple.1
+  BufferLiveRange:
+    all-to-all.2{}:16-19
+    constant_52_0{}:4-7
+    param.1{}:0-28
+    fft.2.0{}:5-7
+    constant_43_0{}:2-7
+    constant_44_0{}:1-7
+    constant_42_0{}:3-7
+    loop_sine_fusion{}:6-7
+    loop_gather_fusion{}:7-10
+    collective-permute-start{}:9-10
+    collective-permute-start{1}:9-12
+    all-gather-start{}:11-12
+    all-gather-start{1}:11-13
+    loop_transpose_fusion{}:13-18
+    all-to-all-start{}:17-18
+    all-to-all-start{0}:17-18
+    input_transpose_fusion{}:19-24
+    input_transpose_fusion{0}:19-28
+    input_transpose_fusion{1}:19-23
+    collective-permute-start.1{}:22-23
+    collective-permute-start.1{1}:22-28
+    tuple.1{}:27-28
+  Live ranges at 7 (peak):
+    constant_52_0: 5288 bytes
+    param.1: 132710400 bytes
+    fft.2.0: 132710400 bytes
+    constant_43_0: 192 bytes
+    constant_44_0: 72 bytes
+    constant_42_0: 72 bytes
+    loop_sine_fusion: 41472 bytes
+    loop_gather_fusion: 1903680 bytes

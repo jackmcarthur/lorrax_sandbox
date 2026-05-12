@@ -1,0 +1,27 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(f64[9,1963]{1,0}, f64[9,1963]{1,0}, f64[1963]{0}, f64[1963]{0})->(f64[9,1963]{1,0}, f64[9,1963]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="2b2795537069a0c915b25b5d076a5c28"}
+
+%fused_add_multiply (param_0.1: f64[9,1963], param_1.4: f64[9,1963], param_2.3: f64[1963], param_3.2: f64[1963]) -> (f64[9,1963], f64[9,1963]) {
+  %param_3.2 = f64[1963]{0} parameter(3), metadata={scheduling_name="param_3.2"}
+  %broadcast.6.1 = f64[9,1963]{1,0} broadcast(%param_3.2), dimensions={1}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=94 scheduling_name="broadcast.6.1"}
+  %param_1.4 = f64[9,1963]{1,0} parameter(1), metadata={scheduling_name="param_1.4"}
+  %multiply.8.1 = f64[9,1963]{1,0} multiply(%broadcast.6.1, %param_1.4), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=94 scheduling_name="multiply.8.1"}
+  %param_0.1 = f64[9,1963]{1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %param_2.3 = f64[1963]{0} parameter(2), metadata={scheduling_name="param_2.3"}
+  %broadcast.8.1 = f64[9,1963]{1,0} broadcast(%param_2.3), dimensions={1}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=94 scheduling_name="broadcast.8.1"}
+  %multiply.9.1 = f64[9,1963]{1,0} multiply(%param_0.1, %broadcast.8.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=94 scheduling_name="multiply.9.1"}
+  %add.2.1 = f64[9,1963]{1,0} add(%multiply.8.1, %multiply.9.1), metadata={op_name="jit(multiply)/jit(main)/add_any" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=94 scheduling_name="add.2.1"}
+  %multiply.7.1 = f64[9,1963]{1,0} multiply(%param_0.1, %param_1.4), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=94 scheduling_name="multiply.7.1"}
+  ROOT %tuple = (f64[9,1963]{1,0}, f64[9,1963]{1,0}) tuple(%add.2.1, %multiply.7.1), metadata={scheduling_name="tuple"}
+}
+
+ENTRY %main.18 (Arg_0.1.0: f64[9,1963], Arg_1.2.0: f64[9,1963], Arg_2.3.0: f64[1963], Arg_3.4.0: f64[1963]) -> (f64[9,1963], f64[9,1963]) {
+  %Arg_3.4.0 = f64[1963]{0} parameter(3), metadata={scheduling_name="Arg_3.4.0"}
+  %Arg_2.3.0 = f64[1963]{0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = f64[9,1963]{1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[9,1963]{1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %loop_add_multiply_fusion = (f64[9,1963]{1,0}, f64[9,1963]{1,0}) fusion(%Arg_0.1.0, %Arg_1.2.0, %Arg_3.4.0, %Arg_2.3.0), kind=kLoop, calls=%fused_add_multiply, metadata={op_name="jit(multiply)/jit(main)/add_any" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=94 scheduling_name="loop_add_multiply_fusion"}
+  %get-tuple-element.1 = f64[9,1963]{1,0} get-tuple-element(%loop_add_multiply_fusion), index=1, metadata={op_name="jit(multiply)/jit(main)/add_any" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=94 scheduling_name="get-tuple-element.1"}
+  %get-tuple-element = f64[9,1963]{1,0} get-tuple-element(%loop_add_multiply_fusion), index=0, metadata={op_name="jit(multiply)/jit(main)/add_any" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/solid_harmonics.py" source_line=94 scheduling_name="get-tuple-element"}
+  ROOT %tuple.17.0 = (f64[9,1963]{1,0}, f64[9,1963]{1,0}) tuple(%get-tuple-element.1, %get-tuple-element), metadata={scheduling_name="tuple.17.0"}
+}
+

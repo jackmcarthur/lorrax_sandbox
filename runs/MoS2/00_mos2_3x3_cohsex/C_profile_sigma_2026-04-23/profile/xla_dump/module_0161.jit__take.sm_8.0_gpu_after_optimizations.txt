@@ -1,0 +1,37 @@
+HloModule jit__take, is_scheduled=true, entry_computation_layout={(s32[9,24,24,80]{3,2,1,0}, s32[9]{0})->s32[9,24,24,80]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="0eba035f995c930878fec670aa307243"}
+
+%fused_select (param_0.31: s32[9,24,24,80], param_1.32: s32[9]) -> s32[1,9,24,24,80] {
+  %param_1.32 = s32[9]{0} parameter(1), metadata={scheduling_name="param_1.32"}
+  %constant_23 = s32[] constant(0)
+  %broadcast.26.9 = s32[9]{0} broadcast(%constant_23), dimensions={}, metadata={scheduling_name="broadcast.26.9"}
+  %compare.9.9 = pred[9]{0} compare(%param_1.32, %broadcast.26.9), direction=LT, metadata={op_name="jit(_take)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154 scheduling_name="compare.9.9"}
+  %constant_1_1 = s32[] constant(9)
+  %broadcast.27.9 = s32[9]{0} broadcast(%constant_1_1), dimensions={}, metadata={scheduling_name="broadcast.27.9"}
+  %add.3.9 = s32[9]{0} add(%param_1.32, %broadcast.27.9), metadata={op_name="jit(_take)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154 scheduling_name="add.3.9"}
+  %select.8.7 = s32[9]{0} select(%compare.9.9, %add.3.9, %param_1.32), metadata={op_name="jit(_take)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=350 scheduling_name="select.8.7"}
+  %bitcast.93.15 = s32[9,1]{1,0} bitcast(%select.8.7), metadata={scheduling_name="bitcast.93.15"}
+  %convert.7.15 = s64[9,1]{1,0} convert(%bitcast.93.15), metadata={op_name="jit(_take)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154 scheduling_name="convert.7.15"}
+  %constant_2_1 = s64[] constant(0)
+  %broadcast.28.5 = s64[9,1]{1,0} broadcast(%constant_2_1), dimensions={}, metadata={scheduling_name="broadcast.28.5"}
+  %compare.10.5 = pred[9,1]{1,0} compare(%convert.7.15, %broadcast.28.5), direction=GE, metadata={op_name="jit(_take)/jit(main)/ge" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154 scheduling_name="compare.10.5"}
+  %constant_4_1 = s64[] constant(8)
+  %broadcast.29.5 = s64[9,1]{1,0} broadcast(%constant_4_1), dimensions={}, metadata={scheduling_name="broadcast.29.5"}
+  %compare.11.5 = pred[9,1]{1,0} compare(%convert.7.15, %broadcast.29.5), direction=LE, metadata={op_name="jit(_take)/jit(main)/le" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154 scheduling_name="compare.11.5"}
+  %and.3.3 = pred[9,1]{1,0} and(%compare.10.5, %compare.11.5), metadata={op_name="jit(_take)/jit(main)/and" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154 scheduling_name="and.3.3"}
+  %bitcast.105.3 = pred[9]{0} bitcast(%and.3.3), metadata={scheduling_name="bitcast.105.3"}
+  %broadcast.30.3 = pred[1,9,24,24,80]{4,3,2,1,0} broadcast(%bitcast.105.3), dimensions={1}, metadata={op_name="jit(_take)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154 scheduling_name="broadcast.30.3"}
+  %param_0.31 = s32[9,24,24,80]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.31"}
+  %gather.1.1 = s32[9,1,24,24,80]{4,3,2,0,1} gather(%param_0.31, %convert.7.15), offset_dims={1,2,3,4}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,24,24,80}, metadata={op_name="jit(_take)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154 scheduling_name="gather.1.1"}
+  %bitcast.114.1 = s32[1,9,24,24,80]{4,3,2,1,0} bitcast(%gather.1.1), metadata={scheduling_name="bitcast.114.1"}
+  %constant_6_1 = s32[] constant(-2147483648)
+  %broadcast.31.1 = s32[1,9,24,24,80]{4,3,2,1,0} broadcast(%constant_6_1), dimensions={}, metadata={scheduling_name="broadcast.31.1"}
+  ROOT %select.9.1 = s32[1,9,24,24,80]{4,3,2,1,0} select(%broadcast.30.3, %bitcast.114.1, %broadcast.31.1), metadata={op_name="jit(_take)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154 scheduling_name="select.9.1"}
+}
+
+ENTRY %main.35_spmd (param.1.0: s32[9,24,24,80], param.2: s32[9]) -> s32[9,24,24,80] {
+  %param.1.0 = s32[9,24,24,80]{3,2,1,0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.1.0"}
+  %param.2 = s32[9]{0} parameter(1), sharding={replicated}, metadata={op_name="indices" scheduling_name="param.2"}
+  %loop_select_fusion = s32[1,9,24,24,80]{4,3,2,1,0} fusion(%param.1.0, %param.2), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_take)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154 scheduling_name="loop_select_fusion"}
+  ROOT %bitcast.2.0 = s32[9,24,24,80]{3,2,1,0} bitcast(%loop_select_fusion), metadata={op_name="jit(_take)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154 scheduling_name="bitcast.2.0"}
+}
+

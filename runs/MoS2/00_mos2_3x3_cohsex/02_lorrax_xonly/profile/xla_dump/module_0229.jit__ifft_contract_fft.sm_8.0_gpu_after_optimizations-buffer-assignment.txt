@@ -1,0 +1,113 @@
+BufferAssignment:
+allocation 0: size 58982400, parameter 1, shape |c128[9,2,2,320,320]| at ShapeIndex {}:
+ value: <20 param.2 @0> (size=58982400,offset=0): c128[9,2,2,320,320]{4,3,2,1,0}
+allocation 1: size 58982400, parameter 0, shape |c128[9,2,2,320,320]| at ShapeIndex {}:
+ value: <21 param.1.0 @0> (size=58982400,offset=0): c128[9,2,2,320,320]{4,3,2,1,0}
+allocation 2: size 14745600, output shape is |c128[9,320,320]|, maybe-live-out:
+ value: <24 input_transpose_fusion.1 @0> (size=14745600,offset=0): c128[102400,9]{1,0}
+ value: <26 input_transpose_fusion @0> (size=14745600,offset=0): c128[9,102400]{1,0}
+allocation 3: size 16, thread-local:
+ value: <2 add.2 @0> (size=16,offset=0): c128[]
+allocation 4: size 16, thread-local:
+ value: <0 Arg_0.34 @0> (size=16,offset=0): c128[]
+allocation 5: size 16, thread-local:
+ value: <1 Arg_1.35 @0> (size=16,offset=0): c128[]
+allocation 6: size 117964800, preallocated-temp:
+ value: <22 input_transpose_fusion.2 @0> (size=58982400,offset=0): c128[409600,9]{1,0}
+ value: <23 fft.4.0 @0> (size=58982400,offset=58982400): c128[2,2,320,320,3,3,1]{6,5,4,3,2,1,0}
+ value: <25 fft.5.0 @0> (size=14745600,offset=0): c128[320,320,3,3,1]{4,3,2,1,0}
+
+Total bytes used: 250675248 (239.06MiB)
+
+Used values:
+<0 Arg_0.34 @0>
+ positions:
+  Arg_0.34
+ uses:
+  add.2, operand 0
+ from instruction: %Arg_0.34 = c128[] parameter(0), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reduce_sum" scheduling_name="Arg_0.34"}
+<1 Arg_1.35 @0>
+ positions:
+  Arg_1.35
+ uses:
+  add.2, operand 1
+ from instruction: %Arg_1.35 = c128[] parameter(1), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reduce_sum" scheduling_name="Arg_1.35"}
+<2 add.2 @0>
+ positions:
+  add.2
+ uses:
+ from instruction: %add.2 = c128[] add(%Arg_0.34, %Arg_1.35), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=164 scheduling_name="add.2"}
+<20 param.2 @0>
+ positions:
+  param.2
+ uses:
+  input_transpose_fusion.1, operand 0
+ from instruction: %param.2 = c128[9,2,2,320,320]{4,3,2,1,0} parameter(1), sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="P_l_Rt_conj" scheduling_name="param.2"}
+<21 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  input_transpose_fusion.2, operand 0
+ from instruction: %param.1.0 = c128[9,2,2,320,320]{4,3,2,1,0} parameter(0), sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="P_r" scheduling_name="param.1.0"}
+<22 input_transpose_fusion.2 @0>
+ positions:
+  input_transpose_fusion.2
+  bitcast.120.0
+ uses:
+  bitcast.120.0, operand 0
+  fft.4.0, operand 0
+ from instruction: %input_transpose_fusion.2 = c128[409600,9]{1,0} fusion(%param.1.0), kind=kInput, calls=%fused_transpose.2, metadata={op_name="P_r" scheduling_name="input_transpose_fusion.2"}
+<23 fft.4.0 @0>
+ positions:
+  fft.4.0
+ uses:
+  input_transpose_fusion.1, operand 1
+ from instruction: %fft.4.0 = c128[2,2,320,320,3,3,1]{6,5,4,3,2,1,0} fft(%bitcast.120.0), fft_type=IFFT, fft_length={3,3,1}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/fft_helpers.py" source_line=325 scheduling_name="fft.4.0"}
+<24 input_transpose_fusion.1 @0>
+ positions:
+  input_transpose_fusion.1
+  bitcast.141.0
+ uses:
+  bitcast.141.0, operand 0
+  fft.5.0, operand 0
+ from instruction: %input_transpose_fusion.1 = c128[102400,9]{1,0} fusion(%param.2, %fft.4.0), kind=kInput, calls=%fused_transpose.1, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/gamma_matrices.py" source_line=164 scheduling_name="input_transpose_fusion.1"}
+<25 fft.5.0 @0>
+ positions:
+  fft.5.0
+ uses:
+  input_transpose_fusion, operand 0
+ from instruction: %fft.5.0 = c128[320,320,3,3,1]{4,3,2,1,0} fft(%bitcast.141.0), fft_type=FFT, fft_length={3,3,1}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/fft_helpers.py" source_line=343 scheduling_name="fft.5.0"}
+<26 input_transpose_fusion @0>
+ positions:
+  input_transpose_fusion
+  bitcast.101.0
+ uses:
+  bitcast.101.0, operand 0
+ from instruction: %input_transpose_fusion = c128[9,102400]{1,0} fusion(%fft.5.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reshape" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/fft_helpers.py" source_line=404 scheduling_name="input_transpose_fusion"}
+
+
+HloLiveRange (max 10):
+  InstructionSequence:
+    0:param.1.0
+    1:param.2
+    2:input_transpose_fusion.2
+    3:bitcast.120.0
+    4:fft.4.0
+    5:input_transpose_fusion.1
+    6:bitcast.141.0
+    7:fft.5.0
+    8:input_transpose_fusion
+    9:bitcast.101.0
+  BufferLiveRange:
+    param.2{}:0-10
+    param.1.0{}:0-10
+    input_transpose_fusion.2{}:2-4
+    fft.4.0{}:4-5
+    input_transpose_fusion.1{}:5-7
+    fft.5.0{}:7-8
+    input_transpose_fusion{}:8-10
+  Live ranges at 5 (peak):
+    param.2: 58982400 bytes
+    param.1.0: 58982400 bytes
+    fft.4.0: 58982400 bytes
+    input_transpose_fusion.1: 14745600 bytes

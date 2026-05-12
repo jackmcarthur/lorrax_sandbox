@@ -1,0 +1,202 @@
+HloModule jit__ortho_expand, is_scheduled=true, entry_computation_layout={(c128[80,2,2,64]{3,2,1,0}, c128[20,2,2,64]{3,2,1,0})->c128[20,2,2,64]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="a503e4b53c1fe1ae1037408cb940ec1a"}
+
+%fused_gather (param_0.45: s32[20]) -> c128[20,1,20,1] {
+  %iota.26.3 = s64[20,20]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(_ortho_expand)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=175 scheduling_name="iota.26.3"}
+  %iota.27.3 = s64[20,20]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(_ortho_expand)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=175 scheduling_name="iota.27.3"}
+  %compare.24.3 = pred[20,20]{1,0} compare(%iota.26.3, %iota.27.3), direction=EQ, metadata={op_name="jit(_ortho_expand)/jit(main)/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=175 scheduling_name="compare.24.3"}
+  %bitcast.649.3 = pred[1,20,20]{2,1,0} bitcast(%compare.24.3), metadata={scheduling_name="bitcast.649.3"}
+  %convert.13.3 = c128[1,20,20]{2,1,0} convert(%bitcast.649.3), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="convert.13.3"}
+  %bitcast.653.1 = c128[20,20,1]{0,1,2} bitcast(%convert.13.3), metadata={scheduling_name="bitcast.653.1"}
+  %param_0.45 = s32[20]{0} parameter(0), metadata={scheduling_name="param_0.45"}
+  %constant_30_1 = s32[] constant(0)
+  %broadcast.81.1 = s32[20]{0} broadcast(%constant_30_1), dimensions={}, metadata={scheduling_name="broadcast.81.1"}
+  %compare.27.1 = pred[20]{0} compare(%param_0.45, %broadcast.81.1), direction=LT, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="compare.27.1"}
+  %constant_34_1 = s32[] constant(20)
+  %broadcast.82.1 = s32[20]{0} broadcast(%constant_34_1), dimensions={}, metadata={scheduling_name="broadcast.82.1"}
+  %add.44.1 = s32[20]{0} add(%param_0.45, %broadcast.82.1), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="add.44.1"}
+  %select.26.1 = s32[20]{0} select(%compare.27.1, %add.44.1, %param_0.45), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="select.26.1"}
+  %bitcast.672.1 = s32[20,1]{1,0} bitcast(%select.26.1), metadata={scheduling_name="bitcast.672.1"}
+  ROOT %gather.4.1 = c128[20,1,20,1]{0,2,3,1} gather(%bitcast.653.1, %bitcast.672.1), offset_dims={1,2,3}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,20,1}, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="gather.4.1"}
+}
+
+%fused_select (param_0.46: c128[20,20], param_1.71: s32[]) -> c128[20,20] {
+  %param_1.71 = s32[] parameter(1), metadata={scheduling_name="param_1.71"}
+  %constant_30_3 = s32[] constant(0)
+  %compare.26.1 = pred[] compare(%param_1.71, %constant_30_3), direction=GE, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="compare.26.1"}
+  %broadcast.78.1 = pred[20,20]{1,0} broadcast(%compare.26.1), dimensions={}, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="broadcast.78.1"}
+  %param_0.46 = c128[20,20]{0,1} parameter(0), metadata={scheduling_name="param_0.46"}
+  %bitcast.637.1 = c128[20,20]{1,0} bitcast(%param_0.46), metadata={scheduling_name="bitcast.637.1"}
+  %constant_31_1 = c128[] constant((nan, nan))
+  %broadcast.76.2 = c128[20,20]{1,0} broadcast(%constant_31_1), dimensions={}, metadata={scheduling_name="broadcast.76.2"}
+  ROOT %select.25.1 = c128[20,20]{1,0} select(%broadcast.78.1, %bitcast.637.1, %broadcast.76.2), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="select.25.1"}
+}
+
+%fused_complex_subtract (param_0.49: c128[20,256], param_1.58: c128[20,2,2,64], param_2.30: c128[20,256]) -> (c128[20,2,2,64], c128[20,2,2,64]) {
+  %param_1.58 = c128[20,2,2,64]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1.58"}
+  %param_2.30 = c128[20,256]{1,0} parameter(2), metadata={scheduling_name="param_2.30"}
+  %bitcast.539.3 = c128[20,2,2,64]{3,2,1,0} bitcast(%param_2.30), metadata={scheduling_name="bitcast.539.3"}
+  %subtract.8.3 = c128[20,2,2,64]{3,2,1,0} subtract(%param_1.58, %bitcast.539.3), metadata={op_name="jit(_ortho_expand)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=169 scheduling_name="subtract.8.3"}
+  %param_0.49 = c128[20,256]{1,0} parameter(0), metadata={scheduling_name="param_0.49"}
+  %bitcast.556.1 = c128[20,2,2,64]{3,2,1,0} bitcast(%param_0.49), metadata={scheduling_name="bitcast.556.1"}
+  %subtract.9.1 = c128[20,2,2,64]{3,2,1,0} subtract(%subtract.8.3, %bitcast.556.1), metadata={op_name="jit(_ortho_expand)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=169 scheduling_name="subtract.9.1"}
+  %real.28.1.clone.1 = f64[20,2,2,64]{3,2,1,0} real(%subtract.9.1), metadata={op_name="jit(_ortho_expand)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=172 scheduling_name="real.28.1.clone.1"}
+  %imag.28.1.clone.1 = f64[20,2,2,64]{3,2,1,0} imag(%subtract.9.1), metadata={op_name="jit(_ortho_expand)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=172 scheduling_name="imag.28.1.clone.1"}
+  %negate.29.1.clone.1 = f64[20,2,2,64]{3,2,1,0} negate(%imag.28.1.clone.1), metadata={op_name="jit(_ortho_expand)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=172 scheduling_name="negate.29.1.clone.1"}
+  %complex.27.1.clone.1 = c128[20,2,2,64]{3,2,1,0} complex(%real.28.1.clone.1, %negate.29.1.clone.1), metadata={op_name="jit(_ortho_expand)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=172 scheduling_name="complex.27.1.clone.1"}
+  ROOT %tuple = (c128[20,2,2,64]{3,2,1,0}, c128[20,2,2,64]{3,2,1,0}) tuple(%subtract.9.1, %complex.27.1.clone.1), metadata={scheduling_name="tuple"}
+}
+
+%fused_subtract (param_0.10: c128[20,2,2,64], param_1.9: c128[20,256]) -> c128[20,2,2,64] {
+  %param_0.10 = c128[20,2,2,64]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.10"}
+  %param_1.9 = c128[20,256]{1,0} parameter(1), metadata={scheduling_name="param_1.9"}
+  %bitcast.539.1 = c128[20,2,2,64]{3,2,1,0} bitcast(%param_1.9), metadata={scheduling_name="bitcast.539.1"}
+  ROOT %subtract.8.1 = c128[20,2,2,64]{3,2,1,0} subtract(%param_0.10, %bitcast.539.1), metadata={op_name="jit(_ortho_expand)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=169 scheduling_name="subtract.8.1"}
+}
+
+%fused_complex (param_0.13: c128[80,2,2,64]) -> c128[80,2,2,64] {
+  %param_0.13 = c128[80,2,2,64]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.13"}
+  %real.27.1 = f64[80,2,2,64]{3,2,1,0} real(%param_0.13), metadata={op_name="jit(_ortho_expand)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=168 scheduling_name="real.27.1"}
+  %imag.26.1 = f64[80,2,2,64]{3,2,1,0} imag(%param_0.13), metadata={op_name="jit(_ortho_expand)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=168 scheduling_name="imag.26.1"}
+  %negate.27.1 = f64[80,2,2,64]{3,2,1,0} negate(%imag.26.1), metadata={op_name="jit(_ortho_expand)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=168 scheduling_name="negate.27.1"}
+  ROOT %complex.26.1 = c128[80,2,2,64]{3,2,1,0} complex(%real.27.1, %negate.27.1), metadata={op_name="jit(_ortho_expand)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=168 scheduling_name="complex.26.1"}
+}
+
+%fused_select.1 (param_0.61: c128[20,20], param_1.72: s32[]) -> c128[20,20] {
+  %iota.24.3 = s32[20,20]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="iota.24.3"}
+  %iota.25.3 = s32[20,20]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="iota.25.3"}
+  %compare.23.3 = pred[20,20]{1,0} compare(%iota.24.3, %iota.25.3), direction=GE, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/ge" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="compare.23.3"}
+  %param_1.72 = s32[] parameter(1), metadata={scheduling_name="param_1.72"}
+  %constant_30_2 = s32[] constant(0)
+  %compare.25.1 = pred[] compare(%param_1.72, %constant_30_2), direction=EQ, metadata={scheduling_name="compare.25.1"}
+  %broadcast.75.1 = pred[20,20]{1,0} broadcast(%compare.25.1), dimensions={}, metadata={scheduling_name="broadcast.75.1"}
+  %param_0.61 = c128[20,20]{0,1} parameter(0), metadata={scheduling_name="param_0.61"}
+  %bitcast.620.3 = c128[20,20]{1,0} bitcast(%param_0.61), metadata={scheduling_name="bitcast.620.3"}
+  %constant_31_2 = c128[] constant((nan, nan))
+  %broadcast.76.4 = c128[20,20]{1,0} broadcast(%constant_31_2), dimensions={}, metadata={scheduling_name="broadcast.76.4"}
+  %select.23.3 = c128[20,20]{1,0} select(%broadcast.75.1, %bitcast.620.3, %broadcast.76.4), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/cholesky" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="select.23.3"}
+  %constant_27_1 = c128[] constant((0, 0))
+  %broadcast.73.2 = c128[20,20]{1,0} broadcast(%constant_27_1), dimensions={}, metadata={scheduling_name="broadcast.73.2"}
+  ROOT %select.24.1 = c128[20,20]{1,0} select(%compare.23.3, %select.23.3, %broadcast.73.2), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="select.24.1"}
+}
+
+%fused_multiply (param_0.60: c128[20,20]) -> c128[20,20] {
+  %param_0.60 = c128[20,20]{1,0} parameter(0), metadata={scheduling_name="param_0.60"}
+  %transpose.94.3 = c128[20,20]{1,0} transpose(%param_0.60), dimensions={1,0}, metadata={scheduling_name="transpose.94.3"}
+  %real.29.3 = f64[20,20]{1,0} real(%param_0.60), metadata={op_name="jit(_ortho_expand)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=173 scheduling_name="real.29.3"}
+  %imag.29.3 = f64[20,20]{1,0} imag(%param_0.60), metadata={op_name="jit(_ortho_expand)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=173 scheduling_name="imag.29.3"}
+  %negate.30.3 = f64[20,20]{1,0} negate(%imag.29.3), metadata={op_name="jit(_ortho_expand)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=173 scheduling_name="negate.30.3"}
+  %complex.28.3 = c128[20,20]{1,0} complex(%real.29.3, %negate.30.3), metadata={op_name="jit(_ortho_expand)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=173 scheduling_name="complex.28.3"}
+  %add.39.3 = c128[20,20]{1,0} add(%transpose.94.3, %complex.28.3), metadata={op_name="jit(_ortho_expand)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=173 scheduling_name="add.39.3"}
+  %constant_25_1 = c128[] constant((0.5, 0))
+  %broadcast.71.6 = c128[20,20]{1,0} broadcast(%constant_25_1), dimensions={}, metadata={scheduling_name="broadcast.71.6"}
+  %multiply.7.5 = c128[20,20]{1,0} multiply(%add.39.3, %broadcast.71.6), metadata={op_name="jit(_ortho_expand)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=173 scheduling_name="multiply.7.5"}
+  %iota.26.7 = s64[20,20]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(_ortho_expand)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=175 scheduling_name="iota.26.7"}
+  %iota.27.7 = s64[20,20]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(_ortho_expand)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=175 scheduling_name="iota.27.7"}
+  %compare.24.7 = pred[20,20]{1,0} compare(%iota.26.7, %iota.27.7), direction=EQ, metadata={op_name="jit(_ortho_expand)/jit(main)/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=175 scheduling_name="compare.24.7"}
+  %constant_26_1 = c128[] constant((1e-12, 0))
+  %broadcast.72.5 = c128[20,20]{1,0} broadcast(%constant_26_1), dimensions={}, metadata={scheduling_name="broadcast.72.5"}
+  %constant_27_2 = c128[] constant((0, 0))
+  %broadcast.73.6 = c128[20,20]{1,0} broadcast(%constant_27_2), dimensions={}, metadata={scheduling_name="broadcast.73.6"}
+  %select.22.5 = c128[20,20]{1,0} select(%compare.24.7, %broadcast.72.5, %broadcast.73.6), metadata={op_name="jit(_ortho_expand)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=175 scheduling_name="select.22.5"}
+  %add.41.3 = c128[20,20]{1,0} add(%multiply.7.5, %select.22.5), metadata={op_name="jit(_ortho_expand)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=175 scheduling_name="add.41.3"}
+  %real.30.3 = f64[20,20]{1,0} real(%add.41.3), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="real.30.3"}
+  %imag.30.5 = f64[20,20]{1,0} imag(%add.41.3), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="imag.30.5"}
+  %negate.31.5 = f64[20,20]{1,0} negate(%imag.30.5), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="negate.31.5"}
+  %complex.30.3 = c128[20,20]{1,0} complex(%real.30.3, %negate.31.5), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="complex.30.3"}
+  %transpose.95.3 = c128[20,20]{1,0} transpose(%complex.30.3), dimensions={1,0}, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="transpose.95.3"}
+  %add.42.1 = c128[20,20]{1,0} add(%add.41.3, %transpose.95.3), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="add.42.1"}
+  ROOT %multiply.8.1 = c128[20,20]{1,0} multiply(%add.42.1, %broadcast.71.6), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="multiply.8.1"}
+}
+
+%fused_complex.1 (param_0.39: c128[20,20]) -> c128[20,20] {
+  %param_0.39 = c128[20,20]{0,1} parameter(0), metadata={scheduling_name="param_0.39"}
+  %bitcast.681.8 = c128[20,20]{1,0} bitcast(%param_0.39), metadata={scheduling_name="bitcast.681.8"}
+  %real.31.3 = f64[20,20]{1,0} real(%bitcast.681.8), metadata={op_name="jit(_ortho_expand)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=177 scheduling_name="real.31.3"}
+  %imag.31.5 = f64[20,20]{1,0} imag(%bitcast.681.8), metadata={op_name="jit(_ortho_expand)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=177 scheduling_name="imag.31.5"}
+  %negate.32.3 = f64[20,20]{1,0} negate(%imag.31.5), metadata={op_name="jit(_ortho_expand)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=177 scheduling_name="negate.32.3"}
+  ROOT %complex.31.1 = c128[20,20]{1,0} complex(%real.31.3, %negate.32.3), metadata={op_name="jit(_ortho_expand)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=177 scheduling_name="complex.31.1"}
+}
+
+%fused_add (param_0.47: s32[20]) -> s32[20] {
+  %param_0.47 = s32[20]{0} parameter(0), metadata={scheduling_name="param_0.47"}
+  %constant_32_1 = s32[] constant(-1)
+  %broadcast.80.1 = s32[20]{0} broadcast(%constant_32_1), dimensions={}, metadata={scheduling_name="broadcast.80.1"}
+  ROOT %add.43.1 = s32[20]{0} add(%param_0.47, %broadcast.80.1), metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="add.43.1"}
+}
+
+%add.clone (x.1: c128[], y.1: c128[]) -> c128[] {
+  %y.1 = c128[] parameter(1), metadata={scheduling_name="y.1"}
+  %x.1 = c128[] parameter(0), metadata={scheduling_name="x.1"}
+  ROOT %add.36 = c128[] add(%x.1, %y.1), metadata={scheduling_name="add.36"}
+}
+
+%add.1.clone (x.4: c128[], y.4: c128[]) -> c128[] {
+  %y.4 = c128[] parameter(1), metadata={scheduling_name="y.4"}
+  %x.4 = c128[] parameter(0), metadata={scheduling_name="x.4"}
+  ROOT %add.37 = c128[] add(%x.4, %y.4), metadata={scheduling_name="add.37"}
+}
+
+%add.2.clone (x.7: c128[], y.7: c128[]) -> c128[] {
+  %y.7 = c128[] parameter(1), metadata={scheduling_name="y.7"}
+  %x.7 = c128[] parameter(0), metadata={scheduling_name="x.7"}
+  ROOT %add.38 = c128[] add(%x.7, %y.7), metadata={scheduling_name="add.38"}
+}
+
+ENTRY %main.121_spmd (param.1.0: c128[80,2,2,64], param.2: c128[20,2,2,64]) -> c128[20,2,2,64] {
+  %param.1.0 = c128[80,2,2,64]{3,2,1,0} parameter(0), sharding={devices=[1,2,2,1]<=[4]}, metadata={op_name="V" scheduling_name="param.1.0"}
+  %param.2 = c128[20,2,2,64]{3,2,1,0} parameter(1), sharding={devices=[1,2,2,1]<=[4]}, metadata={op_name="P" scheduling_name="param.2"}
+  %loop_complex_fusion = c128[80,2,2,64]{3,2,1,0} fusion(%param.1.0), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(_ortho_expand)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=168 scheduling_name="loop_complex_fusion"}
+  %bitcast.528.0 = c128[256,20]{0,1} bitcast(%param.2), metadata={scheduling_name="bitcast.528.0"}
+  %bitcast.543.0 = c128[80,256]{1,0} bitcast(%loop_complex_fusion), metadata={scheduling_name="bitcast.543.0"}
+  %custom-call.13.0 = (c128[80,20]{1,0}, s8[409600]{0}) custom-call(%bitcast.543.0, %bitcast.528.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_ortho_expand)/jit(main)/m...,n...->mn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=168 scheduling_name="custom-call.13.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"20480","rhs_stride":"5120","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.11.0 = c128[80,20]{1,0} get-tuple-element(%custom-call.13.0), index=0, metadata={op_name="jit(_ortho_expand)/jit(main)/m...,n...->mn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=168 scheduling_name="get-tuple-element.11.0"}
+  %all-reduce-start = c128[80,20]{1,0} all-reduce-start(%get-tuple-element.11.0), channel_id=7, replica_groups={{0,1,2,3}}, use_global_device_ids=true, to_apply=%add.clone, metadata={scheduling_name="all-reduce-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-reduce-done = c128[80,20]{1,0} all-reduce-done(%all-reduce-start), metadata={scheduling_name="all-reduce-done"}
+  %bitcast.553.0 = c128[80,256]{1,0} bitcast(%param.1.0), metadata={scheduling_name="bitcast.553.0"}
+  %custom-call.14.0 = (c128[20,256]{1,0}, s8[353280]{0}) custom-call(%all-reduce-done, %bitcast.553.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_ortho_expand)/jit(main)/mn,m...->n.../dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=169 scheduling_name="custom-call.14.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["0"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"1600","rhs_stride":"20480","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.12.0 = c128[20,256]{1,0} get-tuple-element(%custom-call.14.0), index=0, metadata={op_name="jit(_ortho_expand)/jit(main)/mn,m...->n.../dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=169 scheduling_name="get-tuple-element.12.0"}
+  %loop_subtract_fusion = c128[20,2,2,64]{3,2,1,0} fusion(%param.2, %get-tuple-element.12.0), kind=kLoop, calls=%fused_subtract, metadata={op_name="jit(_ortho_expand)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=169 scheduling_name="loop_subtract_fusion"}
+  %bitcast.547.0 = c128[256,20]{0,1} bitcast(%loop_subtract_fusion), metadata={scheduling_name="bitcast.547.0"}
+  %custom-call.15.0 = (c128[80,20]{1,0}, s8[409600]{0}) custom-call(%bitcast.543.0, %bitcast.547.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_ortho_expand)/jit(main)/m...,n...->mn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=168 scheduling_name="custom-call.15.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"20480","rhs_stride":"5120","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.13.0 = c128[80,20]{1,0} get-tuple-element(%custom-call.15.0), index=0, metadata={op_name="jit(_ortho_expand)/jit(main)/m...,n...->mn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=168 scheduling_name="get-tuple-element.13.0"}
+  %all-reduce-start.1 = c128[80,20]{1,0} all-reduce-start(%get-tuple-element.13.0), channel_id=8, replica_groups={{0,1,2,3}}, use_global_device_ids=true, to_apply=%add.1.clone, metadata={scheduling_name="all-reduce-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-reduce-done.1 = c128[80,20]{1,0} all-reduce-done(%all-reduce-start.1), metadata={scheduling_name="all-reduce-done.1"}
+  %custom-call.16.0 = (c128[20,256]{1,0}, s8[353280]{0}) custom-call(%all-reduce-done.1, %bitcast.553.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_ortho_expand)/jit(main)/mn,m...->n.../dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=169 scheduling_name="custom-call.16.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["0"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"1600","rhs_stride":"20480","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.14.0 = c128[20,256]{1,0} get-tuple-element(%custom-call.16.0), index=0, metadata={op_name="jit(_ortho_expand)/jit(main)/mn,m...->n.../dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=169 scheduling_name="get-tuple-element.14.0"}
+  %loop_complex_subtract_fusion = (c128[20,2,2,64]{3,2,1,0}, c128[20,2,2,64]{3,2,1,0}) fusion(%get-tuple-element.14.0, %param.2, %get-tuple-element.12.0), kind=kLoop, calls=%fused_complex_subtract, metadata={op_name="jit(_ortho_expand)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=169 scheduling_name="loop_complex_subtract_fusion"}
+  %get-tuple-element.20 = c128[20,2,2,64]{3,2,1,0} get-tuple-element(%loop_complex_subtract_fusion), index=1, metadata={op_name="jit(_ortho_expand)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=169 scheduling_name="get-tuple-element.20"}
+  %bitcast.566.0 = c128[20,256]{1,0} bitcast(%get-tuple-element.20), metadata={scheduling_name="bitcast.566.0"}
+  %get-tuple-element.19 = c128[20,2,2,64]{3,2,1,0} get-tuple-element(%loop_complex_subtract_fusion), index=0, metadata={op_name="jit(_ortho_expand)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=169 scheduling_name="get-tuple-element.19"}
+  %bitcast.570.0 = c128[256,20]{0,1} bitcast(%get-tuple-element.19), metadata={scheduling_name="bitcast.570.0"}
+  %custom-call.17.0 = (c128[20,20]{1,0}, s8[163840]{0}) custom-call(%bitcast.566.0, %bitcast.570.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_ortho_expand)/jit(main)/m...,n...->mn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=172 scheduling_name="custom-call.17.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"5120","rhs_stride":"5120","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.15.0 = c128[20,20]{1,0} get-tuple-element(%custom-call.17.0), index=0, metadata={op_name="jit(_ortho_expand)/jit(main)/m...,n...->mn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=172 scheduling_name="get-tuple-element.15.0"}
+  %all-reduce-start.2 = c128[20,20]{1,0} all-reduce-start(%get-tuple-element.15.0), channel_id=9, replica_groups={{0,1,2,3}}, use_global_device_ids=true, to_apply=%add.2.clone, metadata={scheduling_name="all-reduce-start.2"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-reduce-done.2 = c128[20,20]{1,0} all-reduce-done(%all-reduce-start.2), metadata={scheduling_name="all-reduce-done.2"}
+  %loop_multiply_fusion = c128[20,20]{1,0} fusion(%all-reduce-done.2), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="loop_multiply_fusion"}
+  %bitcast.612.0 = c128[20,20]{0,1} bitcast(%loop_multiply_fusion), metadata={scheduling_name="bitcast.612.0"}
+  %custom-call.6.0 = (c128[20,20]{0,1}, c128[160]{0}, s32[]) custom-call(%bitcast.612.0), custom_call_target="__cusolver$cholesky", operand_layout_constraints={c128[20,20]{0,1}}, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/cholesky" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="custom-call.6.0"}, backend_config={"lower":true}
+  %get-tuple-element.10.0 = s32[] get-tuple-element(%custom-call.6.0), index=2, metadata={scheduling_name="get-tuple-element.10.0"}
+  %get-tuple-element.9.0 = c128[20,20]{0,1} get-tuple-element(%custom-call.6.0), index=0, metadata={scheduling_name="get-tuple-element.9.0"}
+  %loop_select_fusion.1 = c128[20,20]{1,0} fusion(%get-tuple-element.9.0, %get-tuple-element.10.0), kind=kLoop, calls=%fused_select.1, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(cholesky)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78 scheduling_name="loop_select_fusion.1"}
+  %bitcast.630.0 = c128[20,20]{0,1} bitcast(%loop_select_fusion.1), metadata={scheduling_name="bitcast.630.0"}
+  %custom-call.4.0 = (c128[20,20]{0,1}, s32[20]{0}, s32[]) custom-call(%bitcast.630.0), custom_call_target="cusolver_getrf_ffi", operand_layout_constraints={c128[20,20]{0,1}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="custom-call.4.0"}, backend_config={}
+  %get-tuple-element.8.0 = s32[20]{0} get-tuple-element(%custom-call.4.0), index=1, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="get-tuple-element.8.0"}
+  %loop_add_fusion = s32[20]{0} fusion(%get-tuple-element.8.0), kind=kLoop, calls=%fused_add, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="loop_add_fusion"}
+  %custom-call.5.0 = s32[20]{0} custom-call(%loop_add_fusion), custom_call_target="cu_lu_pivots_to_permutation", operand_layout_constraints={s32[20]{0}}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/lu_pivots_to_permutation" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="custom-call.5.0"}, backend_config={}
+  %loop_gather_fusion = c128[20,1,20,1]{0,2,3,1} fusion(%custom-call.5.0), kind=kLoop, calls=%fused_gather, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="loop_gather_fusion"}
+  %get-tuple-element.6.0 = s32[] get-tuple-element(%custom-call.4.0), index=2, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="get-tuple-element.6.0"}
+  %get-tuple-element.7.0 = c128[20,20]{0,1} get-tuple-element(%custom-call.4.0), index=0, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="get-tuple-element.7.0"}
+  %loop_select_fusion = c128[20,20]{1,0} fusion(%get-tuple-element.7.0, %get-tuple-element.6.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="loop_select_fusion"}
+  %bitcast.646.0 = c128[20,20]{0,1} bitcast(%loop_select_fusion), metadata={scheduling_name="bitcast.646.0"}
+  %bitcast.676.0 = c128[20,20]{0,1} bitcast(%loop_gather_fusion), metadata={scheduling_name="bitcast.676.0"}
+  %triangular-solve.8.0 = (c128[20,20]{0,1}, s8[0]{0}) custom-call(%bitcast.646.0, %bitcast.676.0), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="triangular-solve.8.0"}, backend_config={"left_side":true,"lower":true,"unit_diagonal":true,"transpose_a":"NO_TRANSPOSE"}
+  %get-tuple-element.17.0 = c128[20,20]{0,1} get-tuple-element(%triangular-solve.8.0), index=0, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="get-tuple-element.17.0"}
+  %triangular-solve.9.0 = (c128[20,20]{0,1}, s8[0]{0}) custom-call(%bitcast.646.0, %get-tuple-element.17.0), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="triangular-solve.9.0"}, backend_config={"left_side":true,"lower":false,"unit_diagonal":false,"transpose_a":"NO_TRANSPOSE"}
+  %get-tuple-element.18.0 = c128[20,20]{0,1} get-tuple-element(%triangular-solve.9.0), index=0, metadata={op_name="jit(_ortho_expand)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79 scheduling_name="get-tuple-element.18.0"}
+  %loop_complex_fusion.1 = c128[20,20]{1,0} fusion(%get-tuple-element.18.0), kind=kLoop, calls=%fused_complex.1, metadata={op_name="jit(_ortho_expand)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=177 scheduling_name="loop_complex_fusion.1"}
+  %bitcast.692.0 = c128[20,256]{1,0} bitcast(%get-tuple-element.19), metadata={scheduling_name="bitcast.692.0"}
+  %custom-call.18.0 = (c128[20,256]{1,0}, s8[88320]{0}) custom-call(%loop_complex_fusion.1, %bitcast.692.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_ortho_expand)/jit(main)/mi,i...->m.../dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=177 scheduling_name="custom-call.18.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["0"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"400","rhs_stride":"5120","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.16.0 = c128[20,256]{1,0} get-tuple-element(%custom-call.18.0), index=0, metadata={op_name="jit(_ortho_expand)/jit(main)/mi,i...->m.../dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=177 scheduling_name="get-tuple-element.16.0"}
+  ROOT %bitcast.14.0 = c128[20,2,2,64]{3,2,1,0} bitcast(%get-tuple-element.16.0), metadata={op_name="jit(_ortho_expand)/jit(main)/mi,i...->m.../dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=177 scheduling_name="bitcast.14.0"}
+}
+

@@ -1,0 +1,158 @@
+BufferAssignment:
+allocation 0: size 1887436800, parameter 0, shape |c128[4,640,46080]| at ShapeIndex {}:
+ value: <19 Arg_0.1.0 @0> (size=1887436800,offset=0): c128[4,640,46080]{2,1,0}
+allocation 1: size 26214400, maybe-live-out:
+ value: <27 custom-call.1.0{0} @0> (size=26214400,offset=0): c128[4,640,640]{2,1,0}
+allocation 2: size 2949120, parameter 2, shape |c128[4,1,24,24,80]| at ShapeIndex {}:
+ value: <20 Arg_2.3.0 @0> (size=2949120,offset=0): c128[4,1,24,24,80]{4,3,2,1,0}
+allocation 3: size 1104128, parameter 1, shape |c128[4,17252]| at ShapeIndex {}:
+ value: <17 Arg_1.2.0 @0> (size=1104128,offset=0): c128[4,17252]{1,0}
+allocation 4: size 138016, constant:
+ value: <18 constant_13_0 @0> (size=138016,offset=0): s64[17252,1]{1,0}
+allocation 5: size 40960, maybe-live-out:
+ value: <29 loop_slice_fusion @0> (size=40960,offset=0): c128[4,640,1]{2,1,0}
+allocation 6: size 16, output shape is |(c128[4,640,640], c128[4,640])|, maybe-live-out:
+ value: <30 tuple.66.0{} @0> (size=16,offset=0): (c128[4,640,640]{2,1,0}, c128[4,640]{1,0})
+allocation 7: size 3774873856, preallocated-temp:
+ value: <21 loop_multiply_fusion @0> (size=1887436800,offset=1887437056): c128[4,640,24,24,80]{4,3,2,1,0}
+ value: <22 fft.1.0 @0> (size=1887436800,offset=256): c128[4,640,24,24,80]{4,3,2,1,0}
+ value: <23 loop_complex_multiply_fusion{} @0> (size=16,offset=0): (c128[4,640,17252]{2,1,0}, c128[4,640,17252]{2,1,0})
+ value: <24 loop_complex_multiply_fusion{0} @0> (size=706641920,offset=1887437056): c128[4,640,17252]{2,1,0}
+ value: <25 loop_complex_multiply_fusion{1} @0> (size=706641920,offset=2594078976): c128[4,640,17252]{2,1,0}
+ value: <26 custom-call.1.0{} @0> (size=16,offset=128): (c128[4,640,640]{2,1,0}, s8[4194304]{0})
+ value: <28 custom-call.1.0{1} @0> (size=4194304,offset=256): s8[4194304]{0}
+
+Total bytes used: 5692757296 (5.30GiB)
+
+Used values:
+<17 Arg_1.2.0 @0>
+ positions:
+  Arg_1.2.0
+ uses:
+  loop_complex_multiply_fusion, operand 0
+ from instruction: %Arg_1.2.0 = c128[4,17252]{1,0} parameter(1), metadata={op_name="sqrt_v_q" scheduling_name="Arg_1.2.0"}
+<18 constant_13_0 @0>
+ positions:
+  constant_13_0
+ uses:
+  loop_complex_multiply_fusion, operand 1
+ from instruction: %constant_13_0 = s64[17252,1]{1,0} constant({...}), metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(jit(_take))/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=434}
+<19 Arg_0.1.0 @0>
+ positions:
+  Arg_0.1.0
+ uses:
+  loop_multiply_fusion, operand 0
+ from instruction: %Arg_0.1.0 = c128[4,640,46080]{2,1,0} parameter(0), metadata={op_name="zeta_q" scheduling_name="Arg_0.1.0"}
+<20 Arg_2.3.0 @0>
+ positions:
+  Arg_2.3.0
+ uses:
+  loop_multiply_fusion, operand 1
+ from instruction: %Arg_2.3.0 = c128[4,1,24,24,80]{4,3,2,1,0} parameter(2), metadata={op_name="phase_q" scheduling_name="Arg_2.3.0"}
+<21 loop_multiply_fusion @0>
+ positions:
+  loop_multiply_fusion
+ uses:
+  fft.1.0, operand 0
+ from instruction: %loop_multiply_fusion = c128[4,640,24,24,80]{4,3,2,1,0} fusion(%Arg_0.1.0, %Arg_2.3.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=429 scheduling_name="loop_multiply_fusion"}
+<22 fft.1.0 @0>
+ positions:
+  fft.1.0
+ uses:
+  loop_slice_fusion, operand 0
+  loop_complex_multiply_fusion, operand 2
+ from instruction: %fft.1.0 = c128[4,640,24,24,80]{4,3,2,1,0} fft(%loop_multiply_fusion), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(jit(fft))/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=428 scheduling_name="fft.1.0"}
+<23 loop_complex_multiply_fusion{} @0>
+ positions:
+  loop_complex_multiply_fusion {}
+ uses:
+  get-tuple-element.2, operand 0 {}
+  get-tuple-element.3, operand 0 {}
+ from instruction: %loop_complex_multiply_fusion = (c128[4,640,17252]{2,1,0}, c128[4,640,17252]{2,1,0}) fusion(%Arg_1.2.0, %constant_13_0, %fft.1.0), kind=kLoop, calls=%fused_complex_multiply, metadata={op_name="jit(_single_chunk_proc)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="loop_complex_multiply_fusion"}
+<24 loop_complex_multiply_fusion{0} @0>
+ positions:
+  loop_complex_multiply_fusion {0}
+  get-tuple-element.2
+ uses:
+  custom-call.1.0, operand 0
+ from instruction: %loop_complex_multiply_fusion = (c128[4,640,17252]{2,1,0}, c128[4,640,17252]{2,1,0}) fusion(%Arg_1.2.0, %constant_13_0, %fft.1.0), kind=kLoop, calls=%fused_complex_multiply, metadata={op_name="jit(_single_chunk_proc)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="loop_complex_multiply_fusion"}
+<25 loop_complex_multiply_fusion{1} @0>
+ positions:
+  loop_complex_multiply_fusion {1}
+  get-tuple-element.3
+ uses:
+  custom-call.1.0, operand 1
+ from instruction: %loop_complex_multiply_fusion = (c128[4,640,17252]{2,1,0}, c128[4,640,17252]{2,1,0}) fusion(%Arg_1.2.0, %constant_13_0, %fft.1.0), kind=kLoop, calls=%fused_complex_multiply, metadata={op_name="jit(_single_chunk_proc)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="loop_complex_multiply_fusion"}
+<26 custom-call.1.0{} @0>
+ positions:
+  custom-call.1.0 {}
+ uses:
+  get-tuple-element.1, operand 0 {}
+ from instruction: %custom-call.1.0 = (c128[4,640,640]{2,1,0}, s8[4194304]{0}) custom-call(%get-tuple-element.2, %get-tuple-element.3), custom_call_target="__cublas$gemm", metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(mG,nG->mn)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["2"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"11041280","rhs_stride":"11041280","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<27 custom-call.1.0{0} @0>
+ positions:
+  custom-call.1.0 {0}
+  tuple.66.0 {0}
+  get-tuple-element.1
+ uses:
+  tuple.66.0, operand 0
+ from instruction: %custom-call.1.0 = (c128[4,640,640]{2,1,0}, s8[4194304]{0}) custom-call(%get-tuple-element.2, %get-tuple-element.3), custom_call_target="__cublas$gemm", metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(mG,nG->mn)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["2"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"11041280","rhs_stride":"11041280","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<28 custom-call.1.0{1} @0>
+ positions:
+  custom-call.1.0 {1}
+ uses:
+ from instruction: %custom-call.1.0 = (c128[4,640,640]{2,1,0}, s8[4194304]{0}) custom-call(%get-tuple-element.2, %get-tuple-element.3), custom_call_target="__cublas$gemm", metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(mG,nG->mn)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["2"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"11041280","rhs_stride":"11041280","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<29 loop_slice_fusion @0>
+ positions:
+  loop_slice_fusion
+  tuple.66.0 {1}
+  bitcast.141.0
+ uses:
+  bitcast.141.0, operand 0
+  tuple.66.0, operand 1
+ from instruction: %loop_slice_fusion = c128[4,640,1]{2,1,0} fusion(%fft.1.0), kind=kLoop, calls=%fused_slice, metadata={op_name="jit(_single_chunk_proc)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=431 scheduling_name="loop_slice_fusion"}
+<30 tuple.66.0{} @0>
+ positions:
+  tuple.66.0 {}
+ uses:
+ from instruction: %tuple.66.0 = (c128[4,640,640]{2,1,0}, c128[4,640]{1,0}) tuple(%get-tuple-element.1, %bitcast.141.0), metadata={scheduling_name="tuple.66.0"}
+
+
+HloLiveRange (max 14):
+  InstructionSequence:
+    0:constant_13_0
+    1:Arg_2.3.0
+    2:Arg_1.2.0
+    3:Arg_0.1.0
+    4:loop_multiply_fusion
+    5:fft.1.0
+    6:loop_slice_fusion
+    7:loop_complex_multiply_fusion
+    8:get-tuple-element.3
+    9:get-tuple-element.2
+    10:custom-call.1.0
+    11:get-tuple-element.1
+    12:bitcast.141.0
+    13:tuple.66.0
+  BufferLiveRange:
+    Arg_1.2.0{}:0-14
+    constant_13_0{}:0-7
+    Arg_0.1.0{}:0-14
+    Arg_2.3.0{}:0-14
+    loop_multiply_fusion{}:4-5
+    fft.1.0{}:5-7
+    loop_complex_multiply_fusion{}:7-9
+    loop_complex_multiply_fusion{0}:7-10
+    loop_complex_multiply_fusion{1}:7-10
+    custom-call.1.0{}:10-11
+    custom-call.1.0{0}:10-14
+    custom-call.1.0{1}:10-10
+    loop_slice_fusion{}:6-14
+    tuple.66.0{}:13-14
+  Live ranges at 6 (peak):
+    Arg_1.2.0: 1104128 bytes
+    constant_13_0: 138016 bytes
+    Arg_0.1.0: 1887436800 bytes
+    Arg_2.3.0: 2949120 bytes
+    fft.1.0: 1887436800 bytes
+    loop_slice_fusion: 40960 bytes

@@ -1,0 +1,118 @@
+HloModule jit__orthonormalise_batch, entry_computation_layout={(c128[20,4,4,64]{3,2,1,0})->c128[20,4,4,64]{3,2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%cholesky.26 (Arg_0.27: c128[20,20]) -> c128[20,20] {
+  %iota.40 = s32[20]{0} iota(), iota_dimension=0, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %broadcast.41 = s32[20,20]{1,0} broadcast(%iota.40), dimensions={0}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %iota.42 = s32[20]{0} iota(), iota_dimension=0, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %broadcast.43 = s32[20,20]{1,0} broadcast(%iota.42), dimensions={1}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %compare.44 = pred[20,20]{1,0} compare(%broadcast.41, %broadcast.43), direction=GE, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/ge" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %Arg_0.27 = c128[20,20]{1,0} parameter(0), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/pjit"}
+  %transpose.32 = c128[20,20]{0,1} transpose(%Arg_0.27), dimensions={1,0}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %real.33 = f64[20,20]{0,1} real(%transpose.32), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %imag.34 = f64[20,20]{0,1} imag(%transpose.32), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %negate.35 = f64[20,20]{0,1} negate(%imag.34), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %complex.36 = c128[20,20]{0,1} complex(%real.33, %negate.35), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %add.37 = c128[20,20]{1,0} add(%Arg_0.27, %complex.36), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %constant.30 = c128[] constant((2, 0))
+  %broadcast.31 = c128[20,20]{1,0} broadcast(%constant.30), dimensions={}
+  %divide.38 = c128[20,20]{1,0} divide(%add.37, %broadcast.31), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %cholesky.39 = c128[20,20]{1,0} cholesky(%divide.38), lower=true, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/cholesky" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+  %constant.28 = c128[] constant((0, 0))
+  %broadcast.29 = c128[20,20]{1,0} broadcast(%constant.28), dimensions={}
+  ROOT %select.45 = c128[20,20]{1,0} select(%compare.44, %cholesky.39, %broadcast.29), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(cholesky)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=78}
+}
+
+%_lu_solve.47 (Arg_0.48: c128[20,20], Arg_1.49: s32[20], Arg_2.50: c128[20,20]) -> c128[20,20] {
+  %Arg_0.48 = c128[20,20]{1,0} parameter(0), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/pjit"}
+  %Arg_2.50 = c128[20,20]{1,0} parameter(2), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/pjit"}
+  %reshape.55 = c128[20,20,1]{2,1,0} reshape(%Arg_2.50), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %Arg_1.49 = s32[20]{0} parameter(1), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/pjit"}
+  %constant.53 = s32[] constant(0)
+  %broadcast.54 = s32[20]{0} broadcast(%constant.53), dimensions={}
+  %compare.56 = pred[20]{0} compare(%Arg_1.49, %broadcast.54), direction=LT, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %constant.51 = s32[] constant(20)
+  %broadcast.52 = s32[20]{0} broadcast(%constant.51), dimensions={}
+  %add.57 = s32[20]{0} add(%Arg_1.49, %broadcast.52), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %select.58 = s32[20]{0} select(%compare.56, %add.57, %Arg_1.49), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %reshape.59 = s32[20,1]{1,0} reshape(%select.58), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %gather.60 = c128[20,20,1]{2,1,0} gather(%reshape.55, %reshape.59), offset_dims={0,2}, collapsed_slice_dims={1}, start_index_map={1}, index_vector_dim=1, slice_sizes={20,1,1}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %transpose.61 = c128[20,1,20]{1,0,2} transpose(%gather.60), dimensions={1,2,0}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %reshape.62 = c128[20,20]{1,0} reshape(%transpose.61), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %triangular-solve.63 = c128[20,20]{1,0} triangular-solve(%Arg_0.48, %reshape.62), left_side=true, lower=true, unit_diagonal=true, transpose_a=NO_TRANSPOSE, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %triangular-solve.64 = c128[20,20]{1,0} triangular-solve(%Arg_0.48, %triangular-solve.63), left_side=true, transpose_a=NO_TRANSPOSE, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %reshape.65 = c128[20,1,20]{2,1,0} reshape(%triangular-solve.64), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %transpose.66 = c128[20,20,1]{0,2,1} transpose(%reshape.65), dimensions={2,0,1}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  ROOT %reshape.67 = c128[20,20]{1,0} reshape(%transpose.66), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/vmap(jit(_lu_solve))/squeeze" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+}
+
+%solve.68 (Arg_0.69: c128[20,20], Arg_1.70: c128[20,20]) -> c128[20,20] {
+  %Arg_0.69 = c128[20,20]{1,0} parameter(0), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/pjit"}
+  %custom-call.76 = (c128[20,20]{0,1}, s32[20]{0}, s32[]) custom-call(%Arg_0.69), custom_call_target="cusolver_getrf_ffi", operand_layout_constraints={c128[20,20]{0,1}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}, backend_config={}
+  %get-tuple-element.79 = s32[] get-tuple-element(%custom-call.76), index=2, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %constant.75 = s32[] constant(0)
+  %compare.81 = pred[] compare(%get-tuple-element.79, %constant.75), direction=GE, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %reshape.82 = pred[1,1]{1,0} reshape(%compare.81), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %broadcast.83 = pred[1,1]{1,0} broadcast(%reshape.82), dimensions={0,1}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %reshape.84 = pred[] reshape(%broadcast.83), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %broadcast.85 = pred[20,20]{1,0} broadcast(%reshape.84), dimensions={}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %get-tuple-element.77 = c128[20,20]{0,1} get-tuple-element(%custom-call.76), index=0, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %constant.71 = c128[] constant((nan, nan))
+  %broadcast.72 = c128[20,20]{1,0} broadcast(%constant.71), dimensions={}
+  %select.86 = c128[20,20]{1,0} select(%broadcast.85, %get-tuple-element.77, %broadcast.72), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %get-tuple-element.78 = s32[20]{0} get-tuple-element(%custom-call.76), index=1, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %constant.73 = s32[] constant(1)
+  %broadcast.74 = s32[20]{0} broadcast(%constant.73), dimensions={}
+  %subtract.80 = s32[20]{0} subtract(%get-tuple-element.78, %broadcast.74), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/lu" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %custom-call.87 = s32[20]{0} custom-call(%subtract.80), custom_call_target="cu_lu_pivots_to_permutation", operand_layout_constraints={s32[20]{0}}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/lu_pivots_to_permutation" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}, backend_config={}
+  %Arg_1.70 = c128[20,20]{1,0} parameter(1), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/pjit"}
+  %transpose.88 = c128[20,20]{0,1} transpose(%Arg_1.70), dimensions={1,0}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %call.89 = c128[20,20]{1,0} call(%select.86, %custom-call.87, %transpose.88), to_apply=%_lu_solve.47
+  ROOT %transpose.90 = c128[20,20]{0,1} transpose(%call.89), dimensions={1,0}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/jit(solve)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+}
+
+%inv.91 (Arg_0.92: c128[20,20]) -> c128[20,20] {
+  %Arg_0.92 = c128[20,20]{1,0} parameter(0), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/pjit"}
+  %iota.93 = s64[20]{0} iota(), iota_dimension=0, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %broadcast.94 = s64[20,20]{1,0} broadcast(%iota.93), dimensions={0}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %iota.95 = s64[20]{0} iota(), iota_dimension=0, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %broadcast.96 = s64[20,20]{1,0} broadcast(%iota.95), dimensions={1}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %compare.97 = pred[20,20]{1,0} compare(%broadcast.94, %broadcast.96), direction=EQ, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  %convert.98 = c128[20,20]{1,0} convert(%compare.97), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/jit(inv)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=79}
+  ROOT %call.99 = c128[20,20]{0,1} call(%Arg_0.92, %convert.98), to_apply=%solve.68
+}
+
+ENTRY %main.106 (Arg_0.1: c128[20,4,4,64]) -> c128[20,4,4,64] {
+  %Arg_0.1 = c128[20,4,4,64]{3,2,1,0} parameter(0), sharding={devices=[1,2,2,1]<=[4]}, metadata={op_name="P"}
+  %real.6 = f64[20,4,4,64]{3,2,1,0} real(%Arg_0.1), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=142}
+  %imag.7 = f64[20,4,4,64]{3,2,1,0} imag(%Arg_0.1), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=142}
+  %negate.8 = f64[20,4,4,64]{3,2,1,0} negate(%imag.7), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=142}
+  %complex.9 = c128[20,4,4,64]{3,2,1,0} complex(%real.6, %negate.8), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=142}
+  %dot.10 = c128[20,20]{1,0} dot(%complex.9, %Arg_0.1), lhs_contracting_dims={1,2,3}, rhs_contracting_dims={1,2,3}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/m...,n...->mn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=142}
+  %real.11 = f64[20,20]{1,0} real(%dot.10), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=143}
+  %imag.12 = f64[20,20]{1,0} imag(%dot.10), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=143}
+  %negate.13 = f64[20,20]{1,0} negate(%imag.12), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=143}
+  %complex.14 = c128[20,20]{1,0} complex(%real.11, %negate.13), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=143}
+  %transpose.15 = c128[20,20]{0,1} transpose(%complex.14), dimensions={1,0}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=143}
+  %add.16 = c128[20,20]{1,0} add(%dot.10, %transpose.15), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=143}
+  %constant.4 = c128[] constant((0.5, 0))
+  %broadcast.5 = c128[20,20]{1,0} broadcast(%constant.4), dimensions={}
+  %multiply.17 = c128[20,20]{1,0} multiply(%add.16, %broadcast.5), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=143}
+  %iota.18 = s64[20]{0} iota(), iota_dimension=0, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=145}
+  %broadcast.19 = s64[20,20]{1,0} broadcast(%iota.18), dimensions={0}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=145}
+  %iota.20 = s64[20]{0} iota(), iota_dimension=0, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=145}
+  %broadcast.21 = s64[20,20]{1,0} broadcast(%iota.20), dimensions={1}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=145}
+  %compare.22 = pred[20,20]{1,0} compare(%broadcast.19, %broadcast.21), direction=EQ, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=145}
+  %convert.23 = c128[20,20]{1,0} convert(%compare.22), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=145}
+  %constant.2 = c128[] constant((1e-12, 0))
+  %broadcast.3 = c128[20,20]{1,0} broadcast(%constant.2), dimensions={}
+  %multiply.24 = c128[20,20]{1,0} multiply(%convert.23, %broadcast.3), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=145}
+  %add.25 = c128[20,20]{1,0} add(%multiply.17, %multiply.24), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=145}
+  %call.46 = c128[20,20]{1,0} call(%add.25), to_apply=%cholesky.26
+  %call.100 = c128[20,20]{0,1} call(%call.46), to_apply=%inv.91
+  %real.101 = f64[20,20]{0,1} real(%call.100), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=147}
+  %imag.102 = f64[20,20]{0,1} imag(%call.100), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=147}
+  %negate.103 = f64[20,20]{0,1} negate(%imag.102), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=147}
+  %complex.104 = c128[20,20]{0,1} complex(%real.101, %negate.103), metadata={op_name="jit(_orthonormalise_batch)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=147}
+  ROOT %dot.105 = c128[20,4,4,64]{3,2,1,0} dot(%complex.104, %Arg_0.1), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(_orthonormalise_batch)/jit(main)/mi,i...->m.../dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=147}
+}
+

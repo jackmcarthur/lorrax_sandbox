@@ -1,0 +1,16 @@
+HloModule jit_gather, is_scheduled=true, entry_computation_layout={(f64[64,60]{1,0}, s32[52,1]{1,0})->f64[64,52]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="f30d9f82393717280666950bfd47c14e"}
+
+%fused_gather (param_0.1: s32[52,1], param_1.1: f64[64,60]) -> f64[52,1,64] {
+  %param_1.1 = f64[64,60]{1,0} parameter(1), metadata={scheduling_name="param_1.1"}
+  %bitcast.27.1 = f64[60,64]{0,1} bitcast(%param_1.1), metadata={scheduling_name="bitcast.27.1"}
+  %param_0.1 = s32[52,1]{1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  ROOT %gather.2 = f64[52,1,64]{0,2,1} gather(%bitcast.27.1, %param_0.1), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,64}, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/chi_from_dipole.py" source_line=46 scheduling_name="gather.2"}
+}
+
+ENTRY %main.4 (Arg_0.1.0: f64[64,60], Arg_1.2.0: s32[52,1]) -> f64[64,52] {
+  %Arg_1.2.0 = s32[52,1]{1,0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[64,60]{1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  %loop_gather_fusion = f64[52,1,64]{0,2,1} fusion(%Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_gather, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/chi_from_dipole.py" source_line=46 scheduling_name="loop_gather_fusion"}
+  ROOT %bitcast.10.0 = f64[64,52]{1,0} bitcast(%loop_gather_fusion), metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/chi_from_dipole.py" source_line=46 scheduling_name="bitcast.10.0"}
+}
+

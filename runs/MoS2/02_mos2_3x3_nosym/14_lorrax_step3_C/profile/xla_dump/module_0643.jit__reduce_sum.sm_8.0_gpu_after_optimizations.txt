@@ -1,0 +1,36 @@
+HloModule jit__reduce_sum, is_scheduled=true, entry_computation_layout={(pred[9,320,320]{2,1,0})->s64[]}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="16d8effe4c59ad1b1279c075ad59a318"}
+
+%region_0.4 (Arg_0.5: s64[], Arg_1.6: s64[]) -> s64[] {
+  %Arg_1.6 = s64[] parameter(1), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_1.6"}
+  %Arg_0.5 = s64[] parameter(0), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_0.5"}
+  ROOT %add.6 = s64[] add(%Arg_0.5, %Arg_1.6), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=184 scheduling_name="add.6"}
+}
+
+%fused_reduce (param_0.2: pred[9,320,320]) -> s64[512] {
+  %param_0.2 = pred[9,320,320]{2,1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %convert.4.1 = s64[9,320,320]{2,1,0} convert(%param_0.2), metadata={op_name="jit(_reduce_sum)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=184 scheduling_name="convert.4.1"}
+  %bitcast.50.1 = s64[512,1800]{1,0} bitcast(%convert.4.1), metadata={scheduling_name="bitcast.50.1"}
+  %constant_3 = s64[] constant(0)
+  ROOT %reduce.2.1 = s64[512]{0} reduce(%bitcast.50.1, %constant_3), dimensions={1}, to_apply=%region_0.4, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=184 scheduling_name="reduce.2.1"}
+}
+
+%fused_reduce.1 (param_0.3: s64[512]) -> s64[] {
+  %param_0.3 = s64[512]{0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %constant_4 = s64[] constant(0)
+  ROOT %reduce.5 = s64[] reduce(%param_0.3, %constant_4), dimensions={0}, to_apply=%region_0.4, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=184 scheduling_name="reduce.5"}
+}
+
+%region_0.4.clone (Arg_0.0: s64[], Arg_1.0: s64[]) -> s64[] {
+  %Arg_1.0 = s64[] parameter(1), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_1.0"}
+  %Arg_0.0 = s64[] parameter(0), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_0.0"}
+  ROOT %add.8 = s64[] add(%Arg_0.0, %Arg_1.0), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=184 scheduling_name="add.8"}
+}
+
+ENTRY %main.9_spmd (param.1: pred[9,320,320]) -> s64[] {
+  %param.1 = pred[9,320,320]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="a" scheduling_name="param.1"}
+  %input_reduce_fusion = s64[512]{0} fusion(%param.1), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=184 scheduling_name="input_reduce_fusion"}
+  %input_reduce_fusion.1 = s64[] fusion(%input_reduce_fusion), kind=kInput, calls=%fused_reduce.1, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=184 scheduling_name="input_reduce_fusion.1"}
+  %all-reduce-start = s64[] all-reduce-start(%input_reduce_fusion.1), channel_id=3, replica_groups={{0,1,2,3}}, use_global_device_ids=true, to_apply=%region_0.4.clone, metadata={scheduling_name="all-reduce-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  ROOT %all-reduce-done = s64[] all-reduce-done(%all-reduce-start), metadata={scheduling_name="all-reduce-done"}
+}
+

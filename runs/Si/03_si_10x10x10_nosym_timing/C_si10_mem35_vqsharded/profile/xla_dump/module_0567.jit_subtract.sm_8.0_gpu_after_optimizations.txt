@@ -1,0 +1,44 @@
+HloModule jit_subtract, is_scheduled=true, entry_computation_layout={(c128[250,480,480]{2,1,0}, c128[1000,240,240]{2,1,0})->c128[250,480,480]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="47c102461e98d647111303ede21549cd"}
+
+%fused_transpose (param_0.3: c128[1000,240,480]) -> c128[240,1000,480] {
+  %param_0.3 = c128[1000,240,480]{1,0,2} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.69.1 = c128[480,1000,240]{2,1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.69.1"}
+  ROOT %transpose.11.1 = c128[240,1000,480]{2,1,0} transpose(%bitcast.69.1), dimensions={2,1,0}, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="transpose.11.1"}
+}
+
+%fused_transpose.1 (param_0.5: c128[1000,240,240]) -> c128[240,240000] {
+  %param_0.5 = c128[1000,240,240]{2,1,0} parameter(0), metadata={scheduling_name="param_0.5"}
+  %bitcast.62.1 = c128[240000,240]{1,0} bitcast(%param_0.5), metadata={scheduling_name="bitcast.62.1"}
+  ROOT %transpose.10.1 = c128[240,240000]{1,0} transpose(%bitcast.62.1), dimensions={1,0}, metadata={op_name="y" scheduling_name="transpose.10.1"}
+}
+
+%fused_transpose.2 (param_0.12: c128[1000,480,480], param_1.12: c128[250,480,480], param_2.11: u32[]) -> c128[250,480,480] {
+  %param_1.12 = c128[250,480,480]{2,1,0} parameter(1), metadata={scheduling_name="param_1.12"}
+  %transpose.9.1 = c128[480,250,480]{2,1,0} transpose(%param_1.12), dimensions={1,0,2}, metadata={op_name="x" scheduling_name="transpose.9.1"}
+  %param_0.12 = c128[1000,480,480]{2,0,1} parameter(0), metadata={scheduling_name="param_0.12"}
+  %bitcast.76.5 = c128[480,1000,480]{2,1,0} bitcast(%param_0.12), metadata={scheduling_name="bitcast.76.5"}
+  %constant_1_1 = s32[] constant(0), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633}
+  %param_2.11 = u32[] parameter(2), metadata={scheduling_name="param_2.11"}
+  %convert.3.1 = s32[] convert(%param_2.11), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="convert.3.1"}
+  %constant_3_1 = s32[] constant(250), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633}
+  %multiply.4.1 = s32[] multiply(%convert.3.1, %constant_3_1), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="multiply.4.1"}
+  %dynamic-slice.4.5 = c128[480,250,480]{2,1,0} dynamic-slice(%bitcast.76.5, %constant_1_1, %multiply.4.1, %constant_1_1), dynamic_slice_sizes={480,250,480}, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="dynamic-slice.4.5"}
+  %subtract.4.3 = c128[480,250,480]{2,1,0} subtract(%transpose.9.1, %dynamic-slice.4.5), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="subtract.4.3"}
+  ROOT %transpose.12.1 = c128[250,480,480]{2,1,0} transpose(%subtract.4.3), dimensions={1,0,2}, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="transpose.12.1"}
+}
+
+ENTRY %main.4_spmd (param.2: c128[250,480,480], param.1.0: c128[1000,240,240]) -> c128[250,480,480] {
+  %param.1.0 = c128[1000,240,240]{2,1,0} parameter(1), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="y" scheduling_name="param.1.0"}
+  %param.2 = c128[250,480,480]{2,1,0} parameter(0), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="x" scheduling_name="param.2"}
+  %input_transpose_fusion.1 = c128[240,240000]{1,0} fusion(%param.1.0), kind=kInput, calls=%fused_transpose.1, metadata={op_name="y" scheduling_name="input_transpose_fusion.1"}
+  %bitcast.66.0 = c128[1000,240,240]{1,0,2} bitcast(%input_transpose_fusion.1), metadata={scheduling_name="bitcast.66.0"}
+  %all-gather-start = (c128[1000,240,240]{1,0,2}, c128[1000,240,480]{1,0,2}) all-gather-start(%bitcast.66.0), channel_id=1, replica_groups=[2,2]<=[4], dimensions={2}, use_global_device_ids=true, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done = c128[1000,240,480]{1,0,2} all-gather-done(%all-gather-start), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="all-gather-done"}
+  %input_transpose_fusion = c128[240,1000,480]{2,1,0} fusion(%all-gather-done), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="input_transpose_fusion"}
+  %bitcast.73.0 = c128[1000,240,480]{2,0,1} bitcast(%input_transpose_fusion), metadata={scheduling_name="bitcast.73.0"}
+  %all-gather-start.1 = (c128[1000,240,480]{2,0,1}, c128[1000,480,480]{2,0,1}) all-gather-start(%bitcast.73.0), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":true,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %partition-id.1 = u32[] partition-id(), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="partition-id.1"}
+  %all-gather-done.1 = c128[1000,480,480]{2,0,1} all-gather-done(%all-gather-start.1), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="all-gather-done.1"}
+  ROOT %loop_transpose_fusion = c128[250,480,480]{2,1,0} fusion(%all-gather-done.1, %param.2, %partition-id.1), kind=kLoop, calls=%fused_transpose.2, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=633 scheduling_name="loop_transpose_fusion"}
+}
+

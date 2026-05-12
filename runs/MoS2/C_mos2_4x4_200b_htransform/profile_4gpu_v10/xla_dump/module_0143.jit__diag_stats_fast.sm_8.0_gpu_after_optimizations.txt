@@ -1,0 +1,98 @@
+HloModule jit__diag_stats_fast, is_scheduled=true, entry_computation_layout={(c128[16,480,480]{2,1,0})->(f64[], f64[], f64[])}, allow_spmd_sharding_propagation_to_output={true,true,true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="cc8a64404b623f4d5ea43698f3962612"}
+
+%region_0.5 (Arg_0.6: f64[], Arg_1.7: f64[]) -> f64[] {
+  %Arg_1.7 = f64[] parameter(1), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" scheduling_name="Arg_1.7"}
+  %Arg_0.6 = f64[] parameter(0), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" scheduling_name="Arg_0.6"}
+  ROOT %minimum.6 = f64[] minimum(%Arg_0.6, %Arg_1.7), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598 scheduling_name="minimum.6"}
+}
+
+%region_1.11 (Arg_0.12: f64[], Arg_1.13: f64[]) -> f64[] {
+  %Arg_1.13 = f64[] parameter(1), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" scheduling_name="Arg_1.13"}
+  %Arg_0.12 = f64[] parameter(0), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" scheduling_name="Arg_0.12"}
+  ROOT %maximum.10 = f64[] maximum(%Arg_0.12, %Arg_1.13), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=599 scheduling_name="maximum.10"}
+}
+
+%fused_reduce (param_0.6: c128[16,480,480]) -> (f64[1024], f64[1024], f64[1024]) {
+  %param_0.6 = c128[16,480,480]{2,1,0} parameter(0), metadata={scheduling_name="param_0.6"}
+  %real.5.2 = f64[16,480,480]{2,1,0} real(%param_0.6), metadata={op_name="jit(_diag_stats_fast)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598 scheduling_name="real.5.2"}
+  %bitcast.137.1 = f64[1024,3600]{1,0} bitcast(%real.5.2), metadata={scheduling_name="bitcast.137.1"}
+  %constant_5_1 = f64[] constant(inf)
+  %reduce.6.1 = f64[1024]{0} reduce(%bitcast.137.1, %constant_5_1), dimensions={1}, to_apply=%region_0.5, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598 scheduling_name="reduce.6.1"}
+  %imag.3.1.clone.1 = f64[16,480,480]{2,1,0} imag(%param_0.6), metadata={op_name="jit(_diag_stats_fast)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600 scheduling_name="imag.3.1.clone.1"}
+  %abs.3.1.clone.1 = f64[16,480,480]{2,1,0} abs(%imag.3.1.clone.1), metadata={op_name="jit(_diag_stats_fast)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600 scheduling_name="abs.3.1.clone.1"}
+  %bitcast.165.1.clone.1 = f64[1024,3600]{1,0} bitcast(%abs.3.1.clone.1), metadata={scheduling_name="bitcast.165.1.clone.1"}
+  %constant_6_1_clone_1 = f64[] constant(-inf)
+  %reduce.11.1.clone.1 = f64[1024]{0} reduce(%bitcast.165.1.clone.1, %constant_6_1_clone_1), dimensions={1}, to_apply=%region_1.11, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600 scheduling_name="reduce.11.1.clone.1"}
+  %reduce.8.1.clone.1 = f64[1024]{0} reduce(%bitcast.137.1, %constant_6_1_clone_1), dimensions={1}, to_apply=%region_1.11, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=599 scheduling_name="reduce.8.1.clone.1"}
+  ROOT %tuple.3 = (f64[1024]{0}, f64[1024]{0}, f64[1024]{0}) tuple(%reduce.6.1, %reduce.11.1.clone.1, %reduce.8.1.clone.1), metadata={scheduling_name="tuple.3"}
+}
+
+%fused_reduce.1 (param_0.7: f64[1024]) -> f64[] {
+  %param_0.7 = f64[1024]{0} parameter(0), metadata={scheduling_name="param_0.7"}
+  %constant_5_2 = f64[] constant(inf)
+  ROOT %reduce.14 = f64[] reduce(%param_0.7, %constant_5_2), dimensions={0}, to_apply=%region_0.5, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598 scheduling_name="reduce.14"}
+}
+
+%fused_reduce.2 (param_0.9: f64[1024]) -> f64[] {
+  %param_0.9 = f64[1024]{0} parameter(0), metadata={scheduling_name="param_0.9"}
+  %constant_6_2 = f64[] constant(-inf)
+  ROOT %reduce.1.1 = f64[] reduce(%param_0.9, %constant_6_2), dimensions={0}, to_apply=%region_1.11, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=599 scheduling_name="reduce.1.1"}
+}
+
+%fused_reduce.3 (param_0.10: f64[1024]) -> f64[] {
+  %param_0.10 = f64[1024]{0} parameter(0), metadata={scheduling_name="param_0.10"}
+  %constant_6_3 = f64[] constant(-inf)
+  ROOT %reduce.2.1 = f64[] reduce(%param_0.10, %constant_6_3), dimensions={0}, to_apply=%region_1.11, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600 scheduling_name="reduce.2.1"}
+}
+
+%region_0.5.clone (Arg_0.0: f64[], Arg_1.0: f64[]) -> f64[] {
+  %Arg_1.0 = f64[] parameter(1), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" scheduling_name="Arg_1.0"}
+  %Arg_0.0 = f64[] parameter(0), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" scheduling_name="Arg_0.0"}
+  ROOT %minimum.7 = f64[] minimum(%Arg_0.0, %Arg_1.0), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598 scheduling_name="minimum.7"}
+}
+
+%region_1.11.clone (Arg_0.3: f64[], Arg_1.2: f64[]) -> f64[] {
+  %Arg_1.2 = f64[] parameter(1), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" scheduling_name="Arg_1.2"}
+  %Arg_0.3 = f64[] parameter(0), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" scheduling_name="Arg_0.3"}
+  ROOT %maximum.11 = f64[] maximum(%Arg_0.3, %Arg_1.2), metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=599 scheduling_name="maximum.11"}
+}
+
+%wrapped_concatenate_computation (param_0.12: f64[1], param_1.18: f64[1]) -> f64[2] {
+  %param_0.12 = f64[1]{0} parameter(0), metadata={scheduling_name="param_0.12"}
+  %param_1.18 = f64[1]{0} parameter(1), metadata={scheduling_name="param_1.18"}
+  ROOT %concatenate.1 = f64[2]{0} concatenate(%param_0.12, %param_1.18), dimensions={0}, metadata={scheduling_name="concatenate.1"}
+}
+
+%wrapped_slice_computation (param_0.13: f64[2]) -> f64[1] {
+  %param_0.13 = f64[2]{0} parameter(0), metadata={scheduling_name="param_0.13"}
+  ROOT %slice.2 = f64[1]{0} slice(%param_0.13), slice={[0:1]}, metadata={scheduling_name="slice.2"}
+}
+
+%wrapped_slice_computation.1 (param_0.14: f64[2]) -> f64[1] {
+  %param_0.14 = f64[2]{0} parameter(0), metadata={scheduling_name="param_0.14"}
+  ROOT %slice.3 = f64[1]{0} slice(%param_0.14), slice={[1:2]}, metadata={scheduling_name="slice.3"}
+}
+
+ENTRY %main.24_spmd (param.1: c128[16,480,480]) -> (f64[], f64[], f64[]) {
+  %param.1 = c128[16,480,480]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="fH_k" scheduling_name="param.1"}
+  %input_reduce_fusion = (f64[1024]{0}, f64[1024]{0}, f64[1024]{0}) fusion(%param.1), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598 scheduling_name="input_reduce_fusion"}
+  %get-tuple-element.2 = f64[1024]{0} get-tuple-element(%input_reduce_fusion), index=2, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598 scheduling_name="get-tuple-element.2"}
+  %input_reduce_fusion.2 = f64[] fusion(%get-tuple-element.2), kind=kInput, calls=%fused_reduce.2, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=599 deduplicated_name="input_reduce_fusion.2" scheduling_name="input_reduce_fusion.2"}
+  %get-tuple-element.1 = f64[1024]{0} get-tuple-element(%input_reduce_fusion), index=1, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598 scheduling_name="get-tuple-element.1"}
+  %input_reduce_fusion.3 = f64[] fusion(%get-tuple-element.1), kind=kInput, calls=%fused_reduce.3, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600 deduplicated_name="input_reduce_fusion.2" scheduling_name="input_reduce_fusion.3"}
+  %bitcast.184 = f64[1]{0} bitcast(%input_reduce_fusion.2), metadata={scheduling_name="bitcast.184"}
+  %bitcast.185 = f64[1]{0} bitcast(%input_reduce_fusion.3), metadata={scheduling_name="bitcast.185"}
+  %wrapped_concatenate = f64[2]{0} fusion(%bitcast.184, %bitcast.185), kind=kLoop, calls=%wrapped_concatenate_computation, metadata={scheduling_name="wrapped_concatenate"}
+  %all-reduce-start.1 = f64[2]{0} all-reduce-start(%wrapped_concatenate), channel_id=8, replica_groups={{0,1,2,3}}, use_global_device_ids=true, to_apply=%region_1.11.clone, metadata={scheduling_name="all-reduce-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":true,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %get-tuple-element = f64[1024]{0} get-tuple-element(%input_reduce_fusion), index=0, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598 scheduling_name="get-tuple-element"}
+  %input_reduce_fusion.1 = f64[] fusion(%get-tuple-element), kind=kInput, calls=%fused_reduce.1, metadata={op_name="jit(_diag_stats_fast)/jit(main)/reduce_min" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=598 scheduling_name="input_reduce_fusion.1"}
+  %all-reduce-done.1 = f64[2]{0} all-reduce-done(%all-reduce-start.1), metadata={scheduling_name="all-reduce-done.1"}
+  %all-reduce-start = f64[] all-reduce-start(%input_reduce_fusion.1), channel_id=7, replica_groups={{0,1,2,3}}, use_global_device_ids=true, to_apply=%region_0.5.clone, metadata={scheduling_name="all-reduce-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":true,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %wrapped_slice.1 = f64[1]{0} fusion(%all-reduce-done.1), kind=kLoop, calls=%wrapped_slice_computation.1, metadata={scheduling_name="wrapped_slice.1"}
+  %wrapped_slice = f64[1]{0} fusion(%all-reduce-done.1), kind=kLoop, calls=%wrapped_slice_computation, metadata={scheduling_name="wrapped_slice"}
+  %all-reduce-done = f64[] all-reduce-done(%all-reduce-start), metadata={scheduling_name="all-reduce-done"}
+  %bitcast.187 = f64[] bitcast(%wrapped_slice.1), metadata={scheduling_name="bitcast.187"}
+  %bitcast.186 = f64[] bitcast(%wrapped_slice), metadata={scheduling_name="bitcast.186"}
+  ROOT %tuple.1 = (f64[], f64[], f64[]) tuple(%all-reduce-done, %bitcast.186, %bitcast.187), metadata={scheduling_name="tuple.1"}
+}
+

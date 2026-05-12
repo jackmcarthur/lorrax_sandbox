@@ -1,0 +1,28 @@
+HloModule jit__take, entry_computation_layout={(pred[9]{0}, s32[9]{0})->pred[9]{0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+ENTRY %main.34 (Arg_0.1: pred[9], Arg_1.2: s32[9]) -> pred[9] {
+  %Arg_1.2 = s32[9]{0} parameter(1), sharding={replicated}, metadata={op_name="indices"}
+  %constant.12 = s32[] constant(0)
+  %broadcast.13 = s32[9]{0} broadcast(%constant.12), dimensions={}
+  %compare.14 = pred[9]{0} compare(%Arg_1.2, %broadcast.13), direction=LT, metadata={op_name="jit(_take)/jit(main)/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=570}
+  %constant.9 = s32[] constant(9)
+  %broadcast.10 = s32[9]{0} broadcast(%constant.9), dimensions={}
+  %add.15 = s32[9]{0} add(%Arg_1.2, %broadcast.10), metadata={op_name="jit(_take)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=570}
+  %select.0 = s32[9]{0} select(%compare.14, %add.15, %Arg_1.2), metadata={op_name="jit(_take)/jit(main)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=568}
+  %convert.0 = s64[9]{0} convert(%select.0), metadata={op_name="jit(_take)/jit(main)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=570}
+  %reshape.2 = s64[9,1]{1,0} reshape(%convert.0), metadata={op_name="jit(_take)/jit(main)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=570}
+  %constant.7 = s64[] constant(0)
+  %broadcast.8 = s64[9,1]{1,0} broadcast(%constant.7), dimensions={}
+  %compare.24 = pred[9,1]{1,0} compare(%reshape.2, %broadcast.8), direction=GE, metadata={op_name="jit(_take)/jit(main)/ge" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=570}
+  %constant.5 = s64[] constant(8)
+  %broadcast.6 = s64[9,1]{1,0} broadcast(%constant.5), dimensions={}
+  %compare.25 = pred[9,1]{1,0} compare(%reshape.2, %broadcast.6), direction=LE, metadata={op_name="jit(_take)/jit(main)/le" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=570}
+  %and.26 = pred[9,1]{1,0} and(%compare.24, %compare.25), metadata={op_name="jit(_take)/jit(main)/and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=570}
+  %reshape = pred[9]{0} reshape(%and.26), metadata={op_name="jit(_take)/jit(main)/reduce_and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=570}
+  %Arg_0.1 = pred[9]{0} parameter(0), sharding={replicated}, metadata={op_name="a"}
+  %gather.32 = pred[9]{0} gather(%Arg_0.1, %reshape.2), offset_dims={}, collapsed_slice_dims={0}, start_index_map={0}, index_vector_dim=1, slice_sizes={1}, metadata={op_name="jit(_take)/jit(main)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=570}
+  %constant.3 = pred[] constant(true)
+  %broadcast.4 = pred[9]{0} broadcast(%constant.3), dimensions={}
+  ROOT %select.33 = pred[9]{0} select(%reshape, %gather.32, %broadcast.4), metadata={op_name="jit(_take)/jit(main)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=570}
+}
+

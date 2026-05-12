@@ -1,0 +1,26 @@
+HloModule jit__reduce_sum, is_scheduled=true, entry_computation_layout={(f64[1963,3]{1,0}, f64[1963,3]{1,0})->(f64[1963]{0}, f64[1963]{0})}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="9ec144622f78fccf7edefc8c5e1e7236"}
+
+%region_0.4 (Arg_0.5: f64[], Arg_1.6: f64[]) -> f64[] {
+  %Arg_1.6 = f64[] parameter(1), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_1.6"}
+  %Arg_0.5 = f64[] parameter(0), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_0.5"}
+  ROOT %add.2 = f64[] add(%Arg_0.5, %Arg_1.6), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=356 scheduling_name="add.2"}
+}
+
+%fused_reduce (param_0_0: f64[1963,3], param_1_0: f64[1963,3]) -> (f64[1963], f64[1963]) {
+  %param_0_0 = f64[1963,3]{1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %constant_3_3 = f64[] constant(0)
+  %reduce.13.2 = f64[1963]{0} reduce(%param_0_0, %constant_3_3), dimensions={1}, to_apply=%region_0.4, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=356 scheduling_name="reduce.13.2"}
+  %param_1_0 = f64[1963,3]{1,0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %reduce.8.2 = f64[1963]{0} reduce(%param_1_0, %constant_3_3), dimensions={1}, to_apply=%region_0.4, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=356 scheduling_name="reduce.8.2"}
+  ROOT %tuple = (f64[1963]{0}, f64[1963]{0}) tuple(%reduce.13.2, %reduce.8.2), metadata={scheduling_name="tuple"}
+}
+
+ENTRY %main.15 (Arg_0.1.0: f64[1963,3], Arg_1.2.0: f64[1963,3]) -> (f64[1963], f64[1963]) {
+  %Arg_1.2.0 = f64[1963,3]{1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[1963,3]{1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %loop_reduce_fusion = (f64[1963]{0}, f64[1963]{0}) fusion(%Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_reduce, metadata={scheduling_name="loop_reduce_fusion"}
+  %get-tuple-element.1 = f64[1963]{0} get-tuple-element(%loop_reduce_fusion), index=1, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=356 scheduling_name="get-tuple-element.1"}
+  %get-tuple-element = f64[1963]{0} get-tuple-element(%loop_reduce_fusion), index=0, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=356 scheduling_name="get-tuple-element"}
+  ROOT %tuple.14.0 = (f64[1963]{0}, f64[1963]{0}) tuple(%get-tuple-element.1, %get-tuple-element), metadata={scheduling_name="tuple.14.0"}
+}
+

@@ -1,0 +1,140 @@
+BufferAssignment:
+allocation 0: size 18874368, output shape is |c128[64,36,2,256]|, maybe-live-out:
+ value: <8 loop_transpose_fusion.2 @0> (size=9437184,offset=0): c128[9,64,1024]{2,1,0}
+ value: <12 all-gather-start{1} @0> (size=18874368,offset=0): c128[64,18,2,512]{3,2,0,1}
+ value: <16 loop_transpose_fusion @0> (size=18874368,offset=0): c128[64,2,9216]{2,1,0}
+allocation 1: size 9437184, parameter 0, shape |c128[64,9,2,512]| at ShapeIndex {}:
+ value: <7 param.1 @0> (size=9437184,offset=0): c128[64,9,2,512]{3,2,1,0}
+allocation 2: size 37749248, preallocated-temp:
+ value: <6 all-to-all.2 @0> (size=18874368,offset=512): c128[64,18,2,2,256]{4,2,1,0,3}
+ value: <9 collective-permute-start{} @0> (size=16,offset=0): (c128[64,9,2,512]{3,2,0,1}, c128[64,9,2,512]{3,2,0,1})
+ value: <10 collective-permute-start{1} @0> (size=9437184,offset=512): c128[64,9,2,512]{3,2,0,1}
+ value: <11 all-gather-start{} @0> (size=16,offset=128): (c128[64,9,2,512]{3,2,0,1}, c128[64,18,2,512]{3,2,0,1})
+ value: <13 loop_transpose_fusion.1 @0> (size=18874368,offset=18874880): c128[2,64,18,2,256]{4,3,2,1,0}
+ value: <14 all-to-all-start{} @0> (size=16,offset=256): ((c128[64,18,2,2,256]{4,2,1,0,3}), c128[64,18,2,2,256]{4,2,1,0,3})
+ value: <15 all-to-all-start{0} @0> (size=8,offset=384): (c128[64,18,2,2,256]{4,2,1,0,3})
+
+Total bytes used: 66060800 (63.00MiB)
+
+Used values:
+<6 all-to-all.2 @0>
+ positions:
+  all-to-all.2
+  all-to-all-start {1}
+  all-to-all-done
+ uses:
+  all-to-all-done, operand 0 {1}
+  loop_transpose_fusion, operand 0
+ from instruction: %all-to-all.2 = c128[64,18,2,2,256]{4,2,1,0,3} all-to-all(%param_0.6), channel_id=3, replica_groups={{0,1},{2,3}}, dimensions={3}, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=358 scheduling_name="all-to-all.2"}
+<7 param.1 @0>
+ positions:
+  param.1
+ uses:
+  loop_transpose_fusion.2, operand 0
+ from instruction: %param.1 = c128[64,9,2,512]{3,2,1,0} parameter(0), sharding={devices=[1,4,1,1]<=[4]}, metadata={op_name="psi_rchunk" scheduling_name="param.1"}
+<8 loop_transpose_fusion.2 @0>
+ positions:
+  loop_transpose_fusion.2
+  bitcast.58.0
+  collective-permute-start {0}
+ uses:
+  bitcast.58.0, operand 0
+  collective-permute-start, operand 0
+  collective-permute-done, operand 0 {0}
+ from instruction: %loop_transpose_fusion.2 = c128[9,64,1024]{2,1,0} fusion(%param.1), kind=kLoop, calls=%fused_transpose.2, metadata={op_name="psi_rchunk" scheduling_name="loop_transpose_fusion.2"}
+<9 collective-permute-start{} @0>
+ positions:
+  collective-permute-start {}
+ uses:
+  collective-permute-done, operand 0 {}
+ from instruction: %collective-permute-start = (c128[64,9,2,512]{3,2,0,1}, c128[64,9,2,512]{3,2,0,1}) collective-permute-start(%bitcast.58.0), channel_id=1, source_target_pairs={{0,0},{1,2},{2,1},{3,3}}, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=357 scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<10 collective-permute-start{1} @0>
+ positions:
+  collective-permute-start {1}
+  collective-permute-done
+  all-gather-start {0}
+ uses:
+  collective-permute-done, operand 0 {1}
+  all-gather-start, operand 0
+  all-gather-done, operand 0 {0}
+ from instruction: %collective-permute-start = (c128[64,9,2,512]{3,2,0,1}, c128[64,9,2,512]{3,2,0,1}) collective-permute-start(%bitcast.58.0), channel_id=1, source_target_pairs={{0,0},{1,2},{2,1},{3,3}}, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=357 scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<11 all-gather-start{} @0>
+ positions:
+  all-gather-start {}
+ uses:
+  all-gather-done, operand 0 {}
+ from instruction: %all-gather-start = (c128[64,9,2,512]{3,2,0,1}, c128[64,18,2,512]{3,2,0,1}) all-gather-start(%collective-permute-done), channel_id=2, replica_groups={{0,2},{1,3}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=357 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<12 all-gather-start{1} @0>
+ positions:
+  all-gather-start {1}
+  all-gather-done
+ uses:
+  all-gather-done, operand 0 {1}
+  loop_transpose_fusion.1, operand 0
+ from instruction: %all-gather-start = (c128[64,9,2,512]{3,2,0,1}, c128[64,18,2,512]{3,2,0,1}) all-gather-start(%collective-permute-done), channel_id=2, replica_groups={{0,2},{1,3}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=357 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<13 loop_transpose_fusion.1 @0>
+ positions:
+  loop_transpose_fusion.1
+  bitcast.67.0
+  all-to-all-start {0,0}
+  param_0.6
+ uses:
+  bitcast.67.0, operand 0
+  all-to-all-start, operand 0
+  all-to-all-done, operand 0 {0,0}
+  all-to-all.2, operand 0
+ from instruction: %loop_transpose_fusion.1 = c128[2,64,18,2,256]{4,3,2,1,0} fusion(%all-gather-done), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=358 scheduling_name="loop_transpose_fusion.1"}
+<14 all-to-all-start{} @0>
+ positions:
+  all-to-all-start {}
+ uses:
+  all-to-all-done, operand 0 {}
+ from instruction: %all-to-all-start = ((c128[64,18,2,2,256]{4,2,1,0,3}), c128[64,18,2,2,256]{4,2,1,0,3}) all-to-all-start(%bitcast.67.0), channel_id=3, replica_groups={{0,1},{2,3}}, dimensions={3}, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=358 scheduling_name="all-to-all-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<15 all-to-all-start{0} @0>
+ positions:
+  all-to-all-start {0}
+ uses:
+  all-to-all-done, operand 0 {0}
+ from instruction: %all-to-all-start = ((c128[64,18,2,2,256]{4,2,1,0,3}), c128[64,18,2,2,256]{4,2,1,0,3}) all-to-all-start(%bitcast.67.0), channel_id=3, replica_groups={{0,1},{2,3}}, dimensions={3}, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=358 scheduling_name="all-to-all-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<16 loop_transpose_fusion @0>
+ positions:
+  loop_transpose_fusion
+  bitcast.1.0
+ uses:
+  bitcast.1.0, operand 0
+ from instruction: %loop_transpose_fusion = c128[64,2,9216]{2,1,0} fusion(%all-to-all-done), kind=kLoop, calls=%fused_transpose, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=358 scheduling_name="loop_transpose_fusion"}
+
+
+HloLiveRange (max 15):
+  InstructionSequence:
+    0:param.1
+    1:loop_transpose_fusion.2
+    2:bitcast.58.0
+    3:collective-permute-start
+    4:collective-permute-done
+    5:all-gather-start
+    6:all-gather-done
+    7:loop_transpose_fusion.1
+    8:bitcast.67.0
+    9:param_0.6
+    10:all-to-all.2
+    11:all-to-all-start
+    12:all-to-all-done
+    13:loop_transpose_fusion
+    14:bitcast.1.0
+  BufferLiveRange:
+    all-to-all.2{}:10-13
+    param.1{}:0-15
+    loop_transpose_fusion.2{}:1-4
+    collective-permute-start{}:3-4
+    collective-permute-start{1}:3-6
+    all-gather-start{}:5-6
+    all-gather-start{1}:5-7
+    loop_transpose_fusion.1{}:7-12
+    all-to-all-start{}:11-12
+    all-to-all-start{0}:11-12
+    loop_transpose_fusion{}:13-15
+  Live ranges at 13 (peak):
+    all-to-all.2: 18874368 bytes
+    param.1: 9437184 bytes
+    loop_transpose_fusion: 18874368 bytes

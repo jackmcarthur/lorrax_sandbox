@@ -1,0 +1,34 @@
+HloModule jit__einsum, is_scheduled=true, entry_computation_layout={(c128[26,2,1917]{2,1,0}, c128[26,2,1917]{2,1,0}, c128[26,2,1917]{2,1,0})->(c128[26,26]{1,0}, c128[26,26]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="a6f367c8bae5e724c6a506261c0e72c7"}
+
+%fused_concatenate (param_0.1: c128[26,2,1917], param_1.2: c128[26,2,1917]) -> c128[52,3834] {
+  %param_1.2 = c128[26,2,1917]{2,1,0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %bitcast.62.1 = c128[26,3834]{1,0} bitcast(%param_1.2), metadata={scheduling_name="bitcast.62.1"}
+  %param_0.1 = c128[26,2,1917]{2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.66.1 = c128[26,3834]{1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.66.1"}
+  ROOT %concatenate.3.1 = c128[52,3834]{1,0} concatenate(%bitcast.62.1, %bitcast.66.1), dimensions={0}, metadata={scheduling_name="concatenate.3.1"}
+}
+
+%wrapped_slice_computation (param_0.2: c128[26,52]) -> c128[26,26] {
+  %param_0.2 = c128[26,52]{1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  ROOT %slice.6.1 = c128[26,26]{1,0} slice(%param_0.2), slice={[0:26], [0:26]}, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="slice.6.1"}
+}
+
+%wrapped_slice_computation.1 (param_0.3: c128[26,52]) -> c128[26,26] {
+  %param_0.3 = c128[26,52]{1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  ROOT %slice.7.1 = c128[26,26]{1,0} slice(%param_0.3), slice={[0:26], [26:52]}, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="slice.7.1"}
+}
+
+ENTRY %main.7 (Arg_0.1.0: c128[26,2,1917], Arg_1.2.0: c128[26,2,1917], Arg_2.3.0: c128[26,2,1917]) -> (c128[26,26], c128[26,26]) {
+  %Arg_2.3.0 = c128[26,2,1917]{2,1,0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = c128[26,2,1917]{2,1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[26,2,1917]{2,1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %bitcast.59.0 = c128[26,3834]{1,0} bitcast(%Arg_1.2.0), metadata={scheduling_name="bitcast.59.0"}
+  %input_concatenate_fusion = c128[52,3834]{1,0} fusion(%Arg_2.3.0, %Arg_0.1.0), kind=kInput, calls=%fused_concatenate, metadata={scheduling_name="input_concatenate_fusion"}
+  %bitcast.70.0 = c128[3834,52]{0,1} bitcast(%input_concatenate_fusion), metadata={scheduling_name="bitcast.70.0"}
+  %custom-call.1.0 = (c128[26,52]{1,0}, s8[4194304]{0}) custom-call(%bitcast.59.0, %bitcast.70.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"99684","rhs_stride":"199368","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.1 = c128[26,52]{1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="get-tuple-element.1"}
+  %wrapped_slice.1 = c128[26,26]{1,0} fusion(%get-tuple-element.1), kind=kLoop, calls=%wrapped_slice_computation.1, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="wrapped_slice.1"}
+  %wrapped_slice = c128[26,26]{1,0} fusion(%get-tuple-element.1), kind=kLoop, calls=%wrapped_slice_computation, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="wrapped_slice"}
+  ROOT %tuple.6.0 = (c128[26,26]{1,0}, c128[26,26]{1,0}) tuple(%wrapped_slice, %wrapped_slice.1), metadata={scheduling_name="tuple.6.0"}
+}
+

@@ -1,0 +1,11 @@
+HloModule jit__compute_P_traced, is_scheduled=true, entry_computation_layout={(c128[9,320,80,2]{3,2,1,0}, c128[9,80,2,5760]{3,2,1,0})->c128[9,320,5760]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="2943e1e4935379249d9e42c4ad4beb78"}
+
+ENTRY %main.6_spmd (param.2: c128[9,320,80,2], param.1.0: c128[9,80,2,5760]) -> c128[9,320,5760] {
+  %param.1.0 = c128[9,80,2,5760]{3,2,1,0} parameter(1), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="psi_R" scheduling_name="param.1.0"}
+  %param.2 = c128[9,320,80,2]{3,2,1,0} parameter(0), sharding={devices=[1,2,1,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="psi_L" scheduling_name="param.2"}
+  %bitcast.33.0 = c128[9,160,5760]{2,1,0} bitcast(%param.1.0), metadata={scheduling_name="bitcast.33.0"}
+  %bitcast.29.0 = c128[9,320,160]{2,1,0} bitcast(%param.2), metadata={scheduling_name="bitcast.29.0"}
+  %custom-call.1.0 = (c128[9,320,5760]{2,1,0}, s8[4194304]{0}) custom-call(%bitcast.29.0, %bitcast.33.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_compute_P_traced)/jit(main)/kmns,knsv->kmv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=124 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"51200","rhs_stride":"921600","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  ROOT %get-tuple-element.1 = c128[9,320,5760]{2,1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(_compute_P_traced)/jit(main)/kmns,knsv->kmv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=124 scheduling_name="get-tuple-element.1"}
+}
+

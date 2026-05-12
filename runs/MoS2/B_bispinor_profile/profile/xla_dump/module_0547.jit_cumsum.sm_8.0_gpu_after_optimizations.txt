@@ -1,0 +1,21 @@
+HloModule jit_cumsum, is_scheduled=true, entry_computation_layout={(s64[4]{0})->s64[4]{0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="c4b6195813d01d6c5e05c42aff208301"}
+
+%region_0.2 (Arg_0.3: s64[], Arg_1.4: s64[]) -> s64[] {
+  %Arg_1.4 = s64[] parameter(1), metadata={op_name="jit(cumsum)/jit(main)/reduce_window_sum" scheduling_name="Arg_1.4"}
+  %Arg_0.3 = s64[] parameter(0), metadata={op_name="jit(cumsum)/jit(main)/reduce_window_sum" scheduling_name="Arg_0.3"}
+  ROOT %add.2 = s64[] add(%Arg_0.3, %Arg_1.4), metadata={op_name="jit(cumsum)/jit(main)/reduce_window_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/gamma_matrices.py" source_line=45 scheduling_name="add.2"}
+}
+
+%fused_reduce_window (param_0.2: s64[4]) -> s64[4,1] {
+  %param_0.2 = s64[4]{0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %bitcast.33.1 = s64[4,1]{1,0} bitcast(%param_0.2), metadata={scheduling_name="bitcast.33.1"}
+  %constant_0_1 = s64[] constant(0)
+  ROOT %reduce-window.4.1 = s64[4,1]{1,0} reduce-window(%bitcast.33.1, %constant_0_1), window={size=4x1 pad=3_0x0_0}, to_apply=%region_0.2, metadata={scheduling_name="reduce-window.4.1"}
+}
+
+ENTRY %main.11 (Arg_0.1.0: s64[4]) -> s64[4] {
+  %Arg_0.1.0 = s64[4]{0} parameter(0), metadata={op_name="a" scheduling_name="Arg_0.1.0"}
+  %loop_reduce_window_fusion = s64[4,1]{1,0} fusion(%Arg_0.1.0), kind=kLoop, calls=%fused_reduce_window, metadata={scheduling_name="loop_reduce_window_fusion"}
+  ROOT %bitcast.1.0 = s64[4]{0} bitcast(%loop_reduce_window_fusion), metadata={scheduling_name="bitcast.1.0"}
+}
+

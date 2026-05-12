@@ -1,0 +1,22 @@
+HloModule jit_sqrt, is_scheduled=true, entry_computation_layout={(f64[9,1963]{1,0}, f64[9,1963]{1,0})->(f64[9,1963]{1,0}, f64[9,1963]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="7ced3c89d2c9703953d9fbd24eb2d285"}
+
+%fused_multiply_sqrt (param_0: f64[9,1963], param_1.3: f64[9,1963]) -> (f64[9,1963], f64[9,1963]) {
+  %param_0 = f64[9,1963]{1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %constant_3_1 = f64[] constant(0.5)
+  %broadcast.2.1 = f64[9,1963]{1,0} broadcast(%constant_3_1), dimensions={}, metadata={scheduling_name="broadcast.2.1"}
+  %param_1.3 = f64[9,1963]{1,0} parameter(1), metadata={scheduling_name="param_1.3"}
+  %sqrt.2.1 = f64[9,1963]{1,0} sqrt(%param_1.3), metadata={op_name="jit(sqrt)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=356 scheduling_name="sqrt.2.1"}
+  %divide.2.1 = f64[9,1963]{1,0} divide(%broadcast.2.1, %sqrt.2.1), metadata={op_name="jit(sqrt)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=356 scheduling_name="divide.2.1"}
+  %multiply.2.1 = f64[9,1963]{1,0} multiply(%param_0, %divide.2.1), metadata={op_name="jit(sqrt)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=356 scheduling_name="multiply.2.1"}
+  ROOT %tuple = (f64[9,1963]{1,0}, f64[9,1963]{1,0}) tuple(%multiply.2.1, %sqrt.2.1), metadata={scheduling_name="tuple"}
+}
+
+ENTRY %main.9 (Arg_0.1.0: f64[9,1963], Arg_1.2.0: f64[9,1963]) -> (f64[9,1963], f64[9,1963]) {
+  %Arg_1.2.0 = f64[9,1963]{1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[9,1963]{1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %loop_multiply_sqrt_fusion = (f64[9,1963]{1,0}, f64[9,1963]{1,0}) fusion(%Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_multiply_sqrt, metadata={op_name="jit(sqrt)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=356 scheduling_name="loop_multiply_sqrt_fusion"}
+  %get-tuple-element.1 = f64[9,1963]{1,0} get-tuple-element(%loop_multiply_sqrt_fusion), index=1, metadata={op_name="jit(sqrt)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=356 scheduling_name="get-tuple-element.1"}
+  %get-tuple-element = f64[9,1963]{1,0} get-tuple-element(%loop_multiply_sqrt_fusion), index=0, metadata={op_name="jit(sqrt)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=356 scheduling_name="get-tuple-element"}
+  ROOT %tuple.8.0 = (f64[9,1963]{1,0}, f64[9,1963]{1,0}) tuple(%get-tuple-element.1, %get-tuple-element), metadata={scheduling_name="tuple.8.0"}
+}
+

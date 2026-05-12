@@ -1,0 +1,16 @@
+HloModule jit_dynamic_slice, is_scheduled=true, entry_computation_layout={(c128[4,4]{1,0}, s64[], s64[])->c128[1,4]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="b55d60d1885ed4d67382b3a869f50512"}
+
+%fused_dynamic_slice (param_0: c128[4,4], param_1: s64[]) -> c128[1,4] {
+  %param_0 = c128[4,4]{1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1 = s64[] parameter(1), metadata={scheduling_name="param_1"}
+  %constant_2 = s64[] constant(0), metadata={op_name="args[1]"}
+  ROOT %dynamic-slice.3.1 = c128[1,4]{1,0} dynamic-slice(%param_0, %param_1, %constant_2), dynamic_slice_sizes={1,4}, metadata={op_name="jit(dynamic_slice)/jit(main)/dynamic_slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=99 scheduling_name="dynamic-slice.3.1"}
+}
+
+ENTRY %main.5 (Arg_0.1.0: c128[4,4], Arg_1.2.0: s64[], Arg_2.3.0: s64[]) -> c128[1,4] {
+  %Arg_2.3.0 = s64[] parameter(2), metadata={op_name="args[2]" scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = s64[] parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[4,4]{1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_dynamic_slice_fusion = c128[1,4]{1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_dynamic_slice, metadata={op_name="jit(dynamic_slice)/jit(main)/dynamic_slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=99 scheduling_name="loop_dynamic_slice_fusion"}
+}
+

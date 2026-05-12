@@ -1,0 +1,133 @@
+HloModule jit__solve_w, buffer_donor={ (1, {}) }, entry_computation_layout={(c128[64,480,480]{2,1,0}, c128[64,480,480]{2,1,0}, c128[])->c128[64,480,480]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%and.reduce_sub_computation (lhs: pred[], rhs: pred[]) -> pred[] {
+  %lhs = pred[] parameter(0)
+  %rhs = pred[] parameter(1)
+  ROOT %and = pred[] and(%lhs, %rhs)
+}
+
+%region_0.100.clone.clone.clone (arg_tuple.4: (s64[], c128[16,480,480], c128[16,480,480], c128[16,480,480])) -> (s64[], c128[16,480,480], c128[16,480,480], c128[16,480,480]) {
+  %arg_tuple.4 = (s64[], c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}) parameter(0), sharding={{manual}, {manual}, {manual}, {manual}}
+  %get-tuple-element.100 = s64[] get-tuple-element(%arg_tuple.4), index=0, sharding={manual}
+  %constant.93 = s64[] constant(1), sharding={manual}
+  %add.33 = s64[] add(%get-tuple-element.100, %constant.93), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=250}
+  %get-tuple-element.98 = c128[16,480,480]{2,1,0} get-tuple-element(%arg_tuple.4), index=1, sharding={manual}
+  %constant.100 = s32[] constant(0), sharding={manual}
+  %broadcast.75 = s32[3]{0} broadcast(%constant.100), dimensions={}, sharding={manual}
+  %get-tuple-element.99 = s64[] get-tuple-element(%arg_tuple.4), index=0, sharding={manual}
+  %constant.108 = s64[] constant(0), sharding={manual}
+  %compare.36 = pred[] compare(%get-tuple-element.99, %constant.108), direction=LT, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %constant.115 = s64[] constant(16), sharding={manual}
+  %add.34 = s64[] add(%get-tuple-element.99, %constant.115), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %select.25 = s64[] select(%compare.36, %add.34, %get-tuple-element.99), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %convert.6 = s32[] convert(%select.25), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %reshape.99 = s32[1]{0} reshape(%convert.6), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %constant.101 = s32[1]{0} constant({0}), sharding={manual}
+  %concatenate.4 = s32[3]{0} concatenate(%reshape.99, %constant.101, %constant.101), dimensions={0}, sharding={manual}
+  %compare.44 = pred[3]{0} compare(%broadcast.75, %concatenate.4), direction=LE, sharding={manual}
+  %constant.102 = s32[3]{0} constant({15, 0, 0}), sharding={manual}
+  %compare.45 = pred[3]{0} compare(%constant.102, %concatenate.4), direction=GE, sharding={manual}
+  %and.5 = pred[3]{0} and(%compare.44, %compare.45), sharding={manual}
+  %constant.103 = pred[] constant(true), sharding={manual}
+  %reduce.4 = pred[] reduce(%and.5, %constant.103), dimensions={0}, to_apply=%and.reduce_sub_computation, sharding={manual}
+  %broadcast.76 = pred[1,480,480]{2,1,0} broadcast(%reduce.4), dimensions={}, sharding={manual}
+  %iota.8 = s64[480,480]{1,0} iota(), iota_dimension=0, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %iota.9 = s64[480,480]{1,0} iota(), iota_dimension=1, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %compare.37 = pred[480,480]{1,0} compare(%iota.8, %iota.9), direction=EQ, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/eq" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %convert.7 = c128[480,480]{1,0} convert(%compare.37), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %get-tuple-element.97 = c128[16,480,480]{2,1,0} get-tuple-element(%arg_tuple.4), index=2, sharding={manual}
+  %constant.109 = s64[] constant(0), sharding={manual}
+  %compare.38 = pred[] compare(%get-tuple-element.99, %constant.109), direction=LT, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %constant.116 = s64[] constant(16), sharding={manual}
+  %add.35 = s64[] add(%get-tuple-element.99, %constant.116), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %select.26 = s64[] select(%compare.38, %add.35, %get-tuple-element.99), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %constant.110 = s64[] constant(0), sharding={manual}
+  %dynamic-slice.22 = c128[1,480,480]{2,1,0} dynamic-slice(%get-tuple-element.97, %select.26, %constant.110, %constant.110), dynamic_slice_sizes={1,480,480}, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %reshape.100 = c128[480,480]{1,0} reshape(%dynamic-slice.22), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/squeeze" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %get-tuple-element.96 = c128[16,480,480]{2,1,0} get-tuple-element(%arg_tuple.4), index=3, sharding={manual}
+  %constant.111 = s64[] constant(0), sharding={manual}
+  %compare.39 = pred[] compare(%get-tuple-element.99, %constant.111), direction=LT, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %constant.117 = s64[] constant(16), sharding={manual}
+  %add.36 = s64[] add(%get-tuple-element.99, %constant.117), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %select.27 = s64[] select(%compare.39, %add.36, %get-tuple-element.99), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %constant.112 = s64[] constant(0), sharding={manual}
+  %dynamic-slice.23 = c128[1,480,480]{2,1,0} dynamic-slice(%get-tuple-element.96, %select.27, %constant.112, %constant.112), dynamic_slice_sizes={1,480,480}, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %reshape.101 = c128[480,480]{1,0} reshape(%dynamic-slice.23), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/squeeze" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %dot.3 = c128[480,480]{1,0} dot(%reshape.100, %reshape.101), lhs_contracting_dims={1}, rhs_contracting_dims={0}, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %subtract.5 = c128[480,480]{1,0} subtract(%convert.7, %dot.3), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=247}
+  %custom-call.16 = (c128[480,480]{0,1}, s32[480]{0}, s32[]) custom-call(%subtract.5), custom_call_target="cusolver_getrf_ffi", operand_layout_constraints={c128[480,480]{0,1}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, sharding={{manual}, {manual}, {manual}}, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_factor)/lu" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=248}, backend_config={}
+  %get-tuple-element.93 = s32[] get-tuple-element(%custom-call.16), index=2, sharding={manual}, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_factor)/lu" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=248}
+  %constant.96 = s32[] constant(0), sharding={manual}
+  %compare.40 = pred[] compare(%get-tuple-element.93, %constant.96), direction=GE, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_factor)/lu" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=248}
+  %broadcast.77 = pred[480,480]{1,0} broadcast(%compare.40), dimensions={}, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_factor)/lu" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=248}
+  %get-tuple-element.94 = c128[480,480]{0,1} get-tuple-element(%custom-call.16), index=0, sharding={manual}, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_factor)/lu" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=248}
+  %constant.97 = c128[] constant((nan, nan)), sharding={manual}
+  %broadcast.71 = c128[480,480]{1,0} broadcast(%constant.97), dimensions={}, sharding={manual}
+  %select.28 = c128[480,480]{1,0} select(%broadcast.77, %get-tuple-element.94, %broadcast.71), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_factor)/lu" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=248}
+  %constant.113 = s64[] constant(0), sharding={manual}
+  %compare.42 = pred[] compare(%get-tuple-element.99, %constant.113), direction=LT, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %constant.118 = s64[] constant(16), sharding={manual}
+  %add.37 = s64[] add(%get-tuple-element.99, %constant.118), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %select.29 = s64[] select(%compare.42, %add.37, %get-tuple-element.99), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %constant.114 = s64[] constant(0), sharding={manual}
+  %dynamic-slice.24 = c128[1,480,480]{2,1,0} dynamic-slice(%get-tuple-element.97, %select.29, %constant.114, %constant.114), dynamic_slice_sizes={1,480,480}, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %reshape.102 = c128[480,480]{1,0} reshape(%dynamic-slice.24), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/squeeze" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %get-tuple-element.95 = s32[480]{0} get-tuple-element(%custom-call.16), index=1, sharding={manual}, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_factor)/lu" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=248}
+  %constant.106 = s32[] constant(-1), sharding={manual}
+  %broadcast.74 = s32[480]{0} broadcast(%constant.106), dimensions={}, sharding={manual}
+  %add.39 = s32[480]{0} add(%get-tuple-element.95, %broadcast.74), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_factor)/lu" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=248}
+  %custom-call.17 = s32[480]{0} custom-call(%add.39), custom_call_target="cu_lu_pivots_to_permutation", operand_layout_constraints={s32[480]{0}}, api_version=API_VERSION_TYPED_FFI, sharding={manual}, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_solve)/lu_pivots_to_permutation" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}, backend_config={}
+  %constant.98 = s32[] constant(0), sharding={manual}
+  %broadcast.72 = s32[480]{0} broadcast(%constant.98), dimensions={}, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_solve)/jit(_lu_solve)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %compare.43 = pred[480]{0} compare(%custom-call.17, %broadcast.72), direction=LT, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_solve)/jit(_lu_solve)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %constant.99 = s32[] constant(480), sharding={manual}
+  %broadcast.73 = s32[480]{0} broadcast(%constant.99), dimensions={}, sharding={manual}
+  %add.38 = s32[480]{0} add(%custom-call.17, %broadcast.73), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_solve)/jit(_lu_solve)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %select.30 = s32[480]{0} select(%compare.43, %add.38, %custom-call.17), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_solve)/jit(_lu_solve)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %reshape.103 = s32[480,1]{1,0} reshape(%select.30), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_solve)/jit(_lu_solve)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %gather.5 = c128[480,480]{1,0} gather(%reshape.102, %reshape.103), offset_dims={1}, collapsed_slice_dims={0}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,480}, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_solve)/jit(_lu_solve)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %triangular-solve.10 = c128[480,480]{1,0} triangular-solve(%select.28, %gather.5), left_side=true, lower=true, unit_diagonal=true, transpose_a=NO_TRANSPOSE, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_solve)/jit(_lu_solve)/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %triangular-solve.11 = c128[480,480]{1,0} triangular-solve(%select.28, %triangular-solve.10), left_side=true, transpose_a=NO_TRANSPOSE, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/jit(lu_solve)/jit(_lu_solve)/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  %reshape.104 = c128[1,480,480]{2,1,0} reshape(%triangular-solve.11), sharding={manual}
+  %constant.104 = s32[] constant(0), sharding={manual}
+  %dynamic-slice.25 = c128[1,480,480]{2,1,0} dynamic-slice(%get-tuple-element.98, %convert.6, %constant.104, %constant.104), dynamic_slice_sizes={1,480,480}, sharding={manual}
+  %select.32 = c128[1,480,480]{2,1,0} select(%broadcast.76, %reshape.104, %dynamic-slice.25), sharding={manual}
+  %constant.105 = s32[] constant(0), sharding={manual}
+  %dynamic-update-slice.5 = c128[16,480,480]{2,1,0} dynamic-update-slice(%get-tuple-element.98, %select.32, %convert.6, %constant.105, %constant.105), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/body/scatter" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=249}
+  ROOT %tuple.22 = (s64[], c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}) tuple(%add.33, %dynamic-update-slice.5, %get-tuple-element.97, %get-tuple-element.96), sharding={{manual}, {manual}, {manual}, {manual}}
+  %constant.94 = s64[] constant(0)
+  %constant.95 = s64[] constant(16)
+}
+
+%region_2.113.clone.clone (arg_tuple.3: (s64[], c128[16,480,480], c128[16,480,480], c128[16,480,480])) -> pred[] {
+  %arg_tuple.3 = (s64[], c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}) parameter(0), sharding={{manual}, {manual}, {manual}, {manual}}
+  %get-tuple-element.92 = s64[] get-tuple-element(%arg_tuple.3), index=0, sharding={manual}
+  %constant.92 = s64[] constant(16), sharding={manual}
+  ROOT %compare.35 = pred[] compare(%get-tuple-element.92, %constant.92), direction=LT, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=250}
+}
+
+ENTRY %main.137 (Arg_0.1: c128[64,480,480], Arg_1.2: c128[64,480,480], Arg_2.3: c128[]) -> c128[64,480,480] {
+  %constant.15 = s64[] constant(0), sharding={manual}
+  %constant.17 = c128[] constant((0, 0)), sharding={manual}
+  %broadcast.18 = c128[16,480,480]{2,1,0} broadcast(%constant.17), dimensions={}, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=250}
+  %Arg_0.1 = c128[64,480,480]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="V_flat"}
+  %copy.7 = c128[64,480,480]{2,1,0} copy(%Arg_0.1), sharding={devices=[2,1,2]<=[4]}, metadata={op_name="jit(_solve_w)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=240}
+  %copy.6 = c128[64,480,480]{2,1,0} copy(%copy.7), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(_solve_w)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=239}
+  %copy.5 = c128[64,480,480]{2,1,0} copy(%copy.6), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(_solve_w)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=252}
+  %custom-call.11 = c128[16,480,480]{2,1,0} custom-call(%copy.5), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=252}
+  %Arg_2.3 = c128[] parameter(2), metadata={op_name="pref"}
+  %broadcast.4 = c128[64,480,480]{2,1,0} broadcast(%Arg_2.3), dimensions={}, sharding={devices=[2,1,2]<=[4]}, metadata={op_name="jit(_solve_w)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=231}
+  %Arg_1.2 = c128[64,480,480]{2,1,0} parameter(1), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="chi_flat"}
+  %multiply.5 = c128[64,480,480]{2,1,0} multiply(%broadcast.4, %Arg_1.2), sharding={devices=[2,1,2]<=[4]}, metadata={op_name="jit(_solve_w)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=231}
+  %copy.4 = c128[64,480,480]{2,1,0} copy(%multiply.5), sharding={devices=[2,1,2]<=[4]}, metadata={op_name="jit(_solve_w)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=242}
+  %copy.3 = c128[64,480,480]{2,1,0} copy(%copy.4), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(_solve_w)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=241}
+  %copy.2 = c128[64,480,480]{2,1,0} copy(%copy.3), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(_solve_w)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=252}
+  %custom-call.13 = c128[16,480,480]{2,1,0} custom-call(%copy.2), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=252}
+  %tuple.21 = (s64[], c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}) tuple(%constant.15, %broadcast.18, %custom-call.11, %custom-call.13), sharding={{manual}, {manual}, {manual}, {manual}}
+  %while.3 = (s64[], c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}) while(%tuple.21), condition=%region_2.113.clone.clone, body=%region_0.100.clone.clone.clone, sharding={{manual}, {manual}, {manual}, {manual}}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=250}
+  %get-tuple-element.10 = c128[16,480,480]{2,1,0} get-tuple-element(%while.3), index=1, sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/jit(shmap_body)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=250}
+  %copy.1 = c128[16,480,480]{2,1,0} copy(%get-tuple-element.10), sharding={manual}, metadata={op_name="jit(_solve_w)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=252}
+  %custom-call.135 = c128[64,480,480]{2,1,0} custom-call(%copy.1), custom_call_target="SPMDShardToFullShape", sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(_solve_w)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=252}
+  ROOT %copy = c128[64,480,480]{2,1,0} copy(%custom-call.135), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(_solve_w)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/w_isdf.py" source_line=259}
+}
+

@@ -1,0 +1,103 @@
+BufferAssignment:
+allocation 0: size 123863040, maybe-live-out:
+ value: <12 loop_multiply_fusion @0> (size=123863040,offset=0): c128[168,24,24,80]{3,2,1,0}
+ value: <15 loop_multiply_fusion.1 @0> (size=123863040,offset=0): c128[168,24,24,80]{3,2,1,0}
+allocation 1: size 123863040, parameter 0, shape |c128[168,46080]| at ShapeIndex {}:
+ value: <10 Arg_0.1.0 @0> (size=123863040,offset=0): c128[168,46080]{1,0}
+allocation 2: size 737280, parameter 2, shape |c128[1,24,24,80]| at ShapeIndex {}:
+ value: <11 Arg_2.3.0 @0> (size=737280,offset=0): c128[1,24,24,80]{3,2,1,0}
+allocation 3: size 737280, parameter 1, shape |c128[24,24,80]| at ShapeIndex {}:
+ value: <14 Arg_1.2.0 @0> (size=737280,offset=0): c128[24,24,80]{2,1,0}
+allocation 4: size 2688, maybe-live-out:
+ value: <16 wrapped_slice @0> (size=2688,offset=0): c128[168,1,1,1]{3,2,1,0}
+allocation 5: size 16, output shape is |(c128[168,46080], c128[168])|, maybe-live-out:
+ value: <17 tuple.21.0{} @0> (size=16,offset=0): (c128[168,46080]{1,0}, c128[168]{0})
+allocation 6: size 123863040, preallocated-temp:
+ value: <13 fft.0.0 @0> (size=123863040,offset=0): c128[168,24,24,80]{3,2,1,0}
+
+Total bytes used: 373066384 (355.78MiB)
+
+Used values:
+<10 Arg_0.1.0 @0>
+ positions:
+  Arg_0.1.0
+ uses:
+  loop_multiply_fusion, operand 0
+ from instruction: %Arg_0.1.0 = c128[168,46080]{1,0} parameter(0), metadata={op_name="zeta_r" scheduling_name="Arg_0.1.0"}
+<11 Arg_2.3.0 @0>
+ positions:
+  Arg_2.3.0
+ uses:
+  loop_multiply_fusion, operand 1
+ from instruction: %Arg_2.3.0 = c128[1,24,24,80]{3,2,1,0} parameter(2), metadata={op_name="phase" scheduling_name="Arg_2.3.0"}
+<12 loop_multiply_fusion @0>
+ positions:
+  loop_multiply_fusion
+ uses:
+  fft.0.0, operand 0
+ from instruction: %loop_multiply_fusion = c128[168,24,24,80]{3,2,1,0} fusion(%Arg_0.1.0, %Arg_2.3.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(fft_and_weight)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=393 scheduling_name="loop_multiply_fusion"}
+<13 fft.0.0 @0>
+ positions:
+  fft.0.0
+ uses:
+  loop_multiply_fusion.1, operand 0
+  wrapped_slice, operand 0
+ from instruction: %fft.0.0 = c128[168,24,24,80]{3,2,1,0} fft(%loop_multiply_fusion), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(fft_and_weight)/jit(main)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=394 scheduling_name="fft.0.0"}
+<14 Arg_1.2.0 @0>
+ positions:
+  Arg_1.2.0
+ uses:
+  loop_multiply_fusion.1, operand 1
+ from instruction: %Arg_1.2.0 = c128[24,24,80]{2,1,0} parameter(1), metadata={op_name="sqrt_v" scheduling_name="Arg_1.2.0"}
+<15 loop_multiply_fusion.1 @0>
+ positions:
+  loop_multiply_fusion.1
+  tuple.21.0 {0}
+  bitcast.79.0
+ uses:
+  bitcast.79.0, operand 0
+  tuple.21.0, operand 0
+ from instruction: %loop_multiply_fusion.1 = c128[168,24,24,80]{3,2,1,0} fusion(%fft.0.0, %Arg_1.2.0), kind=kLoop, calls=%fused_multiply.1, metadata={op_name="jit(fft_and_weight)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=396 scheduling_name="loop_multiply_fusion.1"}
+<16 wrapped_slice @0>
+ positions:
+  wrapped_slice
+  tuple.21.0 {1}
+  bitcast.84.0
+ uses:
+  bitcast.84.0, operand 0
+  tuple.21.0, operand 1
+ from instruction: %wrapped_slice = c128[168,1,1,1]{3,2,1,0} fusion(%fft.0.0), kind=kLoop, calls=%wrapped_slice_computation, metadata={op_name="jit(fft_and_weight)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=395 scheduling_name="wrapped_slice"}
+<17 tuple.21.0{} @0>
+ positions:
+  tuple.21.0 {}
+ uses:
+ from instruction: %tuple.21.0 = (c128[168,46080]{1,0}, c128[168]{0}) tuple(%bitcast.79.0, %bitcast.84.0), metadata={scheduling_name="tuple.21.0"}
+
+
+HloLiveRange (max 10):
+  InstructionSequence:
+    0:Arg_2.3.0
+    1:Arg_1.2.0
+    2:Arg_0.1.0
+    3:loop_multiply_fusion
+    4:fft.0.0
+    5:wrapped_slice
+    6:loop_multiply_fusion.1
+    7:bitcast.79.0
+    8:bitcast.84.0
+    9:tuple.21.0
+  BufferLiveRange:
+    Arg_0.1.0{}:0-10
+    Arg_2.3.0{}:0-10
+    loop_multiply_fusion{}:3-4
+    fft.0.0{}:4-6
+    Arg_1.2.0{}:0-10
+    loop_multiply_fusion.1{}:6-10
+    wrapped_slice{}:5-10
+    tuple.21.0{}:9-10
+  Live ranges at 5 (peak):
+    Arg_0.1.0: 123863040 bytes
+    Arg_2.3.0: 737280 bytes
+    fft.0.0: 123863040 bytes
+    Arg_1.2.0: 737280 bytes
+    wrapped_slice: 2688 bytes

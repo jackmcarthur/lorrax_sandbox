@@ -1,0 +1,16 @@
+HloModule jit__psum, entry_computation_layout={(s64[4,2]{1,0})->s64[2]{0}}, num_partitions=4
+
+%region_0.3 (Arg_0.4: s64[], Arg_1.5: s64[]) -> s64[] {
+  %Arg_0.4 = s64[] parameter(0), metadata={op_name="jit(_psum)/jit(main)/reduce_sum"}
+  %Arg_1.5 = s64[] parameter(1), metadata={op_name="jit(_psum)/jit(main)/reduce_sum"}
+  ROOT %add.6 = s64[] add(%Arg_0.4, %Arg_1.5), metadata={op_name="jit(_psum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_init.py" source_line=459}
+}
+
+ENTRY %main.10 (Arg_0.1: s64[4,2]) -> s64[2] {
+  %Arg_0.1 = s64[4,2]{1,0} parameter(0), sharding={devices=[4,1]<=[4]}, metadata={op_name="x"}
+  %constant.2 = s64[] constant(0)
+  %reduce.7 = s64[2]{0} reduce(%Arg_0.1, %constant.2), dimensions={0}, to_apply=%region_0.3, metadata={op_name="jit(_psum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_init.py" source_line=459}
+  %tuple.8 = (s64[2]{0}) tuple(%reduce.7)
+  ROOT %get-tuple-element.9 = s64[2]{0} get-tuple-element(%tuple.8), index=0, sharding={replicated}
+}
+

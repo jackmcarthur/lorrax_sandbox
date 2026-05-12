@@ -1,0 +1,243 @@
+BufferAssignment:
+allocation 0: size 31457280, parameter 2, shape |c128[64,240,128]| at ShapeIndex {}, output shape is |c128[64,240,128]|, maybe-live-out:
+ value: <25 param.4 @0> (size=31457280,offset=0): c128[64,240,128]{2,1,0}
+ value: <46 loop_dynamic_update_slice_fusion @0> (size=31457280,offset=0): c128[64,240,128]{2,1,0}
+allocation 1: size 6389760, parameter 1, shape |c128[13,240,128]| at ShapeIndex {}:
+ value: <36 param.2.0 @0> (size=6389760,offset=0): c128[13,240,128]{2,1,0}
+allocation 2: size 2995200, parameter 0, shape |c128[13,120,120]| at ShapeIndex {}:
+ value: <26 param.1.0 @0> (size=2995200,offset=0): c128[13,120,120]{2,1,0}
+allocation 3: size 8, parameter 3, shape |s64[]| at ShapeIndex {}:
+ value: <45 param.3.0 @0> (size=8,offset=0): s64[]
+allocation 4: size 36741968, preallocated-temp:
+ value: <27 input_transpose_fusion.2 @0> (size=2995200,offset=5991040): c128[120,1560]{1,0}
+ value: <28 all-gather-start{} @0> (size=16,offset=512): (c128[13,120,120]{1,0,2}, c128[13,120,240]{1,0,2})
+ value: <29 all-gather-start{1} @0> (size=5990400,offset=640): c128[13,120,240]{1,0,2}
+ value: <30 input_transpose_fusion.1 @0> (size=5990400,offset=5991040): c128[120,13,240]{2,1,0}
+ value: <31 all-gather-start.1{} @0> (size=16,offset=0): (c128[13,120,240]{2,0,1}, c128[13,240,240]{2,0,1})
+ value: <32 all-gather-start.1{1} @0> (size=11980800,offset=23962240): c128[13,240,240]{2,0,1}
+ value: <33 input_transpose_fusion.3{} @0> (size=16,offset=128): (c128[13,240,240]{2,1,0}, c128[3120,240]{1,0})
+ value: <34 input_transpose_fusion.3{0} @0> (size=11980800,offset=640): c128[13,240,240]{2,1,0}
+ value: <35 input_transpose_fusion.3{1} @0> (size=11980800,offset=11981440): c128[3120,240]{1,0}
+ value: <37 wrapped_transpose @0> (size=6389760,offset=30352000): c128[13,128,240]{2,1,0}
+ value: <38 triangular-solve.6.0{} @0> (size=16,offset=256): (c128[13,240,128]{1,2,0}, s8[208]{0})
+ value: <39 triangular-solve.6.0{0} @0> (size=6389760,offset=23962240): c128[13,240,128]{1,2,0}
+ value: <40 triangular-solve.6.0{1} @0> (size=208,offset=36741760): s8[208]{0}
+ value: <41 triangular-solve.7.0{} @0> (size=16,offset=384): (c128[13,240,128]{1,2,0}, s8[208]{0})
+ value: <42 triangular-solve.7.0{0} @0> (size=6389760,offset=11981440): c128[13,240,128]{1,2,0}
+ value: <43 triangular-solve.7.0{1} @0> (size=208,offset=18371200): s8[208]{0}
+ value: <44 input_transpose_fusion @0> (size=6389760,offset=640): c128[13,240,128]{2,1,0}
+
+Total bytes used: 77584216 (73.99MiB)
+
+Used values:
+<25 param.4 @0>
+ positions:
+  param.4
+ uses:
+  loop_dynamic_update_slice_fusion, operand 0
+ from instruction: %param.4 = c128[64,240,128]{2,1,0} parameter(2), sharding={devices=[1,1,4]<=[4]}, metadata={op_name="zeta_acc" scheduling_name="param.4"}
+<26 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  input_transpose_fusion.2, operand 0
+ from instruction: %param.1.0 = c128[13,120,120]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="L_batch_sharded" scheduling_name="param.1.0"}
+<27 input_transpose_fusion.2 @0>
+ positions:
+  input_transpose_fusion.2
+  bitcast.131.0
+  all-gather-start {0}
+ uses:
+  bitcast.131.0, operand 0
+  all-gather-start, operand 0
+  all-gather-done, operand 0 {0}
+ from instruction: %input_transpose_fusion.2 = c128[120,1560]{1,0} fusion(%param.1.0), kind=kInput, calls=%fused_transpose.2, metadata={op_name="L_batch_sharded" scheduling_name="input_transpose_fusion.2"}
+<28 all-gather-start{} @0>
+ positions:
+  all-gather-start {}
+ uses:
+  all-gather-done, operand 0 {}
+ from instruction: %all-gather-start = (c128[13,120,120]{1,0,2}, c128[13,120,240]{1,0,2}) all-gather-start(%bitcast.131.0), channel_id=1, replica_groups=[2,2]<=[4], dimensions={2}, use_global_device_ids=true, metadata={op_name="jit(_solve_batch_and_update)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=555 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<29 all-gather-start{1} @0>
+ positions:
+  all-gather-start {1}
+  all-gather-done
+ uses:
+  all-gather-done, operand 0 {1}
+  input_transpose_fusion.1, operand 0
+ from instruction: %all-gather-start = (c128[13,120,120]{1,0,2}, c128[13,120,240]{1,0,2}) all-gather-start(%bitcast.131.0), channel_id=1, replica_groups=[2,2]<=[4], dimensions={2}, use_global_device_ids=true, metadata={op_name="jit(_solve_batch_and_update)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=555 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<30 input_transpose_fusion.1 @0>
+ positions:
+  input_transpose_fusion.1
+  bitcast.138.0
+  all-gather-start.1 {0}
+ uses:
+  bitcast.138.0, operand 0
+  all-gather-start.1, operand 0
+  all-gather-done.1, operand 0 {0}
+ from instruction: %input_transpose_fusion.1 = c128[120,13,240]{2,1,0} fusion(%all-gather-done), kind=kInput, calls=%fused_transpose.1, metadata={op_name="jit(_solve_batch_and_update)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=555 scheduling_name="input_transpose_fusion.1"}
+<31 all-gather-start.1{} @0>
+ positions:
+  all-gather-start.1 {}
+ uses:
+  all-gather-done.1, operand 0 {}
+ from instruction: %all-gather-start.1 = (c128[13,120,240]{2,0,1}, c128[13,240,240]{2,0,1}) all-gather-start(%bitcast.138.0), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_solve_batch_and_update)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=555 scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<32 all-gather-start.1{1} @0>
+ positions:
+  all-gather-start.1 {1}
+  all-gather-done.1
+ uses:
+  all-gather-done.1, operand 0 {1}
+  input_transpose_fusion.3, operand 0
+ from instruction: %all-gather-start.1 = (c128[13,120,240]{2,0,1}, c128[13,240,240]{2,0,1}) all-gather-start(%bitcast.138.0), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_solve_batch_and_update)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=555 scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<33 input_transpose_fusion.3{} @0>
+ positions:
+  input_transpose_fusion.3 {}
+ uses:
+  get-tuple-element.3, operand 0 {}
+  get-tuple-element.4, operand 0 {}
+ from instruction: %input_transpose_fusion.3 = (c128[13,240,240]{2,1,0}, c128[3120,240]{1,0}) fusion(%all-gather-done.1), kind=kInput, calls=%fused_transpose.3, metadata={op_name="jit(_solve_batch_and_update)/jit(main)/jit(shmap_body)/transpose" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=548 scheduling_name="input_transpose_fusion.3"}
+<34 input_transpose_fusion.3{0} @0>
+ positions:
+  input_transpose_fusion.3 {0}
+  bitcast.151.0
+  get-tuple-element.3
+ uses:
+  triangular-solve.7.0, operand 0
+  bitcast.151.0, operand 0
+ from instruction: %input_transpose_fusion.3 = (c128[13,240,240]{2,1,0}, c128[3120,240]{1,0}) fusion(%all-gather-done.1), kind=kInput, calls=%fused_transpose.3, metadata={op_name="jit(_solve_batch_and_update)/jit(main)/jit(shmap_body)/transpose" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=548 scheduling_name="input_transpose_fusion.3"}
+<35 input_transpose_fusion.3{1} @0>
+ positions:
+  input_transpose_fusion.3 {1}
+  bitcast.158.0
+  get-tuple-element.4
+ uses:
+  triangular-solve.6.0, operand 0
+  bitcast.158.0, operand 0
+ from instruction: %input_transpose_fusion.3 = (c128[13,240,240]{2,1,0}, c128[3120,240]{1,0}) fusion(%all-gather-done.1), kind=kInput, calls=%fused_transpose.3, metadata={op_name="jit(_solve_batch_and_update)/jit(main)/jit(shmap_body)/transpose" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=548 scheduling_name="input_transpose_fusion.3"}
+<36 param.2.0 @0>
+ positions:
+  param.2.0
+ uses:
+  wrapped_transpose, operand 0
+ from instruction: %param.2.0 = c128[13,240,128]{2,1,0} parameter(1), sharding={devices=[1,1,4]<=[4]}, metadata={op_name="Z_batch_col" scheduling_name="param.2.0"}
+<37 wrapped_transpose @0>
+ positions:
+  wrapped_transpose
+  bitcast.163.0
+ uses:
+  bitcast.163.0, operand 0
+  triangular-solve.6.0, operand 1
+ from instruction: %wrapped_transpose = c128[13,128,240]{2,1,0} fusion(%param.2.0), kind=kInput, calls=%wrapped_transpose_computation, metadata={op_name="Z_batch_col" scheduling_name="wrapped_transpose"}
+<38 triangular-solve.6.0{} @0>
+ positions:
+  triangular-solve.6.0 {}
+ uses:
+  get-tuple-element.2, operand 0 {}
+ from instruction: %triangular-solve.6.0 = (c128[13,240,128]{1,2,0}, s8[208]{0}) custom-call(%bitcast.158.0, %bitcast.163.0), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_solve_batch_and_update)/jit(main)/jit(shmap_body)/vmap(jit(_solve_triangular))/triangular_solve" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=547 scheduling_name="triangular-solve.6.0"}, backend_config={"left_side":true,"lower":true,"unit_diagonal":false,"transpose_a":"NO_TRANSPOSE"}
+<39 triangular-solve.6.0{0} @0>
+ positions:
+  triangular-solve.6.0 {0}
+  get-tuple-element.2
+ uses:
+  triangular-solve.7.0, operand 1
+ from instruction: %triangular-solve.6.0 = (c128[13,240,128]{1,2,0}, s8[208]{0}) custom-call(%bitcast.158.0, %bitcast.163.0), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_solve_batch_and_update)/jit(main)/jit(shmap_body)/vmap(jit(_solve_triangular))/triangular_solve" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=547 scheduling_name="triangular-solve.6.0"}, backend_config={"left_side":true,"lower":true,"unit_diagonal":false,"transpose_a":"NO_TRANSPOSE"}
+<40 triangular-solve.6.0{1} @0>
+ positions:
+  triangular-solve.6.0 {1}
+ uses:
+ from instruction: %triangular-solve.6.0 = (c128[13,240,128]{1,2,0}, s8[208]{0}) custom-call(%bitcast.158.0, %bitcast.163.0), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_solve_batch_and_update)/jit(main)/jit(shmap_body)/vmap(jit(_solve_triangular))/triangular_solve" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=547 scheduling_name="triangular-solve.6.0"}, backend_config={"left_side":true,"lower":true,"unit_diagonal":false,"transpose_a":"NO_TRANSPOSE"}
+<41 triangular-solve.7.0{} @0>
+ positions:
+  triangular-solve.7.0 {}
+ uses:
+  get-tuple-element.1.0, operand 0 {}
+ from instruction: %triangular-solve.7.0 = (c128[13,240,128]{1,2,0}, s8[208]{0}) custom-call(%bitcast.151.0, %get-tuple-element.2), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_solve_batch_and_update)/jit(main)/jit(shmap_body)/vmap(jit(_solve_triangular))/triangular_solve" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=548 scheduling_name="triangular-solve.7.0"}, backend_config={"left_side":true,"lower":false,"unit_diagonal":false,"transpose_a":"NO_TRANSPOSE"}
+<42 triangular-solve.7.0{0} @0>
+ positions:
+  triangular-solve.7.0 {0}
+  get-tuple-element.1.0
+ uses:
+  input_transpose_fusion, operand 0
+ from instruction: %triangular-solve.7.0 = (c128[13,240,128]{1,2,0}, s8[208]{0}) custom-call(%bitcast.151.0, %get-tuple-element.2), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_solve_batch_and_update)/jit(main)/jit(shmap_body)/vmap(jit(_solve_triangular))/triangular_solve" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=548 scheduling_name="triangular-solve.7.0"}, backend_config={"left_side":true,"lower":false,"unit_diagonal":false,"transpose_a":"NO_TRANSPOSE"}
+<43 triangular-solve.7.0{1} @0>
+ positions:
+  triangular-solve.7.0 {1}
+ uses:
+ from instruction: %triangular-solve.7.0 = (c128[13,240,128]{1,2,0}, s8[208]{0}) custom-call(%bitcast.151.0, %get-tuple-element.2), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_solve_batch_and_update)/jit(main)/jit(shmap_body)/vmap(jit(_solve_triangular))/triangular_solve" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=548 scheduling_name="triangular-solve.7.0"}, backend_config={"left_side":true,"lower":false,"unit_diagonal":false,"transpose_a":"NO_TRANSPOSE"}
+<44 input_transpose_fusion @0>
+ positions:
+  input_transpose_fusion
+ uses:
+  loop_dynamic_update_slice_fusion, operand 1
+ from instruction: %input_transpose_fusion = c128[13,240,128]{2,1,0} fusion(%get-tuple-element.1.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_solve_batch_and_update)/jit(main)/jit(shmap_body)/vmap(jit(_solve_triangular))/triangular_solve" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=548 scheduling_name="input_transpose_fusion"}
+<45 param.3.0 @0>
+ positions:
+  param.3.0
+ uses:
+  loop_dynamic_update_slice_fusion, operand 2
+ from instruction: %param.3.0 = s64[] parameter(3), sharding={replicated}, metadata={op_name="q_start" scheduling_name="param.3.0"}
+<46 loop_dynamic_update_slice_fusion @0>
+ positions:
+  loop_dynamic_update_slice_fusion
+ uses:
+ from instruction: %loop_dynamic_update_slice_fusion = c128[64,240,128]{2,1,0} fusion(%param.4, %input_transpose_fusion, %param.3.0), kind=kLoop, calls=%fused_dynamic_update_slice, metadata={op_name="jit(_solve_batch_and_update)/jit(main)/dynamic_update_slice" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=557 scheduling_name="loop_dynamic_update_slice_fusion"}
+
+
+HloLiveRange (max 25):
+  InstructionSequence:
+    0:param.1.0
+    1:param.2.0
+    2:param.3.0
+    3:param.4
+    4:input_transpose_fusion.2
+    5:bitcast.131.0
+    6:all-gather-start
+    7:all-gather-done
+    8:input_transpose_fusion.1
+    9:bitcast.138.0
+    10:all-gather-start.1
+    11:all-gather-done.1
+    12:input_transpose_fusion.3
+    13:wrapped_transpose
+    14:get-tuple-element.4
+    15:bitcast.158.0
+    16:bitcast.163.0
+    17:triangular-solve.6.0
+    18:get-tuple-element.2
+    19:get-tuple-element.3
+    20:bitcast.151.0
+    21:triangular-solve.7.0
+    22:get-tuple-element.1.0
+    23:input_transpose_fusion
+    24:loop_dynamic_update_slice_fusion
+  BufferLiveRange:
+    param.4{}:0-24
+    param.1.0{}:0-25
+    input_transpose_fusion.2{}:4-7
+    all-gather-start{}:6-7
+    all-gather-start{1}:6-8
+    input_transpose_fusion.1{}:8-11
+    all-gather-start.1{}:10-11
+    all-gather-start.1{1}:10-12
+    input_transpose_fusion.3{}:12-19
+    input_transpose_fusion.3{0}:12-21
+    input_transpose_fusion.3{1}:12-17
+    param.2.0{}:0-25
+    wrapped_transpose{}:13-17
+    triangular-solve.6.0{}:17-18
+    triangular-solve.6.0{0}:17-21
+    triangular-solve.6.0{1}:17-17
+    triangular-solve.7.0{}:21-22
+    triangular-solve.7.0{0}:21-23
+    triangular-solve.7.0{1}:21-21
+    input_transpose_fusion{}:23-24
+    param.3.0{}:0-25
+    loop_dynamic_update_slice_fusion{}:24-25
+  Live ranges at 24 (peak):
+    param.4: 31457280 bytes
+    param.1.0: 2995200 bytes
+    param.2.0: 6389760 bytes
+    input_transpose_fusion: 6389760 bytes
+    param.3.0: 8 bytes
+    loop_dynamic_update_slice_fusion: 31457280 bytes

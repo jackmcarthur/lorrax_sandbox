@@ -1,0 +1,288 @@
+HloModule jit__apply_H_sparse, is_scheduled=true, entry_computation_layout={(c128[48,2,2120]{2,1,0}, f64[2120]{0}, f64[36,36,36]{2,1,0}, s32[2120]{0}, s32[2120]{0}, /*index=5*/s32[2120]{0}, c128[68,2120]{1,0}, c128[2,2,68,68]{3,2,1,0}, pred[2120]{0})->c128[48,2,2120]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true,true,true,true,true,true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="fce1aed3cfca87399d6ef8f9821d2097"}
+
+%fused_multiply (param_0.30: c128[48,2,36,36,36], param_1.116: f64[36,36,36]) -> c128[48,2,36,36,36] {
+  %param_0.30 = c128[48,2,36,36,36]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.30"}
+  %param_1.116 = f64[36,36,36]{2,1,0} parameter(1), metadata={scheduling_name="param_1.116"}
+  %convert.14.3 = c128[36,36,36]{2,1,0} convert(%param_1.116), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=619 scheduling_name="convert.14.3"}
+  %constant_136_1 = c128[] constant((216, 0)), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/sqrt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=617}
+  %broadcast.89.3 = c128[36,36,36]{2,1,0} broadcast(%constant_136_1), dimensions={}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=619 scheduling_name="broadcast.89.3"}
+  %multiply.83.3 = c128[36,36,36]{2,1,0} multiply(%convert.14.3, %broadcast.89.3), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=619 scheduling_name="multiply.83.3"}
+  %broadcast.90.1 = c128[48,2,36,36,36]{4,3,2,1,0} broadcast(%multiply.83.3), dimensions={2,3,4}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=619 scheduling_name="broadcast.90.1"}
+  ROOT %multiply.84.1 = c128[48,2,36,36,36]{4,3,2,1,0} multiply(%param_0.30, %broadcast.90.1), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=619 scheduling_name="multiply.84.1"}
+}
+
+%fused_broadcast () -> (f64[36,36,36,48,2], f64[36,36,36,48,2]) {
+  %constant_31_1 = f64[] constant(0), metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25}
+  %broadcast.78.1 = f64[36,36,36,48,2]{4,3,2,1,0} broadcast(%constant_31_1), dimensions={}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="broadcast.78.1"}
+  %copy.6 = f64[36,36,36,48,2]{4,3,2,1,0} copy(%broadcast.78.1), metadata={scheduling_name="copy.6"}
+  %copy.7 = f64[36,36,36,48,2]{4,3,2,1,0} copy(%broadcast.78.1), metadata={scheduling_name="copy.7"}
+  ROOT %tuple.2 = (f64[36,36,36,48,2]{4,3,2,1,0}, f64[36,36,36,48,2]{4,3,2,1,0}) tuple(%copy.6, %copy.7), metadata={scheduling_name="tuple.2"}
+}
+
+%fused_transpose.4 (param_0.59: c128[48,2,2120], param_1.72: pred[2120]) -> (f64[2120,96], f64[2120,96]) {
+  %param_0.59 = c128[48,2,2120]{2,1,0} parameter(0), metadata={scheduling_name="param_0.59"}
+  %param_1.72 = pred[2120]{0} parameter(1), metadata={scheduling_name="param_1.72"}
+  %convert.13.4 = c128[2120]{0} convert(%param_1.72), metadata={op_name="jit(_apply_H_sparse)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=23 scheduling_name="convert.13.4"}
+  %broadcast.85.9 = c128[48,2,2120]{2,1,0} broadcast(%convert.13.4), dimensions={2}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="broadcast.85.9"}
+  %multiply.80.9 = c128[48,2,2120]{2,1,0} multiply(%param_0.59, %broadcast.85.9), metadata={op_name="jit(_apply_H_sparse)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="multiply.80.9"}
+  %imag.8.3 = f64[48,2,2120]{2,1,0} imag(%multiply.80.9), metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="imag.8.3"}
+  %bitcast.496.1 = f64[96,2120]{1,0} bitcast(%imag.8.3), metadata={scheduling_name="bitcast.496.1"}
+  %transpose.71.1 = f64[2120,96]{1,0} transpose(%bitcast.496.1), dimensions={1,0}, metadata={scheduling_name="transpose.71.1"}
+  %real.8.3.clone.1 = f64[48,2,2120]{2,1,0} real(%multiply.80.9), metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="real.8.3.clone.1"}
+  %bitcast.477.1.clone.1 = f64[96,2120]{1,0} bitcast(%real.8.3.clone.1), metadata={scheduling_name="bitcast.477.1.clone.1"}
+  %transpose.69.1.clone.1 = f64[2120,96]{1,0} transpose(%bitcast.477.1.clone.1), dimensions={1,0}, metadata={scheduling_name="transpose.69.1.clone.1"}
+  ROOT %tuple = (f64[2120,96]{1,0}, f64[2120,96]{1,0}) tuple(%transpose.71.1, %transpose.69.1.clone.1), metadata={scheduling_name="tuple"}
+}
+
+%region_0.37 (Arg_0.38: f64[], Arg_1.39: f64[]) -> f64[] {
+  %Arg_1.39 = f64[] parameter(1), metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" scheduling_name="Arg_1.39"}
+  %Arg_0.38 = f64[] parameter(0), metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" scheduling_name="Arg_0.38"}
+  ROOT %add.37 = f64[] add(%Arg_0.38, %Arg_1.39), metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.37"}
+}
+
+%fused_scatter (param_0.15: f64[36,36,36,48,2], param_1.59: f64[2120,96], param_2.73: s32[2120], param_3.38: s32[2120], param_4.40: s32[2120]) -> f64[36,36,36,48,2] {
+  %param_0.15 = f64[36,36,36,48,2]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.15"}
+  %param_2.73 = s32[2120]{0} parameter(2), metadata={scheduling_name="param_2.73"}
+  %constant_12_3 = s32[] constant(0)
+  %broadcast.79.25 = s32[2120]{0} broadcast(%constant_12_3), dimensions={}, metadata={scheduling_name="broadcast.79.25"}
+  %compare.43.7 = pred[2120]{0} compare(%param_2.73, %broadcast.79.25), direction=LT, metadata={op_name="jit(_apply_H_sparse)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="compare.43.7"}
+  %constant_10_1 = s32[] constant(36)
+  %broadcast.80.7 = s32[2120]{0} broadcast(%constant_10_1), dimensions={}, metadata={scheduling_name="broadcast.80.7"}
+  %add.38.5 = s32[2120]{0} add(%param_2.73, %broadcast.80.7), metadata={op_name="jit(_apply_H_sparse)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.38.5"}
+  %select.51.5 = s32[2120]{0} select(%compare.43.7, %add.38.5, %param_2.73), metadata={op_name="jit(_apply_H_sparse)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="select.51.5"}
+  %bitcast.436.3 = s32[2120,1]{1,0} bitcast(%select.51.5), metadata={scheduling_name="bitcast.436.3"}
+  %param_3.38 = s32[2120]{0} parameter(3), metadata={scheduling_name="param_3.38"}
+  %compare.44.7 = pred[2120]{0} compare(%param_3.38, %broadcast.79.25), direction=LT, metadata={op_name="jit(_apply_H_sparse)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="compare.44.7"}
+  %add.39.5 = s32[2120]{0} add(%param_3.38, %broadcast.80.7), metadata={op_name="jit(_apply_H_sparse)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.39.5"}
+  %select.52.5 = s32[2120]{0} select(%compare.44.7, %add.39.5, %param_3.38), metadata={op_name="jit(_apply_H_sparse)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="select.52.5"}
+  %bitcast.451.3 = s32[2120,1]{1,0} bitcast(%select.52.5), metadata={scheduling_name="bitcast.451.3"}
+  %param_4.40 = s32[2120]{0} parameter(4), metadata={scheduling_name="param_4.40"}
+  %compare.45.7 = pred[2120]{0} compare(%param_4.40, %broadcast.79.25), direction=LT, metadata={op_name="jit(_apply_H_sparse)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="compare.45.7"}
+  %add.41.5 = s32[2120]{0} add(%param_4.40, %broadcast.80.7), metadata={op_name="jit(_apply_H_sparse)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.41.5"}
+  %select.53.5 = s32[2120]{0} select(%compare.45.7, %add.41.5, %param_4.40), metadata={op_name="jit(_apply_H_sparse)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="select.53.5"}
+  %bitcast.466.3 = s32[2120,1]{1,0} bitcast(%select.53.5), metadata={scheduling_name="bitcast.466.3"}
+  %concatenate.4.3 = s32[2120,3]{1,0} concatenate(%bitcast.436.3, %bitcast.451.3, %bitcast.466.3), dimensions={1}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/concatenate" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="concatenate.4.3"}
+  %param_1.59 = f64[2120,96]{1,0} parameter(1), metadata={scheduling_name="param_1.59"}
+  %bitcast.499.1 = f64[2120,1,1,1,48,2]{5,4,3,2,1,0} bitcast(%param_1.59), metadata={scheduling_name="bitcast.499.1"}
+  ROOT %scatter.9.1 = f64[36,36,36,48,2]{4,3,2,1,0} scatter(%param_0.15, %concatenate.4.3, %bitcast.499.1), update_window_dims={1,2,3,4,5}, inserted_window_dims={}, scatter_dims_to_operand_dims={0,1,2}, index_vector_dim=1, to_apply=%region_0.37, metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="scatter.9.1"}
+}
+
+%fused_transpose.3 (param_0.14: f64[36,36,36,48,2]) -> f64[96,46656] {
+  %param_0.14 = f64[36,36,36,48,2]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.14"}
+  %bitcast.502.1 = f64[46656,96]{1,0} bitcast(%param_0.14), metadata={scheduling_name="bitcast.502.1"}
+  ROOT %transpose.72.1 = f64[96,46656]{1,0} transpose(%bitcast.502.1), dimensions={1,0}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="transpose.72.1"}
+}
+
+%fused_scatter.1 (param_0.21: f64[36,36,36,48,2], param_1.61: f64[2120,96], param_2.74: s32[2120], param_3.40: s32[2120], param_4.42: s32[2120]) -> f64[36,36,36,48,2] {
+  %param_0.21 = f64[36,36,36,48,2]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.21"}
+  %param_2.74 = s32[2120]{0} parameter(2), metadata={scheduling_name="param_2.74"}
+  %constant_12_1 = s32[] constant(0)
+  %broadcast.79.27 = s32[2120]{0} broadcast(%constant_12_1), dimensions={}, metadata={scheduling_name="broadcast.79.27"}
+  %compare.43.9 = pred[2120]{0} compare(%param_2.74, %broadcast.79.27), direction=LT, metadata={op_name="jit(_apply_H_sparse)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="compare.43.9"}
+  %constant_10_3 = s32[] constant(36)
+  %broadcast.80.9 = s32[2120]{0} broadcast(%constant_10_3), dimensions={}, metadata={scheduling_name="broadcast.80.9"}
+  %add.38.7 = s32[2120]{0} add(%param_2.74, %broadcast.80.9), metadata={op_name="jit(_apply_H_sparse)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.38.7"}
+  %select.51.7 = s32[2120]{0} select(%compare.43.9, %add.38.7, %param_2.74), metadata={op_name="jit(_apply_H_sparse)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="select.51.7"}
+  %bitcast.436.5 = s32[2120,1]{1,0} bitcast(%select.51.7), metadata={scheduling_name="bitcast.436.5"}
+  %param_3.40 = s32[2120]{0} parameter(3), metadata={scheduling_name="param_3.40"}
+  %compare.44.9 = pred[2120]{0} compare(%param_3.40, %broadcast.79.27), direction=LT, metadata={op_name="jit(_apply_H_sparse)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="compare.44.9"}
+  %add.39.7 = s32[2120]{0} add(%param_3.40, %broadcast.80.9), metadata={op_name="jit(_apply_H_sparse)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.39.7"}
+  %select.52.7 = s32[2120]{0} select(%compare.44.9, %add.39.7, %param_3.40), metadata={op_name="jit(_apply_H_sparse)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="select.52.7"}
+  %bitcast.451.5 = s32[2120,1]{1,0} bitcast(%select.52.7), metadata={scheduling_name="bitcast.451.5"}
+  %param_4.42 = s32[2120]{0} parameter(4), metadata={scheduling_name="param_4.42"}
+  %compare.45.9 = pred[2120]{0} compare(%param_4.42, %broadcast.79.27), direction=LT, metadata={op_name="jit(_apply_H_sparse)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="compare.45.9"}
+  %add.41.7 = s32[2120]{0} add(%param_4.42, %broadcast.80.9), metadata={op_name="jit(_apply_H_sparse)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.41.7"}
+  %select.53.7 = s32[2120]{0} select(%compare.45.9, %add.41.7, %param_4.42), metadata={op_name="jit(_apply_H_sparse)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="select.53.7"}
+  %bitcast.466.5 = s32[2120,1]{1,0} bitcast(%select.53.7), metadata={scheduling_name="bitcast.466.5"}
+  %concatenate.4.5 = s32[2120,3]{1,0} concatenate(%bitcast.436.5, %bitcast.451.5, %bitcast.466.5), dimensions={1}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/concatenate" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="concatenate.4.5"}
+  %param_1.61 = f64[2120,96]{1,0} parameter(1), metadata={scheduling_name="param_1.61"}
+  %bitcast.480.1 = f64[2120,1,1,1,48,2]{5,4,3,2,1,0} bitcast(%param_1.61), metadata={scheduling_name="bitcast.480.1"}
+  ROOT %scatter.8.1 = f64[36,36,36,48,2]{4,3,2,1,0} scatter(%param_0.21, %concatenate.4.5, %bitcast.480.1), update_window_dims={1,2,3,4,5}, inserted_window_dims={}, scatter_dims_to_operand_dims={0,1,2}, index_vector_dim=1, to_apply=%region_0.37, metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="scatter.8.1"}
+}
+
+%fused_transpose.2 (param_0.18: f64[96,46656], param_1.24: f64[36,36,36,48,2]) -> c128[48,2,36,36,36] {
+  %param_1.24 = f64[36,36,36,48,2]{4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1.24"}
+  %bitcast.483.3 = f64[46656,96]{1,0} bitcast(%param_1.24), metadata={scheduling_name="bitcast.483.3"}
+  %transpose.70.3 = f64[96,46656]{1,0} transpose(%bitcast.483.3), dimensions={1,0}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="transpose.70.3"}
+  %bitcast.486.1 = f64[48,2,36,36,36]{4,3,2,1,0} bitcast(%transpose.70.3), metadata={scheduling_name="bitcast.486.1"}
+  %param_0.18 = f64[96,46656]{1,0} parameter(0), metadata={scheduling_name="param_0.18"}
+  %bitcast.505.1 = f64[48,2,36,36,36]{4,3,2,1,0} bitcast(%param_0.18), metadata={scheduling_name="bitcast.505.1"}
+  ROOT %complex.8.1 = c128[48,2,36,36,36]{4,3,2,1,0} complex(%bitcast.486.1, %bitcast.505.1), metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="complex.8.1"}
+}
+
+%command_buffer (p: c128[48,2,2120], p.1: pred[2120], p.2: s32[2120], p.3: s32[2120], p.4: s32[2120]) -> c128[48,2,36,36,36] {
+  %p = c128[48,2,2120]{2,1,0} parameter(0)
+  %p.1 = pred[2120]{0} parameter(1)
+  %p.2 = s32[2120]{0} parameter(2)
+  %p.3 = s32[2120]{0} parameter(3)
+  %p.4 = s32[2120]{0} parameter(4)
+  %loop_broadcast_fusion = (f64[36,36,36,48,2]{4,3,2,1,0}, f64[36,36,36,48,2]{4,3,2,1,0}) fusion(), kind=kLoop, calls=%fused_broadcast, metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="loop_broadcast_fusion"}
+  %get-tuple-element.10 = f64[36,36,36,48,2]{4,3,2,1,0} get-tuple-element(%loop_broadcast_fusion), index=1, metadata={scheduling_name="get-tuple-element.10"}
+  %input_transpose_fusion.2 = (f64[2120,96]{1,0}, f64[2120,96]{1,0}) fusion(%p, %p.1), kind=kInput, calls=%fused_transpose.4, metadata={scheduling_name="input_transpose_fusion.2"}
+  %get-tuple-element.4 = f64[2120,96]{1,0} get-tuple-element(%input_transpose_fusion.2), index=0, metadata={scheduling_name="get-tuple-element.4"}
+  %input_scatter_fusion = f64[36,36,36,48,2]{4,3,2,1,0} fusion(%get-tuple-element.10, %get-tuple-element.4, %p.2, %p.3, %p.4), kind=kInput, calls=%fused_scatter, metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 deduplicated_name="input_scatter_fusion" scheduling_name="input_scatter_fusion"}
+  %input_transpose_fusion.1 = f64[96,46656]{1,0} fusion(%input_scatter_fusion), kind=kInput, calls=%fused_transpose.3, metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="input_transpose_fusion.1"}
+  %get-tuple-element.9 = f64[36,36,36,48,2]{4,3,2,1,0} get-tuple-element(%loop_broadcast_fusion), index=0, metadata={scheduling_name="get-tuple-element.9"}
+  %get-tuple-element.5 = f64[2120,96]{1,0} get-tuple-element(%input_transpose_fusion.2), index=1, metadata={scheduling_name="get-tuple-element.5"}
+  %input_scatter_fusion.1 = f64[36,36,36,48,2]{4,3,2,1,0} fusion(%get-tuple-element.9, %get-tuple-element.5, %p.2, %p.3, %p.4), kind=kInput, calls=%fused_scatter.1, metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 deduplicated_name="input_scatter_fusion" scheduling_name="input_scatter_fusion.1"}
+  ROOT %input_transpose_fusion = c128[48,2,36,36,36]{4,3,2,1,0} fusion(%input_transpose_fusion.1, %input_scatter_fusion.1), kind=kInput, calls=%fused_transpose.2, metadata={op_name="jit(_apply_H_sparse)/jit(main)/scatter-add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="input_transpose_fusion"}
+}
+
+%fused_slice (param_0_0: c128[68,2120], param_1_0: c128[48,2,36,36,36], param_1_1: pred[2120], param_1_2: s32[2120], param_1_3: s32[2120], param_1_4: s32[2120]) -> (c128[144160], c128[203520]) {
+  %param_0_0 = c128[68,2120]{1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %real.9.2 = f64[68,2120]{1,0} real(%param_0_0), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=623 scheduling_name="real.9.2"}
+  %imag.9.2 = f64[68,2120]{1,0} imag(%param_0_0), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=623 scheduling_name="imag.9.2"}
+  %negate.7.2 = f64[68,2120]{1,0} negate(%imag.9.2), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=623 scheduling_name="negate.7.2"}
+  %complex.9.2 = c128[68,2120]{1,0} complex(%real.9.2, %negate.7.2), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=623 scheduling_name="complex.9.2"}
+  %reshape.77 = c128[144160]{0} reshape(%complex.9.2), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=623 scheduling_name="reshape.77"}
+  %param_1_0 = c128[48,2,36,36,36]{4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %bitcast.509.6 = c128[36,36,36,48,2]{2,1,0,4,3} bitcast(%param_1_0), metadata={scheduling_name="bitcast.509.6"}
+  %param_1_2 = s32[2120]{0} parameter(3), metadata={scheduling_name="param_1_2"}
+  %constant_12_5 = s32[] constant(0)
+  %broadcast.79.28 = s32[2120]{0} broadcast(%constant_12_5), dimensions={}, metadata={scheduling_name="broadcast.79.28"}
+  %compare.43.10 = pred[2120]{0} compare(%param_1_2, %broadcast.79.28), direction=LT, metadata={op_name="jit(_apply_H_sparse)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="compare.43.10"}
+  %constant_10_5 = s32[] constant(36)
+  %broadcast.80.28 = s32[2120]{0} broadcast(%constant_10_5), dimensions={}, metadata={scheduling_name="broadcast.80.28"}
+  %add.38.10 = s32[2120]{0} add(%param_1_2, %broadcast.80.28), metadata={op_name="jit(_apply_H_sparse)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.38.10"}
+  %select.51.10 = s32[2120]{0} select(%compare.43.10, %add.38.10, %param_1_2), metadata={op_name="jit(_apply_H_sparse)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="select.51.10"}
+  %bitcast.436.10 = s32[2120,1]{1,0} bitcast(%select.51.10), metadata={scheduling_name="bitcast.436.10"}
+  %param_1_3 = s32[2120]{0} parameter(4), metadata={scheduling_name="param_1_3"}
+  %compare.44.10 = pred[2120]{0} compare(%param_1_3, %broadcast.79.28), direction=LT, metadata={op_name="jit(_apply_H_sparse)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="compare.44.10"}
+  %add.39.10 = s32[2120]{0} add(%param_1_3, %broadcast.80.28), metadata={op_name="jit(_apply_H_sparse)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.39.10"}
+  %select.52.10 = s32[2120]{0} select(%compare.44.10, %add.39.10, %param_1_3), metadata={op_name="jit(_apply_H_sparse)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="select.52.10"}
+  %bitcast.451.10 = s32[2120,1]{1,0} bitcast(%select.52.10), metadata={scheduling_name="bitcast.451.10"}
+  %param_1_4 = s32[2120]{0} parameter(5), metadata={scheduling_name="param_1_4"}
+  %compare.45.10 = pred[2120]{0} compare(%param_1_4, %broadcast.79.28), direction=LT, metadata={op_name="jit(_apply_H_sparse)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="compare.45.10"}
+  %add.41.10 = s32[2120]{0} add(%param_1_4, %broadcast.80.28), metadata={op_name="jit(_apply_H_sparse)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.41.10"}
+  %select.53.10 = s32[2120]{0} select(%compare.45.10, %add.41.10, %param_1_4), metadata={op_name="jit(_apply_H_sparse)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="select.53.10"}
+  %bitcast.466.10 = s32[2120,1]{1,0} bitcast(%select.53.10), metadata={scheduling_name="bitcast.466.10"}
+  %concatenate.4.10 = s32[2120,3]{1,0} concatenate(%bitcast.436.10, %bitcast.451.10, %bitcast.466.10), dimensions={1}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/concatenate" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="concatenate.4.10"}
+  %gather.2.6 = c128[2120,1,1,1,48,2]{0,5,4,3,2,1} gather(%bitcast.509.6, %concatenate.4.10), offset_dims={1,2,3,4,5}, collapsed_slice_dims={}, start_index_map={0,1,2}, index_vector_dim=1, slice_sizes={1,1,1,48,2}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=611 scheduling_name="gather.2.6"}
+  %bitcast.512.4 = c128[1,1,1,48,2,2120]{5,4,3,2,1,0} bitcast(%gather.2.6), metadata={scheduling_name="bitcast.512.4"}
+  %param_1_1 = pred[2120]{0} parameter(2), metadata={scheduling_name="param_1_1"}
+  %convert.13.5 = c128[2120]{0} convert(%param_1_1), metadata={op_name="jit(_apply_H_sparse)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=23 scheduling_name="convert.13.5"}
+  %broadcast.88.9 = c128[1,1,1,48,2,2120]{5,4,3,2,1,0} broadcast(%convert.13.5), dimensions={5}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=611 scheduling_name="broadcast.88.9"}
+  %multiply.81.4 = c128[1,1,1,48,2,2120]{5,4,3,2,1,0} multiply(%bitcast.512.4, %broadcast.88.9), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=611 scheduling_name="multiply.81.4"}
+  %reshape.78 = c128[203520]{0} reshape(%multiply.81.4), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=611 scheduling_name="reshape.78"}
+  %concatenate.5 = c128[347680]{0} concatenate(%reshape.77, %reshape.78), dimensions={0}, metadata={scheduling_name="concatenate.5"}
+  %slice = c128[144160]{0} slice(%concatenate.5), slice={[0:144160]}, metadata={scheduling_name="slice"}
+  %slice.1 = c128[203520]{0} slice(%concatenate.5), slice={[144160:347680]}, metadata={scheduling_name="slice.1"}
+  ROOT %tuple.1 = (c128[144160]{0}, c128[203520]{0}) tuple(%slice, %slice.1), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=611 scheduling_name="tuple.1"}
+}
+
+%fused_transpose.1 (param_0.5: c128[96,68]) -> c128[48,68,2] {
+  %param_0.5 = c128[96,68]{1,0} parameter(0), metadata={scheduling_name="param_0.5"}
+  %bitcast.566.1 = c128[48,2,68]{2,1,0} bitcast(%param_0.5), metadata={scheduling_name="bitcast.566.1"}
+  ROOT %transpose.73.1 = c128[48,68,2]{2,1,0} transpose(%bitcast.566.1), dimensions={0,2,1}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/RG,vsG->Rsv/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=623 scheduling_name="transpose.73.1"}
+}
+
+%wrapped_transpose_computation (param_0.102: c128[2,2,68,68]) -> c128[68,2,2,68] {
+  %param_0.102 = c128[2,2,68,68]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.102"}
+  ROOT %transpose.74.1 = c128[68,2,2,68]{3,2,1,0} transpose(%param_0.102), dimensions={3,1,0,2}, metadata={op_name="E" scheduling_name="transpose.74.1"}
+}
+
+%fused_transpose (param_0.3: c128[48,136]) -> c128[2,48,68] {
+  %param_0.3 = c128[48,136]{1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.578.1 = c128[48,2,68]{2,1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.578.1"}
+  ROOT %transpose.75.1 = c128[2,48,68]{2,1,0} transpose(%bitcast.578.1), dimensions={1,0,2}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/stRQ,Qtv->Rsv/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=624 scheduling_name="transpose.75.1"}
+}
+
+%fused_add (param_0.67: c128[48,2,36,36,36], param_1.117: c128[96,2120], param_2.75: c128[48,2,36,36,36], param_3.41: pred[2120], param_4.43: f64[2120], param_5.35: s32[2120], param_6.39: s32[2120], param_7.30: s32[2120]) -> c128[48,2,2120] {
+  %param_4.43 = f64[2120]{0} parameter(4), metadata={scheduling_name="param_4.43"}
+  %convert.12.1 = c128[2120]{0} convert(%param_4.43), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=614 scheduling_name="convert.12.1"}
+  %broadcast.76.1 = c128[48,2,2120]{2,1,0} broadcast(%convert.12.1), dimensions={2}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=614 scheduling_name="broadcast.76.1"}
+  %param_2.75 = c128[48,2,36,36,36]{4,3,2,1,0} parameter(2), metadata={scheduling_name="param_2.75"}
+  %bitcast.509.5 = c128[36,36,36,48,2]{2,1,0,4,3} bitcast(%param_2.75), metadata={scheduling_name="bitcast.509.5"}
+  %param_5.35 = s32[2120]{0} parameter(5), metadata={scheduling_name="param_5.35"}
+  %constant_12_2 = s32[] constant(0)
+  %broadcast.79.23 = s32[2120]{0} broadcast(%constant_12_2), dimensions={}, metadata={scheduling_name="broadcast.79.23"}
+  %compare.43.5 = pred[2120]{0} compare(%param_5.35, %broadcast.79.23), direction=LT, metadata={op_name="jit(_apply_H_sparse)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="compare.43.5"}
+  %constant_10_4 = s32[] constant(36)
+  %broadcast.80.5 = s32[2120]{0} broadcast(%constant_10_4), dimensions={}, metadata={scheduling_name="broadcast.80.5"}
+  %add.38.3 = s32[2120]{0} add(%param_5.35, %broadcast.80.5), metadata={op_name="jit(_apply_H_sparse)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.38.3"}
+  %select.51.3 = s32[2120]{0} select(%compare.43.5, %add.38.3, %param_5.35), metadata={op_name="jit(_apply_H_sparse)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="select.51.3"}
+  %bitcast.436.9 = s32[2120,1]{1,0} bitcast(%select.51.3), metadata={scheduling_name="bitcast.436.9"}
+  %param_6.39 = s32[2120]{0} parameter(6), metadata={scheduling_name="param_6.39"}
+  %compare.44.5 = pred[2120]{0} compare(%param_6.39, %broadcast.79.23), direction=LT, metadata={op_name="jit(_apply_H_sparse)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="compare.44.5"}
+  %add.39.3 = s32[2120]{0} add(%param_6.39, %broadcast.80.5), metadata={op_name="jit(_apply_H_sparse)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.39.3"}
+  %select.52.3 = s32[2120]{0} select(%compare.44.5, %add.39.3, %param_6.39), metadata={op_name="jit(_apply_H_sparse)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="select.52.3"}
+  %bitcast.451.9 = s32[2120,1]{1,0} bitcast(%select.52.3), metadata={scheduling_name="bitcast.451.9"}
+  %param_7.30 = s32[2120]{0} parameter(7), metadata={scheduling_name="param_7.30"}
+  %compare.45.5 = pred[2120]{0} compare(%param_7.30, %broadcast.79.23), direction=LT, metadata={op_name="jit(_apply_H_sparse)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="compare.45.5"}
+  %add.41.3 = s32[2120]{0} add(%param_7.30, %broadcast.80.5), metadata={op_name="jit(_apply_H_sparse)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="add.41.3"}
+  %select.53.3 = s32[2120]{0} select(%compare.45.5, %add.41.3, %param_7.30), metadata={op_name="jit(_apply_H_sparse)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="select.53.3"}
+  %bitcast.466.9 = s32[2120,1]{1,0} bitcast(%select.53.3), metadata={scheduling_name="bitcast.466.9"}
+  %concatenate.4.9 = s32[2120,3]{1,0} concatenate(%bitcast.436.9, %bitcast.451.9, %bitcast.466.9), dimensions={1}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/concatenate" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=25 scheduling_name="concatenate.4.9"}
+  %gather.2.5 = c128[2120,1,1,1,48,2]{0,5,4,3,2,1} gather(%bitcast.509.5, %concatenate.4.9), offset_dims={1,2,3,4,5}, collapsed_slice_dims={}, start_index_map={0,1,2}, index_vector_dim=1, slice_sizes={1,1,1,48,2}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=611 scheduling_name="gather.2.5"}
+  %bitcast.512.3 = c128[1,1,1,48,2,2120]{5,4,3,2,1,0} bitcast(%gather.2.5), metadata={scheduling_name="bitcast.512.3"}
+  %param_3.41 = pred[2120]{0} parameter(3), metadata={scheduling_name="param_3.41"}
+  %convert.13.3 = c128[2120]{0} convert(%param_3.41), metadata={op_name="jit(_apply_H_sparse)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/h_dft.py" source_line=23 scheduling_name="convert.13.3"}
+  %broadcast.88.8 = c128[1,1,1,48,2,2120]{5,4,3,2,1,0} broadcast(%convert.13.3), dimensions={5}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=611 scheduling_name="broadcast.88.8"}
+  %multiply.81.3 = c128[1,1,1,48,2,2120]{5,4,3,2,1,0} multiply(%bitcast.512.3, %broadcast.88.8), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=611 scheduling_name="multiply.81.3"}
+  %bitcast.518.5 = c128[48,2,2120]{2,1,0} bitcast(%multiply.81.3), metadata={scheduling_name="bitcast.518.5"}
+  %multiply.82.5 = c128[48,2,2120]{2,1,0} multiply(%broadcast.76.1, %bitcast.518.5), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=614 scheduling_name="multiply.82.5"}
+  %param_0.67 = c128[48,2,36,36,36]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.67"}
+  %constant_231_1 = c128[] constant((0.0046296296296296294, 0)), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=618}
+  %broadcast.91.7 = c128[48,2,36,36,36]{4,3,2,1,0} broadcast(%constant_231_1), dimensions={}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=618 scheduling_name="broadcast.91.7"}
+  %multiply.85.7 = c128[48,2,36,36,36]{4,3,2,1,0} multiply(%param_0.67, %broadcast.91.7), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=618 scheduling_name="multiply.85.7"}
+  %bitcast.539.7 = c128[36,36,36,48,2]{2,1,0,4,3} bitcast(%multiply.85.7), metadata={scheduling_name="bitcast.539.7"}
+  %gather.3.7 = c128[2120,1,1,1,48,2]{0,5,4,3,2,1} gather(%bitcast.539.7, %concatenate.4.9), offset_dims={1,2,3,4,5}, collapsed_slice_dims={}, start_index_map={0,1,2}, index_vector_dim=1, slice_sizes={1,1,1,48,2}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=618 scheduling_name="gather.3.7"}
+  %bitcast.544.5 = c128[1,1,1,48,2,2120]{5,4,3,2,1,0} bitcast(%gather.3.7), metadata={scheduling_name="bitcast.544.5"}
+  %multiply.86.5 = c128[1,1,1,48,2,2120]{5,4,3,2,1,0} multiply(%bitcast.544.5, %broadcast.88.8), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=618 scheduling_name="multiply.86.5"}
+  %bitcast.549.3 = c128[48,2,2120]{2,1,0} bitcast(%multiply.86.5), metadata={scheduling_name="bitcast.549.3"}
+  %add.42.3 = c128[48,2,2120]{2,1,0} add(%multiply.82.5, %bitcast.549.3), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=618 scheduling_name="add.42.3"}
+  %param_1.117 = c128[96,2120]{1,0} parameter(1), metadata={scheduling_name="param_1.117"}
+  %broadcast.92.1 = c128[96,2120]{1,0} broadcast(%convert.13.3), dimensions={1}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=625 scheduling_name="broadcast.92.1"}
+  %multiply.87.1 = c128[96,2120]{1,0} multiply(%param_1.117, %broadcast.92.1), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=625 scheduling_name="multiply.87.1"}
+  %bitcast.589.3 = c128[2,48,2120]{2,1,0} bitcast(%multiply.87.1), metadata={scheduling_name="bitcast.589.3"}
+  %transpose.76.3 = c128[48,2,2120]{2,1,0} transpose(%bitcast.589.3), dimensions={1,0,2}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=625 scheduling_name="transpose.76.3"}
+  ROOT %add.43.1 = c128[48,2,2120]{2,1,0} add(%add.42.3, %transpose.76.3), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=625 scheduling_name="add.43.1"}
+}
+
+%command_buffer.2 (p.10: c128[68,2120], p.11: c128[48,2,36,36,36], p.12: pred[2120], p.13: s32[2120], p.14: s32[2120], p.15: s32[2120], p.16: c128[2,2,68,68], p.17: c128[48,2,36,36,36], p.18: f64[2120]) -> c128[48,2,2120] {
+  %p.10 = c128[68,2120]{1,0} parameter(0)
+  %p.11 = c128[48,2,36,36,36]{4,3,2,1,0} parameter(1)
+  %p.12 = pred[2120]{0} parameter(2)
+  %p.13 = s32[2120]{0} parameter(3)
+  %p.14 = s32[2120]{0} parameter(4)
+  %p.15 = s32[2120]{0} parameter(5)
+  %p.16 = c128[2,2,68,68]{3,2,1,0} parameter(6)
+  %p.17 = c128[48,2,36,36,36]{4,3,2,1,0} parameter(7)
+  %p.18 = f64[2120]{0} parameter(8)
+  %input_slice_fusion = (c128[144160]{0}, c128[203520]{0}) fusion(%p.10, %p.11, %p.12, %p.13, %p.14, /*index=5*/%p.15), kind=kInput, calls=%fused_slice, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=611 scheduling_name="input_slice_fusion"}
+  %get-tuple-element.7 = c128[203520]{0} get-tuple-element(%input_slice_fusion), index=1, metadata={scheduling_name="get-tuple-element.7"}
+  %bitcast.555.0 = c128[96,2120]{1,0} bitcast(%get-tuple-element.7), metadata={scheduling_name="bitcast.555.0"}
+  %get-tuple-element.6 = c128[144160]{0} get-tuple-element(%input_slice_fusion), index=0, metadata={scheduling_name="get-tuple-element.6"}
+  %bitcast.623 = c128[68,2120]{1,0} bitcast(%get-tuple-element.6), metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=623 scheduling_name="bitcast.623"}
+  %custom-call.3.0 = (c128[96,68]{1,0}, s8[4194304]{0}) custom-call(%bitcast.555.0, %bitcast.623), custom_call_target="__cublas$gemm", metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/RG,vsG->Rsv/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=623 scheduling_name="custom-call.3.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"203520","rhs_stride":"144160","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.3 = c128[96,68]{1,0} get-tuple-element(%custom-call.3.0), index=0, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/RG,vsG->Rsv/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=623 scheduling_name="get-tuple-element.3"}
+  %loop_transpose_fusion.1 = c128[48,68,2]{2,1,0} fusion(%get-tuple-element.3), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/RG,vsG->Rsv/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=623 scheduling_name="loop_transpose_fusion.1"}
+  %bitcast.570.0 = c128[48,136]{1,0} bitcast(%loop_transpose_fusion.1), metadata={scheduling_name="bitcast.570.0"}
+  %wrapped_transpose = c128[68,2,2,68]{3,2,1,0} fusion(%p.16), kind=kInput, calls=%wrapped_transpose_computation, metadata={op_name="E" scheduling_name="wrapped_transpose"}
+  %bitcast.575.0 = c128[136,136]{1,0} bitcast(%wrapped_transpose), metadata={scheduling_name="bitcast.575.0"}
+  %custom-call.4.0 = (c128[48,136]{1,0}, s8[400384]{0}) custom-call(%bitcast.570.0, %bitcast.575.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/stRQ,Qtv->Rsv/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=624 scheduling_name="custom-call.4.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"6528","rhs_stride":"18496","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.1.0 = c128[48,136]{1,0} get-tuple-element(%custom-call.4.0), index=0, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/stRQ,Qtv->Rsv/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=624 scheduling_name="get-tuple-element.1.0"}
+  %loop_transpose_fusion = c128[2,48,68]{2,1,0} fusion(%get-tuple-element.1.0), kind=kLoop, calls=%fused_transpose, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/stRQ,Qtv->Rsv/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=624 scheduling_name="loop_transpose_fusion"}
+  %bitcast.582.0 = c128[96,68]{1,0} bitcast(%loop_transpose_fusion), metadata={scheduling_name="bitcast.582.0"}
+  %custom-call.5.0 = (c128[96,2120]{1,0}, s8[2411008]{0}) custom-call(%bitcast.582.0, %p.10), custom_call_target="__cublas$gemm", metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/RG,Rsv->vsG/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=625 scheduling_name="custom-call.5.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"6528","rhs_stride":"144160","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.2.0 = c128[96,2120]{1,0} get-tuple-element(%custom-call.5.0), index=0, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/RG,Rsv->vsG/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=625 scheduling_name="get-tuple-element.2.0"}
+  ROOT %loop_add_fusion = c128[48,2,2120]{2,1,0} fusion(%p.17, %get-tuple-element.2.0, %p.11, %p.12, %p.18, /*index=5*/%p.13, %p.14, %p.15), kind=kLoop, calls=%fused_add, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=625 scheduling_name="loop_add_fusion"}
+}
+
+ENTRY %main.350 (Arg_0.1.0: c128[48,2,2120], Arg_1.2.0: f64[2120], Arg_2.3.0: f64[36,36,36], Arg_3.4.0: s32[2120], Arg_4.5.0: s32[2120], Arg_5.6.0: s32[2120], Arg_6.7.0: c128[68,2120], Arg_7.8.0: c128[2,2,68,68], Arg_8.9.0: pred[2120]) -> c128[48,2,2120] {
+  %Arg_0.1.0 = c128[48,2,2120]{2,1,0} parameter(0), metadata={op_name="psi_G" scheduling_name="Arg_0.1.0"}
+  %Arg_8.9.0 = pred[2120]{0} parameter(8), metadata={op_name="mask" scheduling_name="Arg_8.9.0"}
+  %Arg_3.4.0 = s32[2120]{0} parameter(3), metadata={op_name="Gx" scheduling_name="Arg_3.4.0"}
+  %Arg_4.5.0 = s32[2120]{0} parameter(4), metadata={op_name="Gy" scheduling_name="Arg_4.5.0"}
+  %Arg_5.6.0 = s32[2120]{0} parameter(5), metadata={op_name="Gz" scheduling_name="Arg_5.6.0"}
+  %Arg_2.3.0 = f64[36,36,36]{2,1,0} parameter(2), metadata={op_name="V" scheduling_name="Arg_2.3.0"}
+  %Arg_6.7.0 = c128[68,2120]{1,0} parameter(6), metadata={op_name="Z" scheduling_name="Arg_6.7.0"}
+  %Arg_7.8.0 = c128[2,2,68,68]{3,2,1,0} parameter(7), metadata={op_name="E" scheduling_name="Arg_7.8.0"}
+  %Arg_1.2.0 = f64[2120]{0} parameter(1), metadata={op_name="T" scheduling_name="Arg_1.2.0"}
+  %call = c128[48,2,36,36,36]{4,3,2,1,0} call(%Arg_0.1.0, %Arg_8.9.0, %Arg_3.4.0, %Arg_4.5.0, %Arg_5.6.0), to_apply=%command_buffer
+  %fft.2.0 = c128[48,2,36,36,36]{4,3,2,1,0} fft(%call), fft_type=IFFT, fft_length={36,36,36}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/jit(fft)/fft" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=617 scheduling_name="fft.2.0"}
+  %loop_multiply_fusion = c128[48,2,36,36,36]{4,3,2,1,0} fusion(%fft.2.0, %Arg_2.3.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=619 scheduling_name="loop_multiply_fusion"}
+  %fft.3.0 = c128[48,2,36,36,36]{4,3,2,1,0} fft(%loop_multiply_fusion), fft_type=FFT, fft_length={36,36,36}, metadata={op_name="jit(_apply_H_sparse)/jit(main)/jit(apply_H_k)/jit(fft)/fft" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=618 scheduling_name="fft.3.0"}
+  ROOT %call.1 = c128[48,2,2120]{2,1,0} call(%Arg_6.7.0, %call, %Arg_8.9.0, %Arg_3.4.0, %Arg_4.5.0, /*index=5*/%Arg_5.6.0, %Arg_7.8.0, %fft.3.0, %Arg_1.2.0), to_apply=%command_buffer.2
+}
+

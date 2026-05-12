@@ -1,0 +1,16 @@
+HloModule jit_gather, is_scheduled=true, entry_computation_layout={(u32[26,2,24,24,80]{4,3,2,1,0}, s32[1917,3]{1,0})->u32[26,2,1917]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="17e18d1617de7110e2e92b0a43f69d21"}
+
+%fused_gather (param_0.1: s32[1917,3], param_1.1: u32[26,2,24,24,80]) -> u32[1917,1,1,1,26,2] {
+  %param_1.1 = u32[26,2,24,24,80]{4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1.1"}
+  %bitcast.27.1 = u32[24,24,80,26,2]{2,1,0,4,3} bitcast(%param_1.1), metadata={scheduling_name="bitcast.27.1"}
+  %param_0.1 = s32[1917,3]{1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  ROOT %gather.2 = u32[1917,1,1,1,26,2]{0,5,4,3,2,1} gather(%bitcast.27.1, %param_0.1), offset_dims={1,2,3,4,5}, collapsed_slice_dims={}, start_index_map={0,1,2}, index_vector_dim=1, slice_sizes={1,1,1,26,2}, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=181 scheduling_name="gather.2"}
+}
+
+ENTRY %main.4 (Arg_0.1.0: u32[26,2,24,24,80], Arg_1.2.0: s32[1917,3]) -> u32[26,2,1917] {
+  %Arg_1.2.0 = s32[1917,3]{1,0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = u32[26,2,24,24,80]{4,3,2,1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  %loop_gather_fusion = u32[1917,1,1,1,26,2]{0,5,4,3,2,1} fusion(%Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_gather, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=181 scheduling_name="loop_gather_fusion"}
+  ROOT %bitcast.10.0 = u32[26,2,1917]{2,1,0} bitcast(%loop_gather_fusion), metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=181 scheduling_name="bitcast.10.0"}
+}
+

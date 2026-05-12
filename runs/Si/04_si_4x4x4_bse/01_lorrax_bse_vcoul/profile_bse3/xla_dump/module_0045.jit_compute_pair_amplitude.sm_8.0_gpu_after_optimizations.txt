@@ -1,0 +1,39 @@
+HloModule jit_compute_pair_amplitude, is_scheduled=true, entry_computation_layout={(c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{3,2,1,0})->c128[64,4,4,480]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="a0f229e02fd37dc864454f5133faef07"}
+
+%fused_transpose (param_0.1: c128[30720,4,4]) -> c128[64,4,4,480] {
+  %param_0.1 = c128[30720,4,4]{2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.70.1 = c128[64,480,4,4]{3,2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.70.1"}
+  ROOT %transpose.12.1 = c128[64,4,4,480]{3,2,1,0} transpose(%bitcast.70.1), dimensions={0,3,2,1}, metadata={op_name="jit(compute_pair_amplitude)/jit(main)/kcsm,kvsm->kcvm/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29 scheduling_name="transpose.12.1"}
+}
+
+%fused_slice (param_0_0: c128[64,4,2,480], param_1_0: c128[64,4,2,480]) -> (c128[245760], c128[245760]) {
+  %param_0_0 = c128[64,4,2,480]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %bitcast.52.2 = c128[64,8,480]{2,1,0} bitcast(%param_0_0), metadata={scheduling_name="bitcast.52.2"}
+  %transpose.10.2 = c128[64,480,8]{2,1,0} transpose(%bitcast.52.2), dimensions={0,2,1}, metadata={op_name="psi_v" scheduling_name="transpose.10.2"}
+  %reshape.6 = c128[245760]{0} reshape(%transpose.10.2), metadata={op_name="psi_v" scheduling_name="reshape.6"}
+  %param_1_0 = c128[64,4,2,480]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %real.4.4 = f64[64,4,2,480]{3,2,1,0} real(%param_1_0), metadata={op_name="jit(compute_pair_amplitude)/jit(main)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29 scheduling_name="real.4.4"}
+  %imag.3.4 = f64[64,4,2,480]{3,2,1,0} imag(%param_1_0), metadata={op_name="jit(compute_pair_amplitude)/jit(main)/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29 scheduling_name="imag.3.4"}
+  %negate.3.4 = f64[64,4,2,480]{3,2,1,0} negate(%imag.3.4), metadata={op_name="jit(compute_pair_amplitude)/jit(main)/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29 scheduling_name="negate.3.4"}
+  %complex.3.4 = c128[64,4,2,480]{3,2,1,0} complex(%real.4.4, %negate.3.4), metadata={op_name="jit(compute_pair_amplitude)/jit(main)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29 scheduling_name="complex.3.4"}
+  %transpose.11.2 = c128[64,480,2,4]{3,2,1,0} transpose(%complex.3.4), dimensions={0,3,2,1}, metadata={op_name="jit(compute_pair_amplitude)/jit(main)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29 scheduling_name="transpose.11.2"}
+  %reshape.7 = c128[245760]{0} reshape(%transpose.11.2), metadata={op_name="jit(compute_pair_amplitude)/jit(main)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29 scheduling_name="reshape.7"}
+  %concatenate = c128[491520]{0} concatenate(%reshape.6, %reshape.7), dimensions={0}, metadata={scheduling_name="concatenate"}
+  %slice = c128[245760]{0} slice(%concatenate), slice={[0:245760]}, metadata={scheduling_name="slice"}
+  %slice.1 = c128[245760]{0} slice(%concatenate), slice={[245760:491520]}, metadata={scheduling_name="slice.1"}
+  ROOT %tuple = (c128[245760]{0}, c128[245760]{0}) tuple(%slice, %slice.1), metadata={op_name="jit(compute_pair_amplitude)/jit(main)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29 scheduling_name="tuple"}
+}
+
+ENTRY %main.9 (Arg_0.1.0: c128[64,4,2,480], Arg_1.2.0: c128[64,4,2,480]) -> c128[64,4,4,480] {
+  %Arg_1.2.0 = c128[64,4,2,480]{3,2,1,0} parameter(1), metadata={op_name="psi_v" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[64,4,2,480]{3,2,1,0} parameter(0), metadata={op_name="psi_c" scheduling_name="Arg_0.1.0"}
+  %input_slice_fusion = (c128[245760]{0}, c128[245760]{0}) fusion(%Arg_1.2.0, %Arg_0.1.0), kind=kInput, calls=%fused_slice, metadata={op_name="jit(compute_pair_amplitude)/jit(main)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29 scheduling_name="input_slice_fusion"}
+  %get-tuple-element.3 = c128[245760]{0} get-tuple-element(%input_slice_fusion), index=1, metadata={scheduling_name="get-tuple-element.3"}
+  %get-tuple-element.2 = c128[245760]{0} get-tuple-element(%input_slice_fusion), index=0, metadata={scheduling_name="get-tuple-element.2"}
+  %bitcast.56.0 = c128[30720,4,2]{2,1,0} bitcast(%get-tuple-element.2), metadata={scheduling_name="bitcast.56.0"}
+  %bitcast.67.0 = c128[30720,2,4]{2,1,0} bitcast(%get-tuple-element.3), metadata={scheduling_name="bitcast.67.0"}
+  %custom-call.1.0 = (c128[30720,4,4]{2,1,0}, s8[4194304]{0}) custom-call(%bitcast.56.0, %bitcast.67.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(compute_pair_amplitude)/jit(main)/kcsm,kvsm->kcvm/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"8","rhs_stride":"8","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.1 = c128[30720,4,4]{2,1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(compute_pair_amplitude)/jit(main)/kcsm,kvsm->kcvm/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29 scheduling_name="get-tuple-element.1"}
+  ROOT %loop_transpose_fusion = c128[64,4,4,480]{3,2,1,0} fusion(%get-tuple-element.1), kind=kLoop, calls=%fused_transpose, metadata={op_name="jit(compute_pair_amplitude)/jit(main)/kcsm,kvsm->kcvm/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29 scheduling_name="loop_transpose_fusion"}
+}
+

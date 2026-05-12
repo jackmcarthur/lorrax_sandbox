@@ -1,0 +1,14 @@
+HloModule jit_concatenate, is_scheduled=true, entry_computation_layout={(c128[80,2,2,64]{3,2,1,0}, c128[20,2,2,64]{3,2,1,0})->c128[100,2,2,64]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="4c7e181440c39af6f4527859a6a3458f"}
+
+%wrapped_concatenate_computation (param_0: c128[80,2,2,64], param_1: c128[20,2,2,64]) -> c128[100,2,2,64] {
+  %param_0 = c128[80,2,2,64]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1 = c128[20,2,2,64]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1"}
+  ROOT %concatenate.4.1 = c128[100,2,2,64]{3,2,1,0} concatenate(%param_0, %param_1), dimensions={0}, metadata={op_name="jit(concatenate)/jit(main)/concatenate" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=340 scheduling_name="concatenate.4.1"}
+}
+
+ENTRY %main.4_spmd (param.2: c128[80,2,2,64], param.1.0: c128[20,2,2,64]) -> c128[100,2,2,64] {
+  %param.1.0 = c128[20,2,2,64]{3,2,1,0} parameter(1), sharding={devices=[1,2,2,1]<=[4]}, metadata={op_name="args[1]" scheduling_name="param.1.0"}
+  %param.2 = c128[80,2,2,64]{3,2,1,0} parameter(0), sharding={devices=[1,2,2,1]<=[4]}, metadata={op_name="args[0]" scheduling_name="param.2"}
+  ROOT %wrapped_concatenate = c128[100,2,2,64]{3,2,1,0} fusion(%param.2, %param.1.0), kind=kLoop, calls=%wrapped_concatenate_computation, metadata={op_name="jit(concatenate)/jit(main)/concatenate" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/davidson.py" source_line=340 scheduling_name="wrapped_concatenate"}
+}
+

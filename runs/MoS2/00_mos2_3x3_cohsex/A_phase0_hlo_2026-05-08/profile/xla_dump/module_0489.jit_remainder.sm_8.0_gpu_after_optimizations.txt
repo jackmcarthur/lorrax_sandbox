@@ -1,0 +1,28 @@
+HloModule jit_remainder, is_scheduled=true, entry_computation_layout={(s64[4]{0}, s64[])->s64[4]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="b4b2970e755f854620e93cecdac41fbb"}
+
+%fused_select (param_0.21: s64[4], param_1.28: s64[]) -> s64[4] {
+  %param_0.21 = s64[4]{0} parameter(0), metadata={scheduling_name="param_0.21"}
+  %param_1.28 = s64[] parameter(1), metadata={scheduling_name="param_1.28"}
+  %constant_3_1 = s64[] constant(0)
+  %compare.11.3 = pred[] compare(%param_1.28, %constant_3_1), direction=EQ, metadata={op_name="jit(remainder)/jit(main)/eq" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="compare.11.3"}
+  %constant_5_1 = s64[] constant(1)
+  %select.5.3 = s64[] select(%compare.11.3, %constant_5_1, %param_1.28), metadata={op_name="jit(remainder)/jit(main)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="select.5.3"}
+  %broadcast.9.6 = s64[4]{0} broadcast(%select.5.3), dimensions={}, metadata={op_name="jit(remainder)/jit(main)/rem" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="broadcast.9.6"}
+  %remainder.2.3 = s64[4]{0} remainder(%param_0.21, %broadcast.9.6), metadata={op_name="jit(remainder)/jit(main)/rem" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="remainder.2.3"}
+  %broadcast.10.10 = s64[4]{0} broadcast(%constant_3_1), dimensions={}, metadata={scheduling_name="broadcast.10.10"}
+  %compare.12.5 = pred[4]{0} compare(%remainder.2.3, %broadcast.10.10), direction=LT, metadata={op_name="jit(remainder)/jit(main)/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="compare.12.5"}
+  %compare.13.1 = pred[] compare(%select.5.3, %constant_3_1), direction=LT, metadata={op_name="jit(remainder)/jit(main)/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="compare.13.1"}
+  %broadcast.11.3 = pred[4]{0} broadcast(%compare.13.1), dimensions={}, metadata={op_name="jit(remainder)/jit(main)/ne" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="broadcast.11.3"}
+  %compare.14.3 = pred[4]{0} compare(%compare.12.5, %broadcast.11.3), direction=NE, metadata={op_name="jit(remainder)/jit(main)/ne" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="compare.14.3"}
+  %compare.15.5 = pred[4]{0} compare(%remainder.2.3, %broadcast.10.10), direction=NE, metadata={op_name="jit(remainder)/jit(main)/ne" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="compare.15.5"}
+  %and.2.3 = pred[4]{0} and(%compare.14.3, %compare.15.5), metadata={op_name="jit(remainder)/jit(main)/and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="and.2.3"}
+  %add.2.3 = s64[4]{0} add(%remainder.2.3, %broadcast.9.6), metadata={op_name="jit(remainder)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="add.2.3"}
+  ROOT %select.6.1 = s64[4]{0} select(%and.2.3, %add.2.3, %remainder.2.3), metadata={op_name="jit(remainder)/jit(main)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="select.6.1"}
+}
+
+ENTRY %main.25 (Arg_0.1.0: s64[4], Arg_1.2.0: s64[]) -> s64[4] {
+  %Arg_1.2.0 = s64[] parameter(1), metadata={op_name="x2" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = s64[4]{0} parameter(0), metadata={op_name="x1" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_select_fusion = s64[4]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(remainder)/jit(main)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="loop_select_fusion"}
+}
+

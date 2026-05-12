@@ -1,0 +1,39 @@
+HloModule jit__reshard_rchunk, is_scheduled=true, entry_computation_layout={(c128[16,15,2,46080]{3,2,1,0})->c128[16,60,2,23040]{3,2,1,0}}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="fcaa4fadfd34e2d2001e1b377bc13626"}
+
+%fused_transpose (param_0.1: c128[16,60,2,23040]) -> c128[16,60,46080] {
+  %param_0.1 = c128[16,60,2,23040]{3,2,0,1} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.74.1 = c128[60,16,46080]{2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.74.1"}
+  ROOT %transpose.12.1 = c128[16,60,46080]{2,1,0} transpose(%bitcast.74.1), dimensions={1,0,2}, metadata={scheduling_name="transpose.12.1"}
+}
+
+%fused_transpose.1 (param_0.3: c128[16,1,15,2,2,23040]) -> c128[2,15,16,46080] {
+  %param_0.3 = c128[16,1,15,2,2,23040]{5,3,2,1,0,4} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.67.1 = c128[2,16,15,46080]{3,2,1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.67.1"}
+  ROOT %transpose.11.1 = c128[2,15,16,46080]{3,2,1,0} transpose(%bitcast.67.1), dimensions={0,2,1,3}, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=412 scheduling_name="transpose.11.1"}
+}
+
+%fused_transpose.2 (param_0.5: c128[16,15,2,46080]) -> c128[2,480,23040] {
+  %param_0.5 = c128[16,15,2,46080]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.5"}
+  %bitcast.60.1 = c128[480,2,23040]{2,1,0} bitcast(%param_0.5), metadata={scheduling_name="bitcast.60.1"}
+  ROOT %transpose.10.1 = c128[2,480,23040]{2,1,0} transpose(%bitcast.60.1), dimensions={1,0,2}, metadata={op_name="psi_rchunk" scheduling_name="transpose.10.1"}
+}
+
+%async_computation (param_0.6: c128[16,1,15,2,2,23040]) -> c128[16,1,15,2,2,23040] {
+  %param_0.6 = c128[16,1,15,2,2,23040]{5,3,2,1,0,4} parameter(0), metadata={scheduling_name="param_0.6"}
+  ROOT %all-to-all.2 = c128[16,1,15,2,2,23040]{5,3,2,1,0,4} all-to-all(%param_0.6), channel_id=1, replica_groups={{0,1},{2,3}}, dimensions={4}, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=412 scheduling_name="all-to-all.2"}
+}
+
+ENTRY %main.5_spmd (param.1: c128[16,15,2,46080]) -> c128[16,60,2,23040] {
+  %param.1 = c128[16,15,2,46080]{3,2,1,0} parameter(0), sharding={devices=[1,4,1,1]<=[4]}, metadata={op_name="psi_rchunk" scheduling_name="param.1"}
+  %loop_transpose_fusion.2 = c128[2,480,23040]{2,1,0} fusion(%param.1), kind=kLoop, calls=%fused_transpose.2, metadata={op_name="psi_rchunk" scheduling_name="loop_transpose_fusion.2"}
+  %bitcast.64.0 = c128[16,1,15,2,2,23040]{5,3,2,1,0,4} bitcast(%loop_transpose_fusion.2), metadata={scheduling_name="bitcast.64.0"}
+  %all-to-all-start = ((c128[16,1,15,2,2,23040]{5,3,2,1,0,4}), c128[16,1,15,2,2,23040]{5,3,2,1,0,4}) async-start(%bitcast.64.0), calls=%async_computation, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=412 scheduling_name="all-to-all-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-to-all-done = c128[16,1,15,2,2,23040]{5,3,2,1,0,4} async-done(%all-to-all-start), metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=412 scheduling_name="all-to-all-done"}
+  %loop_transpose_fusion.1 = c128[2,15,16,46080]{3,2,1,0} fusion(%all-to-all-done), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=412 scheduling_name="loop_transpose_fusion.1"}
+  %bitcast.71.0 = c128[16,30,2,23040]{3,2,0,1} bitcast(%loop_transpose_fusion.1), metadata={scheduling_name="bitcast.71.0"}
+  %all-gather-start = (c128[16,30,2,23040]{3,2,0,1}, c128[16,60,2,23040]{3,2,0,1}) all-gather-start(%bitcast.71.0), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={1}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done = c128[16,60,2,23040]{3,2,0,1} all-gather-done(%all-gather-start), metadata={scheduling_name="all-gather-done"}
+  %loop_transpose_fusion = c128[16,60,46080]{2,1,0} fusion(%all-gather-done), kind=kLoop, calls=%fused_transpose, metadata={scheduling_name="loop_transpose_fusion"}
+  ROOT %bitcast.52.0 = c128[16,60,2,23040]{3,2,1,0} bitcast(%loop_transpose_fusion), metadata={scheduling_name="bitcast.52.0"}
+}
+

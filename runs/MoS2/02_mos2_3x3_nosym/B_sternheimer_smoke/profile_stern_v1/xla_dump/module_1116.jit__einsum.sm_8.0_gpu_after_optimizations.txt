@@ -1,0 +1,30 @@
+HloModule jit__einsum, is_scheduled=true, entry_computation_layout={(c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0})->c128[]}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="289c0f0fcc2ff91886afd63f2f623483"}
+
+%scalar_add_computation (scalar_lhs: c128[], scalar_rhs: c128[]) -> c128[] {
+  %scalar_rhs = c128[] parameter(1), metadata={scheduling_name="scalar_rhs"}
+  %scalar_lhs = c128[] parameter(0), metadata={scheduling_name="scalar_lhs"}
+  ROOT %add.3 = c128[] add(%scalar_lhs, %scalar_rhs), metadata={scheduling_name="add.3"}
+}
+
+%fused_reduce (param_0.2: c128[26,2,1947], param_1.3: c128[26,2,1947]) -> c128[286] {
+  %param_0.2 = c128[26,2,1947]{2,1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %param_1.3 = c128[26,2,1947]{2,1,0} parameter(1), metadata={scheduling_name="param_1.3"}
+  %multiply.4.1 = c128[26,2,1947]{2,1,0} multiply(%param_0.2, %param_1.3), metadata={scheduling_name="multiply.4.1"}
+  %bitcast.37.1 = c128[286,354]{1,0} bitcast(%multiply.4.1), metadata={scheduling_name="bitcast.37.1"}
+  %constant_2 = c128[] constant((0, 0))
+  ROOT %reduce.3.1 = c128[286]{0} reduce(%bitcast.37.1, %constant_2), dimensions={1}, to_apply=%scalar_add_computation, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=566 scheduling_name="reduce.3.1"}
+}
+
+%fused_reduce.1 (param_0.3: c128[286]) -> c128[] {
+  %param_0.3 = c128[286]{0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %constant_3 = c128[] constant((0, 0))
+  ROOT %reduce.6 = c128[] reduce(%param_0.3, %constant_3), dimensions={0}, to_apply=%scalar_add_computation, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=566 scheduling_name="reduce.6"}
+}
+
+ENTRY %main.4 (Arg_0.1.0: c128[26,2,1947], Arg_1.2.0: c128[26,2,1947]) -> c128[] {
+  %Arg_1.2.0 = c128[26,2,1947]{2,1,0} parameter(1), metadata={op_name="operands[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[26,2,1947]{2,1,0} parameter(0), metadata={op_name="operands[0]" scheduling_name="Arg_0.1.0"}
+  %input_reduce_fusion = c128[286]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=566 scheduling_name="input_reduce_fusion"}
+  ROOT %input_reduce_fusion.1 = c128[] fusion(%input_reduce_fusion), kind=kInput, calls=%fused_reduce.1, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=566 scheduling_name="input_reduce_fusion.1"}
+}
+

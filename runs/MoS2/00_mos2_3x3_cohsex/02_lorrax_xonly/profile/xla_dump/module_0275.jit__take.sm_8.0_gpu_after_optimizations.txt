@@ -1,0 +1,34 @@
+HloModule jit__take, is_scheduled=true, entry_computation_layout={(pred[9]{0}, s32[9]{0})->pred[9]{0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="7cd23da9f906b43eb64c2c165bf59302"}
+
+%fused_select (param_0.25: pred[9], param_1.27: s32[9]) -> pred[9,1] {
+  %param_1.27 = s32[9]{0} parameter(1), metadata={scheduling_name="param_1.27"}
+  %constant_21 = s32[] constant(0)
+  %broadcast.22.5 = s32[9]{0} broadcast(%constant_21), dimensions={}, metadata={scheduling_name="broadcast.22.5"}
+  %compare.9.5 = pred[9]{0} compare(%param_1.27, %broadcast.22.5), direction=LT, metadata={op_name="jit(_take)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=602 scheduling_name="compare.9.5"}
+  %constant_1_1 = s32[] constant(9)
+  %broadcast.23.5 = s32[9]{0} broadcast(%constant_1_1), dimensions={}, metadata={scheduling_name="broadcast.23.5"}
+  %add.3.5 = s32[9]{0} add(%param_1.27, %broadcast.23.5), metadata={op_name="jit(_take)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=602 scheduling_name="add.3.5"}
+  %select.8.3 = s32[9]{0} select(%compare.9.5, %add.3.5, %param_1.27), metadata={op_name="jit(_take)/jit(main)/jit(_where)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=598 scheduling_name="select.8.3"}
+  %bitcast.79.11 = s32[9,1]{1,0} bitcast(%select.8.3), metadata={scheduling_name="bitcast.79.11"}
+  %convert.7.11 = s64[9,1]{1,0} convert(%bitcast.79.11), metadata={op_name="jit(_take)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=602 scheduling_name="convert.7.11"}
+  %constant_2_1 = s64[] constant(0)
+  %broadcast.24.3 = s64[9,1]{1,0} broadcast(%constant_2_1), dimensions={}, metadata={scheduling_name="broadcast.24.3"}
+  %compare.10.3 = pred[9,1]{1,0} compare(%convert.7.11, %broadcast.24.3), direction=GE, metadata={op_name="jit(_take)/jit(main)/ge" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=602 scheduling_name="compare.10.3"}
+  %constant_4_1 = s64[] constant(8)
+  %broadcast.25.3 = s64[9,1]{1,0} broadcast(%constant_4_1), dimensions={}, metadata={scheduling_name="broadcast.25.3"}
+  %compare.11.3 = pred[9,1]{1,0} compare(%convert.7.11, %broadcast.25.3), direction=LE, metadata={op_name="jit(_take)/jit(main)/le" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=602 scheduling_name="compare.11.3"}
+  %and.3.1 = pred[9,1]{1,0} and(%compare.10.3, %compare.11.3), metadata={op_name="jit(_take)/jit(main)/and" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=602 scheduling_name="and.3.1"}
+  %param_0.25 = pred[9]{0} parameter(0), metadata={scheduling_name="param_0.25"}
+  %gather.1.3 = pred[9,1]{1,0} gather(%param_0.25, %convert.7.11), offset_dims={1}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1}, metadata={op_name="jit(_take)/jit(main)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=602 scheduling_name="gather.1.3"}
+  %constant_6_1 = pred[] constant(true)
+  %broadcast.26.1 = pred[9,1]{1,0} broadcast(%constant_6_1), dimensions={}, metadata={scheduling_name="broadcast.26.1"}
+  ROOT %select.9.1 = pred[9,1]{1,0} select(%and.3.1, %gather.1.3, %broadcast.26.1), metadata={op_name="jit(_take)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=602 scheduling_name="select.9.1"}
+}
+
+ENTRY %main.34_spmd (param.1.0: pred[9], param.2: s32[9]) -> pred[9] {
+  %param.1.0 = pred[9]{0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.1.0"}
+  %param.2 = s32[9]{0} parameter(1), sharding={replicated}, metadata={op_name="indices" scheduling_name="param.2"}
+  %loop_select_fusion = pred[9,1]{1,0} fusion(%param.1.0, %param.2), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_take)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=602 scheduling_name="loop_select_fusion"}
+  ROOT %bitcast.1.0 = pred[9]{0} bitcast(%loop_select_fusion), metadata={op_name="jit(_take)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/file_io/wfn_loader.py" source_line=602 scheduling_name="bitcast.1.0"}
+}
+

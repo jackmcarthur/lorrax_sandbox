@@ -1,0 +1,15 @@
+HloModule jit_add, is_scheduled=true, entry_computation_layout={(s64[54]{0}, s64[])->s64[54]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="356df8051cc715c61f9061bd19163eaa"}
+
+%fused_add (param_0: s64[54], param_1.1: s64[]) -> s64[54] {
+  %param_0 = s64[54]{0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.1 = s64[] parameter(1), metadata={scheduling_name="param_1.1"}
+  %broadcast.2.1 = s64[54]{0} broadcast(%param_1.1), dimensions={}, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/chi_from_dipole.py" source_line=46 scheduling_name="broadcast.2.1"}
+  ROOT %add.2.1 = s64[54]{0} add(%param_0, %broadcast.2.1), metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/chi_from_dipole.py" source_line=46 scheduling_name="add.2.1"}
+}
+
+ENTRY %main.5 (Arg_0.1.0: s64[54], Arg_1.2.0: s64[]) -> s64[54] {
+  %Arg_1.2.0 = s64[] parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = s64[54]{0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_add_fusion = s64[54]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_add, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/chi_from_dipole.py" source_line=46 scheduling_name="loop_add_fusion"}
+}
+

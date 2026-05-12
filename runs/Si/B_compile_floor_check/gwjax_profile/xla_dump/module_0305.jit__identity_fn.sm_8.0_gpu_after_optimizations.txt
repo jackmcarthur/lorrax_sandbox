@@ -1,0 +1,24 @@
+HloModule jit__identity_fn, is_scheduled=true, entry_computation_layout={(c128[4,4,4,240]{3,2,1,0})->c128[4,4,4,480]{3,2,1,0}}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="a4fc13499bdb8e30889a1a4a072fbc75"}
+
+%fused_transpose (param_0.1: c128[4,4,4,480]) -> c128[64,480] {
+  %param_0.1 = c128[4,4,4,480]{2,1,0,3} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.34.1 = c128[480,64]{1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.34.1"}
+  ROOT %transpose.7.1 = c128[64,480]{1,0} transpose(%bitcast.34.1), dimensions={1,0}, metadata={scheduling_name="transpose.7.1"}
+}
+
+%fused_transpose.1 (param_0.3: c128[4,4,4,240]) -> c128[240,64] {
+  %param_0.3 = c128[4,4,4,240]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.27.1 = c128[64,240]{1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.27.1"}
+  ROOT %transpose.6.1 = c128[240,64]{1,0} transpose(%bitcast.27.1), dimensions={1,0}, metadata={op_name="x" scheduling_name="transpose.6.1"}
+}
+
+ENTRY %main.4_spmd (param.1: c128[4,4,4,240]) -> c128[4,4,4,480] {
+  %param.1 = c128[4,4,4,240]{3,2,1,0} parameter(0), sharding={devices=[1,1,1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="x" scheduling_name="param.1"}
+  %input_transpose_fusion.1 = c128[240,64]{1,0} fusion(%param.1), kind=kInput, calls=%fused_transpose.1, metadata={op_name="x" scheduling_name="input_transpose_fusion.1"}
+  %bitcast.31.0 = c128[4,4,4,240]{2,1,0,3} bitcast(%input_transpose_fusion.1), metadata={scheduling_name="bitcast.31.0"}
+  %all-gather-start = (c128[4,4,4,240]{2,1,0,3}, c128[4,4,4,480]{2,1,0,3}) all-gather-start(%bitcast.31.0), channel_id=1, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={3}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done = c128[4,4,4,480]{2,1,0,3} all-gather-done(%all-gather-start), metadata={scheduling_name="all-gather-done"}
+  %input_transpose_fusion = c128[64,480]{1,0} fusion(%all-gather-done), kind=kInput, calls=%fused_transpose, metadata={scheduling_name="input_transpose_fusion"}
+  ROOT %bitcast.22.0 = c128[4,4,4,480]{3,2,1,0} bitcast(%input_transpose_fusion), metadata={scheduling_name="bitcast.22.0"}
+}
+

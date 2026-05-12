@@ -1,0 +1,26 @@
+HloModule jit_conjugate, is_scheduled=true, entry_computation_layout={(c128[9,26,2,24,24,80]{5,4,3,2,1,0}, c128[3,9,26,2,24,24,80]{6,5,4,3,2,1,0})->(c128[9,26,2,24,24,80]{5,4,3,2,1,0}, c128[3,9,26,2,24,24,80]{6,5,4,3,2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="9bf27ac36f08006f9b305775332778f1"}
+
+%fused_complex (param_0.1: c128[3,9,26,2,24,24,80]) -> c128[3,9,26,2,24,24,80] {
+  %param_0.1 = c128[3,9,26,2,24,24,80]{6,5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %real.6.1 = f64[3,9,26,2,24,24,80]{6,5,4,3,2,1,0} real(%param_0.1), metadata={op_name="jit(conjugate)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=188 scheduling_name="real.6.1"}
+  %imag.6.1 = f64[3,9,26,2,24,24,80]{6,5,4,3,2,1,0} imag(%param_0.1), metadata={op_name="jit(conjugate)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=188 scheduling_name="imag.6.1"}
+  %negate.6.1 = f64[3,9,26,2,24,24,80]{6,5,4,3,2,1,0} negate(%imag.6.1), metadata={op_name="jit(conjugate)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=188 scheduling_name="negate.6.1"}
+  ROOT %complex.5.1 = c128[3,9,26,2,24,24,80]{6,5,4,3,2,1,0} complex(%real.6.1, %negate.6.1), metadata={op_name="jit(conjugate)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=188 scheduling_name="complex.5.1"}
+}
+
+%fused_complex.1 (param_0.3: c128[9,26,2,24,24,80]) -> c128[9,26,2,24,24,80] {
+  %param_0.3 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %real.5.1 = f64[9,26,2,24,24,80]{5,4,3,2,1,0} real(%param_0.3), metadata={op_name="jit(conjugate)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=188 scheduling_name="real.5.1"}
+  %imag.5.1 = f64[9,26,2,24,24,80]{5,4,3,2,1,0} imag(%param_0.3), metadata={op_name="jit(conjugate)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=188 scheduling_name="imag.5.1"}
+  %negate.4.1 = f64[9,26,2,24,24,80]{5,4,3,2,1,0} negate(%imag.5.1), metadata={op_name="jit(conjugate)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=188 scheduling_name="negate.4.1"}
+  ROOT %complex.4.1 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} complex(%real.5.1, %negate.4.1), metadata={op_name="jit(conjugate)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=188 scheduling_name="complex.4.1"}
+}
+
+ENTRY %main.12 (Arg_0.1.0: c128[9,26,2,24,24,80], Arg_1.2.0: c128[3,9,26,2,24,24,80]) -> (c128[9,26,2,24,24,80], c128[3,9,26,2,24,24,80]) {
+  %Arg_1.2.0 = c128[3,9,26,2,24,24,80]{6,5,4,3,2,1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %loop_complex_fusion.1 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} fusion(%Arg_0.1.0), kind=kLoop, calls=%fused_complex.1, metadata={op_name="jit(conjugate)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=188 scheduling_name="loop_complex_fusion.1"}
+  %loop_complex_fusion = c128[3,9,26,2,24,24,80]{6,5,4,3,2,1,0} fusion(%Arg_1.2.0), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(conjugate)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=188 scheduling_name="loop_complex_fusion"}
+  ROOT %tuple.11.0 = (c128[9,26,2,24,24,80]{5,4,3,2,1,0}, c128[3,9,26,2,24,24,80]{6,5,4,3,2,1,0}) tuple(%loop_complex_fusion.1, %loop_complex_fusion), metadata={scheduling_name="tuple.11.0"}
+}
+

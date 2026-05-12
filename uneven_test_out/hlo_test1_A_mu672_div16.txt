@@ -1,0 +1,27 @@
+HloModule jit_f1, is_scheduled=true, entry_computation_layout={(c128[9,2419,42]{2,1,0})->c128[9,2419]{1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16, frontend_attributes={fingerprint_before_lhs="38e91398dfcdcf09e1a0796e3e1553ff"}
+
+%region_0.3 (Arg_0.4: c128[], Arg_1.5: c128[]) -> c128[] {
+  %Arg_1.5 = c128[] parameter(1), metadata={op_name="jit(f1)/jit(main)/reduce_sum"}
+  %Arg_0.4 = c128[] parameter(0), metadata={op_name="jit(f1)/jit(main)/reduce_sum"}
+  ROOT %add.5 = c128[] add(%Arg_0.4, %Arg_1.5), metadata={op_name="jit(f1)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=138}
+}
+
+%fused_reduce (param_0: c128[9,2419,42]) -> c128[9,2419] {
+  %param_0 = c128[9,2419,42]{2,1,0} parameter(0)
+  %constant_3 = c128[] constant((0, 0))
+  ROOT %reduce.2 = c128[9,2419]{1,0} reduce(%param_0, %constant_3), dimensions={2}, to_apply=%region_0.3, metadata={op_name="jit(f1)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=138}
+}
+
+%region_0.3.clone (Arg_0.0: c128[], Arg_1.0: c128[]) -> c128[] {
+  %Arg_1.0 = c128[] parameter(1), metadata={op_name="jit(f1)/jit(main)/reduce_sum"}
+  %Arg_0.0 = c128[] parameter(0), metadata={op_name="jit(f1)/jit(main)/reduce_sum"}
+  ROOT %add.7 = c128[] add(%Arg_0.0, %Arg_1.0), metadata={op_name="jit(f1)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=138}
+}
+
+ENTRY %main.8_spmd (param.1: c128[9,2419,42]) -> c128[9,2419] {
+  %param.1 = c128[9,2419,42]{2,1,0} parameter(0), sharding={devices=[1,1,16]<=[16]}, metadata={op_name="x"}
+  %input_reduce_fusion = c128[9,2419]{1,0} fusion(%param.1), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(f1)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=138}
+  %all-reduce-start = c128[9,2419]{1,0} all-reduce-start(%input_reduce_fusion), channel_id=1, replica_groups=[1,16]<=[16], use_global_device_ids=true, to_apply=%region_0.3.clone, metadata={op_name="jit(f1)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=138}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  ROOT %all-reduce-done = c128[9,2419]{1,0} all-reduce-done(%all-reduce-start), metadata={op_name="jit(f1)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=138}
+}
+

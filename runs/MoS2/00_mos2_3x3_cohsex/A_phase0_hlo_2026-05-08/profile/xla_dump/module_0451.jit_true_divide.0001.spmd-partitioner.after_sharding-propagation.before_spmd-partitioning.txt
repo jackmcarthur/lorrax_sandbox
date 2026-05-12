@@ -1,0 +1,11 @@
+HloModule jit_true_divide, entry_computation_layout={(c128[9,656,80,4]{3,2,1,0}, f64[1,1,80,1]{3,2,1,0})->c128[9,656,80,4]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16
+
+ENTRY %main.8 (Arg_0.1: c128[9,656,80,4], Arg_1.2: f64[1,1,80,1]) -> c128[9,656,80,4] {
+  %Arg_0.1 = c128[9,656,80,4]{3,2,1,0} parameter(0), sharding={devices=[1,4,1,1,4]<=[16] last_tile_dim_replicate}, metadata={op_name="x1"}
+  %Arg_1.2 = f64[1,1,80,1]{3,2,1,0} parameter(1), metadata={op_name="x2"}
+  %convert.3 = c128[1,1,80,1]{3,2,1,0} convert(%Arg_1.2), sharding={replicated}, metadata={op_name="jit(true_divide)/jit(main)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1259}
+  %reshape.5 = c128[80]{0} reshape(%convert.3), sharding={replicated}, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1259}
+  %broadcast.6 = c128[9,656,80,4]{3,2,1,0} broadcast(%reshape.5), dimensions={2}, sharding={devices=[1,4,1,1,4]<=[16] last_tile_dim_replicate}, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1259}
+  ROOT %divide.7 = c128[9,656,80,4]{3,2,1,0} divide(%Arg_0.1, %broadcast.6), sharding={devices=[1,4,1,1,4]<=[16] last_tile_dim_replicate}, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1259}
+}
+

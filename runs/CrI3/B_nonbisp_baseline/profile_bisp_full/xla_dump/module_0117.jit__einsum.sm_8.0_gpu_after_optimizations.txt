@@ -1,0 +1,25 @@
+HloModule jit__einsum, is_scheduled=true, entry_computation_layout={(c128[2,2,59990]{2,1,0}, c128[1,2,59990]{2,1,0})->c128[1,2,59990]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="97d46e18d7c64c68b47c22049d3f5347"}
+
+%scalar_add_computation (scalar_lhs: c128[], scalar_rhs: c128[]) -> c128[] {
+  %scalar_rhs = c128[] parameter(1), metadata={scheduling_name="scalar_rhs"}
+  %scalar_lhs = c128[] parameter(0), metadata={scheduling_name="scalar_lhs"}
+  ROOT %add.3 = c128[] add(%scalar_lhs, %scalar_rhs), metadata={scheduling_name="add.3"}
+}
+
+%fused_reduce (param_0.8: c128[2,2,59990], param_1.7: c128[1,2,59990]) -> c128[2,59990] {
+  %param_1.7 = c128[1,2,59990]{2,1,0} parameter(1), metadata={scheduling_name="param_1.7"}
+  %bitcast.60.5 = c128[2,59990]{1,0} bitcast(%param_1.7), metadata={scheduling_name="bitcast.60.5"}
+  %broadcast.4.5 = c128[2,2,59990]{2,1,0} broadcast(%bitcast.60.5), dimensions={1,2}, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/bispinor_init.py" source_line=40 scheduling_name="broadcast.4.5"}
+  %param_0.8 = c128[2,2,59990]{2,1,0} parameter(0), metadata={scheduling_name="param_0.8"}
+  %multiply.4.3 = c128[2,2,59990]{2,1,0} multiply(%broadcast.4.5, %param_0.8), metadata={scheduling_name="multiply.4.3"}
+  %constant_4 = c128[] constant((0, 0))
+  ROOT %reduce.3.1 = c128[2,59990]{1,0} reduce(%multiply.4.3, %constant_4), dimensions={1}, to_apply=%scalar_add_computation, metadata={scheduling_name="reduce.3.1"}
+}
+
+ENTRY %main.5 (Arg_0.1.0: c128[2,2,59990], Arg_1.2.0: c128[1,2,59990]) -> c128[1,2,59990] {
+  %Arg_1.2.0 = c128[1,2,59990]{2,1,0} parameter(1), metadata={op_name="operands[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[2,2,59990]{2,1,0} parameter(0), metadata={op_name="operands[0]" scheduling_name="Arg_0.1.0"}
+  %loop_reduce_fusion = c128[2,59990]{1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_reduce, metadata={scheduling_name="loop_reduce_fusion"}
+  ROOT %bitcast.22.0 = c128[1,2,59990]{2,1,0} bitcast(%loop_reduce_fusion), metadata={op_name="jit(_einsum)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/bispinor_init.py" source_line=40 scheduling_name="bitcast.22.0"}
+}
+

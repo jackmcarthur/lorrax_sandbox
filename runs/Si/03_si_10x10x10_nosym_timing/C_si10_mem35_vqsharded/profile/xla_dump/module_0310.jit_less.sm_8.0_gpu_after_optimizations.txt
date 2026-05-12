@@ -1,0 +1,15 @@
+HloModule jit_less, is_scheduled=true, entry_computation_layout={(s64[262144]{0}, s64[])->pred[262144]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="c39263240c579d5aaefe87d84ecc1149"}
+
+%fused_compare (param_0: s64[262144], param_1.1: s64[]) -> pred[262144] {
+  %param_0 = s64[262144]{0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.1 = s64[] parameter(1), metadata={scheduling_name="param_1.1"}
+  %broadcast.2.1 = s64[262144]{0} broadcast(%param_1.1), dimensions={}, metadata={op_name="jit(less)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/vcoul.py" source_line=30 scheduling_name="broadcast.2.1"}
+  ROOT %compare.2.1 = pred[262144]{0} compare(%param_0, %broadcast.2.1), direction=LT, metadata={op_name="jit(less)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/vcoul.py" source_line=30 scheduling_name="compare.2.1"}
+}
+
+ENTRY %main.5 (Arg_0.1.0: s64[262144], Arg_1.2.0: s64[]) -> pred[262144] {
+  %Arg_1.2.0 = s64[] parameter(1), metadata={op_name="y" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = s64[262144]{0} parameter(0), metadata={op_name="x" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_compare_fusion = pred[262144]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_compare, metadata={op_name="jit(less)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/vcoul.py" source_line=30 scheduling_name="loop_compare_fusion"}
+}
+

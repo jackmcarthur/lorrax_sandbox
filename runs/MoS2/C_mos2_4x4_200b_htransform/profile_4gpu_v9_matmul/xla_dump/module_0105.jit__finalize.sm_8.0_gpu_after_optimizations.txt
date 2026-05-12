@@ -1,0 +1,46 @@
+HloModule jit__finalize, is_scheduled=true, entry_computation_layout={(c128[960,960]{1,0}, c128[960,960]{1,0})->(c128[16,60,960]{2,1,0}, f64[])}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true,true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="e56038a8d640d3d31628600efcc29704"}
+
+%region_0.24 (Arg_0.25: f64[], Arg_1.26: f64[]) -> f64[] {
+  %Arg_1.26 = f64[] parameter(1), metadata={op_name="jit(_finalize)/jit(main)/reduce_max" scheduling_name="Arg_1.26"}
+  %Arg_0.25 = f64[] parameter(0), metadata={op_name="jit(_finalize)/jit(main)/reduce_max" scheduling_name="Arg_0.25"}
+  ROOT %maximum.2 = f64[] maximum(%Arg_0.25, %Arg_1.26), metadata={op_name="jit(_finalize)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193 scheduling_name="maximum.2"}
+}
+
+%fused_reduce (param_0.8: c128[60,60]) -> f64[] {
+  %param_0.8 = c128[60,60]{1,0} parameter(0), metadata={scheduling_name="param_0.8"}
+  %iota.8.5 = s64[60,60]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(_finalize)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193 scheduling_name="iota.8.5"}
+  %iota.9.5 = s64[60,60]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(_finalize)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193 scheduling_name="iota.9.5"}
+  %compare.3.5 = pred[60,60]{1,0} compare(%iota.8.5, %iota.9.5), direction=EQ, metadata={op_name="jit(_finalize)/jit(main)/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193 scheduling_name="compare.3.5"}
+  %convert.3.3 = c128[60,60]{1,0} convert(%compare.3.5), metadata={op_name="jit(_finalize)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193 scheduling_name="convert.3.3"}
+  %subtract.3.3 = c128[60,60]{1,0} subtract(%param_0.8, %convert.3.3), metadata={op_name="jit(_finalize)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193 scheduling_name="subtract.3.3"}
+  %abs.3.3 = f64[60,60]{1,0} abs(%subtract.3.3), metadata={op_name="jit(_finalize)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193 scheduling_name="abs.3.3"}
+  %bitcast.109.1 = f64[3600]{0} bitcast(%abs.3.3), metadata={scheduling_name="bitcast.109.1"}
+  %constant_5 = f64[] constant(-inf)
+  ROOT %reduce.3 = f64[] reduce(%bitcast.109.1, %constant_5), dimensions={0}, to_apply=%region_0.24, metadata={op_name="jit(_finalize)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193 scheduling_name="reduce.3"}
+}
+
+%fused_complex_slice (param_0.9: c128[960,960]) -> (c128[60,960], c128[60,960]) {
+  %param_0.9 = c128[960,960]{1,0} parameter(0), metadata={scheduling_name="param_0.9"}
+  %slice.7.1 = c128[60,960]{1,0} slice(%param_0.9), slice={[0:60], [0:960]}, metadata={op_name="jit(_finalize)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192 scheduling_name="slice.7.1"}
+  %real.3.1 = f64[60,960]{1,0} real(%slice.7.1), metadata={op_name="jit(_finalize)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192 scheduling_name="real.3.1"}
+  %imag.3.1 = f64[60,960]{1,0} imag(%slice.7.1), metadata={op_name="jit(_finalize)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192 scheduling_name="imag.3.1"}
+  %negate.3.1 = f64[60,960]{1,0} negate(%imag.3.1), metadata={op_name="jit(_finalize)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192 scheduling_name="negate.3.1"}
+  %complex.3.1 = c128[60,960]{1,0} complex(%real.3.1, %negate.3.1), metadata={op_name="jit(_finalize)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192 scheduling_name="complex.3.1"}
+  ROOT %tuple.2 = (c128[60,960]{1,0}, c128[60,960]{1,0}) tuple(%complex.3.1, %slice.7.1), metadata={scheduling_name="tuple.2"}
+}
+
+ENTRY %main.30_spmd (param.2: c128[960,960], param.1.0: c128[960,960]) -> (c128[16,60,960], f64[]) {
+  %param.1.0 = c128[960,960]{1,0} parameter(1), sharding={replicated}, metadata={op_name="L" scheduling_name="param.1.0"}
+  %param.2 = c128[960,960]{1,0} parameter(0), sharding={replicated}, metadata={op_name="coeffs" scheduling_name="param.2"}
+  %custom-call.2.0 = (c128[960,960]{1,0}, s8[4194304]{0}) custom-call(%param.2, %param.1.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_finalize)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=190 scheduling_name="custom-call.2.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"921600","rhs_stride":"921600","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.2 = c128[960,960]{1,0} get-tuple-element(%custom-call.2.0), index=0, metadata={op_name="jit(_finalize)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=190 scheduling_name="get-tuple-element.2"}
+  %bitcast.88.0 = c128[16,60,960]{2,1,0} bitcast(%get-tuple-element.2), metadata={scheduling_name="bitcast.88.0"}
+  %loop_complex_slice_fusion = (c128[60,960]{1,0}, c128[60,960]{1,0}) fusion(%get-tuple-element.2), kind=kLoop, calls=%fused_complex_slice, metadata={op_name="jit(_finalize)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192 scheduling_name="loop_complex_slice_fusion"}
+  %get-tuple-element.4 = c128[60,960]{1,0} get-tuple-element(%loop_complex_slice_fusion), index=1, metadata={op_name="jit(_finalize)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192 scheduling_name="get-tuple-element.4"}
+  %get-tuple-element.3 = c128[60,960]{1,0} get-tuple-element(%loop_complex_slice_fusion), index=0, metadata={op_name="jit(_finalize)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192 scheduling_name="get-tuple-element.3"}
+  %custom-call.3.0 = (c128[60,60]{1,0}, s8[1843200]{0}) custom-call(%get-tuple-element.4, %get-tuple-element.3), custom_call_target="__cublas$gemm", metadata={op_name="jit(_finalize)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192 scheduling_name="custom-call.3.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"57600","rhs_stride":"57600","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.1.0 = c128[60,60]{1,0} get-tuple-element(%custom-call.3.0), index=0, metadata={op_name="jit(_finalize)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192 scheduling_name="get-tuple-element.1.0"}
+  %input_reduce_fusion = f64[] fusion(%get-tuple-element.1.0), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_finalize)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193 scheduling_name="input_reduce_fusion"}
+  ROOT %tuple.1 = (c128[16,60,960]{2,1,0}, f64[]) tuple(%bitcast.88.0, %input_reduce_fusion), metadata={scheduling_name="tuple.1"}
+}
+

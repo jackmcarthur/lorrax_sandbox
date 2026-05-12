@@ -1,0 +1,35 @@
+HloModule jit__argmin, entry_computation_layout={(f64[262144,27]{1,0})->s64[262144]{0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}
+
+%region_0.2 (Arg_0.3: f64[], Arg_1.4: s64[], Arg_2.5: f64[], Arg_3.6: s64[]) -> (f64[], s64[]) {
+  %Arg_0.3 = f64[] parameter(0), metadata={op_name="jit(_argmin)/jit(main)/reduce"}
+  %Arg_2.5 = f64[] parameter(2), metadata={op_name="jit(_argmin)/jit(main)/reduce"}
+  %compare.7 = pred[] compare(%Arg_0.3, %Arg_2.5), direction=LT, metadata={op_name="/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  %compare.8 = pred[] compare(%Arg_0.3, %Arg_0.3), direction=NE, metadata={op_name="/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  %or.9 = pred[] or(%compare.7, %compare.8), metadata={op_name="/or" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  %select.14 = f64[] select(%or.9, %Arg_0.3, %Arg_2.5), metadata={op_name="/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  %compare.10 = pred[] compare(%Arg_0.3, %Arg_2.5), direction=EQ, metadata={op_name="/eq" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  %Arg_1.4 = s64[] parameter(1), metadata={op_name="jit(_argmin)/jit(main)/reduce"}
+  %Arg_3.6 = s64[] parameter(3), metadata={op_name="jit(_argmin)/jit(main)/reduce"}
+  %compare.11 = pred[] compare(%Arg_1.4, %Arg_3.6), direction=LT, metadata={op_name="/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  %and.12 = pred[] and(%compare.10, %compare.11), metadata={op_name="/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  %or.13 = pred[] or(%or.9, %and.12), metadata={op_name="/or" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  %select.15 = s64[] select(%or.13, %Arg_1.4, %Arg_3.6), metadata={op_name="/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  ROOT %tuple.16 = (f64[], s64[]) tuple(%select.14, %select.15)
+}
+
+%argmin.17 (Arg_0.18: f64[262144,27]) -> s64[262144] {
+  %Arg_0.18 = f64[262144,27]{1,0} parameter(0), metadata={op_name="jit(_argmin)/jit(main)/argmin"}
+  %iota.21 = s64[27]{0} iota(), iota_dimension=0, metadata={op_name="jit(_argmin)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  %broadcast.22 = s64[262144,27]{1,0} broadcast(%iota.21), dimensions={1}, metadata={op_name="jit(_argmin)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  %constant.20 = f64[] constant(inf)
+  %constant.19 = s64[] constant(0)
+  %reduce.23 = (f64[262144]{0}, s64[262144]{0}) reduce(%Arg_0.18, %broadcast.22, %constant.20, %constant.19), dimensions={1}, to_apply=%region_0.2, metadata={op_name="jit(_argmin)/jit(main)/reduce" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  %get-tuple-element.24 = f64[262144]{0} get-tuple-element(%reduce.23), index=0, metadata={op_name="jit(_argmin)/jit(main)/reduce" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+  ROOT %get-tuple-element.25 = s64[262144]{0} get-tuple-element(%reduce.23), index=1, metadata={op_name="jit(_argmin)/jit(main)/reduce" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/vcoul.py" source_line=29}
+}
+
+ENTRY %main.27 (Arg_0.1: f64[262144,27]) -> s64[262144] {
+  %Arg_0.1 = f64[262144,27]{1,0} parameter(0), metadata={op_name="a"}
+  ROOT %call.26 = s64[262144]{0} call(%Arg_0.1), to_apply=%argmin.17
+}
+

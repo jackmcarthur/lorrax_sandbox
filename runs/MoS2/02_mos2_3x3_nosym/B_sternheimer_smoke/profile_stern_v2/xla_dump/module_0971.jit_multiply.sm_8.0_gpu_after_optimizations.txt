@@ -1,0 +1,25 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(c128[9,24,24,80]{3,2,1,0}, c128[], c128[3,9,24,24,80]{4,3,2,1,0})->(c128[9,24,24,80]{3,2,1,0}, c128[3,9,24,24,80]{4,3,2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="41d2e4ecc776c7437c97c036978420d5"}
+
+%fused_multiply (param_0: c128[3,9,24,24,80], param_1.1: c128[]) -> c128[3,9,24,24,80] {
+  %param_0 = c128[3,9,24,24,80]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.1 = c128[] parameter(1), metadata={scheduling_name="param_1.1"}
+  %broadcast.7.1 = c128[3,9,24,24,80]{4,3,2,1,0} broadcast(%param_1.1), dimensions={}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=228 scheduling_name="broadcast.7.1"}
+  ROOT %multiply.6.1 = c128[3,9,24,24,80]{4,3,2,1,0} multiply(%param_0, %broadcast.7.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=228 scheduling_name="multiply.6.1"}
+}
+
+%fused_multiply.1 (param_0.1: c128[9,24,24,80], param_1.3: c128[]) -> c128[9,24,24,80] {
+  %param_0.1 = c128[9,24,24,80]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %param_1.3 = c128[] parameter(1), metadata={scheduling_name="param_1.3"}
+  %broadcast.5.1 = c128[9,24,24,80]{3,2,1,0} broadcast(%param_1.3), dimensions={}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=228 scheduling_name="broadcast.5.1"}
+  ROOT %multiply.4.1 = c128[9,24,24,80]{3,2,1,0} multiply(%param_0.1, %broadcast.5.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=228 scheduling_name="multiply.4.1"}
+}
+
+ENTRY %main.9 (Arg_0.1.0: c128[9,24,24,80], Arg_1.2.0: c128[], Arg_2.3.0: c128[3,9,24,24,80]) -> (c128[9,24,24,80], c128[3,9,24,24,80]) {
+  %Arg_1.2.0 = c128[] parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_2.3.0 = c128[3,9,24,24,80]{4,3,2,1,0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %Arg_0.1.0 = c128[9,24,24,80]{3,2,1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %loop_multiply_fusion.1 = c128[9,24,24,80]{3,2,1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_multiply.1, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=228 scheduling_name="loop_multiply_fusion.1"}
+  %loop_multiply_fusion = c128[3,9,24,24,80]{4,3,2,1,0} fusion(%Arg_2.3.0, %Arg_1.2.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=228 scheduling_name="loop_multiply_fusion"}
+  ROOT %tuple.8.0 = (c128[9,24,24,80]{3,2,1,0}, c128[3,9,24,24,80]{4,3,2,1,0}) tuple(%loop_multiply_fusion.1, %loop_multiply_fusion), metadata={scheduling_name="tuple.8.0"}
+}
+

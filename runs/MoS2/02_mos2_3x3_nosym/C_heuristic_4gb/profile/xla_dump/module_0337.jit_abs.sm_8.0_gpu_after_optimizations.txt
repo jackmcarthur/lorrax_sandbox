@@ -1,0 +1,12 @@
+HloModule jit_abs, is_scheduled=true, entry_computation_layout={(c128[9,320,320]{2,1,0})->f64[9,320,320]{2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="05b6e0983fb078ad5eed46ac09b6e739"}
+
+%wrapped_abs_computation (param_0: c128[9,320,320]) -> f64[9,320,320] {
+  %param_0 = c128[9,320,320]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  ROOT %abs.4.1 = f64[9,320,320]{2,1,0} abs(%param_0), metadata={op_name="jit(abs)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=362 scheduling_name="abs.4.1"}
+}
+
+ENTRY %main.3_spmd (param.1: c128[9,320,320]) -> f64[9,320,320] {
+  %param.1 = c128[9,320,320]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="x" scheduling_name="param.1"}
+  ROOT %wrapped_abs = f64[9,320,320]{2,1,0} fusion(%param.1), kind=kLoop, calls=%wrapped_abs_computation, metadata={op_name="jit(abs)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=362 scheduling_name="wrapped_abs"}
+}
+

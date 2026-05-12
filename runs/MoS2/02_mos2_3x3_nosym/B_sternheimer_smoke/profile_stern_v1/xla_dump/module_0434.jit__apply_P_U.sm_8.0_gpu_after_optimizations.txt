@@ -1,0 +1,24 @@
+HloModule jit__apply_P_U, is_scheduled=true, entry_computation_layout={(c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0})->c128[26,2,1947]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="c6d0279b44fbf32963286ee4b2ec207e"}
+
+%fused_complex (param_0.1: c128[26,2,1947]) -> c128[26,2,1947] {
+  %param_0.1 = c128[26,2,1947]{2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %real.2.1 = f64[26,2,1947]{2,1,0} real(%param_0.1), metadata={op_name="jit(_apply_P_U)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="real.2.1"}
+  %imag.2.1 = f64[26,2,1947]{2,1,0} imag(%param_0.1), metadata={op_name="jit(_apply_P_U)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="imag.2.1"}
+  %negate.2.1 = f64[26,2,1947]{2,1,0} negate(%imag.2.1), metadata={op_name="jit(_apply_P_U)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="negate.2.1"}
+  ROOT %complex.2.1 = c128[26,2,1947]{2,1,0} complex(%real.2.1, %negate.2.1), metadata={op_name="jit(_apply_P_U)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="complex.2.1"}
+}
+
+ENTRY %main.9 (Arg_0.1.0: c128[26,2,1947], Arg_1.2.0: c128[26,2,1947]) -> c128[26,2,1947] {
+  %Arg_0.1.0 = c128[26,2,1947]{2,1,0} parameter(0), metadata={op_name="U" scheduling_name="Arg_0.1.0"}
+  %Arg_1.2.0 = c128[26,2,1947]{2,1,0} parameter(1), metadata={op_name="x" scheduling_name="Arg_1.2.0"}
+  %bitcast.81.0 = c128[26,3894]{1,0} bitcast(%Arg_0.1.0), metadata={scheduling_name="bitcast.81.0"}
+  %bitcast.65.0 = c128[26,3894]{1,0} bitcast(%Arg_1.2.0), metadata={scheduling_name="bitcast.65.0"}
+  %loop_complex_fusion = c128[26,2,1947]{2,1,0} fusion(%Arg_0.1.0), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(_apply_P_U)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="loop_complex_fusion"}
+  %bitcast.75.0 = c128[3894,26]{0,1} bitcast(%loop_complex_fusion), metadata={scheduling_name="bitcast.75.0"}
+  %custom-call.2.0 = (c128[26,26]{1,0}, s8[3239808]{0}) custom-call(%bitcast.65.0, %bitcast.75.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_apply_P_U)/jit(main)/msG,bsG->bm/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="custom-call.2.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"101244","rhs_stride":"101244","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.2 = c128[26,26]{1,0} get-tuple-element(%custom-call.2.0), index=0, metadata={op_name="jit(_apply_P_U)/jit(main)/msG,bsG->bm/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=45 scheduling_name="get-tuple-element.2"}
+  %custom-call.3.0 = (c128[26,3894]{1,0}, s8[1630720]{0}) custom-call(%get-tuple-element.2, %bitcast.81.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_apply_P_U)/jit(main)/bm,msG->bsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=47 scheduling_name="custom-call.3.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"676","rhs_stride":"101244","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.1.0 = c128[26,3894]{1,0} get-tuple-element(%custom-call.3.0), index=0, metadata={op_name="jit(_apply_P_U)/jit(main)/bm,msG->bsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=47 scheduling_name="get-tuple-element.1.0"}
+  ROOT %bitcast.3.0 = c128[26,2,1947]{2,1,0} bitcast(%get-tuple-element.1.0), metadata={op_name="jit(_apply_P_U)/jit(main)/bm,msG->bsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=47 scheduling_name="bitcast.3.0"}
+}
+

@@ -1,0 +1,167 @@
+BufferAssignment:
+allocation 0: size 14630112, parameter 0, shape |c128[9,2419,42]| at ShapeIndex {}:
+ value: <12 param.1.0 @0> (size=14630112,offset=0): c128[9,2419,42]{2,1,0}
+allocation 1: size 4064256, output shape is |c128[9,168,168]|, maybe-live-out:
+ value: <22 custom-call.1.0{0} @0> (size=4064256,offset=0): c128[9,168,168]{2,1,0}
+allocation 2: size 4064256, parameter 2, shape |c128[9,168,168]| at ShapeIndex {}:
+ value: <10 param.3 @0> (size=4064256,offset=0): c128[9,168,168]{2,1,0}
+allocation 3: size 348336, parameter 1, shape |c128[9,2419]| at ShapeIndex {}:
+ value: <11 param.2.0 @0> (size=348336,offset=0): c128[9,2419]{1,0}
+allocation 4: size 146301664, preallocated-temp:
+ value: <13 input_transpose_fusion @0> (size=14630112,offset=131671552): c128[42,21771]{1,0}
+ value: <14 all-gather-start{} @0> (size=16,offset=0): (c128[9,42,2419]{2,0,1}, c128[9,168,2419]{2,0,1})
+ value: <15 all-gather-start{1} @0> (size=58520448,offset=58520960): c128[9,168,2419]{2,0,1}
+ value: <16 loop_complex_fusion @0> (size=58520448,offset=512): c128[168,9,2419]{2,1,0}
+ value: <17 collective-permute-start{} @0> (size=16,offset=128): (c128[9,42,2419]{2,0,1}, c128[9,42,2419]{2,0,1})
+ value: <18 collective-permute-start{1} @0> (size=14630112,offset=117041408): c128[9,42,2419]{2,0,1}
+ value: <19 all-gather-start.1{} @0> (size=16,offset=256): (c128[9,42,2419]{2,0,1}, c128[9,168,2419]{2,0,1})
+ value: <20 all-gather-start.1{1} @0> (size=58520448,offset=58520960): c128[9,168,2419]{2,0,1}
+ value: <21 custom-call.1.0{} @0> (size=16,offset=384): (c128[9,168,168]{2,1,0}, s8[4194304]{0})
+ value: <23 custom-call.1.0{1} @0> (size=4194304,offset=117041408): s8[4194304]{0}
+
+Total bytes used: 169408624 (161.56MiB)
+
+Used values:
+<10 param.3 @0>
+ positions:
+  param.3
+ uses:
+ from instruction: %param.3 = c128[9,168,168]{2,1,0} parameter(2), sharding={devices=[1,4,4]<=[16]}, metadata={op_name="V_acc"}
+<11 param.2.0 @0>
+ positions:
+  param.2.0
+ uses:
+  loop_complex_fusion, operand 0
+ from instruction: %param.2.0 = c128[9,2419]{1,0} parameter(1), sharding={replicated}, metadata={op_name="v_per_G"}
+<12 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  input_transpose_fusion, operand 0
+ from instruction: %param.1.0 = c128[9,2419,42]{2,1,0} parameter(0), sharding={devices=[1,1,16]<=[16]}, metadata={op_name="zeta_disk"}
+<13 input_transpose_fusion @0>
+ positions:
+  input_transpose_fusion
+  bitcast.87.0
+  all-gather-start {0}
+  collective-permute-start {0}
+ uses:
+  bitcast.87.0, operand 0
+  collective-permute-start, operand 0
+  all-gather-start, operand 0
+  all-gather-done, operand 0 {0}
+  collective-permute-done, operand 0 {0}
+ from instruction: %input_transpose_fusion = c128[42,21771]{1,0} fusion(%param.1.0), kind=kInput, calls=%fused_transpose, metadata={op_name="zeta_disk"}
+<14 all-gather-start{} @0>
+ positions:
+  all-gather-start {}
+ uses:
+  all-gather-done, operand 0 {}
+ from instruction: %all-gather-start = (c128[9,42,2419]{2,0,1}, c128[9,168,2419]{2,0,1}) all-gather-start(%bitcast.87.0), channel_id=1, replica_groups={{0,1,2,3},{4,5,6,7},{8,9,10,11},{12,13,14,15}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(f)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=259}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<15 all-gather-start{1} @0>
+ positions:
+  all-gather-start {1}
+  all-gather-done
+ uses:
+  all-gather-done, operand 0 {1}
+  loop_complex_fusion, operand 1
+ from instruction: %all-gather-start = (c128[9,42,2419]{2,0,1}, c128[9,168,2419]{2,0,1}) all-gather-start(%bitcast.87.0), channel_id=1, replica_groups={{0,1,2,3},{4,5,6,7},{8,9,10,11},{12,13,14,15}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(f)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=259}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<16 loop_complex_fusion @0>
+ positions:
+  loop_complex_fusion
+ uses:
+  custom-call.1.0, operand 0
+ from instruction: %loop_complex_fusion = c128[168,9,2419]{2,1,0} fusion(%param.2.0, %all-gather-done), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(f)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=264}
+<17 collective-permute-start{} @0>
+ positions:
+  collective-permute-start {}
+ uses:
+  collective-permute-done, operand 0 {}
+ from instruction: %collective-permute-start = (c128[9,42,2419]{2,0,1}, c128[9,42,2419]{2,0,1}) collective-permute-start(%bitcast.87.0), channel_id=2, source_target_pairs={{0,0},{1,4},{2,8},{3,12},{4,1},{5,5},{6,9},{7,13},{8,2},{9,6},{10,10},{11,14},{12,3},{13,7},{14,11},{15,15}}, metadata={op_name="jit(f)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<18 collective-permute-start{1} @0>
+ positions:
+  collective-permute-start {1}
+  collective-permute-done
+  all-gather-start.1 {0}
+ uses:
+  collective-permute-done, operand 0 {1}
+  all-gather-start.1, operand 0
+  all-gather-done.1, operand 0 {0}
+ from instruction: %collective-permute-start = (c128[9,42,2419]{2,0,1}, c128[9,42,2419]{2,0,1}) collective-permute-start(%bitcast.87.0), channel_id=2, source_target_pairs={{0,0},{1,4},{2,8},{3,12},{4,1},{5,5},{6,9},{7,13},{8,2},{9,6},{10,10},{11,14},{12,3},{13,7},{14,11},{15,15}}, metadata={op_name="jit(f)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<19 all-gather-start.1{} @0>
+ positions:
+  all-gather-start.1 {}
+ uses:
+  all-gather-done.1, operand 0 {}
+ from instruction: %all-gather-start.1 = (c128[9,42,2419]{2,0,1}, c128[9,168,2419]{2,0,1}) all-gather-start(%collective-permute-done), channel_id=3, replica_groups={{0,4,8,12},{1,5,9,13},{2,6,10,14},{3,7,11,15}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(f)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<20 all-gather-start.1{1} @0>
+ positions:
+  all-gather-start.1 {1}
+  bitcast.93.0
+  all-gather-done.1
+ uses:
+  all-gather-done.1, operand 0 {1}
+  custom-call.1.0, operand 1
+  bitcast.93.0, operand 0
+ from instruction: %all-gather-start.1 = (c128[9,42,2419]{2,0,1}, c128[9,168,2419]{2,0,1}) all-gather-start(%collective-permute-done), channel_id=3, replica_groups={{0,4,8,12},{1,5,9,13},{2,6,10,14},{3,7,11,15}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(f)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=260}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<21 custom-call.1.0{} @0>
+ positions:
+  custom-call.1.0 {}
+ uses:
+  get-tuple-element.1, operand 0 {}
+ from instruction: %custom-call.1.0 = (c128[9,168,168]{2,1,0}, s8[4194304]{0}) custom-call(%loop_complex_fusion, %bitcast.93.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(f)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=263}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["2"],"lhs_batch_dimensions":["1"],"rhs_batch_dimensions":["1"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"21771","rhs_stride":"21771","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<22 custom-call.1.0{0} @0>
+ positions:
+  custom-call.1.0 {0}
+  get-tuple-element.1
+ uses:
+  get-tuple-element.1, operand 0 {0}
+ from instruction: %custom-call.1.0 = (c128[9,168,168]{2,1,0}, s8[4194304]{0}) custom-call(%loop_complex_fusion, %bitcast.93.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(f)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=263}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["2"],"lhs_batch_dimensions":["1"],"rhs_batch_dimensions":["1"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"21771","rhs_stride":"21771","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<23 custom-call.1.0{1} @0>
+ positions:
+  custom-call.1.0 {1}
+ uses:
+ from instruction: %custom-call.1.0 = (c128[9,168,168]{2,1,0}, s8[4194304]{0}) custom-call(%loop_complex_fusion, %bitcast.93.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(f)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/scripts/profile_uneven_sharding.py" source_line=263}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["2"],"lhs_batch_dimensions":["1"],"rhs_batch_dimensions":["1"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"21771","rhs_stride":"21771","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+
+
+HloLiveRange (max 15):
+  InstructionSequence:
+    0:param.3
+    1:param.1.0
+    2:param.2.0
+    3:input_transpose_fusion
+    4:bitcast.87.0
+    5:collective-permute-start
+    6:all-gather-start
+    7:all-gather-done
+    8:loop_complex_fusion
+    9:collective-permute-done
+    10:all-gather-start.1
+    11:all-gather-done.1
+    12:bitcast.93.0
+    13:custom-call.1.0
+    14:get-tuple-element.1
+  BufferLiveRange:
+    param.3{}:0-15
+    param.2.0{}:0-15
+    param.1.0{}:0-15
+    input_transpose_fusion{}:3-9
+    all-gather-start{}:6-7
+    all-gather-start{1}:6-8
+    loop_complex_fusion{}:8-13
+    collective-permute-start{}:5-9
+    collective-permute-start{1}:5-11
+    all-gather-start.1{}:10-11
+    all-gather-start.1{1}:10-13
+    custom-call.1.0{}:13-14
+    custom-call.1.0{0}:13-15
+    custom-call.1.0{1}:13-13
+  Live ranges at 8 (peak):
+    param.3: 4064256 bytes
+    param.2.0: 348336 bytes
+    param.1.0: 14630112 bytes
+    input_transpose_fusion: 14630112 bytes
+    all-gather-start: 16 bytes
+    loop_complex_fusion: 58520448 bytes
+    collective-permute-start: 16 bytes
+    collective-permute-start: 16 bytes

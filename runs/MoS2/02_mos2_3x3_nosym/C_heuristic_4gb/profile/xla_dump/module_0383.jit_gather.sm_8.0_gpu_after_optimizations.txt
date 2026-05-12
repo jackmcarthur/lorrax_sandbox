@@ -1,0 +1,17 @@
+HloModule jit_gather, is_scheduled=true, entry_computation_layout={(c128[3,9,80,80]{3,2,1,0}, s32[54,26,2]{2,1,0})->c128[3,9,54,26]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="17f83455cfb6ba9e740dc729bced1853"}
+
+%fused_gather (param_0.1: s32[54,26,2], param_1.2: c128[3,9,80,80]) -> c128[1404,1,1,3,9] {
+  %param_1.2 = c128[3,9,80,80]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %bitcast.36.1 = c128[80,80,3,9]{1,0,3,2} bitcast(%param_1.2), metadata={scheduling_name="bitcast.36.1"}
+  %param_0.1 = s32[54,26,2]{2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.40.1 = s32[1404,2]{1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.40.1"}
+  ROOT %gather.2 = c128[1404,1,1,3,9]{0,4,3,2,1} gather(%bitcast.36.1, %bitcast.40.1), offset_dims={1,2,3,4}, collapsed_slice_dims={}, start_index_map={0,1}, index_vector_dim=1, slice_sizes={1,1,3,9}, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/chi_from_dipole.py" source_line=43 scheduling_name="gather.2"}
+}
+
+ENTRY %main.4 (Arg_0.1.0: c128[3,9,80,80], Arg_1.2.0: s32[54,26,2]) -> c128[3,9,54,26] {
+  %Arg_1.2.0 = s32[54,26,2]{2,1,0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[3,9,80,80]{3,2,1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  %loop_gather_fusion = c128[1404,1,1,3,9]{0,4,3,2,1} fusion(%Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_gather, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/chi_from_dipole.py" source_line=43 scheduling_name="loop_gather_fusion"}
+  ROOT %bitcast.13.0 = c128[3,9,54,26]{3,2,1,0} bitcast(%loop_gather_fusion), metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/chi_from_dipole.py" source_line=43 scheduling_name="bitcast.13.0"}
+}
+

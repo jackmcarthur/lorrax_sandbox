@@ -1,0 +1,21 @@
+HloModule jit_norm, entry_computation_layout={(c128[1024]{0})->f64[]}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}
+
+%region_0.9 (Arg_0.10: f64[], Arg_1.11: f64[]) -> f64[] {
+  %Arg_0.10 = f64[] parameter(0), metadata={op_name="jit(norm)/jit(main)/reduce_sum"}
+  %Arg_1.11 = f64[] parameter(1), metadata={op_name="jit(norm)/jit(main)/reduce_sum"}
+  ROOT %add.12 = f64[] add(%Arg_0.10, %Arg_1.11), metadata={op_name="jit(norm)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=249}
+}
+
+ENTRY %main.15 (Arg_0.1: c128[1024]) -> f64[] {
+  %Arg_0.1 = c128[1024]{0} parameter(0), metadata={op_name="x"}
+  %real.3 = f64[1024]{0} real(%Arg_0.1), metadata={op_name="jit(norm)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=249}
+  %imag.4 = f64[1024]{0} imag(%Arg_0.1), metadata={op_name="jit(norm)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=249}
+  %negate.5 = f64[1024]{0} negate(%imag.4), metadata={op_name="jit(norm)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=249}
+  %complex.6 = c128[1024]{0} complex(%real.3, %negate.5), metadata={op_name="jit(norm)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=249}
+  %multiply.7 = c128[1024]{0} multiply(%Arg_0.1, %complex.6), metadata={op_name="jit(norm)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=249}
+  %real.8 = f64[1024]{0} real(%multiply.7), metadata={op_name="jit(norm)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=249}
+  %constant.2 = f64[] constant(0)
+  %reduce.13 = f64[] reduce(%real.8, %constant.2), dimensions={0}, to_apply=%region_0.9, metadata={op_name="jit(norm)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=249}
+  ROOT %sqrt.14 = f64[] sqrt(%reduce.13), metadata={op_name="jit(norm)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=249}
+}
+

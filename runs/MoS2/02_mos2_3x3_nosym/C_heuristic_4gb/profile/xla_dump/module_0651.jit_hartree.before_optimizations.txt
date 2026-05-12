@@ -1,0 +1,29 @@
+HloModule jit_hartree, entry_computation_layout={(c128[9,80,2,640]{3,2,1,0}, c128[9,80,2,640]{3,2,1,0}, c128[9,80,80]{2,1,0}, c128[9,640,640]{2,1,0})->c128[9,80,80]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+ENTRY %main.25 (Arg_0.1: c128[9,80,2,640], Arg_1.2: c128[9,80,2,640], Arg_2.3: c128[9,80,80], Arg_3.4: c128[9,640,640]) -> c128[9,80,80] {
+  %Arg_0.1 = c128[9,80,2,640]{3,2,1,0} parameter(0), sharding={devices=[1,1,1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="wfns.psi_xr"}
+  %real.19 = f64[9,80,2,640]{3,2,1,0} real(%Arg_0.1), metadata={op_name="jit(hartree)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=144}
+  %imag.20 = f64[9,80,2,640]{3,2,1,0} imag(%Arg_0.1), metadata={op_name="jit(hartree)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=144}
+  %negate.21 = f64[9,80,2,640]{3,2,1,0} negate(%imag.20), metadata={op_name="jit(hartree)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=144}
+  %complex.22 = c128[9,80,2,640]{3,2,1,0} complex(%real.19, %negate.21), metadata={op_name="jit(hartree)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=144}
+  %Arg_3.4 = c128[9,640,640]{2,1,0} parameter(3), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="V_q"}
+  %slice.14 = c128[1,640,640]{2,1,0} slice(%Arg_3.4), slice={[0:1], [0:640], [0:640]}, metadata={op_name="jit(hartree)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=143}
+  %reshape.15 = c128[640,640]{1,0} reshape(%slice.14), metadata={op_name="jit(hartree)/jit(main)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=143}
+  %Arg_1.2 = c128[9,80,2,640]{3,2,1,0} parameter(1), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="wfns.psi_yr"}
+  %Arg_2.3 = c128[9,80,80]{2,1,0} parameter(2), sharding={replicated}, metadata={op_name="Gij"}
+  %real.7 = f64[9,80,2,640]{3,2,1,0} real(%Arg_1.2), metadata={op_name="jit(hartree)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=142}
+  %imag.8 = f64[9,80,2,640]{3,2,1,0} imag(%Arg_1.2), metadata={op_name="jit(hartree)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=142}
+  %negate.9 = f64[9,80,2,640]{3,2,1,0} negate(%imag.8), metadata={op_name="jit(hartree)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=142}
+  %complex.10 = c128[9,80,2,640]{3,2,1,0} complex(%real.7, %negate.9), metadata={op_name="jit(hartree)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=142}
+  %dot.11 = c128[9,80,2,640]{3,2,1,0} dot(%Arg_2.3, %complex.10), lhs_batch_dims={0}, lhs_contracting_dims={1}, rhs_batch_dims={0}, rhs_contracting_dims={1}, metadata={op_name="jit(hartree)/jit(main)/kisx,kjsx,kij->x/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=142}
+  %dot.12 = c128[640]{0} dot(%Arg_1.2, %dot.11), lhs_batch_dims={3}, lhs_contracting_dims={1,0,2}, rhs_batch_dims={3}, rhs_contracting_dims={1,0,2}, metadata={op_name="jit(hartree)/jit(main)/kisx,kjsx,kij->x/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=142}
+  %real.13 = f64[640]{0} real(%dot.12), metadata={op_name="jit(hartree)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=142}
+  %constant.5 = f64[] constant(9)
+  %broadcast.6 = f64[640]{0} broadcast(%constant.5), dimensions={}
+  %divide.16 = f64[640]{0} divide(%real.13, %broadcast.6), metadata={op_name="jit(hartree)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=143}
+  %convert.17 = c128[640]{0} convert(%divide.16), metadata={op_name="jit(hartree)/jit(main)/xy,y->x/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=143}
+  %dot.18 = c128[640]{0} dot(%reshape.15, %convert.17), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(hartree)/jit(main)/xy,y->x/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=143}
+  %dot.23 = c128[640,9,80,2]{3,2,1,0} dot(%complex.22, %dot.18), lhs_batch_dims={3}, lhs_contracting_dims={}, rhs_batch_dims={0}, rhs_contracting_dims={}, metadata={op_name="jit(hartree)/jit(main)/kmsx,x,knsx->kmn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=144}
+  ROOT %dot.24 = c128[9,80,80]{2,1,0} dot(%dot.23, %Arg_0.1), lhs_batch_dims={1}, lhs_contracting_dims={3,0}, rhs_batch_dims={0}, rhs_contracting_dims={2,3}, metadata={op_name="jit(hartree)/jit(main)/kmsx,x,knsx->kmn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=144}
+}
+

@@ -1,0 +1,91 @@
+kCommandBuffer 	
+kAllReduceStart	
+kKernel        	, kernel = input_reduce_fusion_6, launch dimensions = blocks: {1, 1, 1}, threads/block: {2, 1, 1}, cluster_dim = nullopt
+kKernel        	, kernel = loop_broadcast_fusion_1, launch dimensions = blocks: {2, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kFft           	
+kCommandBuffer 	
+kAllReduceDone 	
+kKernel        	, kernel = loop_divide_fusion_2, launch dimensions = blocks: {4, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kKernel        	, kernel = loop_pad_fusion, launch dimensions = blocks: {800, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kWhile         	  
+condition:
+    kKernel	, kernel = loop_compare_fusion, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+  body:
+    kPartitionId       	
+    kKernel            	, kernel = loop_dynamic_slice_fusion, launch dimensions = blocks: {2, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kAllGatherStart    	
+    kKernel            	, kernel = loop_broadcast_fusion, launch dimensions = blocks: {480, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kAllToAllStart     	
+    kKernel            	, kernel = loop_complex_transpose_fusion, launch dimensions = blocks: {960, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kKernel            	, kernel = wrapped_transpose_3, launch dimensions = blocks: {4, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kGemm              	
+    kKernel            	, kernel = wrapped_transpose_4, launch dimensions = blocks: {480, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kAllToAllDone      	
+    kAllGatherStart    	
+    kCommandBuffer     	
+    kAllGatherDone     	
+    kAllReduceStart    	
+    kKernel            	, kernel = loop_transpose_fusion_2, launch dimensions = blocks: {960, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kGemm              	
+    kKernel            	, kernel = input_transpose_fusion_1, launch dimensions = blocks: {15360, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kFft               	
+    kKernel            	, kernel = loop_multiply_fusion, launch dimensions = blocks: {28800, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kFft               	
+    kKernel            	, kernel = input_transpose_fusion, launch dimensions = blocks: {15360, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kGemm              	
+    kKernel            	, kernel = loop_transpose_fusion_1, launch dimensions = blocks: {960, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kAllReduceDone     	
+    kReduceScatterStart	
+    kGemm              	
+    kKernel            	, kernel = loop_multiply_fusion_1, launch dimensions = blocks: {480, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kKernel            	, kernel = input_reduce_fusion_5, launch dimensions = blocks: {64, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kReduceScatterDone 	
+    kAllReduceStart    	
+    kGemm              	
+    kAllReduceDone     	
+    kReduceScatterStart	
+    kReduceScatterDone 	
+    kKernel            	, kernel = loop_transpose_fusion, launch dimensions = blocks: {2, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kAllGatherStart    	
+    kKernel            	, kernel = input_reduce_fusion_4, launch dimensions = blocks: {1, 1, 1}, threads/block: {32, 1, 1}, cluster_dim = nullopt
+    kAllReduceStart    	
+    kCopy              	
+    kKernel            	, kernel = loop_maximum_fusion, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+    kKernel            	, kernel = loop_add_fusion_1, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+    kAllReduceDone     	
+    kKernel            	, kernel = loop_subtract_fusion_1, launch dimensions = blocks: {4, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kWhile             	      
+condition:
+        kKernel	, kernel = wrapped_compare, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+      body:
+        kCopy          	
+        kKernel        	, kernel = input_reduce_fusion, launch dimensions = blocks: {1, 1, 1}, threads/block: {32, 1, 1}, cluster_dim = nullopt
+        kAllReduceStart	
+        kKernel        	, kernel = loop_add_fusion_1, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+        kAllReduceDone 	
+        kKernel        	, kernel = loop_subtract_fusion, launch dimensions = blocks: {4, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+
+    kKernel            	, kernel = input_reduce_fusion_3, launch dimensions = blocks: {1, 1, 1}, threads/block: {32, 1, 1}, cluster_dim = nullopt
+    kAllReduceStart    	
+    kKernel            	, kernel = input_reduce_fusion_2, launch dimensions = blocks: {1, 1, 1}, threads/block: {2, 1, 1}, cluster_dim = nullopt
+    kKernel            	, kernel = loop_dynamic_update_slice_fusion_1, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+    kAllReduceDone     	
+    kKernel            	, kernel = loop_divide_fusion, launch dimensions = blocks: {4, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kKernel            	, kernel = loop_dynamic_update_slice_fusion, launch dimensions = blocks: {4, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+    kKernel            	, kernel = loop_dynamic_update_slice_fusion_2, launch dimensions = blocks: {1, 1, 1}, threads/block: {1, 1, 1}, cluster_dim = nullopt
+
+kKernel        	, kernel = loop_add_fusion_2, launch dimensions = blocks: {313, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kKernel        	, kernel = input_transpose_fusion_2, launch dimensions = blocks: {49, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kKernel        	, kernel = wrapped_iota, launch dimensions = blocks: {2, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kCustomCall    	
+kCommandBuffer 	
+kAllGatherStart	
+kKernel        	, kernel = loop_real_fusion, launch dimensions = blocks: {80, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kKernel        	, kernel = input_reduce_fusion_8, launch dimensions = blocks: {1, 1, 1}, threads/block: {1024, 1, 1}, cluster_dim = nullopt
+kAllGatherDone 	
+kAllReduceStart	
+kKernel        	, kernel = loop_gather_fusion, launch dimensions = blocks: {1, 1, 1}, threads/block: {20, 1, 1}, cluster_dim = nullopt
+kAllReduceDone 	
+kKernel        	, kernel = loop_divide_fusion_1, launch dimensions = blocks: {160, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kKernel        	, kernel = wrapped_transpose_5, launch dimensions = blocks: {32, 1, 1}, threads/block: {128, 1, 1}, cluster_dim = nullopt
+kCopy          	

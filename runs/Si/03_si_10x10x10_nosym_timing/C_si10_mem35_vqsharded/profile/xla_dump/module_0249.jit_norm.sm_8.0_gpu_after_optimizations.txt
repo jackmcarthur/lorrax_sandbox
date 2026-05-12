@@ -1,0 +1,21 @@
+HloModule jit_norm, is_scheduled=true, entry_computation_layout={(f64[262144,27,3]{2,1,0})->f64[262144,27]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="8eed1bda48252f88fe84f9fa52a1755f"}
+
+%region_0.4 (Arg_0.5: f64[], Arg_1.6: f64[]) -> f64[] {
+  %Arg_1.6 = f64[] parameter(1), metadata={op_name="jit(norm)/jit(main)/reduce_sum" scheduling_name="Arg_1.6"}
+  %Arg_0.5 = f64[] parameter(0), metadata={op_name="jit(norm)/jit(main)/reduce_sum" scheduling_name="Arg_0.5"}
+  ROOT %add.2 = f64[] add(%Arg_0.5, %Arg_1.6), metadata={op_name="jit(norm)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/vcoul.py" source_line=28 scheduling_name="add.2"}
+}
+
+%fused_reduce (param_0.6: f64[262144,27,3]) -> f64[262144,27] {
+  %param_0.6 = f64[262144,27,3]{2,1,0} parameter(0), metadata={scheduling_name="param_0.6"}
+  %multiply.2.3 = f64[262144,27,3]{2,1,0} multiply(%param_0.6, %param_0.6), metadata={op_name="jit(norm)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/vcoul.py" source_line=28 scheduling_name="multiply.2.3"}
+  %constant_2_1 = f64[] constant(0)
+  %reduce.8.3 = f64[262144,27]{1,0} reduce(%multiply.2.3, %constant_2_1), dimensions={2}, to_apply=%region_0.4, metadata={op_name="jit(norm)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/vcoul.py" source_line=28 scheduling_name="reduce.8.3"}
+  ROOT %sqrt.2.1 = f64[262144,27]{1,0} sqrt(%reduce.8.3), metadata={op_name="jit(norm)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/vcoul.py" source_line=28 scheduling_name="sqrt.2.1"}
+}
+
+ENTRY %main.10 (Arg_0.1.0: f64[262144,27,3]) -> f64[262144,27] {
+  %Arg_0.1.0 = f64[262144,27,3]{2,1,0} parameter(0), metadata={op_name="x" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_reduce_fusion = f64[262144,27]{1,0} fusion(%Arg_0.1.0), kind=kLoop, calls=%fused_reduce, metadata={op_name="jit(norm)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/vcoul.py" source_line=28 scheduling_name="loop_reduce_fusion"}
+}
+

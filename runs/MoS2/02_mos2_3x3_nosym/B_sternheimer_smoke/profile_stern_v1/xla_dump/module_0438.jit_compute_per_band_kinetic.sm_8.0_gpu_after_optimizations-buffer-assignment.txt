@@ -1,0 +1,77 @@
+BufferAssignment:
+allocation 0: size 1619904, parameter 0, shape |c128[26,2,1947]| at ShapeIndex {}:
+ value: <14 Arg_0.1.0 @0> (size=1619904,offset=0): c128[26,2,1947]{2,1,0}
+allocation 1: size 15576, parameter 1, shape |f64[1947]| at ShapeIndex {}:
+ value: <15 Arg_1.2.0 @0> (size=15576,offset=0): f64[1947]{0}
+allocation 2: size 208, output shape is |f64[26]|, maybe-live-out:
+ value: <17 input_reduce_fusion @0> (size=208,offset=0): f64[26]{0}
+allocation 3: size 8, thread-local:
+ value: <2 add.3 @0> (size=8,offset=0): f64[]
+allocation 4: size 8, thread-local:
+ value: <0 Arg_0.7 @0> (size=8,offset=0): f64[]
+allocation 5: size 8, thread-local:
+ value: <1 Arg_1.8 @0> (size=8,offset=0): f64[]
+allocation 6: size 404976, preallocated-temp:
+ value: <16 loop_multiply_fusion @0> (size=404976,offset=0): f64[26,1947]{1,0}
+
+Total bytes used: 2040688 (1.95MiB)
+
+Used values:
+<0 Arg_0.7 @0>
+ positions:
+  Arg_0.7
+ uses:
+  add.3, operand 0
+ from instruction: %Arg_0.7 = f64[] parameter(0), metadata={op_name="jit(compute_per_band_kinetic)/jit(main)/reduce_sum" scheduling_name="Arg_0.7"}
+<1 Arg_1.8 @0>
+ positions:
+  Arg_1.8
+ uses:
+  add.3, operand 1
+ from instruction: %Arg_1.8 = f64[] parameter(1), metadata={op_name="jit(compute_per_band_kinetic)/jit(main)/reduce_sum" scheduling_name="Arg_1.8"}
+<2 add.3 @0>
+ positions:
+  add.3
+ uses:
+ from instruction: %add.3 = f64[] add(%Arg_0.7, %Arg_1.8), metadata={op_name="jit(compute_per_band_kinetic)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=75 scheduling_name="add.3"}
+<14 Arg_0.1.0 @0>
+ positions:
+  Arg_0.1.0
+ uses:
+  loop_multiply_fusion, operand 0
+ from instruction: %Arg_0.1.0 = c128[26,2,1947]{2,1,0} parameter(0), metadata={op_name="U_val" scheduling_name="Arg_0.1.0"}
+<15 Arg_1.2.0 @0>
+ positions:
+  Arg_1.2.0
+ uses:
+  loop_multiply_fusion, operand 1
+ from instruction: %Arg_1.2.0 = f64[1947]{0} parameter(1), metadata={op_name="T_diag" scheduling_name="Arg_1.2.0"}
+<16 loop_multiply_fusion @0>
+ positions:
+  loop_multiply_fusion
+ uses:
+  input_reduce_fusion, operand 0
+ from instruction: %loop_multiply_fusion = f64[26,1947]{1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_multiply, metadata={scheduling_name="loop_multiply_fusion"}
+<17 input_reduce_fusion @0>
+ positions:
+  input_reduce_fusion
+ uses:
+ from instruction: %input_reduce_fusion = f64[26]{0} fusion(%loop_multiply_fusion), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(compute_per_band_kinetic)/jit(main)/nG,G->n/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=76 scheduling_name="input_reduce_fusion"}
+
+
+HloLiveRange (max 4):
+  InstructionSequence:
+    0:Arg_1.2.0
+    1:Arg_0.1.0
+    2:loop_multiply_fusion
+    3:input_reduce_fusion
+  BufferLiveRange:
+    Arg_0.1.0{}:0-4
+    Arg_1.2.0{}:0-4
+    loop_multiply_fusion{}:2-3
+    input_reduce_fusion{}:3-4
+  Live ranges at 3 (peak):
+    Arg_0.1.0: 1619904 bytes
+    Arg_1.2.0: 15576 bytes
+    loop_multiply_fusion: 404976 bytes
+    input_reduce_fusion: 208 bytes

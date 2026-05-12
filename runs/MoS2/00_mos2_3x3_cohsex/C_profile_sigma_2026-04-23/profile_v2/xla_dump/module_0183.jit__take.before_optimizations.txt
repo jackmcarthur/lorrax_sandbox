@@ -1,0 +1,43 @@
+HloModule jit__take, entry_computation_layout={(s32[9,24,24,80]{3,2,1,0}, s32[9]{0})->s32[9,24,24,80]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%_where.16 (Arg_0.17: pred[9], Arg_1.18: s32[9], Arg_2.19: s32[9]) -> s32[9] {
+  %Arg_0.17 = pred[9]{0} parameter(0), metadata={op_name="jit(_take)/jit(main)/pjit"}
+  %Arg_1.18 = s32[9]{0} parameter(1), metadata={op_name="jit(_take)/jit(main)/pjit"}
+  %Arg_2.19 = s32[9]{0} parameter(2), metadata={op_name="jit(_take)/jit(main)/pjit"}
+  ROOT %select.20 = s32[9]{0} select(%Arg_0.17, %Arg_1.18, %Arg_2.19), metadata={op_name="jit(_take)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=350}
+}
+
+%region_0.27 (Arg_0.28: pred[], Arg_1.29: pred[]) -> pred[] {
+  %Arg_0.28 = pred[] parameter(0), metadata={op_name="jit(_take)/jit(main)/reduce_and"}
+  %Arg_1.29 = pred[] parameter(1), metadata={op_name="jit(_take)/jit(main)/reduce_and"}
+  ROOT %and.30 = pred[] and(%Arg_0.28, %Arg_1.29), metadata={op_name="jit(_take)/jit(main)/reduce_and" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154}
+}
+
+ENTRY %main.35 (Arg_0.1: s32[9,24,24,80], Arg_1.2: s32[9]) -> s32[9,24,24,80] {
+  %Arg_1.2 = s32[9]{0} parameter(1), sharding={replicated}, metadata={op_name="indices"}
+  %constant.12 = s32[] constant(0)
+  %broadcast.13 = s32[9]{0} broadcast(%constant.12), dimensions={}
+  %compare.14 = pred[9]{0} compare(%Arg_1.2, %broadcast.13), direction=LT, metadata={op_name="jit(_take)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154}
+  %constant.9 = s32[] constant(9)
+  %broadcast.10 = s32[9]{0} broadcast(%constant.9), dimensions={}
+  %add.15 = s32[9]{0} add(%Arg_1.2, %broadcast.10), metadata={op_name="jit(_take)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154}
+  %call.21 = s32[9]{0} call(%compare.14, %add.15, %Arg_1.2), to_apply=%_where.16
+  %reshape.22 = s32[9,1]{1,0} reshape(%call.21), metadata={op_name="jit(_take)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154}
+  %convert.23 = s64[9,1]{1,0} convert(%reshape.22), metadata={op_name="jit(_take)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154}
+  %constant.7 = s64[] constant(0)
+  %broadcast.8 = s64[9,1]{1,0} broadcast(%constant.7), dimensions={}
+  %compare.24 = pred[9,1]{1,0} compare(%convert.23, %broadcast.8), direction=GE, metadata={op_name="jit(_take)/jit(main)/ge" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154}
+  %constant.5 = s64[] constant(8)
+  %broadcast.6 = s64[9,1]{1,0} broadcast(%constant.5), dimensions={}
+  %compare.25 = pred[9,1]{1,0} compare(%convert.23, %broadcast.6), direction=LE, metadata={op_name="jit(_take)/jit(main)/le" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154}
+  %and.26 = pred[9,1]{1,0} and(%compare.24, %compare.25), metadata={op_name="jit(_take)/jit(main)/and" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154}
+  %constant.11 = pred[] constant(true)
+  %reduce.31 = pred[9]{0} reduce(%and.26, %constant.11), dimensions={1}, to_apply=%region_0.27, metadata={op_name="jit(_take)/jit(main)/reduce_and" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154}
+  %broadcast.33 = pred[9,24,24,80]{3,2,1,0} broadcast(%reduce.31), dimensions={0}, metadata={op_name="jit(_take)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154}
+  %Arg_0.1 = s32[9,24,24,80]{3,2,1,0} parameter(0), sharding={replicated}, metadata={op_name="a"}
+  %gather.32 = s32[9,24,24,80]{3,2,1,0} gather(%Arg_0.1, %convert.23), offset_dims={1,2,3}, collapsed_slice_dims={0}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,24,24,80}, metadata={op_name="jit(_take)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154}
+  %constant.3 = s32[] constant(-2147483648)
+  %broadcast.4 = s32[9,24,24,80]{3,2,1,0} broadcast(%constant.3), dimensions={}
+  ROOT %select.34 = s32[9,24,24,80]{3,2,1,0} select(%broadcast.33, %gather.32, %broadcast.4), metadata={op_name="jit(_take)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/phdf5_wfn_reader.py" source_line=154}
+}
+

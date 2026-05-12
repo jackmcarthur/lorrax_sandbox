@@ -1,0 +1,52 @@
+HloModule jit_eigh, is_scheduled=true, entry_computation_layout={(c128[48,48]{1,0})->(f64[48]{0}, c128[48,48]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="ea50c8b3f3b6ce14bf2da18f24c1ccfb"}
+
+%fused_transpose (param_0.13: c128[48,48]) -> c128[48,48] {
+  %param_0.13 = c128[48,48]{1,0} parameter(0), metadata={scheduling_name="param_0.13"}
+  %transpose.19.1 = c128[48,48]{1,0} transpose(%param_0.13), dimensions={1,0}, metadata={op_name="a" scheduling_name="transpose.19.1"}
+  %real.3.1 = f64[48,48]{1,0} real(%param_0.13), metadata={op_name="jit(eigh)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="real.3.1"}
+  %imag.3.1 = f64[48,48]{1,0} imag(%param_0.13), metadata={op_name="jit(eigh)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="imag.3.1"}
+  %negate.3.1 = f64[48,48]{1,0} negate(%imag.3.1), metadata={op_name="jit(eigh)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="negate.3.1"}
+  %complex.3.1 = c128[48,48]{1,0} complex(%real.3.1, %negate.3.1), metadata={op_name="jit(eigh)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="complex.3.1"}
+  %add.2.1 = c128[48,48]{1,0} add(%transpose.19.1, %complex.3.1), metadata={op_name="jit(eigh)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="add.2.1"}
+  %constant_5 = c128[] constant((0.5, 0))
+  %broadcast.16.1 = c128[48,48]{1,0} broadcast(%constant_5), dimensions={}, metadata={scheduling_name="broadcast.16.1"}
+  ROOT %multiply.3.1 = c128[48,48]{1,0} multiply(%add.2.1, %broadcast.16.1), metadata={op_name="jit(eigh)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="multiply.3.1"}
+}
+
+%fused_select (param_0.6: f64[48], param_1.15: s32[]) -> f64[48] {
+  %param_1.15 = s32[] parameter(1), metadata={scheduling_name="param_1.15"}
+  %constant_8_1 = s32[] constant(0)
+  %compare.2.2 = pred[] compare(%param_1.15, %constant_8_1), direction=EQ, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="compare.2.2"}
+  %broadcast.17.1 = pred[48]{0} broadcast(%compare.2.2), dimensions={}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="broadcast.17.1"}
+  %param_0.6 = f64[48]{0} parameter(0), metadata={scheduling_name="param_0.6"}
+  %constant_2_1 = f64[] constant(nan)
+  %broadcast.18.1 = f64[48]{0} broadcast(%constant_2_1), dimensions={}, metadata={scheduling_name="broadcast.18.1"}
+  ROOT %select.4.1 = f64[48]{0} select(%broadcast.17.1, %param_0.6, %broadcast.18.1), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="select.4.1"}
+}
+
+%fused_transpose.1 (param_0.12: c128[48,48], param_1.16: s32[]) -> c128[48,48] {
+  %param_1.16 = s32[] parameter(1), metadata={scheduling_name="param_1.16"}
+  %constant_8_2 = s32[] constant(0)
+  %compare.2.4 = pred[] compare(%param_1.16, %constant_8_2), direction=EQ, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="compare.2.4"}
+  %broadcast.19.3 = pred[48,48]{1,0} broadcast(%compare.2.4), dimensions={}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="broadcast.19.3"}
+  %param_0.12 = c128[48,48]{0,1} parameter(0), metadata={scheduling_name="param_0.12"}
+  %bitcast.114.3 = c128[48,48]{1,0} bitcast(%param_0.12), metadata={scheduling_name="bitcast.114.3"}
+  %constant_4_1 = c128[] constant((nan, nan))
+  %broadcast.20.3 = c128[48,48]{1,0} broadcast(%constant_4_1), dimensions={}, metadata={scheduling_name="broadcast.20.3"}
+  %select.5.3 = c128[48,48]{1,0} select(%broadcast.19.3, %bitcast.114.3, %broadcast.20.3), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="select.5.3"}
+  ROOT %transpose.20.1 = c128[48,48]{1,0} transpose(%select.5.3), dimensions={1,0}, metadata={scheduling_name="transpose.20.1"}
+}
+
+ENTRY %main.32 (Arg_0.1.0: c128[48,48]) -> (f64[48], c128[48,48]) {
+  %Arg_0.1.0 = c128[48,48]{1,0} parameter(0), metadata={op_name="a" scheduling_name="Arg_0.1.0"}
+  %input_transpose_fusion = c128[48,48]{1,0} fusion(%Arg_0.1.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(eigh)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="input_transpose_fusion"}
+  %bitcast.98.0 = c128[48,48]{0,1} bitcast(%input_transpose_fusion), metadata={scheduling_name="bitcast.98.0"}
+  %custom-call.16.0 = (c128[48,48]{0,1}, f64[48]{0}, s32[]) custom-call(%bitcast.98.0), custom_call_target="cusolver_syevd_ffi", operand_layout_constraints={c128[48,48]{0,1}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="custom-call.16.0"}, backend_config={algorithm = 0 : ui8, lower = true}
+  %get-tuple-element.19.0 = s32[] get-tuple-element(%custom-call.16.0), index=2, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="get-tuple-element.19.0"}
+  %get-tuple-element.17.0 = c128[48,48]{0,1} get-tuple-element(%custom-call.16.0), index=0, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="get-tuple-element.17.0"}
+  %get-tuple-element.18.0 = f64[48]{0} get-tuple-element(%custom-call.16.0), index=1, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="get-tuple-element.18.0"}
+  %loop_select_fusion = f64[48]{0} fusion(%get-tuple-element.18.0, %get-tuple-element.19.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/solvers/davidson.py" source_line=44 scheduling_name="loop_select_fusion"}
+  %input_transpose_fusion.1 = c128[48,48]{1,0} fusion(%get-tuple-element.17.0, %get-tuple-element.19.0), kind=kInput, calls=%fused_transpose.1, metadata={scheduling_name="input_transpose_fusion.1"}
+  ROOT %tuple.1 = (f64[48]{0}, c128[48,48]{1,0}) tuple(%loop_select_fusion, %input_transpose_fusion.1), metadata={scheduling_name="tuple.1"}
+}
+

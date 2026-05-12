@@ -1,0 +1,87 @@
+BufferAssignment:
+allocation 0: size 128, parameter 2, shape |s64[16]| at ShapeIndex {}:
+ value: <10 Arg_2.3.0 @0> (size=128,offset=0): s64[16]{0}
+allocation 1: size 64, parameter 1, shape |s32[16,1]| at ShapeIndex {}:
+ value: <9 Arg_1.2.0 @0> (size=64,offset=0): s32[16,1]{1,0}
+allocation 2: size 32, output shape is |s64[4]|, maybe-live-out:
+ value: <8 copy.2 @0> (size=32,offset=0): s64[4]{0}
+ value: <11 input_scatter_fusion @0> (size=32,offset=0): s64[4]{0}
+allocation 3: size 32, parameter 0, shape |s64[4]| at ShapeIndex {}:
+ value: <7 Arg_0.1.0 @0> (size=32,offset=0): s64[4]{0}
+allocation 4: size 8, thread-local:
+ value: <0 Arg_0.5 @0> (size=8,offset=0): s64[]
+allocation 5: size 8, thread-local:
+ value: <1 Arg_1.6 @0> (size=8,offset=0): s64[]
+allocation 6: size 8, thread-local:
+ value: <2 add.2 @0> (size=8,offset=0): s64[]
+
+Total bytes used: 280 (280B)
+
+Used values:
+<0 Arg_0.5 @0>
+ positions:
+  Arg_0.5
+ uses:
+  add.2, operand 0
+ from instruction: %Arg_0.5 = s64[] parameter(0), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" scheduling_name="Arg_0.5"}
+<1 Arg_1.6 @0>
+ positions:
+  Arg_1.6
+ uses:
+  add.2, operand 1
+ from instruction: %Arg_1.6 = s64[] parameter(1), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" scheduling_name="Arg_1.6"}
+<2 add.2 @0>
+ positions:
+  add.2
+ uses:
+ from instruction: %add.2 = s64[] add(%Arg_0.5, %Arg_1.6), metadata={op_name="/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="add.2"}
+<7 Arg_0.1.0 @0>
+ positions:
+  Arg_0.1.0
+ uses:
+  copy.2, operand 0
+ from instruction: %Arg_0.1.0 = s64[4]{0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+<8 copy.2 @0>
+ positions:
+  copy.2
+ uses:
+  input_scatter_fusion, operand 0
+ from instruction: %copy.2 = s64[4]{0} copy(%Arg_0.1.0)
+<9 Arg_1.2.0 @0>
+ positions:
+  Arg_1.2.0
+ uses:
+  input_scatter_fusion, operand 1
+ from instruction: %Arg_1.2.0 = s32[16,1]{1,0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+<10 Arg_2.3.0 @0>
+ positions:
+  Arg_2.3.0
+ uses:
+  input_scatter_fusion, operand 2
+ from instruction: %Arg_2.3.0 = s64[16]{0} parameter(2), metadata={op_name="args[2]" scheduling_name="Arg_2.3.0"}
+<11 input_scatter_fusion @0>
+ positions:
+  input_scatter_fusion
+ uses:
+ from instruction: %input_scatter_fusion = s64[4]{0} fusion(%copy.2, %Arg_1.2.0, %Arg_2.3.0), kind=kInput, calls=%fused_scatter, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="input_scatter_fusion"}
+
+
+HloLiveRange (max 5):
+  InstructionSequence:
+    0:Arg_2.3.0
+    1:Arg_1.2.0
+    2:Arg_0.1.0
+    3:copy.2
+    4:input_scatter_fusion
+  BufferLiveRange:
+    Arg_0.1.0{}:0-5
+    copy.2{}:3-4
+    Arg_1.2.0{}:0-5
+    Arg_2.3.0{}:0-5
+    input_scatter_fusion{}:4-5
+  Live ranges at 4 (peak):
+    Arg_0.1.0: 32 bytes
+    copy.2: 32 bytes
+    Arg_1.2.0: 64 bytes
+    Arg_2.3.0: 128 bytes
+    input_scatter_fusion: 32 bytes

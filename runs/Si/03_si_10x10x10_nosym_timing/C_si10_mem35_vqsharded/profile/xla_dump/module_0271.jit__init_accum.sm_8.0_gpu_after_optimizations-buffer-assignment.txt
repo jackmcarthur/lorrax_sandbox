@@ -1,0 +1,45 @@
+BufferAssignment:
+allocation 0: size 921600000, maybe-live-out:
+ value: <4 loop_broadcast_fusion.1 @0> (size=921600000,offset=0): c128[1000,240,240]{2,1,0}
+allocation 1: size 3840000, maybe-live-out:
+ value: <5 loop_broadcast_fusion @0> (size=3840000,offset=0): c128[1000,240]{1,0}
+allocation 2: size 16, output shape is |(c128[1000,240,240], c128[1000,240])|, maybe-live-out:
+ value: <6 tuple.1{} @0> (size=16,offset=0): (c128[1000,240,240]{2,1,0}, c128[1000,240]{1,0})
+
+Total bytes used: 925440016 (882.57MiB)
+
+Used values:
+<4 loop_broadcast_fusion.1 @0>
+ positions:
+  loop_broadcast_fusion.1
+  tuple.1 {0}
+ uses:
+  tuple.1, operand 0
+ from instruction: %loop_broadcast_fusion.1 = c128[1000,240,240]{2,1,0} fusion(), kind=kLoop, calls=%fused_broadcast.1, metadata={scheduling_name="loop_broadcast_fusion.1"}
+<5 loop_broadcast_fusion @0>
+ positions:
+  loop_broadcast_fusion
+  tuple.1 {1}
+ uses:
+  tuple.1, operand 1
+ from instruction: %loop_broadcast_fusion = c128[1000,240]{1,0} fusion(), kind=kLoop, calls=%fused_broadcast, metadata={scheduling_name="loop_broadcast_fusion"}
+<6 tuple.1{} @0>
+ positions:
+  tuple.1 {}
+ uses:
+ from instruction: %tuple.1 = (c128[1000,240,240]{2,1,0}, c128[1000,240]{1,0}) tuple(%loop_broadcast_fusion.1, %loop_broadcast_fusion), metadata={scheduling_name="tuple.1"}
+
+
+HloLiveRange (max 3):
+  InstructionSequence:
+    0:loop_broadcast_fusion
+    1:loop_broadcast_fusion.1
+    2:tuple.1
+  BufferLiveRange:
+    loop_broadcast_fusion.1{}:1-3
+    loop_broadcast_fusion{}:0-3
+    tuple.1{}:2-3
+  Live ranges at 2 (peak):
+    loop_broadcast_fusion.1: 921600000 bytes
+    loop_broadcast_fusion: 3840000 bytes
+    tuple.1: 16 bytes

@@ -1,0 +1,24 @@
+HloModule jit_cholesky, entry_computation_layout={(c128[960,960]{1,0})->c128[960,960]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}
+
+ENTRY %main.20 (Arg_0.1: c128[960,960]) -> c128[960,960] {
+  %iota.14 = s32[960]{0} iota(), iota_dimension=0, metadata={op_name="jit(cholesky)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %broadcast.15 = s32[960,960]{1,0} broadcast(%iota.14), dimensions={0}, metadata={op_name="jit(cholesky)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %iota.16 = s32[960]{0} iota(), iota_dimension=0, metadata={op_name="jit(cholesky)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %broadcast.17 = s32[960,960]{1,0} broadcast(%iota.16), dimensions={1}, metadata={op_name="jit(cholesky)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %compare.18 = pred[960,960]{1,0} compare(%broadcast.15, %broadcast.17), direction=GE, metadata={op_name="jit(cholesky)/jit(main)/ge" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %Arg_0.1 = c128[960,960]{1,0} parameter(0), metadata={op_name="a"}
+  %transpose.6 = c128[960,960]{0,1} transpose(%Arg_0.1), dimensions={1,0}, metadata={op_name="jit(cholesky)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %real.7 = f64[960,960]{0,1} real(%transpose.6), metadata={op_name="jit(cholesky)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %imag.8 = f64[960,960]{0,1} imag(%transpose.6), metadata={op_name="jit(cholesky)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %negate.9 = f64[960,960]{0,1} negate(%imag.8), metadata={op_name="jit(cholesky)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %complex.10 = c128[960,960]{0,1} complex(%real.7, %negate.9), metadata={op_name="jit(cholesky)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %add.11 = c128[960,960]{1,0} add(%Arg_0.1, %complex.10), metadata={op_name="jit(cholesky)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %constant.4 = c128[] constant((2, 0))
+  %broadcast.5 = c128[960,960]{1,0} broadcast(%constant.4), dimensions={}
+  %divide.12 = c128[960,960]{1,0} divide(%add.11, %broadcast.5), metadata={op_name="jit(cholesky)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %cholesky.13 = c128[960,960]{1,0} cholesky(%divide.12), lower=true, metadata={op_name="jit(cholesky)/jit(main)/cholesky" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+  %constant.2 = c128[] constant((0, 0))
+  %broadcast.3 = c128[960,960]{1,0} broadcast(%constant.2), dimensions={}
+  ROOT %select.19 = c128[960,960]{1,0} select(%compare.18, %cholesky.13, %broadcast.3), metadata={op_name="jit(cholesky)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=596}
+}
+

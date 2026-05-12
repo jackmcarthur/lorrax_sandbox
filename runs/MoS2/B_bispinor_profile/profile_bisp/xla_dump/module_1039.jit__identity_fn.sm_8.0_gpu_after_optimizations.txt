@@ -1,0 +1,31 @@
+HloModule jit__identity_fn, is_scheduled=true, entry_computation_layout={(c128[9,167,334]{2,1,0})->c128[9,334,167]{2,1,0}}, num_partitions=8, frontend_attributes={fingerprint_before_lhs="b1d727fc491b3b0e25d03a73b4eb645b"}
+
+%fused_transpose (param_0.1: c128[9,167,2,167]) -> c128[9,2,27889] {
+  %param_0.1 = c128[9,167,2,167]{3,1,0,2} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.53.1 = c128[2,9,27889]{2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.53.1"}
+  ROOT %transpose.8.1 = c128[9,2,27889]{2,1,0} transpose(%bitcast.53.1), dimensions={1,0,2}, metadata={scheduling_name="transpose.8.1"}
+}
+
+%fused_transpose.1 (param_0.3: c128[9,167,334]) -> c128[2,1503,167] {
+  %param_0.3 = c128[9,167,334]{2,1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.46.1 = c128[1503,2,167]{2,1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.46.1"}
+  ROOT %transpose.7.1 = c128[2,1503,167]{2,1,0} transpose(%bitcast.46.1), dimensions={1,0,2}, metadata={op_name="x" scheduling_name="transpose.7.1"}
+}
+
+%async_computation (param_0.4: c128[9,167,2,167]) -> c128[9,167,2,167] {
+  %param_0.4 = c128[9,167,2,167]{3,1,0,2} parameter(0), metadata={scheduling_name="param_0.4"}
+  ROOT %all-to-all.2 = c128[9,167,2,167]{3,1,0,2} all-to-all(%param_0.4), channel_id=1, replica_groups={{0,1},{4,5},{2,3},{6,7}}, dimensions={2}, metadata={scheduling_name="all-to-all.2"}
+}
+
+ENTRY %main.4_spmd (param.1: c128[9,167,334]) -> c128[9,334,167] {
+  %param.1 = c128[9,167,334]{2,1,0} parameter(0), sharding={devices=[1,4,2]<=[2,4]T(1,0)}, metadata={op_name="x" scheduling_name="param.1"}
+  %loop_transpose_fusion.1 = c128[2,1503,167]{2,1,0} fusion(%param.1), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="x" scheduling_name="loop_transpose_fusion.1"}
+  %bitcast.50.0 = c128[9,167,2,167]{3,1,0,2} bitcast(%loop_transpose_fusion.1), metadata={scheduling_name="bitcast.50.0"}
+  %all-to-all-start = ((c128[9,167,2,167]{3,1,0,2}), c128[9,167,2,167]{3,1,0,2}) async-start(%bitcast.50.0), calls=%async_computation, metadata={scheduling_name="all-to-all-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-to-all-done = c128[9,167,2,167]{3,1,0,2} async-done(%all-to-all-start), metadata={scheduling_name="all-to-all-done"}
+  %loop_transpose_fusion = c128[9,2,27889]{2,1,0} fusion(%all-to-all-done), kind=kLoop, calls=%fused_transpose, metadata={scheduling_name="loop_transpose_fusion"}
+  %bitcast.57.0 = c128[9,334,167]{2,1,0} bitcast(%loop_transpose_fusion), metadata={scheduling_name="bitcast.57.0"}
+  %collective-permute-start = (c128[9,334,167]{2,1,0}, c128[9,334,167]{2,1,0}) collective-permute-start(%bitcast.57.0), channel_id=2, source_target_pairs={{0,0},{1,1},{4,2},{5,3},{2,4},{3,5},{6,6},{7,7}}, metadata={scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  ROOT %collective-permute-done = c128[9,334,167]{2,1,0} collective-permute-done(%collective-permute-start), metadata={scheduling_name="collective-permute-done"}
+}
+

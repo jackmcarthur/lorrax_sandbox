@@ -1,0 +1,13 @@
+HloModule jit_compute_pair_amplitude, entry_computation_layout={(c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{3,2,1,0})->c128[64,4,4,480]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}
+
+ENTRY %main.9 (Arg_0.1: c128[64,4,2,480], Arg_1.2: c128[64,4,2,480]) -> c128[64,4,4,480] {
+  %Arg_1.2 = c128[64,4,2,480]{3,2,1,0} parameter(1), metadata={op_name="psi_v"}
+  %Arg_0.1 = c128[64,4,2,480]{3,2,1,0} parameter(0), metadata={op_name="psi_c"}
+  %real.3 = f64[64,4,2,480]{3,2,1,0} real(%Arg_0.1), metadata={op_name="jit(compute_pair_amplitude)/jit(main)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29}
+  %imag.4 = f64[64,4,2,480]{3,2,1,0} imag(%Arg_0.1), metadata={op_name="jit(compute_pair_amplitude)/jit(main)/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29}
+  %negate.5 = f64[64,4,2,480]{3,2,1,0} negate(%imag.4), metadata={op_name="jit(compute_pair_amplitude)/jit(main)/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29}
+  %complex.6 = c128[64,4,2,480]{3,2,1,0} complex(%real.3, %negate.5), metadata={op_name="jit(compute_pair_amplitude)/jit(main)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29}
+  %dot.7 = c128[64,480,4,4]{3,2,1,0} dot(%Arg_1.2, %complex.6), lhs_batch_dims={0,3}, lhs_contracting_dims={2}, rhs_batch_dims={0,3}, rhs_contracting_dims={2}, metadata={op_name="jit(compute_pair_amplitude)/jit(main)/kcsm,kvsm->kcvm/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29}
+  ROOT %transpose.8 = c128[64,4,4,480]{1,2,3,0} transpose(%dot.7), dimensions={0,3,2,1}, metadata={op_name="jit(compute_pair_amplitude)/jit(main)/kcsm,kvsm->kcvm/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=29}
+}
+

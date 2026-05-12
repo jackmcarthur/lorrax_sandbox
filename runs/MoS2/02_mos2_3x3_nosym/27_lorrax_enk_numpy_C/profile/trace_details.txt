@@ -1,0 +1,70 @@
+# trace_details.txt — dense per-event dump
+
+## Top copies (by bytes)
+kind        bytes        us    GB/s  async  hlo_op / source
+H2D      1.76 GiB  225652.17    8.36      1    ::  
+H2D      1.76 GiB  250676.58    7.53      1    ::  
+D2D      1.32 GiB   2044.43  692.41      1  copy.2  ::  
+D2D    1012.50 MiB   1531.73  693.13      1  copy.1  ::  
+D2D    1012.50 MiB   1536.85  690.82      1  copy.1  ::  
+D2D    1012.50 MiB   1529.17  694.29      1  copy.2  ::  
+D2D    1012.50 MiB   1540.24  689.30      1  triangular-solve.6.0  ::  jit(_solve_all_at_once)/jit(main)/jit(shmap_body)/vmap(jit(_solve_triangular))/triangular_solve
+D2D    1012.50 MiB   1539.79  689.50      1  triangular-solve.7.0  ::  jit(_solve_all_at_once)/jit(main)/jit(shmap_body)/vmap(jit(_solve_triangular))/triangular_solve
+D2D    506.25 MiB    770.94  688.57      1  copy.1  ::  
+D2D    506.25 MiB    768.99  690.31      1  copy.1  ::  
+D2D    506.25 MiB    769.46  689.88      1  copy.1  ::  
+H2D    450.00 MiB  17649.49   26.73      1    ::  
+D2D    450.00 MiB    686.71  687.13      1  copy.1  ::  
+H2D    253.12 MiB   9930.24   26.73      1    ::  
+H2D    253.12 MiB   9910.46   26.78      1    ::  
+D2H    128.00 MiB   5118.99   26.22      1    ::  
+D2H    128.00 MiB   5103.66   26.30      1    ::  
+D2H    128.00 MiB   5094.16   26.35      1    ::  
+D2H    128.00 MiB   5098.93   26.32      1    ::  
+D2H    128.00 MiB   5094.13   26.35      1    ::  
+
+## Top copies by EXPOSED time (not hidden by compute)
+kind        bytes        us   exposed  overlap  hlo_op
+H2D      1.76 GiB  250676.58  250676.58    0.000  
+H2D      1.76 GiB  225652.17  225652.17    0.000  
+H2D    450.00 MiB  17649.49  17649.49    0.000  
+H2D    253.12 MiB   9930.24   9930.24    0.000  
+H2D    253.12 MiB   9910.46   9910.46    0.000  
+H2D     18.46 MiB    737.91    737.91    0.000  
+H2D     18.46 MiB    737.05    737.05    0.000  
+H2D     14.06 MiB    568.76    568.76    0.000  
+H2D     14.06 MiB    567.74    567.74    0.000  
+H2D    900.00 KiB     39.94     39.94    0.000  
+H2D     90.00 KiB      6.69      6.69    0.000  
+H2D        8.00 B      3.58      3.58    0.000  
+H2D        8.00 B      3.01      3.01    0.000  
+H2D        8.00 B      2.94      2.94    0.000  
+H2D        8.00 B      2.43      2.43    0.000  
+H2D        8.00 B      2.30      2.30    0.000  
+H2D     15.00 KiB      2.18      2.18    0.000  
+H2D        8.00 B      2.14      2.14    0.000  
+H2D        8.00 B      2.11      2.11    0.000  
+H2D        8.00 B      2.11      2.11    0.000  
+
+## Top compute kernels
+ total_ms  count    max_ms   occ%  op  ::  source
+  2260.61     87   1749.61      0  all-reduce-start  ::  jit(_prepare_sigma_state)/jit(main)/reduce_sum
+   231.49     16     90.73      0  all-gather-start  ::  jit(_solve_w)/jit(main)/jit(_pad)/pad
+   195.36      8     62.82   12.5  custom-call.1.0  ::  jit(_single_chunk_proc)/jit(main)/vmap(mG,nG->mn)/dot_general
+   154.51    830      0.21   12.5  void cutlass::Kernel2<cutlass_80_tensorop_z884gemm_32x16_16x3_nn_align1>(cutlass_80_tensorop_z884gemm_32x16_16x3_nn_align1::Params)  ::  
+    65.80    302      3.36    100  loop_transpose_fusion.1  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning
+    56.51    320      0.21  1.5625  loop_convert_fusion  ::  jit(_psum)/jit(main)/reduce_sum
+    56.44    309      2.77     50  fft.1.0  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning
+    52.52    280      0.19    100  loop_transpose_fusion.7  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning
+    51.69    276      2.52      0  reduce-scatter.14  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)
+    50.95    315      3.19    100  loop_transpose_fusion  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning
+    42.06    301      1.74    100  loop_transpose_fusion.2  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)
+    39.39    276      9.33      0  reduce-scatter.15  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)
+    38.50    280      0.14    100  loop_transpose_fusion.6  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning
+    32.60    306      1.64     50  fft.0.0  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning
+    30.53    300      1.56     50  fft.2.0  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning
+    28.09    278      0.10    100  loop_transpose_fusion_8  ::  
+    25.92    280      0.10     50  fft.7.0  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning
+    25.91    280      0.10     50  fft.6.0  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning
+    25.63      2     25.13      0  all-gather-start.2  ::  jit(_solve_w)/jit(main)/slice
+    25.22    280      0.09     50  fft.8.0  ::  jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning

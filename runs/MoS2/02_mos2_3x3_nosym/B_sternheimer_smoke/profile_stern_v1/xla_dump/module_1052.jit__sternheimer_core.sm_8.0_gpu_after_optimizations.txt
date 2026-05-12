@@ -1,0 +1,858 @@
+HloModule jit__sternheimer_core, is_scheduled=true, entry_computation_layout={(f64[1947]{0}, f64[24,24,80]{2,1,0}, s32[1947]{0}, s32[1947]{0}, s32[1947]{0}, /*index=5*/c128[102,1947]{1,0}, c128[2,2,102,102]{3,2,1,0}, pred[1947]{0}, c128[26,2,1947]{2,1,0}, f64[26]{0}, /*index=10*/f64[], f64[26,1,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, f64[])->c128[26,2,1947]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true,true,true,true,true,true,true,true,true,true,true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="d2fdd59f0f4dcead58a858464d83d738"}
+
+%fused_multiply (param_0.40: c128[26,2,24,24,80], param_1.225: f64[24,24,80]) -> c128[26,2,24,24,80] {
+  %param_0.40 = c128[26,2,24,24,80]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.40"}
+  %param_1.225 = f64[24,24,80]{2,1,0} parameter(1), metadata={scheduling_name="param_1.225"}
+  %convert.62.3 = c128[24,24,80]{2,1,0} convert(%param_1.225), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619 scheduling_name="convert.62.3"}
+  %constant_196_1 = c128[] constant((214.66252583997982, 0)), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %broadcast.295.3 = c128[24,24,80]{2,1,0} broadcast(%constant_196_1), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619 scheduling_name="broadcast.295.3"}
+  %multiply.275.3 = c128[24,24,80]{2,1,0} multiply(%convert.62.3, %broadcast.295.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619 scheduling_name="multiply.275.3"}
+  %broadcast.296.1 = c128[26,2,24,24,80]{4,3,2,1,0} broadcast(%multiply.275.3), dimensions={2,3,4}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619 scheduling_name="broadcast.296.1"}
+  ROOT %multiply.276.1 = c128[26,2,24,24,80]{4,3,2,1,0} multiply(%param_0.40, %broadcast.296.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619 scheduling_name="multiply.276.1"}
+}
+
+%fused_transpose.4 (param_0.127: c128[26,2,1947], param_1.147: pred[1947]) -> (f64[1947,52], f64[1947,52]) {
+  %param_0.127 = c128[26,2,1947]{2,1,0} parameter(0), metadata={scheduling_name="param_0.127"}
+  %param_1.147 = pred[1947]{0} parameter(1), metadata={scheduling_name="param_1.147"}
+  %convert.61.4 = c128[1947]{0} convert(%param_1.147), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=142 scheduling_name="convert.61.4"}
+  %broadcast.292.9 = c128[26,2,1947]{2,1,0} broadcast(%convert.61.4), dimensions={2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="broadcast.292.9"}
+  %multiply.272.9 = c128[26,2,1947]{2,1,0} multiply(%param_0.127, %broadcast.292.9), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="multiply.272.9"}
+  %imag.40.3 = f64[26,2,1947]{2,1,0} imag(%multiply.272.9), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="imag.40.3"}
+  %bitcast.1489.1 = f64[52,1947]{1,0} bitcast(%imag.40.3), metadata={scheduling_name="bitcast.1489.1"}
+  %transpose.150.1 = f64[1947,52]{1,0} transpose(%bitcast.1489.1), dimensions={1,0}, metadata={scheduling_name="transpose.150.1"}
+  %real.55.3.clone.1 = f64[26,2,1947]{2,1,0} real(%multiply.272.9), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="real.55.3.clone.1"}
+  %bitcast.1470.1.clone.1 = f64[52,1947]{1,0} bitcast(%real.55.3.clone.1), metadata={scheduling_name="bitcast.1470.1.clone.1"}
+  %transpose.148.1.clone.1 = f64[1947,52]{1,0} transpose(%bitcast.1470.1.clone.1), dimensions={1,0}, metadata={scheduling_name="transpose.148.1.clone.1"}
+  ROOT %tuple.5 = (f64[1947,52]{1,0}, f64[1947,52]{1,0}) tuple(%transpose.150.1, %transpose.148.1.clone.1), metadata={scheduling_name="tuple.5"}
+}
+
+%fused_broadcast () -> f64[24,24,80,26,2] {
+  %constant_39_2 = f64[] constant(0)
+  ROOT %broadcast.285.1 = f64[24,24,80,26,2]{4,3,2,1,0} broadcast(%constant_39_2), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="broadcast.285.1"}
+}
+
+%region_0.53 (Arg_0.54: f64[], Arg_1.55: f64[]) -> f64[] {
+  %Arg_1.55 = f64[] parameter(1), metadata={op_name="jit(_sternheimer_core)/jit(main)/scatter-add" scheduling_name="Arg_1.55"}
+  %Arg_0.54 = f64[] parameter(0), metadata={op_name="jit(_sternheimer_core)/jit(main)/scatter-add" scheduling_name="Arg_0.54"}
+  ROOT %add.115 = f64[] add(%Arg_0.54, %Arg_1.55), metadata={op_name="jit(_sternheimer_core)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.115"}
+}
+
+%fused_scatter (param_0.25: f64[24,24,80,26,2], param_1.121: f64[1947,52], param_2.111: s32[1947], param_3.86: s32[1947], param_4.54: s32[1947]) -> f64[24,24,80,26,2] {
+  %param_0.25 = f64[24,24,80,26,2]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.25"}
+  %param_3.86 = s32[1947]{0} parameter(3), metadata={scheduling_name="param_3.86"}
+  %constant_13_3 = s32[] constant(0)
+  %broadcast.286.25 = s32[1947]{0} broadcast(%constant_13_3), dimensions={}, metadata={scheduling_name="broadcast.286.25"}
+  %compare.141.7 = pred[1947]{0} compare(%param_3.86, %broadcast.286.25), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.141.7"}
+  %constant_14_4 = s32[] constant(24)
+  %broadcast.287.6 = s32[1947]{0} broadcast(%constant_14_4), dimensions={}, metadata={scheduling_name="broadcast.287.6"}
+  %add.118.5 = s32[1947]{0} add(%param_3.86, %broadcast.287.6), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.118.5"}
+  %select.169.5 = s32[1947]{0} select(%compare.141.7, %add.118.5, %param_3.86), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.169.5"}
+  %bitcast.1430.3 = s32[1947,1]{1,0} bitcast(%select.169.5), metadata={scheduling_name="bitcast.1430.3"}
+  %param_4.54 = s32[1947]{0} parameter(4), metadata={scheduling_name="param_4.54"}
+  %compare.142.7 = pred[1947]{0} compare(%param_4.54, %broadcast.286.25), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.142.7"}
+  %add.119.5 = s32[1947]{0} add(%param_4.54, %broadcast.287.6), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.119.5"}
+  %select.172.5 = s32[1947]{0} select(%compare.142.7, %add.119.5, %param_4.54), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.172.5"}
+  %bitcast.1445.3 = s32[1947,1]{1,0} bitcast(%select.172.5), metadata={scheduling_name="bitcast.1445.3"}
+  %param_2.111 = s32[1947]{0} parameter(2), metadata={scheduling_name="param_2.111"}
+  %compare.143.7 = pred[1947]{0} compare(%param_2.111, %broadcast.286.25), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.143.7"}
+  %constant_16_3 = s32[] constant(80)
+  %broadcast.291.5 = s32[1947]{0} broadcast(%constant_16_3), dimensions={}, metadata={scheduling_name="broadcast.291.5"}
+  %add.120.5 = s32[1947]{0} add(%param_2.111, %broadcast.291.5), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.120.5"}
+  %select.173.5 = s32[1947]{0} select(%compare.143.7, %add.120.5, %param_2.111), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.173.5"}
+  %bitcast.1459.3 = s32[1947,1]{1,0} bitcast(%select.173.5), metadata={scheduling_name="bitcast.1459.3"}
+  %concatenate.11.3 = s32[1947,3]{1,0} concatenate(%bitcast.1430.3, %bitcast.1445.3, %bitcast.1459.3), dimensions={1}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/concatenate" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="concatenate.11.3"}
+  %param_1.121 = f64[1947,52]{1,0} parameter(1), metadata={scheduling_name="param_1.121"}
+  %bitcast.1492.1 = f64[1947,1,1,1,26,2]{5,4,3,2,1,0} bitcast(%param_1.121), metadata={scheduling_name="bitcast.1492.1"}
+  ROOT %scatter.16.1 = f64[24,24,80,26,2]{4,3,2,1,0} scatter(%param_0.25, %concatenate.11.3, %bitcast.1492.1), update_window_dims={1,2,3,4,5}, inserted_window_dims={}, scatter_dims_to_operand_dims={0,1,2}, index_vector_dim=1, to_apply=%region_0.53, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="scatter.16.1"}
+}
+
+%fused_transpose.3 (param_0.24: f64[24,24,80,26,2]) -> f64[52,46080] {
+  %param_0.24 = f64[24,24,80,26,2]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.24"}
+  %bitcast.1495.1 = f64[46080,52]{1,0} bitcast(%param_0.24), metadata={scheduling_name="bitcast.1495.1"}
+  ROOT %transpose.151.1 = f64[52,46080]{1,0} transpose(%bitcast.1495.1), dimensions={1,0}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="transpose.151.1"}
+}
+
+%fused_scatter.1 (param_0.31: f64[24,24,80,26,2], param_1.123: f64[1947,52], param_2.112: s32[1947], param_3.87: s32[1947], param_4.55: s32[1947]) -> f64[24,24,80,26,2] {
+  %param_0.31 = f64[24,24,80,26,2]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.31"}
+  %param_3.87 = s32[1947]{0} parameter(3), metadata={scheduling_name="param_3.87"}
+  %constant_13_1 = s32[] constant(0)
+  %broadcast.286.27 = s32[1947]{0} broadcast(%constant_13_1), dimensions={}, metadata={scheduling_name="broadcast.286.27"}
+  %compare.141.9 = pred[1947]{0} compare(%param_3.87, %broadcast.286.27), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.141.9"}
+  %constant_14_1 = s32[] constant(24)
+  %broadcast.287.8 = s32[1947]{0} broadcast(%constant_14_1), dimensions={}, metadata={scheduling_name="broadcast.287.8"}
+  %add.118.7 = s32[1947]{0} add(%param_3.87, %broadcast.287.8), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.118.7"}
+  %select.169.7 = s32[1947]{0} select(%compare.141.9, %add.118.7, %param_3.87), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.169.7"}
+  %bitcast.1430.5 = s32[1947,1]{1,0} bitcast(%select.169.7), metadata={scheduling_name="bitcast.1430.5"}
+  %param_4.55 = s32[1947]{0} parameter(4), metadata={scheduling_name="param_4.55"}
+  %compare.142.9 = pred[1947]{0} compare(%param_4.55, %broadcast.286.27), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.142.9"}
+  %add.119.7 = s32[1947]{0} add(%param_4.55, %broadcast.287.8), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.119.7"}
+  %select.172.7 = s32[1947]{0} select(%compare.142.9, %add.119.7, %param_4.55), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.172.7"}
+  %bitcast.1445.5 = s32[1947,1]{1,0} bitcast(%select.172.7), metadata={scheduling_name="bitcast.1445.5"}
+  %param_2.112 = s32[1947]{0} parameter(2), metadata={scheduling_name="param_2.112"}
+  %compare.143.9 = pred[1947]{0} compare(%param_2.112, %broadcast.286.27), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.143.9"}
+  %constant_16_4 = s32[] constant(80)
+  %broadcast.291.7 = s32[1947]{0} broadcast(%constant_16_4), dimensions={}, metadata={scheduling_name="broadcast.291.7"}
+  %add.120.7 = s32[1947]{0} add(%param_2.112, %broadcast.291.7), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.120.7"}
+  %select.173.7 = s32[1947]{0} select(%compare.143.9, %add.120.7, %param_2.112), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.173.7"}
+  %bitcast.1459.5 = s32[1947,1]{1,0} bitcast(%select.173.7), metadata={scheduling_name="bitcast.1459.5"}
+  %concatenate.11.5 = s32[1947,3]{1,0} concatenate(%bitcast.1430.5, %bitcast.1445.5, %bitcast.1459.5), dimensions={1}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/concatenate" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="concatenate.11.5"}
+  %param_1.123 = f64[1947,52]{1,0} parameter(1), metadata={scheduling_name="param_1.123"}
+  %bitcast.1473.1 = f64[1947,1,1,1,26,2]{5,4,3,2,1,0} bitcast(%param_1.123), metadata={scheduling_name="bitcast.1473.1"}
+  ROOT %scatter.15.1 = f64[24,24,80,26,2]{4,3,2,1,0} scatter(%param_0.31, %concatenate.11.5, %bitcast.1473.1), update_window_dims={1,2,3,4,5}, inserted_window_dims={}, scatter_dims_to_operand_dims={0,1,2}, index_vector_dim=1, to_apply=%region_0.53, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="scatter.15.1"}
+}
+
+%fused_transpose.2 (param_0.28: f64[52,46080], param_1.33: f64[24,24,80,26,2]) -> c128[26,2,24,24,80] {
+  %param_1.33 = f64[24,24,80,26,2]{4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1.33"}
+  %bitcast.1476.3 = f64[46080,52]{1,0} bitcast(%param_1.33), metadata={scheduling_name="bitcast.1476.3"}
+  %transpose.149.3 = f64[52,46080]{1,0} transpose(%bitcast.1476.3), dimensions={1,0}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="transpose.149.3"}
+  %bitcast.1479.1 = f64[26,2,24,24,80]{4,3,2,1,0} bitcast(%transpose.149.3), metadata={scheduling_name="bitcast.1479.1"}
+  %param_0.28 = f64[52,46080]{1,0} parameter(0), metadata={scheduling_name="param_0.28"}
+  %bitcast.1498.1 = f64[26,2,24,24,80]{4,3,2,1,0} bitcast(%param_0.28), metadata={scheduling_name="bitcast.1498.1"}
+  ROOT %complex.37.1 = c128[26,2,24,24,80]{4,3,2,1,0} complex(%bitcast.1479.1, %bitcast.1498.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="complex.37.1"}
+}
+
+%fused_slice (param_0_0: c128[102,1947], param_1_0: c128[26,2,24,24,80], param_1_1: pred[1947], param_1_2: s32[1947], param_1_3: s32[1947], param_1_4: s32[1947]) -> (c128[198594], c128[101244]) {
+  %param_0_0 = c128[102,1947]{1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %real.56.2 = f64[102,1947]{1,0} real(%param_0_0), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="real.56.2"}
+  %imag.41.2 = f64[102,1947]{1,0} imag(%param_0_0), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="imag.41.2"}
+  %negate.39.2 = f64[102,1947]{1,0} negate(%imag.41.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="negate.39.2"}
+  %complex.38.2 = c128[102,1947]{1,0} complex(%real.56.2, %negate.39.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="complex.38.2"}
+  %reshape.317 = c128[198594]{0} reshape(%complex.38.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="reshape.317"}
+  %param_1_0 = c128[26,2,24,24,80]{4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %bitcast.1502.6 = c128[24,24,80,26,2]{2,1,0,4,3} bitcast(%param_1_0), metadata={scheduling_name="bitcast.1502.6"}
+  %param_1_3 = s32[1947]{0} parameter(4), metadata={scheduling_name="param_1_3"}
+  %constant_13_5 = s32[] constant(0)
+  %broadcast.286.28 = s32[1947]{0} broadcast(%constant_13_5), dimensions={}, metadata={scheduling_name="broadcast.286.28"}
+  %compare.141.10 = pred[1947]{0} compare(%param_1_3, %broadcast.286.28), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.141.10"}
+  %constant_14_5 = s32[] constant(24)
+  %broadcast.287.19 = s32[1947]{0} broadcast(%constant_14_5), dimensions={}, metadata={scheduling_name="broadcast.287.19"}
+  %add.118.10 = s32[1947]{0} add(%param_1_3, %broadcast.287.19), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.118.10"}
+  %select.169.10 = s32[1947]{0} select(%compare.141.10, %add.118.10, %param_1_3), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.169.10"}
+  %bitcast.1430.12 = s32[1947,1]{1,0} bitcast(%select.169.10), metadata={scheduling_name="bitcast.1430.12"}
+  %param_1_4 = s32[1947]{0} parameter(5), metadata={scheduling_name="param_1_4"}
+  %compare.142.10 = pred[1947]{0} compare(%param_1_4, %broadcast.286.28), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.142.10"}
+  %add.119.10 = s32[1947]{0} add(%param_1_4, %broadcast.287.19), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.119.10"}
+  %select.172.10 = s32[1947]{0} select(%compare.142.10, %add.119.10, %param_1_4), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.172.10"}
+  %bitcast.1445.12 = s32[1947,1]{1,0} bitcast(%select.172.10), metadata={scheduling_name="bitcast.1445.12"}
+  %param_1_2 = s32[1947]{0} parameter(3), metadata={scheduling_name="param_1_2"}
+  %compare.143.10 = pred[1947]{0} compare(%param_1_2, %broadcast.286.28), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.143.10"}
+  %constant_16_5 = s32[] constant(80)
+  %broadcast.291.10 = s32[1947]{0} broadcast(%constant_16_5), dimensions={}, metadata={scheduling_name="broadcast.291.10"}
+  %add.120.10 = s32[1947]{0} add(%param_1_2, %broadcast.291.10), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.120.10"}
+  %select.173.10 = s32[1947]{0} select(%compare.143.10, %add.120.10, %param_1_2), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.173.10"}
+  %bitcast.1459.12 = s32[1947,1]{1,0} bitcast(%select.173.10), metadata={scheduling_name="bitcast.1459.12"}
+  %concatenate.11.12 = s32[1947,3]{1,0} concatenate(%bitcast.1430.12, %bitcast.1445.12, %bitcast.1459.12), dimensions={1}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/concatenate" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="concatenate.11.12"}
+  %gather.6.6 = c128[1947,1,1,1,26,2]{0,5,4,3,2,1} gather(%bitcast.1502.6, %concatenate.11.12), offset_dims={1,2,3,4,5}, collapsed_slice_dims={}, start_index_map={0,1,2}, index_vector_dim=1, slice_sizes={1,1,1,26,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="gather.6.6"}
+  %bitcast.1505.4 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} bitcast(%gather.6.6), metadata={scheduling_name="bitcast.1505.4"}
+  %param_1_1 = pred[1947]{0} parameter(2), metadata={scheduling_name="param_1_1"}
+  %convert.61.5 = c128[1947]{0} convert(%param_1_1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=142 scheduling_name="convert.61.5"}
+  %broadcast.294.9 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} broadcast(%convert.61.5), dimensions={5}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="broadcast.294.9"}
+  %multiply.273.4 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} multiply(%bitcast.1505.4, %broadcast.294.9), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="multiply.273.4"}
+  %reshape.318 = c128[101244]{0} reshape(%multiply.273.4), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="reshape.318"}
+  %concatenate.13 = c128[299838]{0} concatenate(%reshape.317, %reshape.318), dimensions={0}, metadata={scheduling_name="concatenate.13"}
+  %slice = c128[198594]{0} slice(%concatenate.13), slice={[0:198594]}, metadata={scheduling_name="slice"}
+  %slice.1 = c128[101244]{0} slice(%concatenate.13), slice={[198594:299838]}, metadata={scheduling_name="slice.1"}
+  ROOT %tuple.9 = (c128[198594]{0}, c128[101244]{0}) tuple(%slice, %slice.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="tuple.9"}
+}
+
+%fused_transpose.1 (param_0.15: c128[52,102]) -> c128[26,102,2] {
+  %param_0.15 = c128[52,102]{1,0} parameter(0), metadata={scheduling_name="param_0.15"}
+  %bitcast.1559.1 = c128[26,2,102]{2,1,0} bitcast(%param_0.15), metadata={scheduling_name="bitcast.1559.1"}
+  ROOT %transpose.152.1 = c128[26,102,2]{2,1,0} transpose(%bitcast.1559.1), dimensions={0,2,1}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/RG,vsG->Rsv/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="transpose.152.1"}
+}
+
+%wrapped_transpose_computation.1 (param_0.330: c128[2,2,102,102]) -> c128[102,2,2,102] {
+  %param_0.330 = c128[2,2,102,102]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.330"}
+  ROOT %transpose.153.1 = c128[102,2,2,102]{3,2,1,0} transpose(%param_0.330), dimensions={3,1,0,2}, metadata={scheduling_name="transpose.153.1"}
+}
+
+%fused_transpose (param_0.13: c128[26,204]) -> c128[2,26,102] {
+  %param_0.13 = c128[26,204]{1,0} parameter(0), metadata={scheduling_name="param_0.13"}
+  %bitcast.1571.1 = c128[26,2,102]{2,1,0} bitcast(%param_0.13), metadata={scheduling_name="bitcast.1571.1"}
+  ROOT %transpose.154.1 = c128[2,26,102]{2,1,0} transpose(%bitcast.1571.1), dimensions={1,0,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/stRQ,Qtv->Rsv/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=624 scheduling_name="transpose.154.1"}
+}
+
+%command_buffer.4 (p.40: c128[26,2,1947], p.41: pred[1947], p.42: (s64[], c128[26,2,1947], c128[26,2,1947], c128[26,2,1947], f64[26], /*index=5*/pred[26], pred[1947], s32[1947], s32[1947], s32[1947], /*index=10*/f64[1947], f64[24,24,80], c128[102,1947], c128[2,2,102,102], f64[26], /*index=15*/c128[26,2,1947], f64[], f64[], f64[26], f64[26,1,1947])) -> (s32[1947], s32[1947], s32[1947], c128[26,2,24,24,80], c128[102,1947], /*index=5*/c128[2,2,102,102], (c128[52,1947], s8[3262368])) {
+  %p.40 = c128[26,2,1947]{2,1,0} parameter(0)
+  %p.41 = pred[1947]{0} parameter(1)
+  %p.42 = (s64[], c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, f64[26]{0}, /*index=5*/pred[26]{0}, pred[1947]{0}, s32[1947]{0}, s32[1947]{0}, s32[1947]{0}, /*index=10*/f64[1947]{0}, f64[24,24,80]{2,1,0}, c128[102,1947]{1,0}, c128[2,2,102,102]{3,2,1,0}, f64[26]{0}, /*index=15*/c128[26,2,1947]{2,1,0}, f64[], f64[], f64[26]{0}, f64[26,1,1947]{2,0,1}) parameter(2)
+  %input_transpose_fusion.2 = (f64[1947,52]{1,0}, f64[1947,52]{1,0}) fusion(%p.40, %p.41), kind=kInput, calls=%fused_transpose.4, metadata={scheduling_name="input_transpose_fusion.2"}
+  %get-tuple-element.35 = f64[1947,52]{1,0} get-tuple-element(%input_transpose_fusion.2), index=0, metadata={scheduling_name="get-tuple-element.35"}
+  %get-tuple-element.96 = s32[1947]{0} get-tuple-element(%p.42), index=7, metadata={scheduling_name="get-tuple-element.96"}
+  %get-tuple-element.97 = s32[1947]{0} get-tuple-element(%p.42), index=8, metadata={scheduling_name="get-tuple-element.97"}
+  %get-tuple-element.98 = s32[1947]{0} get-tuple-element(%p.42), index=9, metadata={scheduling_name="get-tuple-element.98"}
+  %loop_broadcast_fusion = f64[24,24,80,26,2]{4,3,2,1,0} fusion(), kind=kLoop, calls=%fused_broadcast, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 deduplicated_name="loop_broadcast_fusion" scheduling_name="loop_broadcast_fusion"}
+  %copy.9 = f64[24,24,80,26,2]{4,3,2,1,0} copy(%loop_broadcast_fusion), metadata={scheduling_name="copy.9"}
+  %input_scatter_fusion = f64[24,24,80,26,2]{4,3,2,1,0} fusion(%copy.9, %get-tuple-element.35, %get-tuple-element.98, %get-tuple-element.96, %get-tuple-element.97), kind=kInput, calls=%fused_scatter, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 deduplicated_name="input_scatter_fusion" scheduling_name="input_scatter_fusion"}
+  %input_transpose_fusion.1 = f64[52,46080]{1,0} fusion(%input_scatter_fusion), kind=kInput, calls=%fused_transpose.3, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="input_transpose_fusion.1"}
+  %get-tuple-element.36 = f64[1947,52]{1,0} get-tuple-element(%input_transpose_fusion.2), index=1, metadata={scheduling_name="get-tuple-element.36"}
+  %input_scatter_fusion.1 = f64[24,24,80,26,2]{4,3,2,1,0} fusion(%loop_broadcast_fusion, %get-tuple-element.36, %get-tuple-element.98, %get-tuple-element.96, %get-tuple-element.97), kind=kInput, calls=%fused_scatter.1, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 deduplicated_name="input_scatter_fusion" scheduling_name="input_scatter_fusion.1"}
+  %input_transpose_fusion = c128[26,2,24,24,80]{4,3,2,1,0} fusion(%input_transpose_fusion.1, %input_scatter_fusion.1), kind=kInput, calls=%fused_transpose.2, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="input_transpose_fusion"}
+  %get-tuple-element.101 = c128[102,1947]{1,0} get-tuple-element(%p.42), index=12, metadata={scheduling_name="get-tuple-element.101"}
+  %input_slice_fusion = (c128[198594]{0}, c128[101244]{0}) fusion(%get-tuple-element.101, %input_transpose_fusion, %p.41, %get-tuple-element.98, %get-tuple-element.96, /*index=5*/%get-tuple-element.97), kind=kInput, calls=%fused_slice, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 deduplicated_name="input_slice_fusion" scheduling_name="input_slice_fusion"}
+  %get-tuple-element.44 = c128[101244]{0} get-tuple-element(%input_slice_fusion), index=1, metadata={scheduling_name="get-tuple-element.44"}
+  %bitcast.1548.0 = c128[52,1947]{1,0} bitcast(%get-tuple-element.44), metadata={scheduling_name="bitcast.1548.0"}
+  %get-tuple-element.43 = c128[198594]{0} get-tuple-element(%input_slice_fusion), index=0, metadata={scheduling_name="get-tuple-element.43"}
+  %bitcast.2060 = c128[102,1947]{1,0} bitcast(%get-tuple-element.43), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="bitcast.2060"}
+  %custom-call.5.0 = (c128[52,102]{1,0}, s8[4194304]{0}) custom-call(%bitcast.1548.0, %bitcast.2060), custom_call_target="__cublas$gemm", metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/RG,vsG->Rsv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="custom-call.5.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"101244","rhs_stride":"198594","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.20.0 = c128[52,102]{1,0} get-tuple-element(%custom-call.5.0), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/RG,vsG->Rsv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="get-tuple-element.20.0"}
+  %loop_transpose_fusion.1 = c128[26,102,2]{2,1,0} fusion(%get-tuple-element.20.0), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/RG,vsG->Rsv/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 deduplicated_name="loop_transpose_fusion.1" scheduling_name="loop_transpose_fusion.1"}
+  %bitcast.1563.0 = c128[26,204]{1,0} bitcast(%loop_transpose_fusion.1), metadata={scheduling_name="bitcast.1563.0"}
+  %get-tuple-element.102 = c128[2,2,102,102]{3,2,1,0} get-tuple-element(%p.42), index=13, metadata={scheduling_name="get-tuple-element.102"}
+  %wrapped_transpose.1 = c128[102,2,2,102]{3,2,1,0} fusion(%get-tuple-element.102), kind=kInput, calls=%wrapped_transpose_computation.1, metadata={scheduling_name="wrapped_transpose.1"}
+  %bitcast.1568.0 = c128[204,204]{1,0} bitcast(%wrapped_transpose.1), metadata={scheduling_name="bitcast.1568.0"}
+  %custom-call.6.0 = (c128[26,204]{1,0}, s8[750720]{0}) custom-call(%bitcast.1563.0, %bitcast.1568.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/stRQ,Qtv->Rsv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=624 scheduling_name="custom-call.6.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"5304","rhs_stride":"41616","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.21.0 = c128[26,204]{1,0} get-tuple-element(%custom-call.6.0), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/stRQ,Qtv->Rsv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=624 scheduling_name="get-tuple-element.21.0"}
+  %loop_transpose_fusion = c128[2,26,102]{2,1,0} fusion(%get-tuple-element.21.0), kind=kLoop, calls=%fused_transpose, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/stRQ,Qtv->Rsv/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=624 deduplicated_name="loop_transpose_fusion" scheduling_name="loop_transpose_fusion"}
+  %bitcast.1575.0 = c128[52,102]{1,0} bitcast(%loop_transpose_fusion), metadata={scheduling_name="bitcast.1575.0"}
+  %custom-call.7.0 = (c128[52,1947]{1,0}, s8[3262368]{0}) custom-call(%bitcast.1575.0, %get-tuple-element.101), custom_call_target="__cublas$gemm", metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/RG,Rsv->vsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625 scheduling_name="custom-call.7.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"5304","rhs_stride":"198594","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  ROOT %tuple.19 = (s32[1947]{0}, s32[1947]{0}, s32[1947]{0}, c128[26,2,24,24,80]{4,3,2,1,0}, c128[102,1947]{1,0}, /*index=5*/c128[2,2,102,102]{3,2,1,0}, (c128[52,1947]{1,0}, s8[3262368]{0})) tuple(%get-tuple-element.96, %get-tuple-element.97, %get-tuple-element.98, %input_transpose_fusion, %get-tuple-element.101, /*index=5*/%get-tuple-element.102, %custom-call.7.0)
+}
+
+%fused_complex (param_0.114: c128[26,2,1947]) -> c128[26,2,1947] {
+  %param_0.114 = c128[26,2,1947]{2,1,0} parameter(0), metadata={scheduling_name="param_0.114"}
+  %real.57.1 = f64[26,2,1947]{2,1,0} real(%param_0.114), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="real.57.1"}
+  %imag.42.1 = f64[26,2,1947]{2,1,0} imag(%param_0.114), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="imag.42.1"}
+  %negate.40.1 = f64[26,2,1947]{2,1,0} negate(%imag.42.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="negate.40.1"}
+  ROOT %complex.39.1 = c128[26,2,1947]{2,1,0} complex(%real.57.1, %negate.40.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="complex.39.1"}
+}
+
+%fused_add (param_0.81: c128[52,1947], param_1.146: c128[26,2,1947], param_2.81: c128[26,3894], param_3.46: c128[26,2,24,24,80], param_4.56: c128[26,2,24,24,80], param_5.41: pred[1947], param_6.32: f64[1947], param_7.33: f64[26], param_8.35: f64[], param_9.28: s32[1947], param_10.20: s32[1947], param_11.13: s32[1947]) -> c128[26,2,1947] {
+  %param_6.32 = f64[1947]{0} parameter(6), metadata={scheduling_name="param_6.32"}
+  %convert.60.1 = c128[1947]{0} convert(%param_6.32), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614 scheduling_name="convert.60.1"}
+  %broadcast.284.3 = c128[26,2,1947]{2,1,0} broadcast(%convert.60.1), dimensions={2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614 scheduling_name="broadcast.284.3"}
+  %param_4.56 = c128[26,2,24,24,80]{4,3,2,1,0} parameter(4), metadata={scheduling_name="param_4.56"}
+  %bitcast.1502.5 = c128[24,24,80,26,2]{2,1,0,4,3} bitcast(%param_4.56), metadata={scheduling_name="bitcast.1502.5"}
+  %param_10.20 = s32[1947]{0} parameter(10), metadata={scheduling_name="param_10.20"}
+  %constant_13_2 = s32[] constant(0)
+  %broadcast.286.23 = s32[1947]{0} broadcast(%constant_13_2), dimensions={}, metadata={scheduling_name="broadcast.286.23"}
+  %compare.141.5 = pred[1947]{0} compare(%param_10.20, %broadcast.286.23), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.141.5"}
+  %constant_14_3 = s32[] constant(24)
+  %broadcast.287.4 = s32[1947]{0} broadcast(%constant_14_3), dimensions={}, metadata={scheduling_name="broadcast.287.4"}
+  %add.118.3 = s32[1947]{0} add(%param_10.20, %broadcast.287.4), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.118.3"}
+  %select.169.3 = s32[1947]{0} select(%compare.141.5, %add.118.3, %param_10.20), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.169.3"}
+  %bitcast.1430.11 = s32[1947,1]{1,0} bitcast(%select.169.3), metadata={scheduling_name="bitcast.1430.11"}
+  %param_11.13 = s32[1947]{0} parameter(11), metadata={scheduling_name="param_11.13"}
+  %compare.142.5 = pred[1947]{0} compare(%param_11.13, %broadcast.286.23), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.142.5"}
+  %add.119.3 = s32[1947]{0} add(%param_11.13, %broadcast.287.4), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.119.3"}
+  %select.172.3 = s32[1947]{0} select(%compare.142.5, %add.119.3, %param_11.13), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.172.3"}
+  %bitcast.1445.11 = s32[1947,1]{1,0} bitcast(%select.172.3), metadata={scheduling_name="bitcast.1445.11"}
+  %param_9.28 = s32[1947]{0} parameter(9), metadata={scheduling_name="param_9.28"}
+  %compare.143.5 = pred[1947]{0} compare(%param_9.28, %broadcast.286.23), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.143.5"}
+  %constant_16_2 = s32[] constant(80)
+  %broadcast.291.3 = s32[1947]{0} broadcast(%constant_16_2), dimensions={}, metadata={scheduling_name="broadcast.291.3"}
+  %add.120.3 = s32[1947]{0} add(%param_9.28, %broadcast.291.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.120.3"}
+  %select.173.3 = s32[1947]{0} select(%compare.143.5, %add.120.3, %param_9.28), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.173.3"}
+  %bitcast.1459.11 = s32[1947,1]{1,0} bitcast(%select.173.3), metadata={scheduling_name="bitcast.1459.11"}
+  %concatenate.11.11 = s32[1947,3]{1,0} concatenate(%bitcast.1430.11, %bitcast.1445.11, %bitcast.1459.11), dimensions={1}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/concatenate" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="concatenate.11.11"}
+  %gather.6.5 = c128[1947,1,1,1,26,2]{0,5,4,3,2,1} gather(%bitcast.1502.5, %concatenate.11.11), offset_dims={1,2,3,4,5}, collapsed_slice_dims={}, start_index_map={0,1,2}, index_vector_dim=1, slice_sizes={1,1,1,26,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="gather.6.5"}
+  %bitcast.1505.3 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} bitcast(%gather.6.5), metadata={scheduling_name="bitcast.1505.3"}
+  %param_5.41 = pred[1947]{0} parameter(5), metadata={scheduling_name="param_5.41"}
+  %convert.61.3 = c128[1947]{0} convert(%param_5.41), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=142 scheduling_name="convert.61.3"}
+  %broadcast.294.8 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} broadcast(%convert.61.3), dimensions={5}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="broadcast.294.8"}
+  %multiply.273.3 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} multiply(%bitcast.1505.3, %broadcast.294.8), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="multiply.273.3"}
+  %bitcast.1511.3 = c128[26,2,1947]{2,1,0} bitcast(%multiply.273.3), metadata={scheduling_name="bitcast.1511.3"}
+  %multiply.274.3 = c128[26,2,1947]{2,1,0} multiply(%broadcast.284.3, %bitcast.1511.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614 scheduling_name="multiply.274.3"}
+  %param_3.46 = c128[26,2,24,24,80]{4,3,2,1,0} parameter(3), metadata={scheduling_name="param_3.46"}
+  %constant_291_1 = c128[] constant((0.004658474953124562, 0)), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %broadcast.297.7 = c128[26,2,24,24,80]{4,3,2,1,0} broadcast(%constant_291_1), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="broadcast.297.7"}
+  %multiply.277.7 = c128[26,2,24,24,80]{4,3,2,1,0} multiply(%param_3.46, %broadcast.297.7), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="multiply.277.7"}
+  %bitcast.1532.7 = c128[24,24,80,26,2]{2,1,0,4,3} bitcast(%multiply.277.7), metadata={scheduling_name="bitcast.1532.7"}
+  %gather.7.7 = c128[1947,1,1,1,26,2]{0,5,4,3,2,1} gather(%bitcast.1532.7, %concatenate.11.11), offset_dims={1,2,3,4,5}, collapsed_slice_dims={}, start_index_map={0,1,2}, index_vector_dim=1, slice_sizes={1,1,1,26,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="gather.7.7"}
+  %bitcast.1537.5 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} bitcast(%gather.7.7), metadata={scheduling_name="bitcast.1537.5"}
+  %multiply.278.5 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} multiply(%bitcast.1537.5, %broadcast.294.8), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="multiply.278.5"}
+  %bitcast.1542.3 = c128[26,2,1947]{2,1,0} bitcast(%multiply.278.5), metadata={scheduling_name="bitcast.1542.3"}
+  %add.121.3 = c128[26,2,1947]{2,1,0} add(%multiply.274.3, %bitcast.1542.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="add.121.3"}
+  %param_0.81 = c128[52,1947]{1,0} parameter(0), metadata={scheduling_name="param_0.81"}
+  %broadcast.298.7 = c128[52,1947]{1,0} broadcast(%convert.61.3), dimensions={1}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625 scheduling_name="broadcast.298.7"}
+  %multiply.280.7 = c128[52,1947]{1,0} multiply(%param_0.81, %broadcast.298.7), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625 scheduling_name="multiply.280.7"}
+  %bitcast.1582.7 = c128[2,26,1947]{2,1,0} bitcast(%multiply.280.7), metadata={scheduling_name="bitcast.1582.7"}
+  %transpose.155.7 = c128[26,2,1947]{2,1,0} transpose(%bitcast.1582.7), dimensions={1,0,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625 scheduling_name="transpose.155.7"}
+  %add.122.5 = c128[26,2,1947]{2,1,0} add(%add.121.3, %transpose.155.7), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625 scheduling_name="add.122.5"}
+  %param_7.33 = f64[26]{0} parameter(7), metadata={scheduling_name="param_7.33"}
+  %convert.63.1 = c128[26]{0} convert(%param_7.33), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=149 scheduling_name="convert.63.1"}
+  %broadcast.299.3 = c128[26,2,1947]{2,1,0} broadcast(%convert.63.1), dimensions={0}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=149 scheduling_name="broadcast.299.3"}
+  %param_1.146 = c128[26,2,1947]{2,1,0} parameter(1), metadata={scheduling_name="param_1.146"}
+  %multiply.282.3 = c128[26,2,1947]{2,1,0} multiply(%broadcast.299.3, %param_1.146), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=149 scheduling_name="multiply.282.3"}
+  %subtract.10.3 = c128[26,2,1947]{2,1,0} subtract(%add.122.5, %multiply.282.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=149 scheduling_name="subtract.10.3"}
+  %param_8.35 = f64[] parameter(8), metadata={scheduling_name="param_8.35"}
+  %convert.64.1 = c128[] convert(%param_8.35), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=153 scheduling_name="convert.64.1"}
+  %broadcast.300.3 = c128[26,3894]{1,0} broadcast(%convert.64.1), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=153 scheduling_name="broadcast.300.3"}
+  %param_2.81 = c128[26,3894]{1,0} parameter(2), metadata={scheduling_name="param_2.81"}
+  %multiply.283.3 = c128[26,3894]{1,0} multiply(%broadcast.300.3, %param_2.81), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=153 scheduling_name="multiply.283.3"}
+  %bitcast.1621.1 = c128[26,2,1947]{2,1,0} bitcast(%multiply.283.3), metadata={scheduling_name="bitcast.1621.1"}
+  ROOT %add.123.1 = c128[26,2,1947]{2,1,0} add(%subtract.10.3, %bitcast.1621.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=153 scheduling_name="add.123.1"}
+}
+
+%scalar_add_computation (scalar_lhs: c128[], scalar_rhs: c128[]) -> c128[] {
+  %scalar_rhs = c128[] parameter(1), metadata={scheduling_name="scalar_rhs"}
+  %scalar_lhs = c128[] parameter(0), metadata={scheduling_name="scalar_lhs"}
+  ROOT %add.116 = c128[] add(%scalar_lhs, %scalar_rhs), metadata={scheduling_name="add.116"}
+}
+
+%fused_reduce (param_0.186: c128[26,2,1947], param_1.223: c128[26,2,1947]) -> f64[26] {
+  %param_1.223 = c128[26,2,1947]{2,1,0} parameter(1), metadata={scheduling_name="param_1.223"}
+  %real.54.3 = f64[26,2,1947]{2,1,0} real(%param_1.223), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="real.54.3"}
+  %imag.39.5 = f64[26,2,1947]{2,1,0} imag(%param_1.223), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="imag.39.5"}
+  %negate.38.5 = f64[26,2,1947]{2,1,0} negate(%imag.39.5), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="negate.38.5"}
+  %complex.36.5 = c128[26,2,1947]{2,1,0} complex(%real.54.3, %negate.38.5), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="complex.36.5"}
+  %param_0.186 = c128[26,2,1947]{2,1,0} parameter(0), metadata={scheduling_name="param_0.186"}
+  %multiply.284.5 = c128[26,2,1947]{2,1,0} multiply(%complex.36.5, %param_0.186), metadata={scheduling_name="multiply.284.5"}
+  %bitcast.1626.3 = c128[26,3894]{1,0} bitcast(%multiply.284.5), metadata={scheduling_name="bitcast.1626.3"}
+  %constant_12_2 = c128[] constant((0, 0))
+  %reduce.6.3 = c128[26]{0} reduce(%bitcast.1626.3, %constant_12_2), dimensions={1}, to_apply=%scalar_add_computation, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/vsG,vsG->v/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="reduce.6.3"}
+  ROOT %real.58.1 = f64[26]{0} real(%reduce.6.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=254 scheduling_name="real.58.1"}
+}
+
+%fused_select.1 (param_0.177: pred[26], param_1.211: f64[26], param_2.129: f64[26]) -> f64[26] {
+  %param_0.177 = pred[26]{0} parameter(0), metadata={scheduling_name="param_0.177"}
+  %param_1.211 = f64[26]{0} parameter(1), metadata={scheduling_name="param_1.211"}
+  %param_2.129 = f64[26]{0} parameter(2), metadata={scheduling_name="param_2.129"}
+  %constant_37_2 = f64[] constant(2.2204460492503131e-16)
+  %broadcast.301.1 = f64[26]{0} broadcast(%constant_37_2), dimensions={}, metadata={scheduling_name="broadcast.301.1"}
+  %compare.145.1 = pred[26]{0} compare(%param_2.129, %broadcast.301.1), direction=GT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/gt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=256 scheduling_name="compare.145.1"}
+  %constant_38_2 = f64[] constant(1)
+  %broadcast.302.1 = f64[26]{0} broadcast(%constant_38_2), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="broadcast.302.1"}
+  %select.174.1 = f64[26]{0} select(%compare.145.1, %param_2.129, %broadcast.302.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="select.174.1"}
+  %divide.111.1 = f64[26]{0} divide(%param_1.211, %select.174.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=257 scheduling_name="divide.111.1"}
+  %constant_39_3 = f64[] constant(0)
+  %broadcast.303.1 = f64[26]{0} broadcast(%constant_39_3), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="broadcast.303.1"}
+  ROOT %select.175.1 = f64[26]{0} select(%param_0.177, %divide.111.1, %broadcast.303.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="select.175.1"}
+}
+
+%fused_add_reduce_subtract (param_0.327: f64[26,1,1947], param_1.387: c128[26,2,1947], param_2.239: c128[26,2,1947], param_3.144: f64[26], param_4.104: c128[26,2,1947], param_5.79: c128[26,2,1947]) -> (f64[26], c128[26,2,1947], c128[26,2,1947]) {
+  %param_1.387 = c128[26,2,1947]{2,1,0} parameter(1), metadata={scheduling_name="param_1.387"}
+  %param_3.144 = f64[26]{0} parameter(3), metadata={scheduling_name="param_3.144"}
+  %convert.65.2.clone.1 = c128[26]{0} convert(%param_3.144), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=259 scheduling_name="convert.65.2.clone.1"}
+  %broadcast.304.6.clone.1 = c128[26,2,1947]{2,1,0} broadcast(%convert.65.2.clone.1), dimensions={0}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=260 scheduling_name="broadcast.304.6.clone.1"}
+  %param_2.239 = c128[26,2,1947]{2,1,0} parameter(2), metadata={scheduling_name="param_2.239"}
+  %multiply.286.3.clone.1 = c128[26,2,1947]{2,1,0} multiply(%broadcast.304.6.clone.1, %param_2.239), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=261 scheduling_name="multiply.286.3.clone.1"}
+  %subtract.11.1.clone.1 = c128[26,2,1947]{2,1,0} subtract(%param_1.387, %multiply.286.3.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=261 scheduling_name="subtract.11.1.clone.1"}
+  %real.59.4 = f64[26,2,1947]{2,1,0} real(%subtract.11.1.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="real.59.4"}
+  %imag.43.7 = f64[26,2,1947]{2,1,0} imag(%subtract.11.1.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="imag.43.7"}
+  %negate.41.7 = f64[26,2,1947]{2,1,0} negate(%imag.43.7), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="negate.41.7"}
+  %complex.40.8 = c128[26,2,1947]{2,1,0} complex(%real.59.4, %negate.41.7), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="complex.40.8"}
+  %param_0.327 = f64[26,1,1947]{2,0,1} parameter(0), metadata={scheduling_name="param_0.327"}
+  %bitcast.1658.7 = f64[26,1947]{1,0} bitcast(%param_0.327), metadata={scheduling_name="bitcast.1658.7"}
+  %convert.66.7 = c128[26,1947]{1,0} convert(%bitcast.1658.7), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=158 scheduling_name="convert.66.7"}
+  %broadcast.305.7 = c128[26,2,1947]{2,1,0} broadcast(%convert.66.7), dimensions={0,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=158 scheduling_name="broadcast.305.7"}
+  %multiply.288.7 = c128[26,2,1947]{2,1,0} multiply(%subtract.11.1.clone.1, %broadcast.305.7), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=158 scheduling_name="multiply.288.7"}
+  %multiply.289.5 = c128[26,2,1947]{2,1,0} multiply(%complex.40.8, %multiply.288.7), metadata={scheduling_name="multiply.289.5"}
+  %bitcast.1677.3 = c128[26,3894]{1,0} bitcast(%multiply.289.5), metadata={scheduling_name="bitcast.1677.3"}
+  %constant_12_3 = c128[] constant((0, 0))
+  %reduce.7.3 = c128[26]{0} reduce(%bitcast.1677.3, %constant_12_3), dimensions={1}, to_apply=%scalar_add_computation, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/vsG,vsG->v/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="reduce.7.3"}
+  %real.60.1 = f64[26]{0} real(%reduce.7.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=268 scheduling_name="real.60.1"}
+  %param_4.104 = c128[26,2,1947]{2,1,0} parameter(4), metadata={scheduling_name="param_4.104"}
+  %param_5.79 = c128[26,2,1947]{2,1,0} parameter(5), metadata={scheduling_name="param_5.79"}
+  %multiply.285.3.clone.1 = c128[26,2,1947]{2,1,0} multiply(%broadcast.304.6.clone.1, %param_5.79), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=260 scheduling_name="multiply.285.3.clone.1"}
+  %add.124.1.clone.1 = c128[26,2,1947]{2,1,0} add(%param_4.104, %multiply.285.3.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=260 scheduling_name="add.124.1.clone.1"}
+  ROOT %tuple.4 = (f64[26]{0}, c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}) tuple(%real.60.1, %subtract.11.1.clone.1, %add.124.1.clone.1), metadata={scheduling_name="tuple.4"}
+}
+
+%fused_select (param_0.176: pred[26], param_1.212: f64[26], param_2.130: f64[26]) -> f64[26] {
+  %param_0.176 = pred[26]{0} parameter(0), metadata={scheduling_name="param_0.176"}
+  %param_1.212 = f64[26]{0} parameter(1), metadata={scheduling_name="param_1.212"}
+  %param_2.130 = f64[26]{0} parameter(2), metadata={scheduling_name="param_2.130"}
+  %constant_37_1 = f64[] constant(2.2204460492503131e-16)
+  %broadcast.301.2 = f64[26]{0} broadcast(%constant_37_1), dimensions={}, metadata={scheduling_name="broadcast.301.2"}
+  %compare.146.1 = pred[26]{0} compare(%param_2.130, %broadcast.301.2), direction=GT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/gt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=269 scheduling_name="compare.146.1"}
+  %constant_38_1 = f64[] constant(1)
+  %broadcast.302.2 = f64[26]{0} broadcast(%constant_38_1), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="broadcast.302.2"}
+  %select.176.1 = f64[26]{0} select(%compare.146.1, %param_2.130, %broadcast.302.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="select.176.1"}
+  %divide.112.1 = f64[26]{0} divide(%param_1.212, %select.176.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=270 scheduling_name="divide.112.1"}
+  %constant_39_1 = f64[] constant(0)
+  %broadcast.303.2 = f64[26]{0} broadcast(%constant_39_1), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="broadcast.303.2"}
+  ROOT %select.177.1 = f64[26]{0} select(%param_0.176, %divide.112.1, %broadcast.303.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="select.177.1"}
+}
+
+%fused_add_reduce (param_0.102: c128[26,2,1947], param_1.148: c128[26,2,1947], param_2.80: f64[26,1,1947], param_3.44: f64[26]) -> (c128[26,2,1947], f64[26]) {
+  %param_1.148 = c128[26,2,1947]{2,1,0} parameter(1), metadata={scheduling_name="param_1.148"}
+  %param_2.80 = f64[26,1,1947]{2,0,1} parameter(2), metadata={scheduling_name="param_2.80"}
+  %bitcast.1658.3 = f64[26,1947]{1,0} bitcast(%param_2.80), metadata={scheduling_name="bitcast.1658.3"}
+  %convert.66.3 = c128[26,1947]{1,0} convert(%bitcast.1658.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=158 scheduling_name="convert.66.3"}
+  %broadcast.305.5 = c128[26,2,1947]{2,1,0} broadcast(%convert.66.3), dimensions={0,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=158 scheduling_name="broadcast.305.5"}
+  %multiply.288.5 = c128[26,2,1947]{2,1,0} multiply(%param_1.148, %broadcast.305.5), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=158 scheduling_name="multiply.288.5"}
+  %param_3.44 = f64[26]{0} parameter(3), metadata={scheduling_name="param_3.44"}
+  %convert.67.1 = c128[26]{0} convert(%param_3.44), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=271 scheduling_name="convert.67.1"}
+  %broadcast.309.3 = c128[26,2,1947]{2,1,0} broadcast(%convert.67.1), dimensions={0}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=272 scheduling_name="broadcast.309.3"}
+  %param_0.102 = c128[26,2,1947]{2,1,0} parameter(0), metadata={scheduling_name="param_0.102"}
+  %multiply.291.3 = c128[26,2,1947]{2,1,0} multiply(%broadcast.309.3, %param_0.102), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=272 scheduling_name="multiply.291.3"}
+  %add.125.1 = c128[26,2,1947]{2,1,0} add(%multiply.288.5, %multiply.291.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=272 scheduling_name="add.125.1"}
+  %real.59.8.clone.1 = f64[26,2,1947]{2,1,0} real(%param_1.148), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="real.59.8.clone.1"}
+  %imag.43.11.clone.1 = f64[26,2,1947]{2,1,0} imag(%param_1.148), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="imag.43.11.clone.1"}
+  %negate.41.11.clone.1 = f64[26,2,1947]{2,1,0} negate(%imag.43.11.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="negate.41.11.clone.1"}
+  %complex.40.12.clone.1 = c128[26,2,1947]{2,1,0} complex(%real.59.8.clone.1, %negate.41.11.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="complex.40.12.clone.1"}
+  %multiply.292.7.clone.1 = c128[26,2,1947]{2,1,0} multiply(%complex.40.12.clone.1, %param_1.148), metadata={scheduling_name="multiply.292.7.clone.1"}
+  %bitcast.1712.5.clone.1 = c128[26,3894]{1,0} bitcast(%multiply.292.7.clone.1), metadata={scheduling_name="bitcast.1712.5.clone.1"}
+  %constant_12_1_clone_1 = c128[] constant((0, 0))
+  %reduce.8.5.clone.1 = c128[26]{0} reduce(%bitcast.1712.5.clone.1, %constant_12_1_clone_1), dimensions={1}, to_apply=%scalar_add_computation, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/vsG,vsG->v/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="reduce.8.5.clone.1"}
+  %real.61.3.clone.1 = f64[26]{0} real(%reduce.8.5.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=170 scheduling_name="real.61.3.clone.1"}
+  %sqrt.47.1.clone.1 = f64[26]{0} sqrt(%real.61.3.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=170 scheduling_name="sqrt.47.1.clone.1"}
+  ROOT %tuple.2 = (c128[26,2,1947]{2,1,0}, f64[26]{0}) tuple(%add.125.1, %sqrt.47.1.clone.1), metadata={scheduling_name="tuple.2"}
+}
+
+%fused_and (param_0.182: pred[26], param_1.221: f64[26], param_2.136: f64[26], param_3.84: f64[]) -> pred[26] {
+  %param_0.182 = pred[26]{0} parameter(0), metadata={scheduling_name="param_0.182"}
+  %param_1.221 = f64[26]{0} parameter(1), metadata={scheduling_name="param_1.221"}
+  %param_3.84 = f64[] parameter(3), metadata={scheduling_name="param_3.84"}
+  %broadcast.310.5 = f64[26]{0} broadcast(%param_3.84), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=265 scheduling_name="broadcast.310.5"}
+  %param_2.136 = f64[26]{0} parameter(2), metadata={scheduling_name="param_2.136"}
+  %multiply.293.5 = f64[26]{0} multiply(%broadcast.310.5, %param_2.136), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=265 scheduling_name="multiply.293.5"}
+  %compare.147.3 = pred[26]{0} compare(%param_1.221, %multiply.293.5), direction=GT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/gt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=265 scheduling_name="compare.147.3"}
+  ROOT %and.15.1 = pred[26]{0} and(%param_0.182, %compare.147.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=265 scheduling_name="and.15.1"}
+}
+
+%fused_add.1 (param_0.184: s64[]) -> s64[] {
+  %param_0.184 = s64[] parameter(0), metadata={scheduling_name="param_0.184"}
+  %constant_899_1 = s64[] constant(1)
+  ROOT %add.117.1 = s64[] add(%param_0.184, %constant_899_1), metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=277 scheduling_name="add.117.1"}
+}
+
+%command_buffer.6 (p.46: c128[26,2,1947], p.47: c128[26,3894], p.48: (s64[], c128[26,2,1947], c128[26,2,1947], c128[26,2,1947], f64[26], /*index=5*/pred[26], pred[1947], s32[1947], s32[1947], s32[1947], /*index=10*/f64[1947], f64[24,24,80], c128[102,1947], c128[2,2,102,102], f64[26], /*index=15*/c128[26,2,1947], f64[], f64[], f64[26], f64[26,1,1947]), p.49: c128[52,1947], p.50: c128[26,2,1947], p.51: c128[26,2,24,24,80], p.52: c128[26,2,24,24,80], p.53: pred[1947], p.54: s32[1947], p.55: s32[1947], p.56: s32[1947]) -> (f64[26], f64[], f64[1947], f64[26,1,1947], f64[26], /*index=5*/c128[26,2,1947], f64[], f64[26], pred[26], c128[26,2,1947], /*index=10*/c128[26,2,1947], s64[]) {
+  %p.46 = c128[26,2,1947]{2,1,0} parameter(0)
+  %p.47 = c128[26,3894]{1,0} parameter(1)
+  %p.48 = (s64[], c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, f64[26]{0}, /*index=5*/pred[26]{0}, pred[1947]{0}, s32[1947]{0}, s32[1947]{0}, s32[1947]{0}, /*index=10*/f64[1947]{0}, f64[24,24,80]{2,1,0}, c128[102,1947]{1,0}, c128[2,2,102,102]{3,2,1,0}, f64[26]{0}, /*index=15*/c128[26,2,1947]{2,1,0}, f64[], f64[], f64[26]{0}, f64[26,1,1947]{2,0,1}) parameter(2)
+  %p.49 = c128[52,1947]{1,0} parameter(3)
+  %p.50 = c128[26,2,1947]{2,1,0} parameter(4)
+  %p.51 = c128[26,2,24,24,80]{4,3,2,1,0} parameter(5)
+  %p.52 = c128[26,2,24,24,80]{4,3,2,1,0} parameter(6)
+  %p.53 = pred[1947]{0} parameter(7)
+  %p.54 = s32[1947]{0} parameter(8)
+  %p.55 = s32[1947]{0} parameter(9)
+  %p.56 = s32[1947]{0} parameter(10)
+  %loop_complex_fusion = c128[26,2,1947]{2,1,0} fusion(%p.46), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="loop_complex_fusion"}
+  %bitcast.1611.0 = c128[3894,26]{0,1} bitcast(%loop_complex_fusion), metadata={scheduling_name="bitcast.1611.0"}
+  %custom-call.8.0 = (c128[26,26]{1,0}, s8[3239808]{0}) custom-call(%p.47, %bitcast.1611.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/msG,bsG->bm/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="custom-call.8.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"101244","rhs_stride":"101244","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.23.0 = c128[26,26]{1,0} get-tuple-element(%custom-call.8.0), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/msG,bsG->bm/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="get-tuple-element.23.0"}
+  %bitcast.1617.0 = c128[26,3894]{1,0} bitcast(%p.46), metadata={scheduling_name="bitcast.1617.0"}
+  %custom-call.9.0 = (c128[26,3894]{1,0}, s8[1630720]{0}) custom-call(%get-tuple-element.23.0, %bitcast.1617.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/bm,msG->bsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=152 scheduling_name="custom-call.9.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"676","rhs_stride":"101244","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.24.0 = c128[26,3894]{1,0} get-tuple-element(%custom-call.9.0), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/bm,msG->bsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=152 scheduling_name="get-tuple-element.24.0"}
+  %get-tuple-element.103 = f64[26]{0} get-tuple-element(%p.48), index=14, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=149 scheduling_name="get-tuple-element.103"}
+  %get-tuple-element.105 = f64[] get-tuple-element(%p.48), index=16, metadata={scheduling_name="get-tuple-element.105"}
+  %get-tuple-element.99 = f64[1947]{0} get-tuple-element(%p.48), index=10, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614 scheduling_name="get-tuple-element.99"}
+  %loop_add_fusion = c128[26,2,1947]{2,1,0} fusion(%p.49, %p.50, %get-tuple-element.24.0, %p.51, %p.52, /*index=5*/%p.53, %get-tuple-element.99, %get-tuple-element.103, %get-tuple-element.105, %p.54, /*index=10*/%p.55, %p.56), kind=kLoop, calls=%fused_add, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=153 scheduling_name="loop_add_fusion"}
+  %input_reduce_fusion = f64[26]{0} fusion(%loop_add_fusion, %p.50), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=254 scheduling_name="input_reduce_fusion"}
+  %get-tuple-element.74 = pred[26]{0} get-tuple-element(%p.48), index=5, metadata={scheduling_name="get-tuple-element.74"}
+  %get-tuple-element.73 = f64[26]{0} get-tuple-element(%p.48), index=4, metadata={scheduling_name="get-tuple-element.73"}
+  %copy.22 = f64[26]{0} copy(%get-tuple-element.73), metadata={scheduling_name="copy.22"}
+  %loop_select_fusion.1 = f64[26]{0} fusion(%get-tuple-element.74, %copy.22, %input_reduce_fusion), kind=kLoop, calls=%fused_select.1, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 deduplicated_name="loop_select_fusion" scheduling_name="loop_select_fusion.1"}
+  %get-tuple-element.108 = f64[26,1,1947]{2,0,1} get-tuple-element(%p.48), index=19, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=158 scheduling_name="get-tuple-element.108"}
+  %get-tuple-element.70 = c128[26,2,1947]{2,1,0} get-tuple-element(%p.48), index=1, metadata={scheduling_name="get-tuple-element.70"}
+  %get-tuple-element.71 = c128[26,2,1947]{2,1,0} get-tuple-element(%p.48), index=2, metadata={scheduling_name="get-tuple-element.71"}
+  %input_add_reduce_subtract_fusion = (f64[26]{0}, c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}) fusion(%get-tuple-element.108, %get-tuple-element.71, %loop_add_fusion, %loop_select_fusion.1, %get-tuple-element.70, /*index=5*/%p.50), kind=kInput, calls=%fused_add_reduce_subtract, control-predecessors={%loop_select_fusion.1}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=268 scheduling_name="input_add_reduce_subtract_fusion"}
+  %get-tuple-element.93 = f64[26]{0} get-tuple-element(%input_add_reduce_subtract_fusion), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=268 scheduling_name="get-tuple-element.93"}
+  %loop_select_fusion = f64[26]{0} fusion(%get-tuple-element.74, %get-tuple-element.93, %copy.22), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 deduplicated_name="loop_select_fusion" scheduling_name="loop_select_fusion"}
+  %get-tuple-element.91 = c128[26,2,1947]{2,1,0} get-tuple-element(%input_add_reduce_subtract_fusion), index=1, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=268 scheduling_name="get-tuple-element.91"}
+  %input_add_reduce_fusion = (c128[26,2,1947]{2,1,0}, f64[26]{0}) fusion(%p.50, %get-tuple-element.91, %get-tuple-element.108, %loop_select_fusion), kind=kInput, calls=%fused_add_reduce, control-predecessors={%custom-call.8.0, %loop_add_fusion, %input_reduce_fusion, %input_add_reduce_subtract_fusion}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=272 scheduling_name="input_add_reduce_fusion"}
+  %get-tuple-element.31 = f64[26]{0} get-tuple-element(%input_add_reduce_fusion), index=1, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=272 scheduling_name="get-tuple-element.31"}
+  %get-tuple-element.106 = f64[] get-tuple-element(%p.48), index=17, metadata={scheduling_name="get-tuple-element.106"}
+  %get-tuple-element.107 = f64[26]{0} get-tuple-element(%p.48), index=18, metadata={scheduling_name="get-tuple-element.107"}
+  %loop_and_fusion = pred[26]{0} fusion(%get-tuple-element.74, %get-tuple-element.31, %get-tuple-element.107, %get-tuple-element.106), kind=kLoop, calls=%fused_and, control-predecessors={%loop_select_fusion.1, %loop_select_fusion}, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=265 scheduling_name="loop_and_fusion"}
+  %get-tuple-element.92 = c128[26,2,1947]{2,1,0} get-tuple-element(%input_add_reduce_fusion), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=272 scheduling_name="get-tuple-element.92"}
+  %get-tuple-element.90 = c128[26,2,1947]{2,1,0} get-tuple-element(%input_add_reduce_subtract_fusion), index=2, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=268 scheduling_name="get-tuple-element.90"}
+  %get-tuple-element.69 = s64[] get-tuple-element(%p.48), index=0, metadata={scheduling_name="get-tuple-element.69"}
+  %loop_add_fusion.1 = s64[] fusion(%get-tuple-element.69), kind=kLoop, calls=%fused_add.1, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=277 scheduling_name="loop_add_fusion.1"}
+  ROOT %tuple.21 = (f64[26]{0}, f64[], f64[1947]{0}, f64[26,1,1947]{2,0,1}, f64[26]{0}, /*index=5*/c128[26,2,1947]{2,1,0}, f64[], f64[26]{0}, pred[26]{0}, c128[26,2,1947]{2,1,0}, /*index=10*/c128[26,2,1947]{2,1,0}, s64[]) tuple(%get-tuple-element.103, %get-tuple-element.105, %get-tuple-element.99, %get-tuple-element.108, %get-tuple-element.93, /*index=5*/%get-tuple-element.91, %get-tuple-element.106, %get-tuple-element.107, %loop_and_fusion, %get-tuple-element.92, /*index=10*/%get-tuple-element.90, %loop_add_fusion.1)
+}
+
+%region_4.877 (arg_tuple.878.0: (s64[], c128[26,2,1947], c128[26,2,1947], c128[26,2,1947], f64[26], /*index=5*/pred[26], pred[1947], s32[1947], s32[1947], s32[1947], /*index=10*/f64[1947], f64[24,24,80], c128[102,1947], c128[2,2,102,102], f64[26], /*index=15*/c128[26,2,1947], f64[], f64[], f64[26], f64[26,1,1947])) -> (s64[], c128[26,2,1947], c128[26,2,1947], c128[26,2,1947], f64[26], /*index=5*/pred[26], pred[1947], s32[1947], s32[1947], s32[1947], /*index=10*/f64[1947], f64[24,24,80], c128[102,1947], c128[2,2,102,102], f64[26], /*index=15*/c128[26,2,1947], f64[], f64[], f64[26], f64[26,1,1947]) {
+  %arg_tuple.878.0 = (s64[], c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, f64[26]{0}, /*index=5*/pred[26]{0}, pred[1947]{0}, s32[1947]{0}, s32[1947]{0}, s32[1947]{0}, /*index=10*/f64[1947]{0}, f64[24,24,80]{2,1,0}, c128[102,1947]{1,0}, c128[2,2,102,102]{3,2,1,0}, f64[26]{0}, /*index=15*/c128[26,2,1947]{2,1,0}, f64[], f64[], f64[26]{0}, f64[26,1,1947]{2,0,1}) parameter(0), metadata={scheduling_name="arg_tuple.878.0"}
+  %get-tuple-element.72 = c128[26,2,1947]{2,1,0} get-tuple-element(%arg_tuple.878.0), index=3, metadata={scheduling_name="get-tuple-element.72"}
+  %get-tuple-element.95 = pred[1947]{0} get-tuple-element(%arg_tuple.878.0), index=6, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/body/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=142 scheduling_name="get-tuple-element.95"}
+  %call.2 = (s32[1947]{0}, s32[1947]{0}, s32[1947]{0}, c128[26,2,24,24,80]{4,3,2,1,0}, c128[102,1947]{1,0}, /*index=5*/c128[2,2,102,102]{3,2,1,0}, (c128[52,1947]{1,0}, s8[3262368]{0})) call(%get-tuple-element.72, %get-tuple-element.95, %arg_tuple.878.0), to_apply=%command_buffer.4
+  %get-tuple-element.137 = s32[1947]{0} get-tuple-element(%call.2), index=0
+  %get-tuple-element.138 = s32[1947]{0} get-tuple-element(%call.2), index=1
+  %get-tuple-element.139 = s32[1947]{0} get-tuple-element(%call.2), index=2
+  %get-tuple-element.140 = c128[26,2,24,24,80]{4,3,2,1,0} get-tuple-element(%call.2), index=3
+  %get-tuple-element.141 = c128[102,1947]{1,0} get-tuple-element(%call.2), index=4
+  %get-tuple-element.142 = c128[2,2,102,102]{3,2,1,0} get-tuple-element(%call.2), index=5
+  %get-tuple-element.143 = (c128[52,1947]{1,0}, s8[3262368]{0}) get-tuple-element(%call.2), index=6
+  %get-tuple-element.22.0 = c128[52,1947]{1,0} get-tuple-element(%get-tuple-element.143), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/RG,Rsv->vsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625 scheduling_name="get-tuple-element.22.0"}
+  %fft.6.0 = c128[26,2,24,24,80]{4,3,2,1,0} fft(%get-tuple-element.140), fft_type=IFFT, fft_length={24,24,80}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/scf_potential.py" source_line=153 scheduling_name="fft.6.0"}
+  %get-tuple-element.100 = f64[24,24,80]{2,1,0} get-tuple-element(%arg_tuple.878.0), index=11, metadata={scheduling_name="get-tuple-element.100"}
+  %loop_multiply_fusion = c128[26,2,24,24,80]{4,3,2,1,0} fusion(%fft.6.0, %get-tuple-element.100), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619 deduplicated_name="loop_multiply_fusion" scheduling_name="loop_multiply_fusion"}
+  %fft.7.0 = c128[26,2,24,24,80]{4,3,2,1,0} fft(%loop_multiply_fusion), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=153 scheduling_name="fft.7.0"}
+  %bitcast.1601.0 = c128[26,3894]{1,0} bitcast(%get-tuple-element.72), metadata={scheduling_name="bitcast.1601.0"}
+  %get-tuple-element.104 = c128[26,2,1947]{2,1,0} get-tuple-element(%arg_tuple.878.0), index=15, metadata={scheduling_name="get-tuple-element.104"}
+  %call.3 = (f64[26]{0}, f64[], f64[1947]{0}, f64[26,1,1947]{2,0,1}, f64[26]{0}, /*index=5*/c128[26,2,1947]{2,1,0}, f64[], f64[26]{0}, pred[26]{0}, c128[26,2,1947]{2,1,0}, /*index=10*/c128[26,2,1947]{2,1,0}, s64[]) call(%get-tuple-element.104, %bitcast.1601.0, %arg_tuple.878.0, %get-tuple-element.22.0, %get-tuple-element.72, /*index=5*/%fft.7.0, %get-tuple-element.140, %get-tuple-element.95, %get-tuple-element.139, %get-tuple-element.137, /*index=10*/%get-tuple-element.138), to_apply=%command_buffer.6, control-predecessors={%bitcast.1601.0, %call.2}
+  %get-tuple-element.160 = f64[26]{0} get-tuple-element(%call.3), index=0
+  %get-tuple-element.161 = f64[] get-tuple-element(%call.3), index=1
+  %get-tuple-element.162 = f64[1947]{0} get-tuple-element(%call.3), index=2
+  %get-tuple-element.163 = f64[26,1,1947]{2,0,1} get-tuple-element(%call.3), index=3
+  %get-tuple-element.164 = f64[26]{0} get-tuple-element(%call.3), index=4
+  %get-tuple-element.165 = c128[26,2,1947]{2,1,0} get-tuple-element(%call.3), index=5
+  %get-tuple-element.166 = f64[] get-tuple-element(%call.3), index=6
+  %get-tuple-element.167 = f64[26]{0} get-tuple-element(%call.3), index=7
+  %get-tuple-element.168 = pred[26]{0} get-tuple-element(%call.3), index=8
+  %get-tuple-element.169 = c128[26,2,1947]{2,1,0} get-tuple-element(%call.3), index=9
+  %get-tuple-element.170 = c128[26,2,1947]{2,1,0} get-tuple-element(%call.3), index=10
+  %get-tuple-element.171 = s64[] get-tuple-element(%call.3), index=11
+  ROOT %tuple.14 = (s64[], c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, f64[26]{0}, /*index=5*/pred[26]{0}, pred[1947]{0}, s32[1947]{0}, s32[1947]{0}, s32[1947]{0}, /*index=10*/f64[1947]{0}, f64[24,24,80]{2,1,0}, c128[102,1947]{1,0}, c128[2,2,102,102]{3,2,1,0}, f64[26]{0}, /*index=15*/c128[26,2,1947]{2,1,0}, f64[], f64[], f64[26]{0}, f64[26,1,1947]{2,0,1}) tuple(%get-tuple-element.171, %get-tuple-element.170, %get-tuple-element.165, %get-tuple-element.169, %get-tuple-element.164, /*index=5*/%get-tuple-element.168, %get-tuple-element.95, %get-tuple-element.137, %get-tuple-element.138, %get-tuple-element.139, /*index=10*/%get-tuple-element.162, %get-tuple-element.100, %get-tuple-element.141, %get-tuple-element.142, %get-tuple-element.160, /*index=15*/%get-tuple-element.104, %get-tuple-element.161, %get-tuple-element.166, %get-tuple-element.167, %get-tuple-element.163), metadata={scheduling_name="tuple.14"}
+}
+
+%fused_compare (param_0: s64[]) -> pred[] {
+  %param_0 = s64[] parameter(0), metadata={scheduling_name="param_0"}
+  %constant_930_1 = s64[] constant(300)
+  ROOT %compare.140.1 = pred[] compare(%param_0, %constant_930_1), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=277 scheduling_name="compare.140.1"}
+}
+
+%region_7.908 (arg_tuple.909.0: (s64[], c128[26,2,1947], c128[26,2,1947], c128[26,2,1947], f64[26], /*index=5*/pred[26], pred[1947], s32[1947], s32[1947], s32[1947], /*index=10*/f64[1947], f64[24,24,80], c128[102,1947], c128[2,2,102,102], f64[26], /*index=15*/c128[26,2,1947], f64[], f64[], f64[26], f64[26,1,1947])) -> pred[] {
+  %arg_tuple.909.0 = (s64[], c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, f64[26]{0}, /*index=5*/pred[26]{0}, pred[1947]{0}, s32[1947]{0}, s32[1947]{0}, s32[1947]{0}, /*index=10*/f64[1947]{0}, f64[24,24,80]{2,1,0}, c128[102,1947]{1,0}, c128[2,2,102,102]{3,2,1,0}, f64[26]{0}, /*index=15*/c128[26,2,1947]{2,1,0}, f64[], f64[], f64[26]{0}, f64[26,1,1947]{2,0,1}) parameter(0), metadata={scheduling_name="arg_tuple.909.0"}
+  %get-tuple-element.910.0 = s64[] get-tuple-element(%arg_tuple.909.0), index=0, metadata={scheduling_name="get-tuple-element.910.0"}
+  ROOT %loop_compare_fusion = pred[] fusion(%get-tuple-element.910.0), kind=kLoop, calls=%fused_compare, metadata={op_name="jit(_sternheimer_core)/jit(main)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=277 scheduling_name="loop_compare_fusion"}
+}
+
+%fused_multiply.1 (param_0.218: c128[26,2,24,24,80], param_1.386: f64[24,24,80]) -> c128[26,2,24,24,80] {
+  %param_0.218 = c128[26,2,24,24,80]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.218"}
+  %param_1.386 = f64[24,24,80]{2,1,0} parameter(1), metadata={scheduling_name="param_1.386"}
+  %convert.70.3 = c128[24,24,80]{2,1,0} convert(%param_1.386), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619 scheduling_name="convert.70.3"}
+  %constant_387_1 = c128[] constant((214.66252583997982, 0)), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %broadcast.322.3 = c128[24,24,80]{2,1,0} broadcast(%constant_387_1), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619 scheduling_name="broadcast.322.3"}
+  %multiply.297.3 = c128[24,24,80]{2,1,0} multiply(%convert.70.3, %broadcast.322.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619 scheduling_name="multiply.297.3"}
+  %broadcast.323.1 = c128[26,2,24,24,80]{4,3,2,1,0} broadcast(%multiply.297.3), dimensions={2,3,4}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619 scheduling_name="broadcast.323.1"}
+  ROOT %multiply.298.1 = c128[26,2,24,24,80]{4,3,2,1,0} multiply(%param_0.218, %broadcast.323.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619 scheduling_name="multiply.298.1"}
+}
+
+%fused_broadcast.1 () -> f64[24,24,80,26,2] {
+  %constant_17_2 = f64[] constant(0)
+  ROOT %broadcast.313.1 = f64[24,24,80,26,2]{4,3,2,1,0} broadcast(%constant_17_2), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="broadcast.313.1"}
+}
+
+%fused_scatter.2 (param_0.261: f64[24,24,80,26,2], param_1.384: s32[1947], param_2.236: s32[1947], param_3.140: s32[1947]) -> f64[24,24,80,26,2] {
+  %param_0.261 = f64[24,24,80,26,2]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.261"}
+  %param_2.236 = s32[1947]{0} parameter(2), metadata={scheduling_name="param_2.236"}
+  %constant_23_2 = s32[] constant(0)
+  %broadcast.314.17 = s32[1947]{0} broadcast(%constant_23_2), dimensions={}, metadata={scheduling_name="broadcast.314.17"}
+  %compare.148.3 = pred[1947]{0} compare(%param_2.236, %broadcast.314.17), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.148.3"}
+  %constant_21_2 = s32[] constant(24)
+  %broadcast.315.8 = s32[1947]{0} broadcast(%constant_21_2), dimensions={}, metadata={scheduling_name="broadcast.315.8"}
+  %add.126.7 = s32[1947]{0} add(%param_2.236, %broadcast.315.8), metadata={op_name="jit(_sternheimer_core)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.126.7"}
+  %select.178.7 = s32[1947]{0} select(%compare.148.3, %add.126.7, %param_2.236), metadata={op_name="jit(_sternheimer_core)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.178.7"}
+  %bitcast.1750.5 = s32[1947,1]{1,0} bitcast(%select.178.7), metadata={scheduling_name="bitcast.1750.5"}
+  %param_3.140 = s32[1947]{0} parameter(3), metadata={scheduling_name="param_3.140"}
+  %compare.149.3 = pred[1947]{0} compare(%param_3.140, %broadcast.314.17), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.149.3"}
+  %add.127.7 = s32[1947]{0} add(%param_3.140, %broadcast.315.8), metadata={op_name="jit(_sternheimer_core)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.127.7"}
+  %select.179.7 = s32[1947]{0} select(%compare.149.3, %add.127.7, %param_3.140), metadata={op_name="jit(_sternheimer_core)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.179.7"}
+  %bitcast.1765.5 = s32[1947,1]{1,0} bitcast(%select.179.7), metadata={scheduling_name="bitcast.1765.5"}
+  %param_1.384 = s32[1947]{0} parameter(1), metadata={scheduling_name="param_1.384"}
+  %compare.152.3 = pred[1947]{0} compare(%param_1.384, %broadcast.314.17), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.152.3"}
+  %constant_19_1 = s32[] constant(80)
+  %broadcast.319.7 = s32[1947]{0} broadcast(%constant_19_1), dimensions={}, metadata={scheduling_name="broadcast.319.7"}
+  %add.128.7 = s32[1947]{0} add(%param_1.384, %broadcast.319.7), metadata={op_name="jit(_sternheimer_core)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.128.7"}
+  %select.180.7 = s32[1947]{0} select(%compare.152.3, %add.128.7, %param_1.384), metadata={op_name="jit(_sternheimer_core)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.180.7"}
+  %bitcast.1779.5 = s32[1947,1]{1,0} bitcast(%select.180.7), metadata={scheduling_name="bitcast.1779.5"}
+  %concatenate.12.5 = s32[1947,3]{1,0} concatenate(%bitcast.1750.5, %bitcast.1765.5, %bitcast.1779.5), dimensions={1}, metadata={op_name="jit(_sternheimer_core)/jit(main)/concatenate" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="concatenate.12.5"}
+  %constant_17_1 = f64[] constant(0)
+  %broadcast.320.1 = f64[1947,1,1,1,26,2]{5,4,3,2,1,0} broadcast(%constant_17_1), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="broadcast.320.1"}
+  ROOT %scatter.17.1 = f64[24,24,80,26,2]{4,3,2,1,0} scatter(%param_0.261, %concatenate.12.5, %broadcast.320.1), update_window_dims={1,2,3,4,5}, inserted_window_dims={}, scatter_dims_to_operand_dims={0,1,2}, index_vector_dim=1, to_apply=%region_0.53, metadata={op_name="jit(_sternheimer_core)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="scatter.17.1"}
+}
+
+%fused_transpose.7 (param_0.221: f64[24,24,80,26,2]) -> c128[26,2,24,24,80] {
+  %param_0.221 = f64[24,24,80,26,2]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.221"}
+  %bitcast.1786.3 = f64[46080,52]{1,0} bitcast(%param_0.221), metadata={scheduling_name="bitcast.1786.3"}
+  %transpose.156.3 = f64[52,46080]{1,0} transpose(%bitcast.1786.3), dimensions={1,0}, metadata={op_name="jit(_sternheimer_core)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="transpose.156.3"}
+  %bitcast.1789.1 = f64[26,2,24,24,80]{4,3,2,1,0} bitcast(%transpose.156.3), metadata={scheduling_name="bitcast.1789.1"}
+  ROOT %complex.41.1 = c128[26,2,24,24,80]{4,3,2,1,0} complex(%bitcast.1789.1, %bitcast.1789.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="complex.41.1"}
+}
+
+%fused_slice.1 (param_0_0.1: c128[102,1947], param_1_0.1: c128[26,2,24,24,80], param_1_1.1: pred[1947], param_1_2.1: s32[1947], param_1_3.1: s32[1947], param_1_4.1: s32[1947]) -> (c128[198594], c128[101244]) {
+  %param_0_0.1 = c128[102,1947]{1,0} parameter(0), metadata={scheduling_name="param_0_0.1"}
+  %real.62.2 = f64[102,1947]{1,0} real(%param_0_0.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="real.62.2"}
+  %imag.44.2 = f64[102,1947]{1,0} imag(%param_0_0.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="imag.44.2"}
+  %negate.43.2 = f64[102,1947]{1,0} negate(%imag.44.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="negate.43.2"}
+  %complex.42.2 = c128[102,1947]{1,0} complex(%real.62.2, %negate.43.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="complex.42.2"}
+  %reshape.319 = c128[198594]{0} reshape(%complex.42.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="reshape.319"}
+  %param_1_0.1 = c128[26,2,24,24,80]{4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1_0.1"}
+  %bitcast.1793.6 = c128[24,24,80,26,2]{2,1,0,4,3} bitcast(%param_1_0.1), metadata={scheduling_name="bitcast.1793.6"}
+  %param_1_3.1 = s32[1947]{0} parameter(4), metadata={scheduling_name="param_1_3.1"}
+  %constant_23_4 = s32[] constant(0)
+  %broadcast.314.22 = s32[1947]{0} broadcast(%constant_23_4), dimensions={}, metadata={scheduling_name="broadcast.314.22"}
+  %compare.148.8 = pred[1947]{0} compare(%param_1_3.1, %broadcast.314.22), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.148.8"}
+  %constant_21_4 = s32[] constant(24)
+  %broadcast.315.15 = s32[1947]{0} broadcast(%constant_21_4), dimensions={}, metadata={scheduling_name="broadcast.315.15"}
+  %add.126.8 = s32[1947]{0} add(%param_1_3.1, %broadcast.315.15), metadata={op_name="jit(_sternheimer_core)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.126.8"}
+  %select.178.8 = s32[1947]{0} select(%compare.148.8, %add.126.8, %param_1_3.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.178.8"}
+  %bitcast.1750.10 = s32[1947,1]{1,0} bitcast(%select.178.8), metadata={scheduling_name="bitcast.1750.10"}
+  %param_1_4.1 = s32[1947]{0} parameter(5), metadata={scheduling_name="param_1_4.1"}
+  %compare.149.8 = pred[1947]{0} compare(%param_1_4.1, %broadcast.314.22), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.149.8"}
+  %add.127.8 = s32[1947]{0} add(%param_1_4.1, %broadcast.315.15), metadata={op_name="jit(_sternheimer_core)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.127.8"}
+  %select.179.8 = s32[1947]{0} select(%compare.149.8, %add.127.8, %param_1_4.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.179.8"}
+  %bitcast.1765.10 = s32[1947,1]{1,0} bitcast(%select.179.8), metadata={scheduling_name="bitcast.1765.10"}
+  %param_1_2.1 = s32[1947]{0} parameter(3), metadata={scheduling_name="param_1_2.1"}
+  %compare.152.8 = pred[1947]{0} compare(%param_1_2.1, %broadcast.314.22), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.152.8"}
+  %constant_19_4 = s32[] constant(80)
+  %broadcast.319.8 = s32[1947]{0} broadcast(%constant_19_4), dimensions={}, metadata={scheduling_name="broadcast.319.8"}
+  %add.128.8 = s32[1947]{0} add(%param_1_2.1, %broadcast.319.8), metadata={op_name="jit(_sternheimer_core)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.128.8"}
+  %select.180.8 = s32[1947]{0} select(%compare.152.8, %add.128.8, %param_1_2.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.180.8"}
+  %bitcast.1779.10 = s32[1947,1]{1,0} bitcast(%select.180.8), metadata={scheduling_name="bitcast.1779.10"}
+  %concatenate.12.10 = s32[1947,3]{1,0} concatenate(%bitcast.1750.10, %bitcast.1765.10, %bitcast.1779.10), dimensions={1}, metadata={op_name="jit(_sternheimer_core)/jit(main)/concatenate" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="concatenate.12.10"}
+  %gather.8.6 = c128[1947,1,1,1,26,2]{0,5,4,3,2,1} gather(%bitcast.1793.6, %concatenate.12.10), offset_dims={1,2,3,4,5}, collapsed_slice_dims={}, start_index_map={0,1,2}, index_vector_dim=1, slice_sizes={1,1,1,26,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="gather.8.6"}
+  %bitcast.1796.4 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} bitcast(%gather.8.6), metadata={scheduling_name="bitcast.1796.4"}
+  %param_1_1.1 = pred[1947]{0} parameter(2), metadata={scheduling_name="param_1_1.1"}
+  %convert.69.3 = c128[1947]{0} convert(%param_1_1.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=142 scheduling_name="convert.69.3"}
+  %broadcast.321.9 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} broadcast(%convert.69.3), dimensions={5}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="broadcast.321.9"}
+  %multiply.294.4 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} multiply(%bitcast.1796.4, %broadcast.321.9), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="multiply.294.4"}
+  %reshape.320 = c128[101244]{0} reshape(%multiply.294.4), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="reshape.320"}
+  %concatenate.14 = c128[299838]{0} concatenate(%reshape.319, %reshape.320), dimensions={0}, metadata={scheduling_name="concatenate.14"}
+  %slice.2 = c128[198594]{0} slice(%concatenate.14), slice={[0:198594]}, metadata={scheduling_name="slice.2"}
+  %slice.3 = c128[101244]{0} slice(%concatenate.14), slice={[198594:299838]}, metadata={scheduling_name="slice.3"}
+  ROOT %tuple.10 = (c128[198594]{0}, c128[101244]{0}) tuple(%slice.2, %slice.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="tuple.10"}
+}
+
+%fused_transpose.6 (param_0.201: c128[52,102]) -> c128[26,102,2] {
+  %param_0.201 = c128[52,102]{1,0} parameter(0), metadata={scheduling_name="param_0.201"}
+  %bitcast.1851.1 = c128[26,2,102]{2,1,0} bitcast(%param_0.201), metadata={scheduling_name="bitcast.1851.1"}
+  ROOT %transpose.157.1 = c128[26,102,2]{2,1,0} transpose(%bitcast.1851.1), dimensions={0,2,1}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/RG,vsG->Rsv/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="transpose.157.1"}
+}
+
+%wrapped_transpose_computation (param_0.329: c128[2,2,102,102]) -> c128[102,2,2,102] {
+  %param_0.329 = c128[2,2,102,102]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.329"}
+  ROOT %transpose.158.1 = c128[102,2,2,102]{3,2,1,0} transpose(%param_0.329), dimensions={3,1,0,2}, metadata={op_name="op[6]" scheduling_name="transpose.158.1"}
+}
+
+%fused_transpose.5 (param_0.199: c128[26,204]) -> c128[2,26,102] {
+  %param_0.199 = c128[26,204]{1,0} parameter(0), metadata={scheduling_name="param_0.199"}
+  %bitcast.1863.1 = c128[26,2,102]{2,1,0} bitcast(%param_0.199), metadata={scheduling_name="bitcast.1863.1"}
+  ROOT %transpose.159.1 = c128[2,26,102]{2,1,0} transpose(%bitcast.1863.1), dimensions={1,0,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/stRQ,Qtv->Rsv/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=624 scheduling_name="transpose.159.1"}
+}
+
+%command_buffer (p: s32[1947], p.1: s32[1947], p.2: s32[1947], p.3: c128[102,1947], p.4: pred[1947], p.5: c128[2,2,102,102]) -> (c128[26,2,24,24,80], (c128[52,1947], s8[3262368])) {
+  %p = s32[1947]{0} parameter(0)
+  %p.1 = s32[1947]{0} parameter(1)
+  %p.2 = s32[1947]{0} parameter(2)
+  %p.3 = c128[102,1947]{1,0} parameter(3)
+  %p.4 = pred[1947]{0} parameter(4)
+  %p.5 = c128[2,2,102,102]{3,2,1,0} parameter(5)
+  %loop_broadcast_fusion.1 = f64[24,24,80,26,2]{4,3,2,1,0} fusion(), kind=kLoop, calls=%fused_broadcast.1, metadata={op_name="jit(_sternheimer_core)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 deduplicated_name="loop_broadcast_fusion" scheduling_name="loop_broadcast_fusion.1"}
+  %input_scatter_fusion.2 = f64[24,24,80,26,2]{4,3,2,1,0} fusion(%loop_broadcast_fusion.1, %p, %p.1, %p.2), kind=kInput, calls=%fused_scatter.2, metadata={op_name="jit(_sternheimer_core)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="input_scatter_fusion.2"}
+  %input_transpose_fusion.3 = c128[26,2,24,24,80]{4,3,2,1,0} fusion(%input_scatter_fusion.2), kind=kInput, calls=%fused_transpose.7, metadata={op_name="jit(_sternheimer_core)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="input_transpose_fusion.3"}
+  %input_slice_fusion.1 = (c128[198594]{0}, c128[101244]{0}) fusion(%p.3, %input_transpose_fusion.3, %p.4, %p, %p.1, /*index=5*/%p.2), kind=kInput, calls=%fused_slice.1, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 deduplicated_name="input_slice_fusion" scheduling_name="input_slice_fusion.1"}
+  %get-tuple-element.46 = c128[101244]{0} get-tuple-element(%input_slice_fusion.1), index=1, metadata={scheduling_name="get-tuple-element.46"}
+  %bitcast.1840.0 = c128[52,1947]{1,0} bitcast(%get-tuple-element.46), metadata={scheduling_name="bitcast.1840.0"}
+  %get-tuple-element.45 = c128[198594]{0} get-tuple-element(%input_slice_fusion.1), index=0, metadata={scheduling_name="get-tuple-element.45"}
+  %bitcast.2062 = c128[102,1947]{1,0} bitcast(%get-tuple-element.45), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="bitcast.2062"}
+  %custom-call.15.0 = (c128[52,102]{1,0}, s8[4194304]{0}) custom-call(%bitcast.1840.0, %bitcast.2062), custom_call_target="__cublas$gemm", metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/RG,vsG->Rsv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="custom-call.15.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"101244","rhs_stride":"198594","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.25.0 = c128[52,102]{1,0} get-tuple-element(%custom-call.15.0), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/RG,vsG->Rsv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 scheduling_name="get-tuple-element.25.0"}
+  %loop_transpose_fusion.3 = c128[26,102,2]{2,1,0} fusion(%get-tuple-element.25.0), kind=kLoop, calls=%fused_transpose.6, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/RG,vsG->Rsv/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623 deduplicated_name="loop_transpose_fusion.1" scheduling_name="loop_transpose_fusion.3"}
+  %bitcast.1855.0 = c128[26,204]{1,0} bitcast(%loop_transpose_fusion.3), metadata={scheduling_name="bitcast.1855.0"}
+  %wrapped_transpose = c128[102,2,2,102]{3,2,1,0} fusion(%p.5), kind=kInput, calls=%wrapped_transpose_computation, metadata={op_name="op[6]" scheduling_name="wrapped_transpose"}
+  %bitcast.1860.0 = c128[204,204]{1,0} bitcast(%wrapped_transpose), metadata={scheduling_name="bitcast.1860.0"}
+  %custom-call.16.0 = (c128[26,204]{1,0}, s8[750720]{0}) custom-call(%bitcast.1855.0, %bitcast.1860.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/stRQ,Qtv->Rsv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=624 scheduling_name="custom-call.16.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"5304","rhs_stride":"41616","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.26.0 = c128[26,204]{1,0} get-tuple-element(%custom-call.16.0), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/stRQ,Qtv->Rsv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=624 scheduling_name="get-tuple-element.26.0"}
+  %loop_transpose_fusion.2 = c128[2,26,102]{2,1,0} fusion(%get-tuple-element.26.0), kind=kLoop, calls=%fused_transpose.5, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/stRQ,Qtv->Rsv/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=624 deduplicated_name="loop_transpose_fusion" scheduling_name="loop_transpose_fusion.2"}
+  %bitcast.1867.0 = c128[52,102]{1,0} bitcast(%loop_transpose_fusion.2), metadata={scheduling_name="bitcast.1867.0"}
+  %custom-call.17.0 = (c128[52,1947]{1,0}, s8[3262368]{0}) custom-call(%bitcast.1867.0, %p.3), custom_call_target="__cublas$gemm", metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/RG,Rsv->vsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625 scheduling_name="custom-call.17.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"5304","rhs_stride":"198594","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  ROOT %tuple.15 = (c128[26,2,24,24,80]{4,3,2,1,0}, (c128[52,1947]{1,0}, s8[3262368]{0})) tuple(%input_transpose_fusion.3, %custom-call.17.0)
+}
+
+%fused_slice.2 (param_1_0.2: c128[26,2,1947]) -> (c128[101244], c128[101244]) {
+  %constant_25_6 = c128[] constant((0, 0))
+  %broadcast.329.2 = c128[26,3894]{1,0} broadcast(%constant_25_6), dimensions={}, metadata={scheduling_name="broadcast.329.2"}
+  %reshape.321 = c128[101244]{0} reshape(%broadcast.329.2), metadata={scheduling_name="reshape.321"}
+  %param_1_0.2 = c128[26,2,1947]{2,1,0} parameter(0), metadata={scheduling_name="param_1_0.2"}
+  %real.63.2 = f64[26,2,1947]{2,1,0} real(%param_1_0.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="real.63.2"}
+  %imag.45.2 = f64[26,2,1947]{2,1,0} imag(%param_1_0.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="imag.45.2"}
+  %negate.44.2 = f64[26,2,1947]{2,1,0} negate(%imag.45.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="negate.44.2"}
+  %complex.43.2 = c128[26,2,1947]{2,1,0} complex(%real.63.2, %negate.44.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="complex.43.2"}
+  %reshape.322 = c128[101244]{0} reshape(%complex.43.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="reshape.322"}
+  %concatenate.15 = c128[202488]{0} concatenate(%reshape.321, %reshape.322), dimensions={0}, metadata={scheduling_name="concatenate.15"}
+  %slice.4 = c128[101244]{0} slice(%concatenate.15), slice={[0:101244]}, metadata={scheduling_name="slice.4"}
+  %slice.5 = c128[101244]{0} slice(%concatenate.15), slice={[101244:202488]}, metadata={scheduling_name="slice.5"}
+  ROOT %tuple.11 = (c128[101244]{0}, c128[101244]{0}) tuple(%slice.4, %slice.5), metadata={op_name="jit(_sternheimer_core)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="tuple.11"}
+}
+
+%fused_reduce_subtract (param_0.252: c128[26,3894], param_1.383: c128[52,1947], param_2.234: c128[26,2,24,24,80], param_3.141: c128[26,2,1947], param_4.97: c128[26,2,24,24,80], param_5.73: pred[1947], param_6.69: f64[1947], param_7.69: f64[], param_8.70: s32[1947], param_9.57: s32[1947], param_10.41: s32[1947], param_11.28: f64[26]) -> (c128[26,2,1947], f64[26]) {
+  %param_3.141 = c128[26,2,1947]{2,1,0} parameter(3), metadata={scheduling_name="param_3.141"}
+  %negate.42.2 = c128[26,2,1947]{2,1,0} negate(%param_3.141), metadata={op_name="jit(_sternheimer_core)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=234 scheduling_name="negate.42.2"}
+  %param_6.69 = f64[1947]{0} parameter(6), metadata={scheduling_name="param_6.69"}
+  %convert.68.1 = c128[1947]{0} convert(%param_6.69), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614 scheduling_name="convert.68.1"}
+  %broadcast.312.5 = c128[26,2,1947]{2,1,0} broadcast(%convert.68.1), dimensions={2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614 scheduling_name="broadcast.312.5"}
+  %param_4.97 = c128[26,2,24,24,80]{4,3,2,1,0} parameter(4), metadata={scheduling_name="param_4.97"}
+  %bitcast.1793.5 = c128[24,24,80,26,2]{2,1,0,4,3} bitcast(%param_4.97), metadata={scheduling_name="bitcast.1793.5"}
+  %param_9.57 = s32[1947]{0} parameter(9), metadata={scheduling_name="param_9.57"}
+  %constant_23_1 = s32[] constant(0)
+  %broadcast.314.21 = s32[1947]{0} broadcast(%constant_23_1), dimensions={}, metadata={scheduling_name="broadcast.314.21"}
+  %compare.148.7 = pred[1947]{0} compare(%param_9.57, %broadcast.314.21), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.148.7"}
+  %constant_21_1 = s32[] constant(24)
+  %broadcast.315.6 = s32[1947]{0} broadcast(%constant_21_1), dimensions={}, metadata={scheduling_name="broadcast.315.6"}
+  %add.126.5 = s32[1947]{0} add(%param_9.57, %broadcast.315.6), metadata={op_name="jit(_sternheimer_core)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.126.5"}
+  %select.178.5 = s32[1947]{0} select(%compare.148.7, %add.126.5, %param_9.57), metadata={op_name="jit(_sternheimer_core)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.178.5"}
+  %bitcast.1750.9 = s32[1947,1]{1,0} bitcast(%select.178.5), metadata={scheduling_name="bitcast.1750.9"}
+  %param_10.41 = s32[1947]{0} parameter(10), metadata={scheduling_name="param_10.41"}
+  %compare.149.7 = pred[1947]{0} compare(%param_10.41, %broadcast.314.21), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.149.7"}
+  %add.127.5 = s32[1947]{0} add(%param_10.41, %broadcast.315.6), metadata={op_name="jit(_sternheimer_core)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.127.5"}
+  %select.179.5 = s32[1947]{0} select(%compare.149.7, %add.127.5, %param_10.41), metadata={op_name="jit(_sternheimer_core)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.179.5"}
+  %bitcast.1765.9 = s32[1947,1]{1,0} bitcast(%select.179.5), metadata={scheduling_name="bitcast.1765.9"}
+  %param_8.70 = s32[1947]{0} parameter(8), metadata={scheduling_name="param_8.70"}
+  %compare.152.7 = pred[1947]{0} compare(%param_8.70, %broadcast.314.21), direction=LT, metadata={op_name="jit(_sternheimer_core)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="compare.152.7"}
+  %constant_19_3 = s32[] constant(80)
+  %broadcast.319.5 = s32[1947]{0} broadcast(%constant_19_3), dimensions={}, metadata={scheduling_name="broadcast.319.5"}
+  %add.128.5 = s32[1947]{0} add(%param_8.70, %broadcast.319.5), metadata={op_name="jit(_sternheimer_core)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="add.128.5"}
+  %select.180.5 = s32[1947]{0} select(%compare.152.7, %add.128.5, %param_8.70), metadata={op_name="jit(_sternheimer_core)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="select.180.5"}
+  %bitcast.1779.9 = s32[1947,1]{1,0} bitcast(%select.180.5), metadata={scheduling_name="bitcast.1779.9"}
+  %concatenate.12.9 = s32[1947,3]{1,0} concatenate(%bitcast.1750.9, %bitcast.1765.9, %bitcast.1779.9), dimensions={1}, metadata={op_name="jit(_sternheimer_core)/jit(main)/concatenate" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=144 scheduling_name="concatenate.12.9"}
+  %gather.8.5 = c128[1947,1,1,1,26,2]{0,5,4,3,2,1} gather(%bitcast.1793.5, %concatenate.12.9), offset_dims={1,2,3,4,5}, collapsed_slice_dims={}, start_index_map={0,1,2}, index_vector_dim=1, slice_sizes={1,1,1,26,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="gather.8.5"}
+  %bitcast.1796.3 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} bitcast(%gather.8.5), metadata={scheduling_name="bitcast.1796.3"}
+  %param_5.73 = pred[1947]{0} parameter(5), metadata={scheduling_name="param_5.73"}
+  %convert.69.1 = c128[1947]{0} convert(%param_5.73), metadata={op_name="jit(_sternheimer_core)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=142 scheduling_name="convert.69.1"}
+  %broadcast.321.8 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} broadcast(%convert.69.1), dimensions={5}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="broadcast.321.8"}
+  %multiply.294.3 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} multiply(%bitcast.1796.3, %broadcast.321.8), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611 scheduling_name="multiply.294.3"}
+  %bitcast.1803.5 = c128[26,2,1947]{2,1,0} bitcast(%multiply.294.3), metadata={scheduling_name="bitcast.1803.5"}
+  %multiply.295.5 = c128[26,2,1947]{2,1,0} multiply(%broadcast.312.5, %bitcast.1803.5), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614 scheduling_name="multiply.295.5"}
+  %param_2.234 = c128[26,2,24,24,80]{4,3,2,1,0} parameter(2), metadata={scheduling_name="param_2.234"}
+  %constant_494_1 = c128[] constant((0.004658474953124562, 0)), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %broadcast.324.5 = c128[26,2,24,24,80]{4,3,2,1,0} broadcast(%constant_494_1), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="broadcast.324.5"}
+  %multiply.299.5 = c128[26,2,24,24,80]{4,3,2,1,0} multiply(%param_2.234, %broadcast.324.5), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="multiply.299.5"}
+  %bitcast.1824.5 = c128[24,24,80,26,2]{2,1,0,4,3} bitcast(%multiply.299.5), metadata={scheduling_name="bitcast.1824.5"}
+  %gather.9.5 = c128[1947,1,1,1,26,2]{0,5,4,3,2,1} gather(%bitcast.1824.5, %concatenate.12.9), offset_dims={1,2,3,4,5}, collapsed_slice_dims={}, start_index_map={0,1,2}, index_vector_dim=1, slice_sizes={1,1,1,26,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="gather.9.5"}
+  %bitcast.1829.5 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} bitcast(%gather.9.5), metadata={scheduling_name="bitcast.1829.5"}
+  %multiply.300.5 = c128[1,1,1,26,2,1947]{5,4,3,2,1,0} multiply(%bitcast.1829.5, %broadcast.321.8), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="multiply.300.5"}
+  %bitcast.1834.5 = c128[26,2,1947]{2,1,0} bitcast(%multiply.300.5), metadata={scheduling_name="bitcast.1834.5"}
+  %add.129.5 = c128[26,2,1947]{2,1,0} add(%multiply.295.5, %bitcast.1834.5), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="add.129.5"}
+  %param_1.383 = c128[52,1947]{1,0} parameter(1), metadata={scheduling_name="param_1.383"}
+  %broadcast.325.9 = c128[52,1947]{1,0} broadcast(%convert.69.1), dimensions={1}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625 scheduling_name="broadcast.325.9"}
+  %multiply.302.9 = c128[52,1947]{1,0} multiply(%param_1.383, %broadcast.325.9), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625 scheduling_name="multiply.302.9"}
+  %bitcast.1874.9 = c128[2,26,1947]{2,1,0} bitcast(%multiply.302.9), metadata={scheduling_name="bitcast.1874.9"}
+  %transpose.160.9 = c128[26,2,1947]{2,1,0} transpose(%bitcast.1874.9), dimensions={1,0,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625 scheduling_name="transpose.160.9"}
+  %add.130.7 = c128[26,2,1947]{2,1,0} add(%add.129.5, %transpose.160.9), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625 scheduling_name="add.130.7"}
+  %param_11.28 = f64[26]{0} parameter(11), metadata={scheduling_name="param_11.28"}
+  %convert.71.3 = c128[26]{0} convert(%param_11.28), metadata={op_name="jit(_sternheimer_core)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=149 scheduling_name="convert.71.3"}
+  %constant_25_1 = c128[] constant((0, 0))
+  %broadcast.326.3 = c128[26]{0} broadcast(%constant_25_1), dimensions={}, metadata={scheduling_name="broadcast.326.3"}
+  %multiply.303.3 = c128[26]{0} multiply(%convert.71.3, %broadcast.326.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=149 scheduling_name="multiply.303.3"}
+  %broadcast.327.5 = c128[26,2,1947]{2,1,0} broadcast(%multiply.303.3), dimensions={0}, metadata={op_name="jit(_sternheimer_core)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=149 scheduling_name="broadcast.327.5"}
+  %subtract.12.5 = c128[26,2,1947]{2,1,0} subtract(%add.130.7, %broadcast.327.5), metadata={op_name="jit(_sternheimer_core)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=149 scheduling_name="subtract.12.5"}
+  %param_7.69 = f64[] parameter(7), metadata={scheduling_name="param_7.69"}
+  %convert.72.1 = c128[] convert(%param_7.69), metadata={op_name="jit(_sternheimer_core)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=153 scheduling_name="convert.72.1"}
+  %broadcast.328.5 = c128[26,3894]{1,0} broadcast(%convert.72.1), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=153 scheduling_name="broadcast.328.5"}
+  %param_0.252 = c128[26,3894]{1,0} parameter(0), metadata={scheduling_name="param_0.252"}
+  %multiply.304.5 = c128[26,3894]{1,0} multiply(%broadcast.328.5, %param_0.252), metadata={op_name="jit(_sternheimer_core)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=153 scheduling_name="multiply.304.5"}
+  %bitcast.1913.3 = c128[26,2,1947]{2,1,0} bitcast(%multiply.304.5), metadata={scheduling_name="bitcast.1913.3"}
+  %add.131.3 = c128[26,2,1947]{2,1,0} add(%subtract.12.5, %bitcast.1913.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=153 scheduling_name="add.131.3"}
+  %subtract.13.1 = c128[26,2,1947]{2,1,0} subtract(%negate.42.2, %add.131.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=239 scheduling_name="subtract.13.1"}
+  %real.66.7.clone.1 = f64[26,2,1947]{2,1,0} real(%negate.42.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="real.66.7.clone.1"}
+  %imag.47.9.clone.1 = f64[26,2,1947]{2,1,0} imag(%negate.42.2), metadata={op_name="jit(_sternheimer_core)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="imag.47.9.clone.1"}
+  %negate.46.7.clone.1 = f64[26,2,1947]{2,1,0} negate(%imag.47.9.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="negate.46.7.clone.1"}
+  %complex.45.7.clone.1 = c128[26,2,1947]{2,1,0} complex(%real.66.7.clone.1, %negate.46.7.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="complex.45.7.clone.1"}
+  %multiply.307.7.clone.1 = c128[26,2,1947]{2,1,0} multiply(%complex.45.7.clone.1, %negate.42.2), metadata={scheduling_name="multiply.307.7.clone.1"}
+  %bitcast.1954.5.clone.1 = c128[26,3894]{1,0} bitcast(%multiply.307.7.clone.1), metadata={scheduling_name="bitcast.1954.5.clone.1"}
+  %reduce.10.5.clone.1 = c128[26]{0} reduce(%bitcast.1954.5.clone.1, %constant_25_1), dimensions={1}, to_apply=%scalar_add_computation, metadata={op_name="jit(_sternheimer_core)/jit(main)/vsG,vsG->v/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="reduce.10.5.clone.1"}
+  %real.67.3.clone.1 = f64[26]{0} real(%reduce.10.5.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=170 scheduling_name="real.67.3.clone.1"}
+  %sqrt.48.1.clone.1 = f64[26]{0} sqrt(%real.67.3.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=170 scheduling_name="sqrt.48.1.clone.1"}
+  ROOT %tuple.8 = (c128[26,2,1947]{2,1,0}, f64[26]{0}) tuple(%subtract.13.1, %sqrt.48.1.clone.1), metadata={scheduling_name="tuple.8"}
+}
+
+%fused_multiply_reduce (param_0.328: c128[26,2,1947], param_1.393: f64[26,1,1947]) -> (f64[26], c128[26,2,1947]) {
+  %param_0.328 = c128[26,2,1947]{2,1,0} parameter(0), metadata={scheduling_name="param_0.328"}
+  %real.64.3 = f64[26,2,1947]{2,1,0} real(%param_0.328), metadata={op_name="jit(_sternheimer_core)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="real.64.3"}
+  %imag.46.5 = f64[26,2,1947]{2,1,0} imag(%param_0.328), metadata={op_name="jit(_sternheimer_core)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="imag.46.5"}
+  %negate.45.5 = f64[26,2,1947]{2,1,0} negate(%imag.46.5), metadata={op_name="jit(_sternheimer_core)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="negate.45.5"}
+  %complex.44.5 = c128[26,2,1947]{2,1,0} complex(%real.64.3, %negate.45.5), metadata={op_name="jit(_sternheimer_core)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="complex.44.5"}
+  %param_1.393 = f64[26,1,1947]{2,1,0} parameter(1), metadata={scheduling_name="param_1.393"}
+  %bitcast.1921.3.clone.1 = f64[26,1947]{1,0} bitcast(%param_1.393), metadata={scheduling_name="bitcast.1921.3.clone.1"}
+  %convert.73.3.clone.1 = c128[26,1947]{1,0} convert(%bitcast.1921.3.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=158 scheduling_name="convert.73.3.clone.1"}
+  %broadcast.331.1.clone.1 = c128[26,2,1947]{2,1,0} broadcast(%convert.73.3.clone.1), dimensions={0,2}, metadata={op_name="jit(_sternheimer_core)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=158 scheduling_name="broadcast.331.1.clone.1"}
+  %multiply.305.1.clone.1 = c128[26,2,1947]{2,1,0} multiply(%param_0.328, %broadcast.331.1.clone.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=158 scheduling_name="multiply.305.1.clone.1"}
+  %multiply.306.5 = c128[26,2,1947]{2,1,0} multiply(%complex.44.5, %multiply.305.1.clone.1), metadata={scheduling_name="multiply.306.5"}
+  %bitcast.1938.3 = c128[26,3894]{1,0} bitcast(%multiply.306.5), metadata={scheduling_name="bitcast.1938.3"}
+  %constant_25_4 = c128[] constant((0, 0))
+  %reduce.9.3 = c128[26]{0} reduce(%bitcast.1938.3, %constant_25_4), dimensions={1}, to_apply=%scalar_add_computation, metadata={op_name="jit(_sternheimer_core)/jit(main)/vsG,vsG->v/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=166 scheduling_name="reduce.9.3"}
+  %real.65.1 = f64[26]{0} real(%reduce.9.3), metadata={op_name="jit(_sternheimer_core)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=241 scheduling_name="real.65.1"}
+  ROOT %tuple.7 = (f64[26]{0}, c128[26,2,1947]{2,1,0}) tuple(%real.65.1, %multiply.305.1.clone.1), metadata={scheduling_name="tuple.7"}
+}
+
+%fused_compare_select (param_0.319: f64[26]) -> (f64[26], pred[26]) {
+  %param_0.319 = f64[26]{0} parameter(0), metadata={scheduling_name="param_0.319"}
+  %constant_17_3 = f64[] constant(0)
+  %broadcast.333.1 = f64[26]{0} broadcast(%constant_17_3), dimensions={}, metadata={scheduling_name="broadcast.333.1"}
+  %compare.154.1 = pred[26]{0} compare(%param_0.319, %broadcast.333.1), direction=GT, metadata={op_name="jit(_sternheimer_core)/jit(main)/gt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=243 scheduling_name="compare.154.1"}
+  %constant_30_1 = f64[] constant(1)
+  %broadcast.334.1 = f64[26]{0} broadcast(%constant_30_1), dimensions={}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="broadcast.334.1"}
+  %select.181.1 = f64[26]{0} select(%compare.154.1, %param_0.319, %broadcast.334.1), metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="select.181.1"}
+  %constant_15_1_clone_1 = f64[] constant(1e-14)
+  %broadcast.332.1.clone.1 = f64[26]{0} broadcast(%constant_15_1_clone_1), dimensions={}, metadata={scheduling_name="broadcast.332.1.clone.1"}
+  %compare.153.1.clone.1 = pred[26]{0} compare(%param_0.319, %broadcast.332.1.clone.1), direction=GT, metadata={op_name="jit(_sternheimer_core)/jit(main)/gt" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=248 scheduling_name="compare.153.1.clone.1"}
+  ROOT %tuple.6 = (f64[26]{0}, pred[26]{0}) tuple(%select.181.1, %compare.153.1.clone.1), metadata={scheduling_name="tuple.6"}
+}
+
+%fused_broadcast.2 () -> c128[26,2,1947] {
+  %constant_25_2 = c128[] constant((0, 0))
+  ROOT %broadcast.311.1 = c128[26,2,1947]{2,1,0} broadcast(%constant_25_2), dimensions={}, metadata={scheduling_name="broadcast.311.1"}
+}
+
+%command_buffer.2 (p.12: c128[26,2,1947], p.13: c128[52,1947], p.14: c128[26,2,24,24,80], p.15: c128[26,2,1947], p.16: c128[26,2,24,24,80], p.17: pred[1947], p.18: f64[1947], p.19: f64[], p.20: s32[1947], p.21: s32[1947], p.22: s32[1947], p.23: f64[26], p.24: f64[26,1,1947], p.25: s64[]) -> (c128[26,2,1947], c128[26,2,1947], f64[26], pred[26], f64[26], /*index=5*/c128[26,2,1947], s64[]) {
+  %p.12 = c128[26,2,1947]{2,1,0} parameter(0)
+  %p.13 = c128[52,1947]{1,0} parameter(1)
+  %p.14 = c128[26,2,24,24,80]{4,3,2,1,0} parameter(2)
+  %p.15 = c128[26,2,1947]{2,1,0} parameter(3)
+  %p.16 = c128[26,2,24,24,80]{4,3,2,1,0} parameter(4)
+  %p.17 = pred[1947]{0} parameter(5)
+  %p.18 = f64[1947]{0} parameter(6)
+  %p.19 = f64[] parameter(7)
+  %p.20 = s32[1947]{0} parameter(8)
+  %p.21 = s32[1947]{0} parameter(9)
+  %p.22 = s32[1947]{0} parameter(10)
+  %p.23 = f64[26]{0} parameter(11)
+  %p.24 = f64[26,1,1947]{2,1,0} parameter(12)
+  %p.25 = s64[] parameter(13)
+  %input_slice_fusion.2 = (c128[101244]{0}, c128[101244]{0}) fusion(%p.12), kind=kInput, calls=%fused_slice.2, metadata={op_name="jit(_sternheimer_core)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="input_slice_fusion.2"}
+  %get-tuple-element.48 = c128[101244]{0} get-tuple-element(%input_slice_fusion.2), index=1, metadata={scheduling_name="get-tuple-element.48"}
+  %bitcast.1903.0 = c128[3894,26]{0,1} bitcast(%get-tuple-element.48), metadata={scheduling_name="bitcast.1903.0"}
+  %get-tuple-element.47 = c128[101244]{0} get-tuple-element(%input_slice_fusion.2), index=0, metadata={scheduling_name="get-tuple-element.47"}
+  %bitcast.2064 = c128[26,3894]{1,0} bitcast(%get-tuple-element.47), metadata={scheduling_name="bitcast.2064"}
+  %custom-call.18.0 = (c128[26,26]{1,0}, s8[3239808]{0}) custom-call(%bitcast.2064, %bitcast.1903.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_sternheimer_core)/jit(main)/msG,bsG->bm/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="custom-call.18.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"101244","rhs_stride":"101244","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.28.0 = c128[26,26]{1,0} get-tuple-element(%custom-call.18.0), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/msG,bsG->bm/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=151 scheduling_name="get-tuple-element.28.0"}
+  %bitcast.1909.0 = c128[26,3894]{1,0} bitcast(%p.12), metadata={scheduling_name="bitcast.1909.0"}
+  %custom-call.19.0 = (c128[26,3894]{1,0}, s8[1630720]{0}) custom-call(%get-tuple-element.28.0, %bitcast.1909.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_sternheimer_core)/jit(main)/bm,msG->bsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=152 scheduling_name="custom-call.19.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"676","rhs_stride":"101244","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.29.0 = c128[26,3894]{1,0} get-tuple-element(%custom-call.19.0), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/bm,msG->bsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=152 scheduling_name="get-tuple-element.29.0"}
+  %input_reduce_subtract_fusion = (c128[26,2,1947]{2,1,0}, f64[26]{0}) fusion(%get-tuple-element.29.0, %p.13, %p.14, %p.15, %p.16, /*index=5*/%p.17, %p.18, %p.19, %p.20, %p.21, /*index=10*/%p.22, %p.23), kind=kInput, calls=%fused_reduce_subtract, metadata={op_name="jit(_sternheimer_core)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=239 scheduling_name="input_reduce_subtract_fusion"}
+  %get-tuple-element.51 = c128[26,2,1947]{2,1,0} get-tuple-element(%input_reduce_subtract_fusion), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=239 scheduling_name="get-tuple-element.51"}
+  %input_multiply_reduce_fusion = (f64[26]{0}, c128[26,2,1947]{2,1,0}) fusion(%get-tuple-element.51, %p.24), kind=kInput, calls=%fused_multiply_reduce, metadata={op_name="jit(_sternheimer_core)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=241 scheduling_name="input_multiply_reduce_fusion"}
+  %get-tuple-element.52 = c128[26,2,1947]{2,1,0} get-tuple-element(%input_multiply_reduce_fusion), index=1, metadata={op_name="jit(_sternheimer_core)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=241 scheduling_name="get-tuple-element.52"}
+  %get-tuple-element.53 = f64[26]{0} get-tuple-element(%input_multiply_reduce_fusion), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=241 scheduling_name="get-tuple-element.53"}
+  %get-tuple-element.42 = f64[26]{0} get-tuple-element(%input_reduce_subtract_fusion), index=1, metadata={op_name="jit(_sternheimer_core)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=239 scheduling_name="get-tuple-element.42"}
+  %loop_compare_select_fusion = (f64[26]{0}, pred[26]{0}) fusion(%get-tuple-element.42), kind=kLoop, calls=%fused_compare_select, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="loop_compare_select_fusion"}
+  %get-tuple-element.54 = pred[26]{0} get-tuple-element(%loop_compare_select_fusion), index=1, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="get-tuple-element.54"}
+  %get-tuple-element.67 = f64[26]{0} get-tuple-element(%loop_compare_select_fusion), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=93 scheduling_name="get-tuple-element.67"}
+  %loop_broadcast_fusion.2 = c128[26,2,1947]{2,1,0} fusion(), kind=kLoop, calls=%fused_broadcast.2, metadata={scheduling_name="loop_broadcast_fusion.2"}
+  %copy.31 = s64[] copy(%p.25)
+  ROOT %tuple.17 = (c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, f64[26]{0}, pred[26]{0}, f64[26]{0}, /*index=5*/c128[26,2,1947]{2,1,0}, s64[]) tuple(%get-tuple-element.51, %get-tuple-element.52, %get-tuple-element.53, %get-tuple-element.54, %get-tuple-element.67, /*index=5*/%loop_broadcast_fusion.2, %copy.31)
+}
+
+ENTRY %main.939 (Arg_0.1.0: f64[1947], Arg_1.2.0: f64[24,24,80], Arg_2.3.0: s32[1947], Arg_3.4.0: s32[1947], Arg_4.5.0: s32[1947], Arg_5.6.0: c128[102,1947], Arg_6.7.0: c128[2,2,102,102], Arg_7.8.0: pred[1947], Arg_8.9.0: c128[26,2,1947], Arg_9.10.0: f64[26], Arg_10.11.0: f64[], Arg_11.12.0: f64[26,1,1947], Arg_12.13.0: c128[26,2,1947], Arg_13.14.0: f64[]) -> c128[26,2,1947] {
+  %Arg_2.3.0 = s32[1947]{0} parameter(2), metadata={op_name="op[2]" scheduling_name="Arg_2.3.0"}
+  %Arg_3.4.0 = s32[1947]{0} parameter(3), metadata={op_name="op[3]" scheduling_name="Arg_3.4.0"}
+  %Arg_4.5.0 = s32[1947]{0} parameter(4), metadata={op_name="op[4]" scheduling_name="Arg_4.5.0"}
+  %Arg_5.6.0 = c128[102,1947]{1,0} parameter(5), metadata={op_name="op[5]" scheduling_name="Arg_5.6.0"}
+  %Arg_7.8.0 = pred[1947]{0} parameter(7), metadata={op_name="op[7]" scheduling_name="Arg_7.8.0"}
+  %Arg_6.7.0 = c128[2,2,102,102]{3,2,1,0} parameter(6), metadata={op_name="op[6]" scheduling_name="Arg_6.7.0"}
+  %Arg_1.2.0 = f64[24,24,80]{2,1,0} parameter(1), metadata={op_name="op[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_8.9.0 = c128[26,2,1947]{2,1,0} parameter(8), metadata={op_name="op[8]" scheduling_name="Arg_8.9.0"}
+  %Arg_0.1.0 = f64[1947]{0} parameter(0), metadata={op_name="op[0]" scheduling_name="Arg_0.1.0"}
+  %Arg_10.11.0 = f64[] parameter(10), metadata={op_name="op[10]" scheduling_name="Arg_10.11.0"}
+  %Arg_12.13.0 = c128[26,2,1947]{2,1,0} parameter(12), metadata={op_name="b" scheduling_name="Arg_12.13.0"}
+  %Arg_9.10.0 = f64[26]{0} parameter(9), metadata={op_name="op[9]" scheduling_name="Arg_9.10.0"}
+  %Arg_11.12.0 = f64[26,1,1947]{2,1,0} parameter(11), metadata={op_name="op[11]" scheduling_name="Arg_11.12.0"}
+  %constant_29_0 = s64[] constant(0)
+  %Arg_13.14.0 = f64[] parameter(13), metadata={op_name="tol" scheduling_name="Arg_13.14.0"}
+  %call = (c128[26,2,24,24,80]{4,3,2,1,0}, (c128[52,1947]{1,0}, s8[3262368]{0})) call(%Arg_4.5.0, %Arg_2.3.0, %Arg_3.4.0, %Arg_5.6.0, %Arg_7.8.0, /*index=5*/%Arg_6.7.0), to_apply=%command_buffer
+  %get-tuple-element.111 = c128[26,2,24,24,80]{4,3,2,1,0} get-tuple-element(%call), index=0
+  %get-tuple-element.112 = (c128[52,1947]{1,0}, s8[3262368]{0}) get-tuple-element(%call), index=1
+  %get-tuple-element.27.0 = c128[52,1947]{1,0} get-tuple-element(%get-tuple-element.112), index=0, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/RG,Rsv->vsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625 scheduling_name="get-tuple-element.27.0"}
+  %fft.8.0 = c128[26,2,24,24,80]{4,3,2,1,0} fft(%get-tuple-element.111), fft_type=IFFT, fft_length={24,24,80}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/scf_potential.py" source_line=153 scheduling_name="fft.8.0"}
+  %loop_multiply_fusion.1 = c128[26,2,24,24,80]{4,3,2,1,0} fusion(%fft.8.0, %Arg_1.2.0), kind=kLoop, calls=%fused_multiply.1, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619 deduplicated_name="loop_multiply_fusion" scheduling_name="loop_multiply_fusion.1"}
+  %fft.9.0 = c128[26,2,24,24,80]{4,3,2,1,0} fft(%loop_multiply_fusion.1), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(_sternheimer_core)/jit(main)/jit(apply_H_k)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=153 scheduling_name="fft.9.0"}
+  %call.1 = (c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, f64[26]{0}, pred[26]{0}, f64[26]{0}, /*index=5*/c128[26,2,1947]{2,1,0}, s64[]) call(%Arg_8.9.0, %get-tuple-element.27.0, %fft.9.0, %Arg_12.13.0, %get-tuple-element.111, /*index=5*/%Arg_7.8.0, %Arg_0.1.0, %Arg_10.11.0, %Arg_4.5.0, %Arg_2.3.0, /*index=10*/%Arg_3.4.0, %Arg_9.10.0, %Arg_11.12.0, %constant_29_0), to_apply=%command_buffer.2
+  %get-tuple-element.121 = c128[26,2,1947]{2,1,0} get-tuple-element(%call.1), index=0
+  %get-tuple-element.122 = c128[26,2,1947]{2,1,0} get-tuple-element(%call.1), index=1
+  %get-tuple-element.123 = f64[26]{0} get-tuple-element(%call.1), index=2
+  %get-tuple-element.124 = pred[26]{0} get-tuple-element(%call.1), index=3
+  %get-tuple-element.125 = f64[26]{0} get-tuple-element(%call.1), index=4
+  %get-tuple-element.126 = c128[26,2,1947]{2,1,0} get-tuple-element(%call.1), index=5
+  %get-tuple-element.127 = s64[] get-tuple-element(%call.1), index=6
+  %bitcast.1978.0 = f64[26,1,1947]{2,0,1} bitcast(%Arg_11.12.0), metadata={scheduling_name="bitcast.1978.0"}
+  %tuple.12 = (s64[], c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, f64[26]{0}, /*index=5*/pred[26]{0}, pred[1947]{0}, s32[1947]{0}, s32[1947]{0}, s32[1947]{0}, /*index=10*/f64[1947]{0}, f64[24,24,80]{2,1,0}, c128[102,1947]{1,0}, c128[2,2,102,102]{3,2,1,0}, f64[26]{0}, /*index=15*/c128[26,2,1947]{2,1,0}, f64[], f64[], f64[26]{0}, f64[26,1,1947]{2,0,1}) tuple(%get-tuple-element.127, %get-tuple-element.126, %get-tuple-element.121, %get-tuple-element.122, %get-tuple-element.123, /*index=5*/%get-tuple-element.124, %Arg_7.8.0, %Arg_2.3.0, %Arg_3.4.0, %Arg_4.5.0, /*index=10*/%Arg_0.1.0, %Arg_1.2.0, %Arg_5.6.0, %Arg_6.7.0, %Arg_9.10.0, /*index=15*/%Arg_8.9.0, %Arg_10.11.0, %Arg_13.14.0, %get-tuple-element.125, %bitcast.1978.0), metadata={scheduling_name="tuple.12"}
+  %while.932.0 = (s64[], c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, c128[26,2,1947]{2,1,0}, f64[26]{0}, /*index=5*/pred[26]{0}, pred[1947]{0}, s32[1947]{0}, s32[1947]{0}, s32[1947]{0}, /*index=10*/f64[1947]{0}, f64[24,24,80]{2,1,0}, c128[102,1947]{1,0}, c128[2,2,102,102]{3,2,1,0}, f64[26]{0}, /*index=15*/c128[26,2,1947]{2,1,0}, f64[], f64[], f64[26]{0}, f64[26,1,1947]{2,0,1}) while(%tuple.12), condition=%region_7.908, body=%region_4.877, metadata={op_name="jit(_sternheimer_core)/jit(main)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=277 scheduling_name="while.932.0"}, backend_config={"known_trip_count":{"n":"300"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  ROOT %get-tuple-element.934.0 = c128[26,2,1947]{2,1,0} get-tuple-element(%while.932.0), index=1, metadata={op_name="jit(_sternheimer_core)/jit(main)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_solve.py" source_line=277 scheduling_name="get-tuple-element.934.0"}
+}
+

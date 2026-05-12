@@ -1,0 +1,24 @@
+HloModule jit__identity_fn, is_scheduled=true, entry_computation_layout={(c128[480,480]{1,0})->c128[960,960]{1,0}}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="ec85a5b87c5cd4a1e8092c70ff654fca"}
+
+%fused_transpose (param_0.1: c128[480,960]) -> c128[480,960] {
+  %param_0.1 = c128[480,960]{0,1} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.26.1 = c128[960,480]{1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.26.1"}
+  ROOT %transpose.5.1 = c128[480,960]{1,0} transpose(%bitcast.26.1), dimensions={1,0}, metadata={scheduling_name="transpose.5.1"}
+}
+
+%wrapped_transpose_computation (param_0.2: c128[480,480]) -> c128[480,480] {
+  %param_0.2 = c128[480,480]{1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  ROOT %transpose.4.1 = c128[480,480]{1,0} transpose(%param_0.2), dimensions={1,0}, metadata={op_name="x" scheduling_name="transpose.4.1"}
+}
+
+ENTRY %main.4_spmd (param.1: c128[480,480]) -> c128[960,960] {
+  %param.1 = c128[480,480]{1,0} parameter(0), sharding={devices=[2,2]<=[4]}, metadata={op_name="x" scheduling_name="param.1"}
+  %wrapped_transpose = c128[480,480]{1,0} fusion(%param.1), kind=kInput, calls=%wrapped_transpose_computation, metadata={op_name="x" scheduling_name="wrapped_transpose"}
+  %bitcast.23.0 = c128[480,480]{0,1} bitcast(%wrapped_transpose), metadata={scheduling_name="bitcast.23.0"}
+  %all-gather-start = (c128[480,480]{0,1}, c128[480,960]{0,1}) all-gather-start(%bitcast.23.0), channel_id=1, replica_groups=[2,2]<=[4], dimensions={1}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done = c128[480,960]{0,1} all-gather-done(%all-gather-start), metadata={scheduling_name="all-gather-done"}
+  %input_transpose_fusion = c128[480,960]{1,0} fusion(%all-gather-done), kind=kInput, calls=%fused_transpose, metadata={scheduling_name="input_transpose_fusion"}
+  %all-gather-start.1 = (c128[480,960]{1,0}, c128[960,960]{1,0}) all-gather-start(%input_transpose_fusion), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={0}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  ROOT %all-gather-done.1 = c128[960,960]{1,0} all-gather-done(%all-gather-start.1), metadata={scheduling_name="all-gather-done.1"}
+}
+

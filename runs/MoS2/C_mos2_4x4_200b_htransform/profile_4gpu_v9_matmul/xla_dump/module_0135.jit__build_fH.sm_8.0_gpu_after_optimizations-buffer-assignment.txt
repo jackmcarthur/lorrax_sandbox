@@ -1,0 +1,262 @@
+BufferAssignment:
+allocation 0: size 58982400, maybe-live-out:
+ value: <84 loop_multiply_fusion @0> (size=7372800,offset=0): c128[16,60,480]{2,1,0}
+ value: <93 collective-permute-start.1{1} @0> (size=58982400,offset=0): c128[16,480,480]{2,1,0}
+ value: <94 input_transpose_fusion @0> (size=58982400,offset=0): c128[16,480,480]{2,1,0}
+allocation 1: size 58982400, maybe-live-out:
+ value: <81 loop_sqrt_fusion @0> (size=7680,offset=0): f64[16,60]{1,0}
+ value: <86 collective-permute-start{1} @0> (size=7372800,offset=0): c128[16,60,480]{2,1,0}
+ value: <89 custom-call.1.0{0} @0> (size=58982400,offset=0): c128[16,480,480]{2,1,0}
+ value: <91 wrapped_negate @0> (size=58982400,offset=0): c128[16,480,480]{2,1,0}
+ value: <95 loop_transpose_fusion.2 @0> (size=58982400,offset=0): c128[921600,4]{1,0}
+ value: <97 loop_transpose_fusion.1 @0> (size=58982400,offset=0): c128[4,230400,4]{2,1,0}
+ value: <99 loop_transpose_fusion @0> (size=58982400,offset=0): c128[4,4,230400]{2,1,0}
+ value: <101 loop_complex_fusion @0> (size=58982400,offset=0): c128[4,4,480,480,1]{4,3,2,1,0}
+allocation 2: size 14745600, parameter 0, shape |c128[16,60,960]| at ShapeIndex {}:
+ value: <79 param.2 @0> (size=14745600,offset=0): c128[16,60,960]{2,1,0}
+allocation 3: size 7680, parameter 1, shape |f64[16,60]| at ShapeIndex {}:
+ value: <80 param.1.0 @0> (size=7680,offset=0): f64[16,60]{1,0}
+allocation 4: size 16, output shape is |(c128[16,480,480], c128[16,480,480])|, maybe-live-out:
+ value: <102 tuple.1{} @0> (size=16,offset=0): (c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0})
+allocation 5: size 16, constant:
+ value: <82 constant_9_0 @0> (size=16,offset=0): u32[4]{0}
+allocation 6: size 58982784, preallocated-temp:
+ value: <83 partition-id.1 @0> (size=4,offset=384): u32[]
+ value: <85 collective-permute-start{} @0> (size=16,offset=0): (c128[16,60,480]{2,1,0}, c128[16,60,480]{2,1,0})
+ value: <87 loop_complex_fusion.1 @0> (size=7372800,offset=384): c128[16,60,480]{2,1,0}
+ value: <88 custom-call.1.0{} @0> (size=16,offset=128): (c128[16,480,480]{2,1,0}, s8[4194304]{0})
+ value: <90 custom-call.1.0{1} @0> (size=4194304,offset=7373184): s8[4194304]{0}
+ value: <92 collective-permute-start.1{} @0> (size=16,offset=256): (c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0})
+ value: <96 fft.0.0 @0> (size=58982400,offset=384): c128[4,1,480,480,4]{4,3,2,1,0}
+ value: <98 fft.1.0 @0> (size=58982400,offset=384): c128[4,1,480,480,4]{4,3,2,1,0}
+ value: <100 fft.2.0 @0> (size=58982400,offset=384): c128[4,4,480,480,1]{4,3,2,1,0}
+
+Total bytes used: 191700896 (182.82MiB)
+
+Used values:
+<79 param.2 @0>
+ positions:
+  param.2
+ uses:
+  loop_multiply_fusion, operand 0
+ from instruction: %param.2 = c128[16,60,960]{2,1,0} parameter(0), sharding={replicated}, metadata={op_name="ctilde_in" scheduling_name="param.2"}
+<80 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  loop_sqrt_fusion, operand 0
+ from instruction: %param.1.0 = f64[16,60]{1,0} parameter(1), sharding={replicated}, metadata={op_name="f_eps_T" scheduling_name="param.1.0"}
+<81 loop_sqrt_fusion @0>
+ positions:
+  loop_sqrt_fusion
+ uses:
+  loop_multiply_fusion, operand 1
+ from instruction: %loop_sqrt_fusion = f64[16,60]{1,0} fusion(%param.1.0), kind=kLoop, calls=%fused_sqrt, metadata={op_name="jit(_build_fH)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=576 scheduling_name="loop_sqrt_fusion"}
+<82 constant_9_0 @0>
+ positions:
+  constant_9_0
+ uses:
+  loop_multiply_fusion, operand 2
+ from instruction: %constant_9_0 = u32[4]{0} constant({0, 1, 0, 1}), metadata={op_name="jit(_build_fH)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=577}
+<83 partition-id.1 @0>
+ positions:
+  partition-id.1
+ uses:
+  loop_multiply_fusion, operand 3
+ from instruction: %partition-id.1 = u32[] partition-id(), metadata={scheduling_name="partition-id.1"}
+<84 loop_multiply_fusion @0>
+ positions:
+  loop_multiply_fusion
+  collective-permute-start {0}
+ uses:
+  collective-permute-start, operand 0
+  custom-call.1.0, operand 0
+  collective-permute-done, operand 0 {0}
+ from instruction: %loop_multiply_fusion = c128[16,60,480]{2,1,0} fusion(%param.2, %loop_sqrt_fusion, %constant_9_0, %partition-id.1), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_build_fH)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=577 scheduling_name="loop_multiply_fusion"}
+<85 collective-permute-start{} @0>
+ positions:
+  collective-permute-start {}
+ uses:
+  collective-permute-done, operand 0 {}
+ from instruction: %collective-permute-start = (c128[16,60,480]{2,1,0}, c128[16,60,480]{2,1,0}) collective-permute-start(%loop_multiply_fusion), channel_id=1, source_target_pairs={{0,0},{2,1},{1,2},{3,3}}, metadata={op_name="jit(_build_fH)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=583 scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<86 collective-permute-start{1} @0>
+ positions:
+  collective-permute-start {1}
+  collective-permute-done
+ uses:
+  collective-permute-done, operand 0 {1}
+  loop_complex_fusion.1, operand 0
+ from instruction: %collective-permute-start = (c128[16,60,480]{2,1,0}, c128[16,60,480]{2,1,0}) collective-permute-start(%loop_multiply_fusion), channel_id=1, source_target_pairs={{0,0},{2,1},{1,2},{3,3}}, metadata={op_name="jit(_build_fH)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=583 scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<87 loop_complex_fusion.1 @0>
+ positions:
+  loop_complex_fusion.1
+ uses:
+  custom-call.1.0, operand 1
+ from instruction: %loop_complex_fusion.1 = c128[16,60,480]{2,1,0} fusion(%collective-permute-done), kind=kLoop, calls=%fused_complex.1, metadata={op_name="jit(_build_fH)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=583 scheduling_name="loop_complex_fusion.1"}
+<88 custom-call.1.0{} @0>
+ positions:
+  custom-call.1.0 {}
+ uses:
+  get-tuple-element.1, operand 0 {}
+ from instruction: %custom-call.1.0 = (c128[16,480,480]{2,1,0}, s8[4194304]{0}) custom-call(%loop_multiply_fusion, %loop_complex_fusion.1), custom_call_target="__cublas$gemm", metadata={op_name="jit(_build_fH)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=583 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"28800","rhs_stride":"28800","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<89 custom-call.1.0{0} @0>
+ positions:
+  custom-call.1.0 {0}
+  get-tuple-element.1
+ uses:
+  wrapped_negate, operand 0
+ from instruction: %custom-call.1.0 = (c128[16,480,480]{2,1,0}, s8[4194304]{0}) custom-call(%loop_multiply_fusion, %loop_complex_fusion.1), custom_call_target="__cublas$gemm", metadata={op_name="jit(_build_fH)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=583 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"28800","rhs_stride":"28800","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<90 custom-call.1.0{1} @0>
+ positions:
+  custom-call.1.0 {1}
+ uses:
+ from instruction: %custom-call.1.0 = (c128[16,480,480]{2,1,0}, s8[4194304]{0}) custom-call(%loop_multiply_fusion, %loop_complex_fusion.1), custom_call_target="__cublas$gemm", metadata={op_name="jit(_build_fH)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=583 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"28800","rhs_stride":"28800","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<91 wrapped_negate @0>
+ positions:
+  wrapped_negate
+  collective-permute-start.1 {0}
+ uses:
+  collective-permute-start.1, operand 0
+  input_transpose_fusion, operand 1
+  collective-permute-done.1, operand 0 {0}
+ from instruction: %wrapped_negate = c128[16,480,480]{2,1,0} fusion(%get-tuple-element.1), kind=kLoop, calls=%wrapped_negate_computation, metadata={op_name="jit(_build_fH)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=583 scheduling_name="wrapped_negate"}
+<92 collective-permute-start.1{} @0>
+ positions:
+  collective-permute-start.1 {}
+ uses:
+  collective-permute-done.1, operand 0 {}
+ from instruction: %collective-permute-start.1 = (c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}) collective-permute-start(%wrapped_negate), channel_id=2, source_target_pairs={{0,0},{2,1},{1,2},{3,3}}, metadata={op_name="jit(_build_fH)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584 scheduling_name="collective-permute-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<93 collective-permute-start.1{1} @0>
+ positions:
+  collective-permute-start.1 {1}
+  collective-permute-done.1
+ uses:
+  collective-permute-done.1, operand 0 {1}
+  input_transpose_fusion, operand 0
+ from instruction: %collective-permute-start.1 = (c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}) collective-permute-start(%wrapped_negate), channel_id=2, source_target_pairs={{0,0},{2,1},{1,2},{3,3}}, metadata={op_name="jit(_build_fH)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584 scheduling_name="collective-permute-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<94 input_transpose_fusion @0>
+ positions:
+  input_transpose_fusion
+  tuple.1 {0}
+ uses:
+  tuple.1, operand 0
+  loop_transpose_fusion.2, operand 0
+ from instruction: %input_transpose_fusion = c128[16,480,480]{2,1,0} fusion(%collective-permute-done.1, %wrapped_negate), kind=kInput, calls=%fused_transpose.3, metadata={op_name="jit(_build_fH)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=584 scheduling_name="input_transpose_fusion"}
+<95 loop_transpose_fusion.2 @0>
+ positions:
+  loop_transpose_fusion.2
+  bitcast.347.0
+ uses:
+  bitcast.347.0, operand 0
+  fft.0.0, operand 0
+ from instruction: %loop_transpose_fusion.2 = c128[921600,4]{1,0} fusion(%input_transpose_fusion), kind=kLoop, calls=%fused_transpose.2, metadata={op_name="jit(_build_fH)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259 scheduling_name="loop_transpose_fusion.2"}
+<96 fft.0.0 @0>
+ positions:
+  fft.0.0
+ uses:
+  loop_transpose_fusion.1, operand 0
+ from instruction: %fft.0.0 = c128[4,1,480,480,4]{4,3,2,1,0} fft(%bitcast.347.0), fft_type=FFT, fft_length={4}, metadata={op_name="jit(_build_fH)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259 scheduling_name="fft.0.0"}
+<97 loop_transpose_fusion.1 @0>
+ positions:
+  loop_transpose_fusion.1
+  bitcast.369.0
+ uses:
+  bitcast.369.0, operand 0
+  fft.1.0, operand 0
+ from instruction: %loop_transpose_fusion.1 = c128[4,230400,4]{2,1,0} fusion(%fft.0.0), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="jit(_build_fH)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259 scheduling_name="loop_transpose_fusion.1"}
+<98 fft.1.0 @0>
+ positions:
+  fft.1.0
+ uses:
+  loop_transpose_fusion, operand 0
+ from instruction: %fft.1.0 = c128[4,1,480,480,4]{4,3,2,1,0} fft(%bitcast.369.0), fft_type=FFT, fft_length={4}, metadata={op_name="jit(_build_fH)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259 scheduling_name="fft.1.0"}
+<99 loop_transpose_fusion @0>
+ positions:
+  loop_transpose_fusion
+  bitcast.392.0
+ uses:
+  bitcast.392.0, operand 0
+  fft.2.0, operand 0
+ from instruction: %loop_transpose_fusion = c128[4,4,230400]{2,1,0} fusion(%fft.1.0), kind=kLoop, calls=%fused_transpose, metadata={op_name="jit(_build_fH)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259 scheduling_name="loop_transpose_fusion"}
+<100 fft.2.0 @0>
+ positions:
+  fft.2.0
+ uses:
+  loop_complex_fusion, operand 0
+ from instruction: %fft.2.0 = c128[4,4,480,480,1]{4,3,2,1,0} fft(%bitcast.392.0), fft_type=FFT, fft_length={1}, metadata={op_name="jit(_build_fH)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259 scheduling_name="fft.2.0"}
+<101 loop_complex_fusion @0>
+ positions:
+  loop_complex_fusion
+  tuple.1 {1}
+  bitcast.402.0
+ uses:
+  bitcast.402.0, operand 0
+  tuple.1, operand 1
+ from instruction: %loop_complex_fusion = c128[4,4,480,480,1]{4,3,2,1,0} fusion(%fft.2.0), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(_build_fH)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259 scheduling_name="loop_complex_fusion"}
+<102 tuple.1{} @0>
+ positions:
+  tuple.1 {}
+ uses:
+ from instruction: %tuple.1 = (c128[16,480,480]{2,1,0}, c128[16,480,480]{2,1,0}) tuple(%input_transpose_fusion, %bitcast.402.0), metadata={scheduling_name="tuple.1"}
+
+
+HloLiveRange (max 27):
+  InstructionSequence:
+    0:param.1.0
+    1:constant_9_0
+    2:param.2
+    3:partition-id.1
+    4:loop_sqrt_fusion
+    5:loop_multiply_fusion
+    6:collective-permute-start
+    7:collective-permute-done
+    8:loop_complex_fusion.1
+    9:custom-call.1.0
+    10:get-tuple-element.1
+    11:wrapped_negate
+    12:collective-permute-start.1
+    13:collective-permute-done.1
+    14:input_transpose_fusion
+    15:loop_transpose_fusion.2
+    16:bitcast.347.0
+    17:fft.0.0
+    18:loop_transpose_fusion.1
+    19:bitcast.369.0
+    20:fft.1.0
+    21:loop_transpose_fusion
+    22:bitcast.392.0
+    23:fft.2.0
+    24:loop_complex_fusion
+    25:bitcast.402.0
+    26:tuple.1
+  BufferLiveRange:
+    param.2{}:0-27
+    param.1.0{}:0-27
+    loop_sqrt_fusion{}:4-5
+    constant_9_0{}:1-5
+    partition-id.1{}:3-5
+    loop_multiply_fusion{}:5-9
+    collective-permute-start{}:6-7
+    collective-permute-start{1}:6-8
+    loop_complex_fusion.1{}:8-9
+    custom-call.1.0{}:9-10
+    custom-call.1.0{0}:9-11
+    custom-call.1.0{1}:9-9
+    wrapped_negate{}:11-14
+    collective-permute-start.1{}:12-13
+    collective-permute-start.1{1}:12-14
+    input_transpose_fusion{}:14-27
+    loop_transpose_fusion.2{}:15-17
+    fft.0.0{}:17-18
+    loop_transpose_fusion.1{}:18-20
+    fft.1.0{}:20-21
+    loop_transpose_fusion{}:21-23
+    fft.2.0{}:23-24
+    loop_complex_fusion{}:24-27
+    tuple.1{}:26-27
+  Live ranges at 18 (peak):
+    param.2: 14745600 bytes
+    param.1.0: 7680 bytes
+    input_transpose_fusion: 58982400 bytes
+    fft.0.0: 58982400 bytes
+    loop_transpose_fusion.1: 58982400 bytes

@@ -1,0 +1,27 @@
+HloModule jit_scatter-add, entry_computation_layout={(c128[480,480,4,4,4]{4,3,2,1,0}, s32[3]{0}, c128[480,480]{1,0})->c128[480,480,4,4,4]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%region_0.6 (Arg_0.7: f64[], Arg_1.8: f64[]) -> f64[] {
+  %Arg_0.7 = f64[] parameter(0), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add"}
+  %Arg_1.8 = f64[] parameter(1), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add"}
+  ROOT %add.9 = f64[] add(%Arg_0.7, %Arg_1.8), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659}
+}
+
+%region_1.13 (Arg_0.14: f64[], Arg_1.15: f64[]) -> f64[] {
+  %Arg_0.14 = f64[] parameter(0), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add"}
+  %Arg_1.15 = f64[] parameter(1), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add"}
+  ROOT %add.16 = f64[] add(%Arg_0.14, %Arg_1.15), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659}
+}
+
+ENTRY %main.19 (Arg_0.1: c128[480,480,4,4,4], Arg_1.2: s32[3], Arg_2.3: c128[480,480]) -> c128[480,480,4,4,4] {
+  %Arg_0.1 = c128[480,480,4,4,4]{4,3,2,1,0} parameter(0), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="args[0]"}
+  %real.4 = f64[480,480,4,4,4]{4,3,2,1,0} real(%Arg_0.1), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659}
+  %Arg_1.2 = s32[3]{0} parameter(1), metadata={op_name="args[1]"}
+  %Arg_2.3 = c128[480,480]{1,0} parameter(2), sharding={devices=[2,2]<=[4]}, metadata={op_name="args[2]"}
+  %real.5 = f64[480,480]{1,0} real(%Arg_2.3), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659}
+  %scatter.10 = f64[480,480,4,4,4]{4,3,2,1,0} scatter(%real.4, %Arg_1.2, %real.5), update_window_dims={0,1}, inserted_window_dims={2,3,4}, scatter_dims_to_operand_dims={2,3,4}, index_vector_dim=0, indices_are_sorted=true, unique_indices=true, to_apply=%region_0.6, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659}
+  %imag.11 = f64[480,480,4,4,4]{4,3,2,1,0} imag(%Arg_0.1), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659}
+  %imag.12 = f64[480,480]{1,0} imag(%Arg_2.3), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659}
+  %scatter.17 = f64[480,480,4,4,4]{4,3,2,1,0} scatter(%imag.11, %Arg_1.2, %imag.12), update_window_dims={0,1}, inserted_window_dims={2,3,4}, scatter_dims_to_operand_dims={2,3,4}, index_vector_dim=0, indices_are_sorted=true, unique_indices=true, to_apply=%region_1.13, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659}
+  ROOT %complex.18 = c128[480,480,4,4,4]{4,3,2,1,0} complex(%scatter.10, %scatter.17), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659}
+}
+

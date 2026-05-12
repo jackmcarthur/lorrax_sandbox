@@ -1,0 +1,124 @@
+HloModule jit__lambda_, entry_computation_layout={(c128[480,480,4,4,4]{4,3,2,1,0})->c128[480,480,4,4,4]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}
+
+%fft.12 (Arg_0.13: c128[480,480,4,4,4]) -> c128[480,480,4,4,4] {
+  %Arg_0.13 = c128[480,480,4,4,4]{4,3,2,1,0} parameter(0), metadata={op_name="jit(<lambda>)/jit(main)/pjit"}
+  ROOT %fft.14 = c128[480,480,4,4,4]{4,3,2,1,0} fft(%Arg_0.13), fft_type=IFFT, fft_length={4,4,4}, metadata={op_name="jit(<lambda>)/jit(main)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+}
+
+%region_0.16 (Arg_0.17: c128[], Arg_1.18: c128[]) -> c128[] {
+  %Arg_0.17 = c128[] parameter(0), metadata={op_name="jit(<lambda>)/jit(main)/reduce_prod"}
+  %Arg_1.18 = c128[] parameter(1), metadata={op_name="jit(<lambda>)/jit(main)/reduce_prod"}
+  ROOT %multiply.19 = c128[] multiply(%Arg_0.17, %Arg_1.18), metadata={op_name="jit(<lambda>)/jit(main)/reduce_prod" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+}
+
+ENTRY %main.116 (Arg_0.1: c128[480,480,4,4,4]) -> c128[480,480,4,4,4] {
+  %Arg_0.1 = c128[480,480,4,4,4]{4,3,2,1,0} parameter(0), metadata={op_name="W"}
+  %call.15 = c128[480,480,4,4,4]{4,3,2,1,0} call(%Arg_0.1), to_apply=%fft.12
+  %constant.10 = c128[] constant((4, 0))
+  %broadcast.11 = c128[3]{0} broadcast(%constant.10), dimensions={}
+  %constant.9 = c128[] constant((1, 0))
+  %reduce.20 = c128[] reduce(%broadcast.11, %constant.9), dimensions={0}, to_apply=%region_0.16, metadata={op_name="jit(<lambda>)/jit(main)/reduce_prod" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %real.21 = f64[] real(%reduce.20), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %constant.8 = f64[] constant(0)
+  %compare.22 = pred[] compare(%real.21, %constant.8), direction=GE, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %abs.23 = f64[] abs(%real.21), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %imag.24 = f64[] imag(%reduce.20), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %abs.25 = f64[] abs(%imag.24), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %compare.26 = pred[] compare(%abs.23, %abs.25), direction=EQ, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %sqrt.27 = f64[] sqrt(%abs.23), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %constant.7 = f64[] constant(1.5537739740300374)
+  %multiply.28 = f64[] multiply(%sqrt.27, %constant.7), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %constant.6 = f64[] constant(1.4142135623730951)
+  %divide.29 = f64[] divide(%multiply.28, %constant.6), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %maximum.30 = f64[] maximum(%abs.23, %abs.25), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %minimum.31 = f64[] minimum(%abs.23, %abs.25), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %compare.32 = pred[] compare(%maximum.30, %minimum.31), direction=EQ, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.33 = f64[] multiply(%maximum.30, %constant.6), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.34 = f64[] divide(%minimum.31, %maximum.30), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.35 = f64[] multiply(%divide.34, %divide.34), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %constant.5 = f64[] constant(1)
+  %add.36 = f64[] add(%multiply.35, %constant.5), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %sqrt.37 = f64[] sqrt(%add.36), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %compare.38 = pred[] compare(%sqrt.37, %constant.5), direction=EQ, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %compare.39 = pred[] compare(%multiply.35, %constant.8), direction=GT, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %and.40 = pred[] and(%compare.38, %compare.39), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.41 = f64[] multiply(%maximum.30, %multiply.35), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %constant.4 = f64[] constant(2)
+  %divide.42 = f64[] divide(%multiply.41, %constant.4), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %add.43 = f64[] add(%maximum.30, %divide.42), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.44 = f64[] multiply(%maximum.30, %sqrt.37), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.45 = f64[] select(%and.40, %add.43, %multiply.44), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.46 = f64[] select(%compare.32, %multiply.33, %select.45), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.47 = f64[] divide(%select.46, %constant.4), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.48 = f64[] divide(%abs.23, %constant.4), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %add.49 = f64[] add(%divide.47, %divide.48), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %sqrt.50 = f64[] sqrt(%add.49), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %compare.51 = pred[] compare(%sqrt.50, %constant.8), direction=EQ, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %constant.3 = f64[] constant(inf)
+  %compare.52 = pred[] compare(%sqrt.50, %constant.3), direction=EQ, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %or.53 = pred[] or(%compare.51, %compare.52), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %compare.54 = pred[] compare(%abs.23, %abs.25), direction=GT, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %compare.55 = pred[] compare(%abs.23, %abs.25), direction=LT, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.56 = f64[] divide(%abs.23, %abs.25), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.57 = f64[] divide(%abs.25, %abs.23), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.58 = f64[] select(%compare.55, %divide.56, %divide.57), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.59 = f64[] select(%compare.26, %constant.5, %select.58), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %abs.60 = f64[] abs(%select.59), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %maximum.61 = f64[] maximum(%abs.60, %constant.5), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %minimum.62 = f64[] minimum(%abs.60, %constant.5), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %compare.63 = pred[] compare(%maximum.61, %minimum.62), direction=EQ, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.64 = f64[] multiply(%maximum.61, %constant.6), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.65 = f64[] divide(%minimum.62, %maximum.61), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.66 = f64[] multiply(%divide.65, %divide.65), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %add.67 = f64[] add(%multiply.66, %constant.5), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %sqrt.68 = f64[] sqrt(%add.67), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %compare.69 = pred[] compare(%sqrt.68, %constant.5), direction=EQ, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %compare.70 = pred[] compare(%multiply.66, %constant.8), direction=GT, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %and.71 = pred[] and(%compare.69, %compare.70), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.72 = f64[] multiply(%maximum.61, %multiply.66), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.73 = f64[] divide(%multiply.72, %constant.4), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %add.74 = f64[] add(%maximum.61, %divide.73), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.75 = f64[] multiply(%maximum.61, %sqrt.68), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.76 = f64[] select(%and.71, %add.74, %multiply.75), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.77 = f64[] select(%compare.63, %multiply.64, %select.76), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %add.78 = f64[] add(%select.77, %constant.5), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %sqrt.79 = f64[] sqrt(%add.78), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.80 = f64[] divide(%sqrt.79, %constant.6), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.81 = f64[] multiply(%sqrt.27, %divide.80), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %sqrt.82 = f64[] sqrt(%abs.25), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %add.83 = f64[] add(%select.59, %select.77), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %sqrt.84 = f64[] sqrt(%add.83), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.85 = f64[] divide(%sqrt.84, %constant.6), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.86 = f64[] multiply(%sqrt.82, %divide.85), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.87 = f64[] select(%compare.54, %multiply.81, %multiply.86), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.88 = f64[] select(%or.53, %select.87, %sqrt.50), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.89 = f64[] select(%compare.26, %divide.29, %select.88), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %constant.2 = f64[] constant(2.19736822693562)
+  %divide.90 = f64[] divide(%sqrt.82, %constant.2), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.91 = f64[] divide(%sqrt.27, %sqrt.82), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.92 = f64[] divide(%sqrt.82, %sqrt.27), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.93 = f64[] select(%compare.55, %divide.91, %divide.92), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.94 = f64[] select(%compare.26, %constant.5, %select.93), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.95 = f64[] multiply(%sqrt.82, %select.94), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.96 = f64[] multiply(%sqrt.79, %constant.6), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.97 = f64[] divide(%multiply.95, %multiply.96), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.98 = f64[] multiply(%sqrt.84, %constant.6), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.99 = f64[] divide(%sqrt.82, %multiply.98), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.100 = f64[] select(%compare.54, %divide.97, %divide.99), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %multiply.101 = f64[] multiply(%sqrt.50, %constant.4), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %divide.102 = f64[] divide(%abs.25, %multiply.101), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.103 = f64[] select(%or.53, %select.100, %divide.102), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.104 = f64[] select(%compare.26, %divide.90, %select.103), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.105 = f64[] select(%compare.22, %select.89, %select.104), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %compare.106 = pred[] compare(%real.21, %constant.8), direction=LT, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %compare.107 = pred[] compare(%imag.24, %constant.8), direction=LT, metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %negate.108 = f64[] negate(%select.89), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.109 = f64[] select(%compare.107, %negate.108, %select.89), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %negate.110 = f64[] negate(%select.104), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.111 = f64[] select(%compare.107, %negate.110, %select.104), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %select.112 = f64[] select(%compare.106, %select.109, %select.111), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %complex.113 = c128[] complex(%select.105, %select.112), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %broadcast.114 = c128[480,480,4,4,4]{4,3,2,1,0} broadcast(%complex.113), dimensions={}, metadata={op_name="jit(<lambda>)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  ROOT %multiply.115 = c128[480,480,4,4,4]{4,3,2,1,0} multiply(%call.15, %broadcast.114), metadata={op_name="jit(<lambda>)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+}
+

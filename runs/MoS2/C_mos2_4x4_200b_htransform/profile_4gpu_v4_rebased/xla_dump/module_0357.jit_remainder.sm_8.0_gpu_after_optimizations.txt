@@ -1,0 +1,25 @@
+HloModule jit_remainder, is_scheduled=true, entry_computation_layout={(f64[181,3]{1,0}, f64[])->f64[181,3]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="e87d904fbd845b7871f9c0745b7ac9c7"}
+
+%fused_select (param_0.13: f64[], param_1.20: f64[181,3]) -> f64[181,3] {
+  %param_1.20 = f64[181,3]{1,0} parameter(1), metadata={scheduling_name="param_1.20"}
+  %param_0.13 = f64[] parameter(0), metadata={scheduling_name="param_0.13"}
+  %broadcast.10.4 = f64[181,3]{1,0} broadcast(%param_0.13), dimensions={}, metadata={op_name="jit(remainder)/jit(main)/rem" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=638 scheduling_name="broadcast.10.4"}
+  %remainder.2.3 = f64[181,3]{1,0} remainder(%param_1.20, %broadcast.10.4), metadata={op_name="jit(remainder)/jit(main)/rem" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=638 scheduling_name="remainder.2.3"}
+  %constant_3_1 = f64[] constant(0)
+  %broadcast.12.6 = f64[181,3]{1,0} broadcast(%constant_3_1), dimensions={}, metadata={scheduling_name="broadcast.12.6"}
+  %compare.11.3 = pred[181,3]{1,0} compare(%remainder.2.3, %broadcast.12.6), direction=LT, metadata={op_name="jit(remainder)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=638 scheduling_name="compare.11.3"}
+  %compare.13.1 = pred[] compare(%param_0.13, %constant_3_1), direction=LT, metadata={op_name="jit(remainder)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=638 scheduling_name="compare.13.1"}
+  %broadcast.13.5 = pred[181,3]{1,0} broadcast(%compare.13.1), dimensions={}, metadata={op_name="jit(remainder)/jit(main)/ne" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=638 scheduling_name="broadcast.13.5"}
+  %compare.14.5 = pred[181,3]{1,0} compare(%compare.11.3, %broadcast.13.5), direction=NE, metadata={op_name="jit(remainder)/jit(main)/ne" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=638 scheduling_name="compare.14.5"}
+  %compare.15.3 = pred[181,3]{1,0} compare(%remainder.2.3, %broadcast.12.6), direction=NE, metadata={op_name="jit(remainder)/jit(main)/ne" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=638 scheduling_name="compare.15.3"}
+  %and.2.3 = pred[181,3]{1,0} and(%compare.14.5, %compare.15.3), metadata={op_name="jit(remainder)/jit(main)/and" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=638 scheduling_name="and.2.3"}
+  %add.2.1 = f64[181,3]{1,0} add(%remainder.2.3, %broadcast.10.4), metadata={op_name="jit(remainder)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=638 scheduling_name="add.2.1"}
+  ROOT %select.2.1 = f64[181,3]{1,0} select(%and.2.3, %add.2.1, %remainder.2.3), metadata={op_name="jit(remainder)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=638 scheduling_name="select.2.1"}
+}
+
+ENTRY %main.17 (Arg_0.1.0: f64[181,3], Arg_1.2.0: f64[]) -> f64[181,3] {
+  %Arg_1.2.0 = f64[] parameter(1), metadata={op_name="x2" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[181,3]{1,0} parameter(0), metadata={op_name="x1" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_select_fusion = f64[181,3]{1,0} fusion(%Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(remainder)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=638 scheduling_name="loop_select_fusion"}
+}
+

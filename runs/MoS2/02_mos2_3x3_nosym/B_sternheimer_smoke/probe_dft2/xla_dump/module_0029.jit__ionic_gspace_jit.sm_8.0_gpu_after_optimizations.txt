@@ -1,0 +1,607 @@
+HloModule jit__ionic_gspace_jit, is_scheduled=true, entry_computation_layout={(f64[46080,3]{1,0}, f64[46080]{0}, f64[2,2,3]{2,1,0}, s32[2]{0}, f64[2,4000]{1,0}, /*index=5*/f64[2,4000]{1,0}, f64[2]{0}, f64[2]{0}, f64[2]{0}, f64[3,3]{1,0}, /*index=10*/f64[], f64[], f64[], f64[], f64[])->(f64[24,24,80]{2,1,0}, f64[24,24,80]{2,1,0}, c128[24,24,80]{2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true,true,true,true,true,true,true,true,true,true,true,true,true}, allow_spmd_sharding_propagation_to_output={true,true,true}, frontend_attributes={fingerprint_before_lhs="2f8b5027f712aa360bf9f09bfcb5f855"}
+
+%scalar_add_computation (scalar_lhs: f64[], scalar_rhs: f64[]) -> f64[] {
+  %scalar_rhs = f64[] parameter(1), metadata={scheduling_name="scalar_rhs"}
+  %scalar_lhs = f64[] parameter(0), metadata={scheduling_name="scalar_lhs"}
+  ROOT %add.102 = f64[] add(%scalar_lhs, %scalar_rhs), metadata={scheduling_name="add.102"}
+}
+
+%fused_add.2 (param_0.133: c128[46080], param_1.201: f64[46080,3], param_2.129: s32[], param_3.78: s64[2], param_4.74: s64[], param_5.56: f64[2,3]) -> c128[46080] {
+  %param_0.133 = c128[46080]{0} parameter(0), metadata={scheduling_name="param_0.133"}
+  %param_1.201 = f64[46080,3]{1,0} parameter(1), metadata={scheduling_name="param_1.201"}
+  %param_5.56 = f64[2,3]{1,0} parameter(5), metadata={scheduling_name="param_5.56"}
+  %param_3.78 = s64[2]{0} parameter(3), metadata={scheduling_name="param_3.78"}
+  %param_4.74 = s64[] parameter(4), metadata={scheduling_name="param_4.74"}
+  %dynamic-slice.32.6 = s64[1]{0} dynamic-slice(%param_3.78, %param_4.74), dynamic_slice_sizes={1}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=63 scheduling_name="dynamic-slice.32.6"}
+  %bitcast.1605.20 = s64[] bitcast(%dynamic-slice.32.6), metadata={scheduling_name="bitcast.1605.20"}
+  %constant_0_1 = s64[] constant(0)
+  %compare.132.5 = pred[] compare(%bitcast.1605.20, %constant_0_1), direction=LT, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="compare.132.5"}
+  %constant_1_1 = s64[] constant(2)
+  %add.104.5 = s64[] add(%bitcast.1605.20, %constant_1_1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="add.104.5"}
+  %select.93.5 = s64[] select(%compare.132.5, %add.104.5, %bitcast.1605.20), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="select.93.5"}
+  %dynamic-slice.33.3 = f64[1,3]{1,0} dynamic-slice(%param_5.56, %select.93.5, %constant_0_1), dynamic_slice_sizes={1,3}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="dynamic-slice.33.3"}
+  %bitcast.1615.7 = f64[3]{0} bitcast(%dynamic-slice.33.3), metadata={scheduling_name="bitcast.1615.7"}
+  %broadcast.342.7 = f64[46080,3]{1,0} broadcast(%bitcast.1615.7), dimensions={1}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="broadcast.342.7"}
+  %multiply.132.5 = f64[46080,3]{1,0} multiply(%param_1.201, %broadcast.342.7), metadata={scheduling_name="multiply.132.5"}
+  %constant_5_1 = f64[] constant(0)
+  %reduce.13.3 = f64[46080]{0} reduce(%multiply.132.5, %constant_5_1), dimensions={1}, to_apply=%scalar_add_computation, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="reduce.13.3"}
+  %convert.101.7 = c128[46080]{0} convert(%reduce.13.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="convert.101.7"}
+  %constant_2_1 = c128[] constant((0, -6.2831853071795862))
+  %broadcast.343.7 = c128[46080]{0} broadcast(%constant_2_1), dimensions={}, metadata={scheduling_name="broadcast.343.7"}
+  %multiply.133.7 = c128[46080]{0} multiply(%convert.101.7, %broadcast.343.7), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="multiply.133.7"}
+  %real.7.3 = f64[46080]{0} real(%multiply.133.7), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="real.7.3"}
+  %exponential.11.1 = f64[46080]{0} exponential(%real.7.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="exponential.11.1"}
+  %constant_3_1 = f64[] constant(inf)
+  %broadcast.344.1 = f64[46080]{0} broadcast(%constant_3_1), dimensions={}, metadata={scheduling_name="broadcast.344.1"}
+  %compare.133.1 = pred[46080]{0} compare(%exponential.11.1, %broadcast.344.1), direction=EQ, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="compare.133.1"}
+  %constant_4_1 = f64[] constant(0.5)
+  %broadcast.345.1 = f64[46080]{0} broadcast(%constant_4_1), dimensions={}, metadata={scheduling_name="broadcast.345.1"}
+  %multiply.134.3 = f64[46080]{0} multiply(%real.7.3, %broadcast.345.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="multiply.134.3"}
+  %exponential.12.3 = f64[46080]{0} exponential(%multiply.134.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="exponential.12.3"}
+  %imag.3.5 = f64[46080]{0} imag(%multiply.133.7), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="imag.3.5"}
+  %cosine.6.1 = f64[46080]{0} cosine(%imag.3.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="cosine.6.1"}
+  %multiply.135.5 = f64[46080]{0} multiply(%exponential.12.3, %cosine.6.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="multiply.135.5"}
+  %multiply.136.5 = f64[46080]{0} multiply(%multiply.135.5, %exponential.12.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="multiply.136.5"}
+  %multiply.137.3 = f64[46080]{0} multiply(%exponential.11.1, %cosine.6.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="multiply.137.3"}
+  %select.94.3 = f64[46080]{0} select(%compare.133.1, %multiply.136.5, %multiply.137.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="select.94.3"}
+  %broadcast.347.6 = f64[46080]{0} broadcast(%constant_5_1), dimensions={}, metadata={scheduling_name="broadcast.347.6"}
+  %compare.134.3 = pred[46080]{0} compare(%imag.3.5, %broadcast.347.6), direction=EQ, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="compare.134.3"}
+  %sine.3.1 = f64[46080]{0} sine(%imag.3.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="sine.3.1"}
+  %multiply.138.3 = f64[46080]{0} multiply(%exponential.12.3, %sine.3.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="multiply.138.3"}
+  %multiply.139.3 = f64[46080]{0} multiply(%multiply.138.3, %exponential.12.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="multiply.139.3"}
+  %multiply.140.1 = f64[46080]{0} multiply(%exponential.11.1, %sine.3.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="multiply.140.1"}
+  %select.95.1 = f64[46080]{0} select(%compare.133.1, %multiply.139.3, %multiply.140.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="select.95.1"}
+  %select.96.3 = f64[46080]{0} select(%compare.134.3, %broadcast.347.6, %select.95.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="select.96.3"}
+  %complex.3.1 = c128[46080]{0} complex(%select.94.3, %select.96.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=60 scheduling_name="complex.3.1"}
+  %param_2.129 = s32[] parameter(2), metadata={scheduling_name="param_2.129"}
+  %convert.102.3 = s64[] convert(%param_2.129), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=61 scheduling_name="convert.102.3"}
+  %compare.135.5 = pred[] compare(%bitcast.1605.20, %convert.102.3), direction=LT, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=61 scheduling_name="compare.135.5"}
+  %convert.103.3 = c128[] convert(%compare.135.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=61 scheduling_name="convert.103.3"}
+  %broadcast.349.1 = c128[46080]{0} broadcast(%convert.103.3), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=61 scheduling_name="broadcast.349.1"}
+  %multiply.141.1 = c128[46080]{0} multiply(%complex.3.1, %broadcast.349.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=61 scheduling_name="multiply.141.1"}
+  ROOT %add.105.1 = c128[46080]{0} add(%param_0.133, %multiply.141.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=61 scheduling_name="add.105.1"}
+}
+
+%fused_add.3 (param_0.176: s64[]) -> s64[] {
+  %param_0.176 = s64[] parameter(0), metadata={scheduling_name="param_0.176"}
+  %constant_92_1 = s64[] constant(1)
+  ROOT %add.103.1 = s64[] add(%param_0.176, %constant_92_1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=63 scheduling_name="add.103.1"}
+}
+
+%region_1.84 (arg_tuple.85.0: (s64[], c128[46080], s64[2], f64[2,3], f64[46080,3], /*index=5*/s32[])) -> (s64[], c128[46080], s64[2], f64[2,3], f64[46080,3], /*index=5*/s32[]) {
+  %arg_tuple.85.0 = (s64[], c128[46080]{0}, s64[2]{0}, f64[2,3]{1,0}, f64[46080,3]{1,0}, /*index=5*/s32[]) parameter(0), metadata={scheduling_name="arg_tuple.85.0"}
+  %get-tuple-element.62 = s64[] get-tuple-element(%arg_tuple.85.0), index=0, metadata={scheduling_name="get-tuple-element.62"}
+  %get-tuple-element.73 = s32[] get-tuple-element(%arg_tuple.85.0), index=5, metadata={scheduling_name="get-tuple-element.73"}
+  %get-tuple-element.70 = s64[2]{0} get-tuple-element(%arg_tuple.85.0), index=2, metadata={scheduling_name="get-tuple-element.70"}
+  %get-tuple-element.71 = f64[2,3]{1,0} get-tuple-element(%arg_tuple.85.0), index=3, metadata={scheduling_name="get-tuple-element.71"}
+  %get-tuple-element.72 = f64[46080,3]{1,0} get-tuple-element(%arg_tuple.85.0), index=4, metadata={scheduling_name="get-tuple-element.72"}
+  %get-tuple-element.63 = c128[46080]{0} get-tuple-element(%arg_tuple.85.0), index=1, metadata={scheduling_name="get-tuple-element.63"}
+  %loop_add_fusion.2 = c128[46080]{0} fusion(%get-tuple-element.63, %get-tuple-element.72, %get-tuple-element.73, %get-tuple-element.70, %get-tuple-element.62, /*index=5*/%get-tuple-element.71), kind=kLoop, calls=%fused_add.2, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=61 scheduling_name="loop_add_fusion.2"}
+  %loop_add_fusion.3 = s64[] fusion(%get-tuple-element.62), kind=kLoop, calls=%fused_add.3, control-predecessors={%loop_add_fusion.2}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=63 deduplicated_name="loop_add_fusion.1" scheduling_name="loop_add_fusion.3"}
+  ROOT %tuple.20 = (s64[], c128[46080]{0}, s64[2]{0}, f64[2,3]{1,0}, f64[46080,3]{1,0}, /*index=5*/s32[]) tuple(%loop_add_fusion.3, %loop_add_fusion.2, %get-tuple-element.70, %get-tuple-element.71, %get-tuple-element.72, /*index=5*/%get-tuple-element.73), metadata={scheduling_name="tuple.20"}
+}
+
+%fused_compare (param_0: s64[]) -> pred[] {
+  %param_0 = s64[] parameter(0), metadata={scheduling_name="param_0"}
+  %constant_106_1 = s64[] constant(2)
+  ROOT %compare.121.1 = pred[] compare(%param_0, %constant_106_1), direction=LT, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=63 scheduling_name="compare.121.1"}
+}
+
+%region_2.98 (arg_tuple.99.0: (s64[], c128[46080], s64[2], f64[2,3], f64[46080,3], /*index=5*/s32[])) -> pred[] {
+  %arg_tuple.99.0 = (s64[], c128[46080]{0}, s64[2]{0}, f64[2,3]{1,0}, f64[46080,3]{1,0}, /*index=5*/s32[]) parameter(0), metadata={scheduling_name="arg_tuple.99.0"}
+  %get-tuple-element.100.0 = s64[] get-tuple-element(%arg_tuple.99.0), index=0, metadata={scheduling_name="get-tuple-element.100.0"}
+  ROOT %loop_compare_fusion = pred[] fusion(%get-tuple-element.100.0), kind=kLoop, calls=%fused_compare, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=63 deduplicated_name="loop_compare_fusion" scheduling_name="loop_compare_fusion"}
+}
+
+%fused_dynamic_update_slice (param_0.177: c128[2,46080], param_1.203: s64[], param_2.133: c128[46080]) -> c128[2,46080] {
+  %param_0.177 = c128[2,46080]{1,0} parameter(0), metadata={scheduling_name="param_0.177"}
+  %param_2.133 = c128[46080]{0} parameter(2), metadata={scheduling_name="param_2.133"}
+  %bitcast.1715.1 = c128[1,46080]{1,0} bitcast(%param_2.133), metadata={scheduling_name="bitcast.1715.1"}
+  %param_1.203 = s64[] parameter(1), metadata={scheduling_name="param_1.203"}
+  %constant_128_2 = s64[] constant(0)
+  ROOT %dynamic-update-slice.10.1 = c128[2,46080]{1,0} dynamic-update-slice(%param_0.177, %bitcast.1715.1, %param_1.203, %constant_128_2), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/dynamic_update_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 scheduling_name="dynamic-update-slice.10.1"}
+}
+
+%fused_add.4 (param_0.178: s64[]) -> s64[] {
+  %param_0.178 = s64[] parameter(0), metadata={scheduling_name="param_0.178"}
+  %constant_127_1 = s64[] constant(1)
+  ROOT %add.106.1 = s64[] add(%param_0.178, %constant_127_1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 scheduling_name="add.106.1"}
+}
+
+%wrapped_dynamic-slice_computation (param_0.370: s32[2], param_1.417: s64[]) -> s32[1] {
+  %param_0.370 = s32[2]{0} parameter(0), metadata={scheduling_name="param_0.370"}
+  %param_1.417 = s64[] parameter(1), metadata={scheduling_name="param_1.417"}
+  ROOT %dynamic-slice.35.1 = s32[1]{0} dynamic-slice(%param_0.370, %param_1.417), dynamic_slice_sizes={1}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 scheduling_name="dynamic-slice.35.1"}
+}
+
+%wrapped_iota_computation () -> s64[2] {
+  ROOT %iota.3.1 = s64[2]{0} iota(), iota_dimension=0, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=64 scheduling_name="iota.3.1"}
+}
+
+%fused_dynamic_slice (param_0.179: f64[2,2,3], param_1.205: s64[]) -> f64[1,2,3] {
+  %param_0.179 = f64[2,2,3]{2,1,0} parameter(0), metadata={scheduling_name="param_0.179"}
+  %param_1.205 = s64[] parameter(1), metadata={scheduling_name="param_1.205"}
+  %constant_128_1 = s64[] constant(0)
+  ROOT %dynamic-slice.34.1 = f64[1,2,3]{2,1,0} dynamic-slice(%param_0.179, %param_1.205, %constant_128_1, %constant_128_1), dynamic_slice_sizes={1,2,3}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 scheduling_name="dynamic-slice.34.1"}
+}
+
+%fused_broadcast () -> c128[46080] {
+  %constant_7_1 = c128[] constant((0, 0))
+  ROOT %broadcast.350.1 = c128[46080]{0} broadcast(%constant_7_1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=63 scheduling_name="broadcast.350.1"}
+}
+
+%command_buffer (p: s64[], p.1: (s64[], c128[2,46080], f64[2,2,3], s32[2], f64[46080,3])) -> (s64[], s64[], f64[2,2,3], s32[2], s32[], /*index=5*/f64[46080,3], c128[2,46080], s64[2], f64[2,3], c128[46080]) {
+  %p = s64[] parameter(0)
+  %p.1 = (s64[], c128[2,46080]{1,0}, f64[2,2,3]{2,1,0}, s32[2]{0}, f64[46080,3]{1,0}) parameter(1)
+  %copy.28 = s64[] copy(%p)
+  %get-tuple-element.79 = s64[] get-tuple-element(%p.1), index=0, metadata={scheduling_name="get-tuple-element.79"}
+  %get-tuple-element.92 = f64[2,2,3]{2,1,0} get-tuple-element(%p.1), index=2, metadata={scheduling_name="get-tuple-element.92"}
+  %get-tuple-element.93 = s32[2]{0} get-tuple-element(%p.1), index=3, metadata={scheduling_name="get-tuple-element.93"}
+  %wrapped_dynamic-slice = s32[1]{0} fusion(%get-tuple-element.93, %get-tuple-element.79), kind=kLoop, calls=%wrapped_dynamic-slice_computation, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 scheduling_name="wrapped_dynamic-slice"}
+  %bitcast.1712.0 = s32[] bitcast(%wrapped_dynamic-slice), metadata={scheduling_name="bitcast.1712.0"}
+  %get-tuple-element.94 = f64[46080,3]{1,0} get-tuple-element(%p.1), index=4, metadata={scheduling_name="get-tuple-element.94"}
+  %get-tuple-element.80 = c128[2,46080]{1,0} get-tuple-element(%p.1), index=1, metadata={scheduling_name="get-tuple-element.80"}
+  %wrapped_iota = s64[2]{0} fusion(), kind=kLoop, calls=%wrapped_iota_computation, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=64 scheduling_name="wrapped_iota"}
+  %loop_dynamic_slice_fusion = f64[1,2,3]{2,1,0} fusion(%get-tuple-element.92, %get-tuple-element.79), kind=kLoop, calls=%fused_dynamic_slice, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 scheduling_name="loop_dynamic_slice_fusion"}
+  %bitcast.1703.0 = f64[2,3]{1,0} bitcast(%loop_dynamic_slice_fusion), metadata={scheduling_name="bitcast.1703.0"}
+  %loop_broadcast_fusion = c128[46080]{0} fusion(), kind=kLoop, calls=%fused_broadcast, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=63 deduplicated_name="loop_broadcast_fusion" scheduling_name="loop_broadcast_fusion"}
+  ROOT %tuple.32 = (s64[], s64[], f64[2,2,3]{2,1,0}, s32[2]{0}, s32[], /*index=5*/f64[46080,3]{1,0}, c128[2,46080]{1,0}, s64[2]{0}, f64[2,3]{1,0}, c128[46080]{0}) tuple(%copy.28, %get-tuple-element.79, %get-tuple-element.92, %get-tuple-element.93, %bitcast.1712.0, /*index=5*/%get-tuple-element.94, %get-tuple-element.80, %wrapped_iota, %bitcast.1703.0, %loop_broadcast_fusion)
+}
+
+%region_0.120 (arg_tuple.121.0: (s64[], c128[2,46080], f64[2,2,3], s32[2], f64[46080,3])) -> (s64[], c128[2,46080], f64[2,2,3], s32[2], f64[46080,3]) {
+  %constant_128_0 = s64[] constant(0)
+  %arg_tuple.121.0 = (s64[], c128[2,46080]{1,0}, f64[2,2,3]{2,1,0}, s32[2]{0}, f64[46080,3]{1,0}) parameter(0), metadata={scheduling_name="arg_tuple.121.0"}
+  %call.1 = (s64[], s64[], f64[2,2,3]{2,1,0}, s32[2]{0}, s32[], /*index=5*/f64[46080,3]{1,0}, c128[2,46080]{1,0}, s64[2]{0}, f64[2,3]{1,0}, c128[46080]{0}) call(%constant_128_0, %arg_tuple.121.0), to_apply=%command_buffer
+  %get-tuple-element.171 = s64[] get-tuple-element(%call.1), index=0
+  %get-tuple-element.172 = s64[] get-tuple-element(%call.1), index=1
+  %get-tuple-element.173 = f64[2,2,3]{2,1,0} get-tuple-element(%call.1), index=2
+  %get-tuple-element.174 = s32[2]{0} get-tuple-element(%call.1), index=3
+  %get-tuple-element.175 = s32[] get-tuple-element(%call.1), index=4
+  %get-tuple-element.176 = f64[46080,3]{1,0} get-tuple-element(%call.1), index=5
+  %get-tuple-element.177 = c128[2,46080]{1,0} get-tuple-element(%call.1), index=6
+  %get-tuple-element.178 = s64[2]{0} get-tuple-element(%call.1), index=7
+  %get-tuple-element.179 = f64[2,3]{1,0} get-tuple-element(%call.1), index=8
+  %get-tuple-element.180 = c128[46080]{0} get-tuple-element(%call.1), index=9
+  %tuple.18 = (s64[], c128[46080]{0}, s64[2]{0}, f64[2,3]{1,0}, f64[46080,3]{1,0}, /*index=5*/s32[]) tuple(%get-tuple-element.171, %get-tuple-element.180, %get-tuple-element.178, %get-tuple-element.179, %get-tuple-element.176, /*index=5*/%get-tuple-element.175), metadata={scheduling_name="tuple.18"}
+  %while.0.0 = (s64[], c128[46080]{0}, s64[2]{0}, f64[2,3]{1,0}, f64[46080,3]{1,0}, /*index=5*/s32[]) while(%tuple.18), condition=%region_2.98, body=%region_1.84, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=63 scheduling_name="while.0.0"}, backend_config={"known_trip_count":{"n":"2"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %get-tuple-element.1.0 = c128[46080]{0} get-tuple-element(%while.0.0), index=1, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=63 scheduling_name="get-tuple-element.1.0"}
+  %loop_dynamic_update_slice_fusion = c128[2,46080]{1,0} fusion(%get-tuple-element.177, %get-tuple-element.172, %get-tuple-element.1.0), kind=kLoop, calls=%fused_dynamic_update_slice, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/dynamic_update_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 scheduling_name="loop_dynamic_update_slice_fusion"}
+  %loop_add_fusion.4 = s64[] fusion(%get-tuple-element.172), kind=kLoop, calls=%fused_add.4, control-predecessors={%loop_dynamic_update_slice_fusion, %call.1}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 deduplicated_name="loop_add_fusion.1" scheduling_name="loop_add_fusion.4"}
+  ROOT %tuple.23 = (s64[], c128[2,46080]{1,0}, f64[2,2,3]{2,1,0}, s32[2]{0}, f64[46080,3]{1,0}) tuple(%loop_add_fusion.4, %loop_dynamic_update_slice_fusion, %get-tuple-element.173, %get-tuple-element.174, %get-tuple-element.176), metadata={scheduling_name="tuple.23"}
+}
+
+%fused_compare.1 (param_0.1: s64[]) -> pred[] {
+  %param_0.1 = s64[] parameter(0), metadata={scheduling_name="param_0.1"}
+  %constant_145_1 = s64[] constant(2)
+  ROOT %compare.122.1 = pred[] compare(%param_0.1, %constant_145_1), direction=LT, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 scheduling_name="compare.122.1"}
+}
+
+%region_3.138 (arg_tuple.139.0: (s64[], c128[2,46080], f64[2,2,3], s32[2], f64[46080,3])) -> pred[] {
+  %arg_tuple.139.0 = (s64[], c128[2,46080]{1,0}, f64[2,2,3]{2,1,0}, s32[2]{0}, f64[46080,3]{1,0}) parameter(0), metadata={scheduling_name="arg_tuple.139.0"}
+  %get-tuple-element.140.0 = s64[] get-tuple-element(%arg_tuple.139.0), index=0, metadata={scheduling_name="get-tuple-element.140.0"}
+  ROOT %loop_compare_fusion.1 = pred[] fusion(%get-tuple-element.140.0), kind=kLoop, calls=%fused_compare.1, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 deduplicated_name="loop_compare_fusion" scheduling_name="loop_compare_fusion.1"}
+}
+
+%fused_add (param_0.15: c128[46080], param_1.15: c128[2,46080], param_2.3: s64[], param_3.59: f64[46080], param_4.51: f64[46080], param_5.38: f64[], param_6.21: f64[2,4000], param_7.21: f64[2], param_8.21: f64[]) -> c128[46080] {
+  %param_0.15 = c128[46080]{0} parameter(0), metadata={scheduling_name="param_0.15"}
+  %param_7.21 = f64[2]{0} parameter(7), metadata={scheduling_name="param_7.21"}
+  %param_2.3 = s64[] parameter(2), metadata={scheduling_name="param_2.3"}
+  %dynamic-slice.29.1 = f64[1]{0} dynamic-slice(%param_7.21, %param_2.3), dynamic_slice_sizes={1}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="dynamic-slice.29.1"}
+  %bitcast.1421.3 = f64[] bitcast(%dynamic-slice.29.1), metadata={scheduling_name="bitcast.1421.3"}
+  %broadcast.321.3 = f64[46080]{0} broadcast(%bitcast.1421.3), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=102 scheduling_name="broadcast.321.3"}
+  %param_4.51 = f64[46080]{0} parameter(4), metadata={scheduling_name="param_4.51"}
+  %param_5.38 = f64[] parameter(5), metadata={scheduling_name="param_5.38"}
+  %broadcast.322.6 = f64[46080]{0} broadcast(%param_5.38), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=158 scheduling_name="broadcast.322.6"}
+  %compare.123.5 = pred[46080]{0} compare(%param_4.51, %broadcast.322.6), direction=GE, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=158 scheduling_name="compare.123.5"}
+  %param_8.21 = f64[] parameter(8), metadata={scheduling_name="param_8.21"}
+  %constant_61_1 = f64[] constant(3999)
+  %multiply.127.3 = f64[] multiply(%param_8.21, %constant_61_1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=149 scheduling_name="multiply.127.3"}
+  %add.94.3 = f64[] add(%param_5.38, %multiply.127.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=149 scheduling_name="add.94.3"}
+  %broadcast.323.5 = f64[46080]{0} broadcast(%add.94.3), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/le" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=158 scheduling_name="broadcast.323.5"}
+  %compare.124.5 = pred[46080]{0} compare(%param_4.51, %broadcast.323.5), direction=LE, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/le" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=158 scheduling_name="compare.124.5"}
+  %and.35.3 = pred[46080]{0} and(%compare.123.5, %compare.124.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=158 scheduling_name="and.35.3"}
+  %constant_62_1 = f64[] constant(1)
+  %broadcast.324.8 = f64[46080]{0} broadcast(%constant_62_1), dimensions={}, metadata={scheduling_name="broadcast.324.8"}
+  %constant_64_1 = f64[] constant(0)
+  %broadcast.325.8 = f64[46080]{0} broadcast(%constant_64_1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(clip)/max" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=153 scheduling_name="broadcast.325.8"}
+  %param_3.59 = f64[46080]{0} parameter(3), metadata={scheduling_name="param_3.59"}
+  %constant_67_1 = s32[] constant(0)
+  %broadcast.327.29 = s32[46080]{0} broadcast(%constant_67_1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(clip)/max" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=152 scheduling_name="broadcast.327.29"}
+  %floor.9.5 = f64[46080]{0} floor(%param_3.59), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/floor" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=151 scheduling_name="floor.9.5"}
+  %convert.96.5 = s32[46080]{0} convert(%floor.9.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=151 scheduling_name="convert.96.5"}
+  %constant_174_1 = s32[] constant(3998), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(clip)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=152}
+  %broadcast.328.3 = s32[46080]{0} broadcast(%constant_174_1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(clip)/min" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=152 scheduling_name="broadcast.328.3"}
+  %clamp.14.3 = s32[46080]{0} clamp(%broadcast.327.29, %convert.96.5, %broadcast.328.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(clip)/min" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=152 scheduling_name="clamp.14.3"}
+  %convert.97.1 = f64[46080]{0} convert(%clamp.14.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=153 scheduling_name="convert.97.1"}
+  %subtract.31.3 = f64[46080]{0} subtract(%param_3.59, %convert.97.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=153 scheduling_name="subtract.31.3"}
+  %clamp.15.3 = f64[46080]{0} clamp(%broadcast.325.8, %subtract.31.3, %broadcast.324.8), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(clip)/min" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=153 scheduling_name="clamp.15.3"}
+  %subtract.32.7 = f64[46080]{0} subtract(%broadcast.324.8, %clamp.15.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=157 scheduling_name="subtract.32.7"}
+  %compare.125.11 = pred[46080]{0} compare(%clamp.14.3, %broadcast.327.29), direction=LT, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="compare.125.11"}
+  %constant_68_1 = s32[] constant(4000)
+  %broadcast.331.11 = s32[46080]{0} broadcast(%constant_68_1), dimensions={}, metadata={scheduling_name="broadcast.331.11"}
+  %add.95.11 = s32[46080]{0} add(%clamp.14.3, %broadcast.331.11), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="add.95.11"}
+  %select.88.11 = s32[46080]{0} select(%compare.125.11, %add.95.11, %clamp.14.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="select.88.11"}
+  %bitcast.1483.17 = s32[46080,1]{1,0} bitcast(%select.88.11), metadata={scheduling_name="bitcast.1483.17"}
+  %convert.98.17 = s64[46080,1]{1,0} convert(%bitcast.1483.17), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="convert.98.17"}
+  %constant_315_1 = s64[] constant(0)
+  %broadcast.332.10 = s64[46080,1]{1,0} broadcast(%constant_315_1), dimensions={}, metadata={scheduling_name="broadcast.332.10"}
+  %compare.126.5 = pred[46080,1]{1,0} compare(%convert.98.17, %broadcast.332.10), direction=GE, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="compare.126.5"}
+  %constant_70_1 = s64[] constant(3999)
+  %broadcast.333.6 = s64[46080,1]{1,0} broadcast(%constant_70_1), dimensions={}, metadata={scheduling_name="broadcast.333.6"}
+  %compare.127.3 = pred[46080,1]{1,0} compare(%convert.98.17, %broadcast.333.6), direction=LE, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/le" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="compare.127.3"}
+  %and.36.3 = pred[46080,1]{1,0} and(%compare.126.5, %compare.127.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="and.36.3"}
+  %param_6.21 = f64[2,4000]{1,0} parameter(6), metadata={scheduling_name="param_6.21"}
+  %dynamic-slice.30.1 = f64[1,4000]{1,0} dynamic-slice(%param_6.21, %param_2.3, %constant_315_1), dynamic_slice_sizes={1,4000}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="dynamic-slice.30.1"}
+  %bitcast.1546.14 = f64[4000]{0} bitcast(%dynamic-slice.30.1), metadata={scheduling_name="bitcast.1546.14"}
+  %gather.12.7 = f64[46080,1]{1,0} gather(%bitcast.1546.14, %convert.98.17), offset_dims={1}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="gather.12.7"}
+  %constant_72_1 = f64[] constant(nan)
+  %broadcast.334.14 = f64[46080,1]{1,0} broadcast(%constant_72_1), dimensions={}, metadata={scheduling_name="broadcast.334.14"}
+  %select.89.7 = f64[46080,1]{1,0} select(%and.36.3, %gather.12.7, %broadcast.334.14), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="select.89.7"}
+  %bitcast.1511.5 = f64[46080]{0} bitcast(%select.89.7), metadata={scheduling_name="bitcast.1511.5"}
+  %multiply.128.5 = f64[46080]{0} multiply(%subtract.32.7, %bitcast.1511.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=157 scheduling_name="multiply.128.5"}
+  %constant_73_1 = s32[] constant(1)
+  %broadcast.335.25 = s32[46080]{0} broadcast(%constant_73_1), dimensions={}, metadata={scheduling_name="broadcast.335.25"}
+  %add.97.25 = s32[46080]{0} add(%clamp.14.3, %broadcast.335.25), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=156 scheduling_name="add.97.25"}
+  %compare.128.11 = pred[46080]{0} compare(%add.97.25, %broadcast.327.29), direction=LT, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="compare.128.11"}
+  %constant_176_1 = s32[] constant(4001)
+  %broadcast.337.11 = s32[46080]{0} broadcast(%constant_176_1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="broadcast.337.11"}
+  %add.98.11 = s32[46080]{0} add(%clamp.14.3, %broadcast.337.11), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="add.98.11"}
+  %select.90.11 = s32[46080]{0} select(%compare.128.11, %add.98.11, %add.97.25), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="select.90.11"}
+  %bitcast.1531.17 = s32[46080,1]{1,0} bitcast(%select.90.11), metadata={scheduling_name="bitcast.1531.17"}
+  %convert.99.17 = s64[46080,1]{1,0} convert(%bitcast.1531.17), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="convert.99.17"}
+  %compare.129.5 = pred[46080,1]{1,0} compare(%convert.99.17, %broadcast.332.10), direction=GE, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="compare.129.5"}
+  %compare.130.3 = pred[46080,1]{1,0} compare(%convert.99.17, %broadcast.333.6), direction=LE, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/le" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="compare.130.3"}
+  %and.37.3 = pred[46080,1]{1,0} and(%compare.129.5, %compare.130.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="and.37.3"}
+  %gather.13.7 = f64[46080,1]{1,0} gather(%bitcast.1546.14, %convert.99.17), offset_dims={1}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="gather.13.7"}
+  %select.91.7 = f64[46080,1]{1,0} select(%and.37.3, %gather.13.7, %broadcast.334.14), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="select.91.7"}
+  %bitcast.1555.5 = f64[46080]{0} bitcast(%select.91.7), metadata={scheduling_name="bitcast.1555.5"}
+  %multiply.129.5 = f64[46080]{0} multiply(%clamp.15.3, %bitcast.1555.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=157 scheduling_name="multiply.129.5"}
+  %add.99.3 = f64[46080]{0} add(%multiply.128.5, %multiply.129.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=157 scheduling_name="add.99.3"}
+  %select.92.5 = f64[46080]{0} select(%and.35.3, %add.99.3, %broadcast.325.8), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=159 scheduling_name="select.92.5"}
+  %multiply.130.3 = f64[46080]{0} multiply(%broadcast.321.3, %select.92.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=102 scheduling_name="multiply.130.3"}
+  %convert.100.1 = c128[46080]{0} convert(%multiply.130.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=102 scheduling_name="convert.100.1"}
+  %param_1.15 = c128[2,46080]{1,0} parameter(1), metadata={scheduling_name="param_1.15"}
+  %dynamic-slice.31.1 = c128[1,46080]{1,0} dynamic-slice(%param_1.15, %param_2.3, %constant_315_1), dynamic_slice_sizes={1,46080}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="dynamic-slice.31.1"}
+  %bitcast.1572.3 = c128[46080]{0} bitcast(%dynamic-slice.31.1), metadata={scheduling_name="bitcast.1572.3"}
+  %multiply.131.3 = c128[46080]{0} multiply(%convert.100.1, %bitcast.1572.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=102 scheduling_name="multiply.131.3"}
+  ROOT %add.100.1 = c128[46080]{0} add(%param_0.15, %multiply.131.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=102 scheduling_name="add.100.1"}
+}
+
+%fused_divide (param_0.74: f64[46080], param_1.80: f64[], param_2.39: f64[]) -> f64[46080] {
+  %param_0.74 = f64[46080]{0} parameter(0), metadata={scheduling_name="param_0.74"}
+  %param_1.80 = f64[] parameter(1), metadata={scheduling_name="param_1.80"}
+  %broadcast.322.1 = f64[46080]{0} broadcast(%param_1.80), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=158 scheduling_name="broadcast.322.1"}
+  %subtract.30.1 = f64[46080]{0} subtract(%param_0.74, %broadcast.322.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=150 scheduling_name="subtract.30.1"}
+  %param_2.39 = f64[] parameter(2), metadata={scheduling_name="param_2.39"}
+  %broadcast.326.1 = f64[46080]{0} broadcast(%param_2.39), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=150 scheduling_name="broadcast.326.1"}
+  ROOT %divide.16.1 = f64[46080]{0} divide(%subtract.30.1, %broadcast.326.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=150 scheduling_name="divide.16.1"}
+}
+
+%fused_add.1 (param_0.117: s64[]) -> s64[] {
+  %param_0.117 = s64[] parameter(0), metadata={scheduling_name="param_0.117"}
+  %constant_314_1 = s64[] constant(1)
+  ROOT %add.93.1 = s64[] add(%param_0.117, %constant_314_1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="add.93.1"}
+}
+
+%region_4.304 (arg_tuple.305.0: (s64[], c128[46080], f64[2,4000], f64[2], c128[2,46080], /*index=5*/f64[46080], f64[], f64[])) -> (s64[], c128[46080], f64[2,4000], f64[2], c128[2,46080], /*index=5*/f64[46080], f64[], f64[]) {
+  %arg_tuple.305.0 = (s64[], c128[46080]{0}, f64[2,4000]{1,0}, f64[2]{0}, c128[2,46080]{1,0}, /*index=5*/f64[46080]{0}, f64[], f64[]) parameter(0), metadata={scheduling_name="arg_tuple.305.0"}
+  %get-tuple-element.109 = s64[] get-tuple-element(%arg_tuple.305.0), index=0, metadata={scheduling_name="get-tuple-element.109"}
+  %get-tuple-element.130 = f64[] get-tuple-element(%arg_tuple.305.0), index=6, metadata={scheduling_name="get-tuple-element.130"}
+  %get-tuple-element.131 = f64[] get-tuple-element(%arg_tuple.305.0), index=7, metadata={scheduling_name="get-tuple-element.131"}
+  %get-tuple-element.129 = f64[46080]{0} get-tuple-element(%arg_tuple.305.0), index=5, metadata={scheduling_name="get-tuple-element.129"}
+  %get-tuple-element.121 = f64[2,4000]{1,0} get-tuple-element(%arg_tuple.305.0), index=2, metadata={scheduling_name="get-tuple-element.121"}
+  %get-tuple-element.127 = f64[2]{0} get-tuple-element(%arg_tuple.305.0), index=3, metadata={scheduling_name="get-tuple-element.127"}
+  %get-tuple-element.128 = c128[2,46080]{1,0} get-tuple-element(%arg_tuple.305.0), index=4, metadata={scheduling_name="get-tuple-element.128"}
+  %get-tuple-element.110 = c128[46080]{0} get-tuple-element(%arg_tuple.305.0), index=1, metadata={scheduling_name="get-tuple-element.110"}
+  %loop_divide_fusion = f64[46080]{0} fusion(%get-tuple-element.129, %get-tuple-element.130, %get-tuple-element.131), kind=kLoop, calls=%fused_divide, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=150 deduplicated_name="loop_divide_fusion" scheduling_name="loop_divide_fusion"}
+  %loop_add_fusion = c128[46080]{0} fusion(%get-tuple-element.110, %get-tuple-element.128, %get-tuple-element.109, %loop_divide_fusion, %get-tuple-element.129, /*index=5*/%get-tuple-element.130, %get-tuple-element.121, %get-tuple-element.127, %get-tuple-element.131), kind=kLoop, calls=%fused_add, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=102 deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion"}
+  %loop_add_fusion.1 = s64[] fusion(%get-tuple-element.109), kind=kLoop, calls=%fused_add.1, control-predecessors={%loop_add_fusion}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 deduplicated_name="loop_add_fusion.1" scheduling_name="loop_add_fusion.1"}
+  ROOT %tuple.26 = (s64[], c128[46080]{0}, f64[2,4000]{1,0}, f64[2]{0}, c128[2,46080]{1,0}, /*index=5*/f64[46080]{0}, f64[], f64[]) tuple(%loop_add_fusion.1, %loop_add_fusion, %get-tuple-element.121, %get-tuple-element.127, %get-tuple-element.128, /*index=5*/%get-tuple-element.129, %get-tuple-element.130, %get-tuple-element.131), metadata={scheduling_name="tuple.26"}
+}
+
+%fused_compare.2 (param_0.118: s64[]) -> pred[] {
+  %param_0.118 = s64[] parameter(0), metadata={scheduling_name="param_0.118"}
+  %constant_335_1 = s64[] constant(2)
+  ROOT %compare.131.1 = pred[] compare(%param_0.118, %constant_335_1), direction=LT, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="compare.131.1"}
+}
+
+%region_6.325 (arg_tuple.326.0: (s64[], c128[46080], f64[2,4000], f64[2], c128[2,46080], /*index=5*/f64[46080], f64[], f64[])) -> pred[] {
+  %arg_tuple.326.0 = (s64[], c128[46080]{0}, f64[2,4000]{1,0}, f64[2]{0}, c128[2,46080]{1,0}, /*index=5*/f64[46080]{0}, f64[], f64[]) parameter(0), metadata={scheduling_name="arg_tuple.326.0"}
+  %get-tuple-element.327.0 = s64[] get-tuple-element(%arg_tuple.326.0), index=0, metadata={scheduling_name="get-tuple-element.327.0"}
+  ROOT %loop_compare_fusion.2 = pred[] fusion(%get-tuple-element.327.0), kind=kLoop, calls=%fused_compare.2, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 deduplicated_name="loop_compare_fusion" scheduling_name="loop_compare_fusion.2"}
+}
+
+%fused_add.5 (param_0.194: c128[46080], param_1.219: c128[2,46080], param_2.137: s64[], param_3.140: f64[46080], param_4.126: f64[46080], param_5.95: f64[], param_6.62: f64[2,4000], param_7.70: f64[2], param_8.64: f64[]) -> c128[46080] {
+  %param_0.194 = c128[46080]{0} parameter(0), metadata={scheduling_name="param_0.194"}
+  %param_7.70 = f64[2]{0} parameter(7), metadata={scheduling_name="param_7.70"}
+  %param_2.137 = s64[] parameter(2), metadata={scheduling_name="param_2.137"}
+  %dynamic-slice.36.1 = f64[1]{0} dynamic-slice(%param_7.70, %param_2.137), dynamic_slice_sizes={1}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="dynamic-slice.36.1"}
+  %bitcast.1729.3 = f64[] bitcast(%dynamic-slice.36.1), metadata={scheduling_name="bitcast.1729.3"}
+  %broadcast.351.3 = f64[46080]{0} broadcast(%bitcast.1729.3), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=102 scheduling_name="broadcast.351.3"}
+  %param_4.126 = f64[46080]{0} parameter(4), metadata={scheduling_name="param_4.126"}
+  %param_5.95 = f64[] parameter(5), metadata={scheduling_name="param_5.95"}
+  %broadcast.352.6 = f64[46080]{0} broadcast(%param_5.95), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=158 scheduling_name="broadcast.352.6"}
+  %compare.136.5 = pred[46080]{0} compare(%param_4.126, %broadcast.352.6), direction=GE, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=158 scheduling_name="compare.136.5"}
+  %param_8.64 = f64[] parameter(8), metadata={scheduling_name="param_8.64"}
+  %constant_316_1 = f64[] constant(3999)
+  %multiply.142.3 = f64[] multiply(%param_8.64, %constant_316_1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=149 scheduling_name="multiply.142.3"}
+  %add.108.3 = f64[] add(%param_5.95, %multiply.142.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=149 scheduling_name="add.108.3"}
+  %broadcast.353.5 = f64[46080]{0} broadcast(%add.108.3), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/le" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=158 scheduling_name="broadcast.353.5"}
+  %compare.137.5 = pred[46080]{0} compare(%param_4.126, %broadcast.353.5), direction=LE, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/le" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=158 scheduling_name="compare.137.5"}
+  %and.38.3 = pred[46080]{0} and(%compare.136.5, %compare.137.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=158 scheduling_name="and.38.3"}
+  %constant_317_1 = f64[] constant(1)
+  %broadcast.354.8 = f64[46080]{0} broadcast(%constant_317_1), dimensions={}, metadata={scheduling_name="broadcast.354.8"}
+  %constant_318_1 = f64[] constant(0)
+  %broadcast.355.8 = f64[46080]{0} broadcast(%constant_318_1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(clip)/max" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=153 scheduling_name="broadcast.355.8"}
+  %param_3.140 = f64[46080]{0} parameter(3), metadata={scheduling_name="param_3.140"}
+  %constant_319_1 = s32[] constant(0)
+  %broadcast.357.29 = s32[46080]{0} broadcast(%constant_319_1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(clip)/max" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=152 scheduling_name="broadcast.357.29"}
+  %floor.10.5 = f64[46080]{0} floor(%param_3.140), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/floor" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=151 scheduling_name="floor.10.5"}
+  %convert.104.5 = s32[46080]{0} convert(%floor.10.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=151 scheduling_name="convert.104.5"}
+  %constant_324_1 = s32[] constant(3998), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(clip)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=152}
+  %broadcast.359.3 = s32[46080]{0} broadcast(%constant_324_1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(clip)/min" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=152 scheduling_name="broadcast.359.3"}
+  %clamp.16.3 = s32[46080]{0} clamp(%broadcast.357.29, %convert.104.5, %broadcast.359.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(clip)/min" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=152 scheduling_name="clamp.16.3"}
+  %convert.105.1 = f64[46080]{0} convert(%clamp.16.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=153 scheduling_name="convert.105.1"}
+  %subtract.34.3 = f64[46080]{0} subtract(%param_3.140, %convert.105.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=153 scheduling_name="subtract.34.3"}
+  %clamp.17.3 = f64[46080]{0} clamp(%broadcast.355.8, %subtract.34.3, %broadcast.354.8), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(clip)/min" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=153 scheduling_name="clamp.17.3"}
+  %subtract.35.7 = f64[46080]{0} subtract(%broadcast.354.8, %clamp.17.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=157 scheduling_name="subtract.35.7"}
+  %compare.138.11 = pred[46080]{0} compare(%clamp.16.3, %broadcast.357.29), direction=LT, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="compare.138.11"}
+  %constant_320_1 = s32[] constant(4000)
+  %broadcast.363.11 = s32[46080]{0} broadcast(%constant_320_1), dimensions={}, metadata={scheduling_name="broadcast.363.11"}
+  %add.109.11 = s32[46080]{0} add(%clamp.16.3, %broadcast.363.11), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="add.109.11"}
+  %select.97.11 = s32[46080]{0} select(%compare.138.11, %add.109.11, %clamp.16.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="select.97.11"}
+  %bitcast.1791.17 = s32[46080,1]{1,0} bitcast(%select.97.11), metadata={scheduling_name="bitcast.1791.17"}
+  %convert.106.17 = s64[46080,1]{1,0} convert(%bitcast.1791.17), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="convert.106.17"}
+  %constant_313_1 = s64[] constant(0)
+  %broadcast.364.10 = s64[46080,1]{1,0} broadcast(%constant_313_1), dimensions={}, metadata={scheduling_name="broadcast.364.10"}
+  %compare.139.5 = pred[46080,1]{1,0} compare(%convert.106.17, %broadcast.364.10), direction=GE, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="compare.139.5"}
+  %constant_321_1 = s64[] constant(3999)
+  %broadcast.365.6 = s64[46080,1]{1,0} broadcast(%constant_321_1), dimensions={}, metadata={scheduling_name="broadcast.365.6"}
+  %compare.140.3 = pred[46080,1]{1,0} compare(%convert.106.17, %broadcast.365.6), direction=LE, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/le" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="compare.140.3"}
+  %and.39.3 = pred[46080,1]{1,0} and(%compare.139.5, %compare.140.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="and.39.3"}
+  %param_6.62 = f64[2,4000]{1,0} parameter(6), metadata={scheduling_name="param_6.62"}
+  %dynamic-slice.37.1 = f64[1,4000]{1,0} dynamic-slice(%param_6.62, %param_2.137, %constant_313_1), dynamic_slice_sizes={1,4000}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="dynamic-slice.37.1"}
+  %bitcast.1854.14 = f64[4000]{0} bitcast(%dynamic-slice.37.1), metadata={scheduling_name="bitcast.1854.14"}
+  %gather.16.7 = f64[46080,1]{1,0} gather(%bitcast.1854.14, %convert.106.17), offset_dims={1}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="gather.16.7"}
+  %constant_322_1 = f64[] constant(nan)
+  %broadcast.366.14 = f64[46080,1]{1,0} broadcast(%constant_322_1), dimensions={}, metadata={scheduling_name="broadcast.366.14"}
+  %select.98.7 = f64[46080,1]{1,0} select(%and.39.3, %gather.16.7, %broadcast.366.14), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="select.98.7"}
+  %bitcast.1819.5 = f64[46080]{0} bitcast(%select.98.7), metadata={scheduling_name="bitcast.1819.5"}
+  %multiply.143.5 = f64[46080]{0} multiply(%subtract.35.7, %bitcast.1819.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=157 scheduling_name="multiply.143.5"}
+  %constant_323_1 = s32[] constant(1)
+  %broadcast.367.25 = s32[46080]{0} broadcast(%constant_323_1), dimensions={}, metadata={scheduling_name="broadcast.367.25"}
+  %add.110.25 = s32[46080]{0} add(%clamp.16.3, %broadcast.367.25), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=156 scheduling_name="add.110.25"}
+  %compare.141.11 = pred[46080]{0} compare(%add.110.25, %broadcast.357.29), direction=LT, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="compare.141.11"}
+  %constant_325_1 = s32[] constant(4001)
+  %broadcast.370.11 = s32[46080]{0} broadcast(%constant_325_1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="broadcast.370.11"}
+  %add.111.11 = s32[46080]{0} add(%clamp.16.3, %broadcast.370.11), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="add.111.11"}
+  %select.99.11 = s32[46080]{0} select(%compare.141.11, %add.111.11, %add.110.25), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="select.99.11"}
+  %bitcast.1839.17 = s32[46080,1]{1,0} bitcast(%select.99.11), metadata={scheduling_name="bitcast.1839.17"}
+  %convert.107.17 = s64[46080,1]{1,0} convert(%bitcast.1839.17), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="convert.107.17"}
+  %compare.142.5 = pred[46080,1]{1,0} compare(%convert.107.17, %broadcast.364.10), direction=GE, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="compare.142.5"}
+  %compare.143.3 = pred[46080,1]{1,0} compare(%convert.107.17, %broadcast.365.6), direction=LE, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/le" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="compare.143.3"}
+  %and.40.3 = pred[46080,1]{1,0} and(%compare.142.5, %compare.143.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="and.40.3"}
+  %gather.17.7 = f64[46080,1]{1,0} gather(%bitcast.1854.14, %convert.107.17), offset_dims={1}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="gather.17.7"}
+  %select.100.7 = f64[46080,1]{1,0} select(%and.40.3, %gather.17.7, %broadcast.366.14), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_take)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=155 scheduling_name="select.100.7"}
+  %bitcast.1863.5 = f64[46080]{0} bitcast(%select.100.7), metadata={scheduling_name="bitcast.1863.5"}
+  %multiply.144.5 = f64[46080]{0} multiply(%clamp.17.3, %bitcast.1863.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=157 scheduling_name="multiply.144.5"}
+  %add.112.3 = f64[46080]{0} add(%multiply.143.5, %multiply.144.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=157 scheduling_name="add.112.3"}
+  %select.101.5 = f64[46080]{0} select(%and.38.3, %add.112.3, %broadcast.355.8), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=159 scheduling_name="select.101.5"}
+  %multiply.145.3 = f64[46080]{0} multiply(%broadcast.351.3, %select.101.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=102 scheduling_name="multiply.145.3"}
+  %convert.108.1 = c128[46080]{0} convert(%multiply.145.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=102 scheduling_name="convert.108.1"}
+  %param_1.219 = c128[2,46080]{1,0} parameter(1), metadata={scheduling_name="param_1.219"}
+  %dynamic-slice.38.1 = c128[1,46080]{1,0} dynamic-slice(%param_1.219, %param_2.137, %constant_313_1), dynamic_slice_sizes={1,46080}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="dynamic-slice.38.1"}
+  %bitcast.1880.3 = c128[46080]{0} bitcast(%dynamic-slice.38.1), metadata={scheduling_name="bitcast.1880.3"}
+  %multiply.146.3 = c128[46080]{0} multiply(%convert.108.1, %bitcast.1880.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=102 scheduling_name="multiply.146.3"}
+  ROOT %add.113.1 = c128[46080]{0} add(%param_0.194, %multiply.146.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=102 scheduling_name="add.113.1"}
+}
+
+%fused_divide.1 (param_0.253: f64[46080], param_1.284: f64[], param_2.173: f64[]) -> f64[46080] {
+  %param_0.253 = f64[46080]{0} parameter(0), metadata={scheduling_name="param_0.253"}
+  %param_1.284 = f64[] parameter(1), metadata={scheduling_name="param_1.284"}
+  %broadcast.352.1 = f64[46080]{0} broadcast(%param_1.284), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=158 scheduling_name="broadcast.352.1"}
+  %subtract.33.1 = f64[46080]{0} subtract(%param_0.253, %broadcast.352.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=150 scheduling_name="subtract.33.1"}
+  %param_2.173 = f64[] parameter(2), metadata={scheduling_name="param_2.173"}
+  %broadcast.356.1 = f64[46080]{0} broadcast(%param_2.173), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=150 scheduling_name="broadcast.356.1"}
+  ROOT %divide.17.1 = f64[46080]{0} divide(%subtract.33.1, %broadcast.356.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=150 scheduling_name="divide.17.1"}
+}
+
+%fused_add.6 (param_0.296: s64[]) -> s64[] {
+  %param_0.296 = s64[] parameter(0), metadata={scheduling_name="param_0.296"}
+  %constant_312_1 = s64[] constant(1)
+  ROOT %add.107.1 = s64[] add(%param_0.296, %constant_312_1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="add.107.1"}
+}
+
+%region_4.304.clone (arg_tuple.0.0: (s64[], c128[46080], f64[2,4000], f64[2], c128[2,46080], /*index=5*/f64[46080], f64[], f64[])) -> (s64[], c128[46080], f64[2,4000], f64[2], c128[2,46080], /*index=5*/f64[46080], f64[], f64[]) {
+  %arg_tuple.0.0 = (s64[], c128[46080]{0}, f64[2,4000]{1,0}, f64[2]{0}, c128[2,46080]{1,0}, /*index=5*/f64[46080]{0}, f64[], f64[]) parameter(0), metadata={scheduling_name="arg_tuple.0.0"}
+  %get-tuple-element.145 = s64[] get-tuple-element(%arg_tuple.0.0), index=0, metadata={scheduling_name="get-tuple-element.145"}
+  %get-tuple-element.161 = f64[] get-tuple-element(%arg_tuple.0.0), index=6, metadata={scheduling_name="get-tuple-element.161"}
+  %get-tuple-element.162 = f64[] get-tuple-element(%arg_tuple.0.0), index=7, metadata={scheduling_name="get-tuple-element.162"}
+  %get-tuple-element.160 = f64[46080]{0} get-tuple-element(%arg_tuple.0.0), index=5, metadata={scheduling_name="get-tuple-element.160"}
+  %get-tuple-element.155 = f64[2,4000]{1,0} get-tuple-element(%arg_tuple.0.0), index=2, metadata={scheduling_name="get-tuple-element.155"}
+  %get-tuple-element.158 = f64[2]{0} get-tuple-element(%arg_tuple.0.0), index=3, metadata={scheduling_name="get-tuple-element.158"}
+  %get-tuple-element.159 = c128[2,46080]{1,0} get-tuple-element(%arg_tuple.0.0), index=4, metadata={scheduling_name="get-tuple-element.159"}
+  %get-tuple-element.146 = c128[46080]{0} get-tuple-element(%arg_tuple.0.0), index=1, metadata={scheduling_name="get-tuple-element.146"}
+  %loop_divide_fusion.1 = f64[46080]{0} fusion(%get-tuple-element.160, %get-tuple-element.161, %get-tuple-element.162), kind=kLoop, calls=%fused_divide.1, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/jit(interp_uniform_jax)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/radial/radial_jax.py" source_line=150 deduplicated_name="loop_divide_fusion" scheduling_name="loop_divide_fusion.1"}
+  %loop_add_fusion.5 = c128[46080]{0} fusion(%get-tuple-element.146, %get-tuple-element.159, %get-tuple-element.145, %loop_divide_fusion.1, %get-tuple-element.160, /*index=5*/%get-tuple-element.161, %get-tuple-element.155, %get-tuple-element.158, %get-tuple-element.162), kind=kLoop, calls=%fused_add.5, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=102 deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.5"}
+  %loop_add_fusion.6 = s64[] fusion(%get-tuple-element.145), kind=kLoop, calls=%fused_add.6, control-predecessors={%loop_add_fusion.5}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 deduplicated_name="loop_add_fusion.1" scheduling_name="loop_add_fusion.6"}
+  ROOT %tuple.29 = (s64[], c128[46080]{0}, f64[2,4000]{1,0}, f64[2]{0}, c128[2,46080]{1,0}, /*index=5*/f64[46080]{0}, f64[], f64[]) tuple(%loop_add_fusion.6, %loop_add_fusion.5, %get-tuple-element.155, %get-tuple-element.158, %get-tuple-element.159, /*index=5*/%get-tuple-element.160, %get-tuple-element.161, %get-tuple-element.162), metadata={scheduling_name="tuple.29"}
+}
+
+%fused_compare.3 (param_0.297: s64[]) -> pred[] {
+  %param_0.297 = s64[] parameter(0), metadata={scheduling_name="param_0.297"}
+  %constant_326_1 = s64[] constant(2)
+  ROOT %compare.144.1 = pred[] compare(%param_0.297, %constant_326_1), direction=LT, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="compare.144.1"}
+}
+
+%region_6.325.clone (arg_tuple.1.0: (s64[], c128[46080], f64[2,4000], f64[2], c128[2,46080], /*index=5*/f64[46080], f64[], f64[])) -> pred[] {
+  %arg_tuple.1.0 = (s64[], c128[46080]{0}, f64[2,4000]{1,0}, f64[2]{0}, c128[2,46080]{1,0}, /*index=5*/f64[46080]{0}, f64[], f64[]) parameter(0), metadata={scheduling_name="arg_tuple.1.0"}
+  %get-tuple-element.52.0 = s64[] get-tuple-element(%arg_tuple.1.0), index=0, metadata={scheduling_name="get-tuple-element.52.0"}
+  ROOT %loop_compare_fusion.3 = pred[] fusion(%get-tuple-element.52.0), kind=kLoop, calls=%fused_compare.3, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while/cond/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 deduplicated_name="loop_compare_fusion" scheduling_name="loop_compare_fusion.3"}
+}
+
+%fused_multiply (param_0.317: c128[46080], param_1.411: f64[]) -> c128[24,24,80] {
+  %param_0.317 = c128[46080]{0} parameter(0), metadata={scheduling_name="param_0.317"}
+  %bitcast.2045.1 = c128[24,24,80]{2,1,0} bitcast(%param_0.317), metadata={scheduling_name="bitcast.2045.1"}
+  %param_1.411 = f64[] parameter(1), metadata={scheduling_name="param_1.411"}
+  %convert.114.1 = c128[] convert(%param_1.411), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=241 scheduling_name="convert.114.1"}
+  %broadcast.391.1 = c128[24,24,80]{2,1,0} broadcast(%convert.114.1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=241 scheduling_name="broadcast.391.1"}
+  ROOT %multiply.161.1 = c128[24,24,80]{2,1,0} multiply(%bitcast.2045.1, %broadcast.391.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=241 scheduling_name="multiply.161.1"}
+}
+
+%region_7.571 (Arg_0.572: c128[], Arg_1.573: c128[]) -> c128[] {
+  %Arg_1.573 = c128[] parameter(1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/reduce_sum" scheduling_name="Arg_1.573"}
+  %Arg_0.572 = c128[] parameter(0), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/reduce_sum" scheduling_name="Arg_0.572"}
+  ROOT %add.101 = c128[] add(%Arg_0.572, %Arg_1.573), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=250 scheduling_name="add.101"}
+}
+
+%fused_add.7 (param_0.338: c128[46080], param_1.416: f64[46080], param_2.256: c128[2,46080], param_3.158: c128[], param_4.147: f64[1,1], param_5.116: f64[46080,3], param_6.87: f64[2]) -> c128[46080] {
+  %param_0.338 = c128[46080]{0} parameter(0), metadata={scheduling_name="param_0.338"}
+  %param_3.158 = c128[] parameter(3), metadata={scheduling_name="param_3.158"}
+  %broadcast.380.3 = c128[46080]{0} broadcast(%param_3.158), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=251 scheduling_name="broadcast.380.3"}
+  %param_6.87 = f64[2]{0} parameter(6), metadata={scheduling_name="param_6.87"}
+  %convert.110.1 = c128[2]{0} convert(%param_6.87), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=250 scheduling_name="convert.110.1"}
+  %broadcast.381.7 = c128[2,46080]{1,0} broadcast(%convert.110.1), dimensions={0}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=250 scheduling_name="broadcast.381.7"}
+  %param_2.256 = c128[2,46080]{1,0} parameter(2), metadata={scheduling_name="param_2.256"}
+  %multiply.148.7 = c128[2,46080]{1,0} multiply(%broadcast.381.7, %param_2.256), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=250 scheduling_name="multiply.148.7"}
+  %constant_31_3 = c128[] constant((0, 0))
+  %reduce.575.7 = c128[46080]{0} reduce(%multiply.148.7, %constant_31_3), dimensions={0}, to_apply=%region_7.571, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=250 scheduling_name="reduce.575.7"}
+  %negate.5.5 = c128[46080]{0} negate(%reduce.575.7), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=250 scheduling_name="negate.5.5"}
+  %param_1.416 = f64[46080]{0} parameter(1), metadata={scheduling_name="param_1.416"}
+  %multiply.149.9 = f64[46080]{0} multiply(%param_1.416, %param_1.416), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/integer_pow" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=248 scheduling_name="multiply.149.9"}
+  %constant_21_1 = f64[] constant(0)
+  %broadcast.382.1 = f64[46080]{0} broadcast(%constant_21_1), dimensions={}, metadata={scheduling_name="broadcast.382.1"}
+  %compare.145.5 = pred[46080]{0} compare(%multiply.149.9, %broadcast.382.1), direction=EQ, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/eq" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=249 scheduling_name="compare.145.5"}
+  %constant_17_1 = f64[] constant(1)
+  %broadcast.383.1 = f64[46080]{0} broadcast(%constant_17_1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=249 scheduling_name="broadcast.383.1"}
+  %select.102.3 = f64[46080]{0} select(%compare.145.5, %broadcast.383.1, %multiply.149.9), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=249 scheduling_name="select.102.3"}
+  %convert.111.3 = c128[46080]{0} convert(%select.102.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=252 scheduling_name="convert.111.3"}
+  %divide.19.7 = c128[46080]{0} divide(%negate.5.5, %convert.111.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=252 scheduling_name="divide.19.7"}
+  %constant_19_1 = f64[] constant(-0.25)
+  %broadcast.384.1 = f64[46080]{0} broadcast(%constant_19_1), dimensions={}, metadata={scheduling_name="broadcast.384.1"}
+  %multiply.150.5 = f64[46080]{0} multiply(%multiply.149.9, %broadcast.384.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=252 scheduling_name="multiply.150.5"}
+  %exponential.13.3 = f64[46080]{0} exponential(%multiply.150.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=252 scheduling_name="exponential.13.3"}
+  %convert.112.3 = c128[46080]{0} convert(%exponential.13.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=252 scheduling_name="convert.112.3"}
+  %multiply.151.7 = c128[46080]{0} multiply(%divide.19.7, %convert.112.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=252 scheduling_name="multiply.151.7"}
+  %multiply.152.5 = c128[46080]{0} multiply(%broadcast.380.3, %multiply.151.7), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=251 scheduling_name="multiply.152.5"}
+  %broadcast.386.1 = f64[46080,1]{1,0} broadcast(%constant_17_1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=249 scheduling_name="broadcast.386.1"}
+  %param_5.116 = f64[46080,3]{1,0} parameter(5), metadata={scheduling_name="param_5.116"}
+  %slice.14.5 = f64[46080,1]{1,0} slice(%param_5.116), slice={[0:46080], [0:1]}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=256 scheduling_name="slice.14.5"}
+  %multiply.153.7 = f64[46080,1]{1,0} multiply(%slice.14.5, %slice.14.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/integer_pow" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=256 scheduling_name="multiply.153.7"}
+  %slice.15.5 = f64[46080,1]{1,0} slice(%param_5.116), slice={[0:46080], [1:2]}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=256 scheduling_name="slice.15.5"}
+  %multiply.154.7 = f64[46080,1]{1,0} multiply(%slice.15.5, %slice.15.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/integer_pow" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=256 scheduling_name="multiply.154.7"}
+  %add.114.7 = f64[46080,1]{1,0} add(%multiply.153.7, %multiply.154.7), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=256 scheduling_name="add.114.7"}
+  %sqrt.3.5 = f64[46080,1]{1,0} sqrt(%add.114.7), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=256 scheduling_name="sqrt.3.5"}
+  %negate.6.3 = f64[46080,1]{1,0} negate(%sqrt.3.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=258 scheduling_name="negate.6.3"}
+  %param_4.147 = f64[1,1]{1,0} parameter(4), metadata={scheduling_name="param_4.147"}
+  %bitcast.1985.9 = f64[] bitcast(%param_4.147), metadata={scheduling_name="bitcast.1985.9"}
+  %broadcast.387.9 = f64[46080,1]{1,0} broadcast(%bitcast.1985.9), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=258 scheduling_name="broadcast.387.9"}
+  %multiply.155.5 = f64[46080,1]{1,0} multiply(%negate.6.3, %broadcast.387.9), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=258 scheduling_name="multiply.155.5"}
+  %exponential.14.3 = f64[46080,1]{1,0} exponential(%multiply.155.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=258 scheduling_name="exponential.14.3"}
+  %slice.17.1 = f64[46080,1]{1,0} slice(%param_5.116), slice={[0:46080], [2:3]}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=258 scheduling_name="slice.17.1"}
+  %multiply.156.5 = f64[46080,1]{1,0} multiply(%slice.17.1, %broadcast.387.9), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=258 scheduling_name="multiply.156.5"}
+  %cosine.7.3 = f64[46080,1]{1,0} cosine(%multiply.156.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/cos" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=258 scheduling_name="cosine.7.3"}
+  %multiply.157.3 = f64[46080,1]{1,0} multiply(%exponential.14.3, %cosine.7.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=258 scheduling_name="multiply.157.3"}
+  %subtract.36.3 = f64[46080,1]{1,0} subtract(%broadcast.386.1, %multiply.157.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=258 scheduling_name="subtract.36.3"}
+  %bitcast.1999.5 = f64[46080]{0} bitcast(%subtract.36.3), metadata={scheduling_name="bitcast.1999.5"}
+  %select.103.5 = f64[46080]{0} select(%compare.145.5, %broadcast.382.1, %bitcast.1999.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=249 scheduling_name="select.103.5"}
+  %convert.113.3 = c128[46080]{0} convert(%select.103.5), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=259 scheduling_name="convert.113.3"}
+  %multiply.158.3 = c128[46080]{0} multiply(%multiply.152.5, %convert.113.3), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=259 scheduling_name="multiply.158.3"}
+  %constant_192__sunk_2_1 = c128[1]{0} constant({(0, 0)})
+  %constant_157_1 = s32[] constant(0)
+  %dynamic-update-slice.11.1 = c128[46080]{0} dynamic-update-slice(%multiply.158.3, %constant_192__sunk_2_1, %constant_157_1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=261 scheduling_name="dynamic-update-slice.11.1"}
+  ROOT %add.115.1 = c128[46080]{0} add(%param_0.338, %dynamic-update-slice.11.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=262 scheduling_name="add.115.1"}
+}
+
+%fused_divide.2 (param_0.369: f64[3,3]) -> f64[1,1] {
+  %constant_190_1 = f64[1,1]{1,0} constant({ {3.1415926535897931} })
+  %param_0.369 = f64[3,3]{1,0} parameter(0), metadata={scheduling_name="param_0.369"}
+  %slice.16.1 = f64[1,1]{1,0} slice(%param_0.369), slice={[2:3], [2:3]}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=257 scheduling_name="slice.16.1"}
+  ROOT %divide.20.1 = f64[1,1]{1,0} divide(%constant_190_1, %slice.16.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=257 scheduling_name="divide.20.1"}
+}
+
+%fused_convert (param_0.366: f64[], param_1.415: f64[]) -> c128[] {
+  %param_1.415 = f64[] parameter(1), metadata={scheduling_name="param_1.415"}
+  %constant_309_1 = f64[] constant(25.132741228718345)
+  %multiply.147.1 = f64[] multiply(%param_1.415, %constant_309_1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=251 scheduling_name="multiply.147.1"}
+  %param_0.366 = f64[] parameter(0), metadata={scheduling_name="param_0.366"}
+  %divide.18.1 = f64[] divide(%multiply.147.1, %param_0.366), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=251 scheduling_name="divide.18.1"}
+  ROOT %convert.109.1 = c128[] convert(%divide.18.1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=251 scheduling_name="convert.109.1"}
+}
+
+%fused_broadcast.1 () -> c128[2,46080] {
+  %constant_31_1 = c128[] constant((0, 0))
+  ROOT %broadcast.378.1 = c128[2,46080]{1,0} broadcast(%constant_31_1), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 scheduling_name="broadcast.378.1"}
+}
+
+%fused_broadcast.2 () -> (c128[46080], c128[46080]) {
+  %constant_31_2 = c128[] constant((0, 0))
+  %broadcast.376.1 = c128[46080]{0} broadcast(%constant_31_2), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=106 scheduling_name="broadcast.376.1"}
+  %copy.26 = c128[46080]{0} copy(%broadcast.376.1), metadata={scheduling_name="copy.26"}
+  %copy.27 = c128[46080]{0} copy(%broadcast.376.1), metadata={scheduling_name="copy.27"}
+  ROOT %tuple.30 = (c128[46080]{0}, c128[46080]{0}) tuple(%copy.26, %copy.27), metadata={scheduling_name="tuple.30"}
+}
+
+%fused_multiply_real (param_0_0: c128[24,24,80], param_1_0: f64[], param_1_1: c128[24,24,80]) -> (f64[24,24,80], f64[24,24,80]) {
+  %param_0_0 = c128[24,24,80]{2,1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %constant_303_2 = c128[] constant((214.66252583997982, 0)), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=263}
+  %broadcast.388.2 = c128[24,24,80]{2,1,0} broadcast(%constant_303_2), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=263 scheduling_name="broadcast.388.2"}
+  %multiply.159.2 = c128[24,24,80]{2,1,0} multiply(%param_0_0, %broadcast.388.2), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=263 scheduling_name="multiply.159.2"}
+  %real.8.2 = f64[24,24,80]{2,1,0} real(%multiply.159.2), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=263 scheduling_name="real.8.2"}
+  %param_1_1 = c128[24,24,80]{2,1,0} parameter(2), metadata={scheduling_name="param_1_1"}
+  %real.9.2 = f64[24,24,80]{2,1,0} real(%param_1_1), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=240 scheduling_name="real.9.2"}
+  %param_1_0 = f64[] parameter(1), metadata={scheduling_name="param_1_0"}
+  %broadcast.390.2 = f64[24,24,80]{2,1,0} broadcast(%param_1_0), dimensions={}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=240 scheduling_name="broadcast.390.2"}
+  %multiply.160.2 = f64[24,24,80]{2,1,0} multiply(%real.9.2, %broadcast.390.2), metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=240 scheduling_name="multiply.160.2"}
+  ROOT %tuple.17 = (f64[24,24,80]{2,1,0}, f64[24,24,80]{2,1,0}) tuple(%real.8.2, %multiply.160.2), metadata={scheduling_name="tuple.17"}
+}
+
+ENTRY %main.735 (Arg_0.1.0: f64[46080,3], Arg_1.2.0: f64[46080], Arg_2.3.0: f64[2,2,3], Arg_3.4.0: s32[2], Arg_4.5.0: f64[2,4000], Arg_5.6.0: f64[2,4000], Arg_6.7.0: f64[2], Arg_7.8.0: f64[2], Arg_8.9.0: f64[2], Arg_9.10.0: f64[3,3], Arg_10.11.0: f64[], Arg_11.12.0: f64[], Arg_12.13.0: f64[], Arg_13.14.0: f64[], Arg_14.15.0: f64[]) -> (f64[24,24,80], f64[24,24,80], c128[24,24,80]) {
+  %constant_136_0 = s64[] constant(0)
+  %Arg_0.1.0 = f64[46080,3]{1,0} parameter(0), metadata={op_name="G_crys" scheduling_name="Arg_0.1.0"}
+  %Arg_2.3.0 = f64[2,2,3]{2,1,0} parameter(2), metadata={op_name="species_tau" scheduling_name="Arg_2.3.0"}
+  %Arg_3.4.0 = s32[2]{0} parameter(3), metadata={op_name="species_natoms" scheduling_name="Arg_3.4.0"}
+  %Arg_1.2.0 = f64[46080]{0} parameter(1), metadata={op_name="G_norm" scheduling_name="Arg_1.2.0"}
+  %Arg_10.11.0 = f64[] parameter(10), metadata={op_name="q0" scheduling_name="Arg_10.11.0"}
+  %Arg_11.12.0 = f64[] parameter(11), metadata={op_name="dq" scheduling_name="Arg_11.12.0"}
+  %Arg_5.6.0 = f64[2,4000]{1,0} parameter(5), metadata={op_name="tables_vloc" scheduling_name="Arg_5.6.0"}
+  %Arg_7.8.0 = f64[2]{0} parameter(7), metadata={op_name="vloc_pf" scheduling_name="Arg_7.8.0"}
+  %Arg_9.10.0 = f64[3,3]{1,0} parameter(9), metadata={op_name="B_cart" scheduling_name="Arg_9.10.0"}
+  %Arg_12.13.0 = f64[] parameter(12), metadata={op_name="vol" scheduling_name="Arg_12.13.0"}
+  %Arg_13.14.0 = f64[] parameter(13), metadata={op_name="sqrtN" scheduling_name="Arg_13.14.0"}
+  %Arg_8.9.0 = f64[2]{0} parameter(8), metadata={op_name="z_vals" scheduling_name="Arg_8.9.0"}
+  %Arg_4.5.0 = f64[2,4000]{1,0} parameter(4), metadata={op_name="tables_nlcc" scheduling_name="Arg_4.5.0"}
+  %Arg_6.7.0 = f64[2]{0} parameter(6), metadata={op_name="nlcc_pf" scheduling_name="Arg_6.7.0"}
+  %Arg_14.15.0 = f64[] parameter(14), metadata={op_name="N" scheduling_name="Arg_14.15.0"}
+  %loop_broadcast_fusion.1 = c128[2,46080]{1,0} fusion(), kind=kLoop, calls=%fused_broadcast.1, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 scheduling_name="loop_broadcast_fusion.1"}
+  %copy.29 = s64[] copy(%constant_136_0)
+  %copy.7 = s64[] copy(%copy.29), metadata={scheduling_name="copy.7"}
+  %tuple.21 = (s64[], c128[2,46080]{1,0}, f64[2,2,3]{2,1,0}, s32[2]{0}, f64[46080,3]{1,0}) tuple(%copy.7, %loop_broadcast_fusion.1, %Arg_2.3.0, %Arg_3.4.0, %Arg_0.1.0), metadata={scheduling_name="tuple.21"}
+  %while.1.0 = (s64[], c128[2,46080]{1,0}, f64[2,2,3]{2,1,0}, s32[2]{0}, f64[46080,3]{1,0}) while(%tuple.21), condition=%region_3.138, body=%region_0.120, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 scheduling_name="while.1.0"}, backend_config={"known_trip_count":{"n":"2"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %get-tuple-element.136 = c128[2,46080]{1,0} get-tuple-element(%while.1.0), index=1, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(species_structure_factors)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=67 scheduling_name="get-tuple-element.136"}
+  %loop_broadcast_fusion.2 = (c128[46080]{0}, c128[46080]{0}) fusion(), kind=kLoop, calls=%fused_broadcast.2, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=106 deduplicated_name="loop_broadcast_fusion" scheduling_name="loop_broadcast_fusion.2"}
+  %get-tuple-element.164 = c128[46080]{0} get-tuple-element(%loop_broadcast_fusion.2), index=0, metadata={scheduling_name="get-tuple-element.164"}
+  %copy.13 = s64[] copy(%copy.29), metadata={scheduling_name="copy.13"}
+  %tuple.24 = (s64[], c128[46080]{0}, f64[2,4000]{1,0}, f64[2]{0}, c128[2,46080]{1,0}, /*index=5*/f64[46080]{0}, f64[], f64[]) tuple(%copy.13, %get-tuple-element.164, %Arg_5.6.0, %Arg_7.8.0, %get-tuple-element.136, /*index=5*/%Arg_1.2.0, %Arg_10.11.0, %Arg_11.12.0), metadata={scheduling_name="tuple.24"}
+  %while.2.0 = (s64[], c128[46080]{0}, f64[2,4000]{1,0}, f64[2]{0}, c128[2,46080]{1,0}, /*index=5*/f64[46080]{0}, f64[], f64[]) while(%tuple.24), condition=%region_6.325, body=%region_4.304, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="while.2.0"}, backend_config={"known_trip_count":{"n":"2"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %get-tuple-element.5.0 = c128[46080]{0} get-tuple-element(%while.2.0), index=1, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="get-tuple-element.5.0"}
+  %custom-call.1.0 = (f64[46080,3]{1,0}, s8[1105992]{0}) custom-call(%Arg_0.1.0, %Arg_9.10.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=255 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"138240","rhs_stride":"9","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.53.0 = f64[46080,3]{1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=255 scheduling_name="get-tuple-element.53.0"}
+  %loop_convert_fusion = c128[] fusion(%Arg_12.13.0, %Arg_13.14.0), kind=kLoop, calls=%fused_convert, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=251 scheduling_name="loop_convert_fusion"}
+  %loop_divide_fusion.2 = f64[1,1]{1,0} fusion(%Arg_9.10.0), kind=kLoop, calls=%fused_divide.2, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=257 scheduling_name="loop_divide_fusion.2"}
+  %loop_add_fusion.7 = c128[46080]{0} fusion(%get-tuple-element.5.0, %Arg_1.2.0, %get-tuple-element.136, %loop_convert_fusion, %loop_divide_fusion.2, /*index=5*/%get-tuple-element.53.0, %Arg_8.9.0), kind=kLoop, calls=%fused_add.7, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=262 scheduling_name="loop_add_fusion.7"}
+  %bitcast.2009.0 = c128[24,24,80]{2,1,0} bitcast(%loop_add_fusion.7), metadata={scheduling_name="bitcast.2009.0"}
+  %fft.0.0 = c128[24,24,80]{2,1,0} fft(%bitcast.2009.0), fft_type=IFFT, fft_length={24,24,80}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=240 scheduling_name="fft.0.0"}
+  %get-tuple-element.165 = c128[46080]{0} get-tuple-element(%loop_broadcast_fusion.2), index=1, metadata={scheduling_name="get-tuple-element.165"}
+  %tuple.27 = (s64[], c128[46080]{0}, f64[2,4000]{1,0}, f64[2]{0}, c128[2,46080]{1,0}, /*index=5*/f64[46080]{0}, f64[], f64[]) tuple(%copy.29, %get-tuple-element.165, %Arg_4.5.0, %Arg_6.7.0, %get-tuple-element.136, /*index=5*/%Arg_1.2.0, %Arg_10.11.0, %Arg_11.12.0), metadata={scheduling_name="tuple.27"}
+  %while.3.0 = (s64[], c128[46080]{0}, f64[2,4000]{1,0}, f64[2]{0}, c128[2,46080]{1,0}, /*index=5*/f64[46080]{0}, f64[], f64[]) while(%tuple.27), condition=%region_6.325.clone, body=%region_4.304.clone, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="while.3.0"}, backend_config={"known_trip_count":{"n":"2"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %get-tuple-element.7.0 = c128[46080]{0} get-tuple-element(%while.3.0), index=1, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(accumulate_species_on_G)/while" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=104 scheduling_name="get-tuple-element.7.0"}
+  %bitcast.2045.0 = c128[24,24,80]{2,1,0} bitcast(%get-tuple-element.7.0), metadata={scheduling_name="bitcast.2045.0"}
+  %fft.1.0 = c128[24,24,80]{2,1,0} fft(%bitcast.2045.0), fft_type=IFFT, fft_length={24,24,80}, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=240 scheduling_name="fft.1.0"}
+  %loop_multiply_real_fusion = (f64[24,24,80]{2,1,0}, f64[24,24,80]{2,1,0}) fusion(%fft.0.0, %Arg_14.15.0, %fft.1.0), kind=kLoop, calls=%fused_multiply_real, metadata={scheduling_name="loop_multiply_real_fusion"}
+  %get-tuple-element.54 = f64[24,24,80]{2,1,0} get-tuple-element(%loop_multiply_real_fusion), index=0, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=263 scheduling_name="get-tuple-element.54"}
+  %get-tuple-element.55 = f64[24,24,80]{2,1,0} get-tuple-element(%loop_multiply_real_fusion), index=1, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=240 scheduling_name="get-tuple-element.55"}
+  %loop_multiply_fusion = c128[24,24,80]{2,1,0} fusion(%get-tuple-element.7.0, %Arg_14.15.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_ionic_gspace_jit)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/ionic_gspace.py" source_line=241 scheduling_name="loop_multiply_fusion"}
+  ROOT %tuple.734.0 = (f64[24,24,80]{2,1,0}, f64[24,24,80]{2,1,0}, c128[24,24,80]{2,1,0}) tuple(%get-tuple-element.54, %get-tuple-element.55, %loop_multiply_fusion), metadata={scheduling_name="tuple.734.0"}
+}
+

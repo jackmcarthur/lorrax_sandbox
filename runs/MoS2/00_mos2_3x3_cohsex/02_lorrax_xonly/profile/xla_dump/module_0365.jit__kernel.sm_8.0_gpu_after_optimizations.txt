@@ -1,0 +1,60 @@
+HloModule jit__kernel, is_scheduled=true, input_output_alias={ {0}: (0, {}, may-alias), {1}: (1, {}, may-alias) }, entry_computation_layout={(c128[9,320,320]{2,1,0}, c128[9,320]{1,0}, c128[9,160,2419]{2,1,0}, c128[9,2419]{1,0}, s32[], /*index=5*/s32[], s32[])->(c128[9,320,320]{2,1,0}, c128[9,320]{1,0})}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,false,false,false}, allow_spmd_sharding_propagation_to_output={false,false}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="fbbe7e0a6b788736593b64235dc157d1"}
+
+%fused_transpose (param_0.1: c128[9,320,1]) -> c128[9,320] {
+  %param_0.1 = c128[9,320,1]{2,0,1} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.142.1 = c128[320,9]{1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.142.1"}
+  ROOT %transpose.13.1 = c128[9,320]{1,0} transpose(%bitcast.142.1), dimensions={1,0}, metadata={scheduling_name="transpose.13.1"}
+}
+
+%fused_transpose.1 (param_0.25: c128[9,160,2419]) -> c128[160,9] {
+  %param_0.25 = c128[9,160,2419]{2,1,0} parameter(0), metadata={scheduling_name="param_0.25"}
+  %slice.4.1 = c128[9,160,1]{2,1,0} slice(%param_0.25), slice={[0:9], [0:160], [0:1]}, metadata={op_name="jit(_kernel)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=893 scheduling_name="slice.4.1"}
+  %bitcast.135.1 = c128[9,160]{1,0} bitcast(%slice.4.1), metadata={scheduling_name="bitcast.135.1"}
+  ROOT %transpose.12.1 = c128[160,9]{1,0} transpose(%bitcast.135.1), dimensions={1,0}, metadata={op_name="jit(_kernel)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=893 scheduling_name="transpose.12.1"}
+}
+
+%fused_complex (param_0.24: c128[9,2419], param_1.21: c128[9,320,2419]) -> c128[320,9,2419] {
+  %param_1.21 = c128[9,320,2419]{2,0,1} parameter(1), metadata={scheduling_name="param_1.21"}
+  %bitcast.110.7 = c128[320,9,2419]{2,1,0} bitcast(%param_1.21), metadata={scheduling_name="bitcast.110.7"}
+  %param_0.24 = c128[9,2419]{1,0} parameter(0), metadata={scheduling_name="param_0.24"}
+  %broadcast.4.7 = c128[320,9,2419]{2,1,0} broadcast(%param_0.24), dimensions={1,2}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=881 scheduling_name="broadcast.4.7"}
+  %multiply.4.7 = c128[320,9,2419]{2,1,0} multiply(%bitcast.110.7, %broadcast.4.7), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=881 scheduling_name="multiply.4.7"}
+  %real.3.3 = f64[320,9,2419]{2,1,0} real(%multiply.4.7), metadata={op_name="jit(_kernel)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=884 scheduling_name="real.3.3"}
+  %imag.3.5 = f64[320,9,2419]{2,1,0} imag(%multiply.4.7), metadata={op_name="jit(_kernel)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=884 scheduling_name="imag.3.5"}
+  %negate.3.3 = f64[320,9,2419]{2,1,0} negate(%imag.3.5), metadata={op_name="jit(_kernel)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=884 scheduling_name="negate.3.3"}
+  ROOT %complex.3.1 = c128[320,9,2419]{2,1,0} complex(%real.3.3, %negate.3.3), metadata={op_name="jit(_kernel)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=884 scheduling_name="complex.3.1"}
+}
+
+%wrapped_transpose_computation (param_0.26: c128[9,160,2419]) -> c128[160,9,2419] {
+  %param_0.26 = c128[9,160,2419]{2,1,0} parameter(0), metadata={scheduling_name="param_0.26"}
+  ROOT %transpose.11.1 = c128[160,9,2419]{2,1,0} transpose(%param_0.26), dimensions={1,0,2}, metadata={op_name="zeta_L_G" scheduling_name="transpose.11.1"}
+}
+
+ENTRY %main.51_spmd (param.7: c128[9,320,320], param.1.0: c128[9,320], param.5.0: c128[9,160,2419], param.6.0: c128[9,2419], param.2.0: s32[], param.3.0: s32[], param.4.0: s32[]) -> (c128[9,320,320], c128[9,320]) {
+  %param.5.0 = c128[9,160,2419]{2,1,0} parameter(2), sharding={devices=[1,4,1]<=[4]}, metadata={op_name="zeta_L_G" scheduling_name="param.5.0"}
+  %param.7 = c128[9,320,320]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="V_acc" scheduling_name="param.7"}
+  %param.1.0 = c128[9,320]{1,0} parameter(1), sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="g0_acc" scheduling_name="param.1.0"}
+  %param.2.0 = s32[] parameter(4), sharding={replicated}, metadata={op_name="q_lo_dyn" scheduling_name="param.2.0"}
+  %param.3.0 = s32[] parameter(5), sharding={replicated}, metadata={op_name="mu_lo_dyn" scheduling_name="param.3.0"}
+  %param.4.0 = s32[] parameter(6), sharding={replicated}, metadata={op_name="nu_lo_dyn" scheduling_name="param.4.0"}
+  %param.6.0 = c128[9,2419]{1,0} parameter(3), sharding={replicated}, metadata={op_name="v_per_G_batch" scheduling_name="param.6.0"}
+  %wrapped_transpose = c128[160,9,2419]{2,1,0} fusion(%param.5.0), kind=kLoop, calls=%wrapped_transpose_computation, metadata={op_name="zeta_L_G" scheduling_name="wrapped_transpose"}
+  %bitcast.123.0 = c128[9,160,2419]{2,0,1} bitcast(%wrapped_transpose), metadata={scheduling_name="bitcast.123.0"}
+  %collective-permute-start = (c128[9,160,2419]{2,0,1}, c128[9,160,2419]{2,0,1}) collective-permute-start(%bitcast.123.0), channel_id=2, source_target_pairs={{0,0},{1,2},{2,1},{3,3}}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=877 scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %collective-permute-done = c128[9,160,2419]{2,0,1} collective-permute-done(%collective-permute-start), metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=877 scheduling_name="collective-permute-done"}
+  %all-gather-start = (c128[9,160,2419]{2,0,1}, c128[9,320,2419]{2,0,1}) all-gather-start(%bitcast.123.0), channel_id=1, replica_groups={{0,1},{2,3}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=876 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done = c128[9,320,2419]{2,0,1} all-gather-done(%all-gather-start), metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=876 scheduling_name="all-gather-done"}
+  %all-gather-start.1 = (c128[9,160,2419]{2,0,1}, c128[9,320,2419]{2,0,1}) all-gather-start(%collective-permute-done), channel_id=3, replica_groups={{0,2},{1,3}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=877 scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":true,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %loop_transpose_fusion.1 = c128[160,9]{1,0} fusion(%param.5.0), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="jit(_kernel)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=893 scheduling_name="loop_transpose_fusion.1"}
+  %all-gather-done.1 = c128[9,320,2419]{2,0,1} all-gather-done(%all-gather-start.1), metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=877 scheduling_name="all-gather-done.1"}
+  %bitcast.139.0 = c128[9,160,1]{2,0,1} bitcast(%loop_transpose_fusion.1), metadata={scheduling_name="bitcast.139.0"}
+  %all-gather-start.2 = (c128[9,160,1]{2,0,1}, c128[9,320,1]{2,0,1}) all-gather-start(%bitcast.139.0), channel_id=4, replica_groups={{0,1},{2,3}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_kernel)/jit(main)/squeeze" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=893 scheduling_name="all-gather-start.2"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %loop_complex_fusion = c128[320,9,2419]{2,1,0} fusion(%param.6.0, %all-gather-done), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(_kernel)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=884 scheduling_name="loop_complex_fusion"}
+  %bitcast.129.0 = c128[320,9,2419]{2,1,0} bitcast(%all-gather-done.1), metadata={scheduling_name="bitcast.129.0"}
+  %custom-call.1.0 = (c128[9,320,320]{2,1,0}, s8[4194304]{0}) custom-call(%loop_complex_fusion, %bitcast.129.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_kernel)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=883 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["2"],"lhs_batch_dimensions":["1"],"rhs_batch_dimensions":["1"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"21771","rhs_stride":"21771","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %all-gather-done.2 = c128[9,320,1]{2,0,1} all-gather-done(%all-gather-start.2), metadata={op_name="jit(_kernel)/jit(main)/squeeze" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=893 scheduling_name="all-gather-done.2"}
+  %loop_transpose_fusion = c128[9,320]{1,0} fusion(%all-gather-done.2), kind=kLoop, calls=%fused_transpose, metadata={scheduling_name="loop_transpose_fusion"}
+  %get-tuple-element.3 = c128[9,320,320]{2,1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(_kernel)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/v_q_tile.py" source_line=883 scheduling_name="get-tuple-element.3"}
+  ROOT %tuple.2 = (c128[9,320,320]{2,1,0}, c128[9,320]{1,0}) tuple(%get-tuple-element.3, %loop_transpose_fusion), metadata={scheduling_name="tuple.2"}
+}
+

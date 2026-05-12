@@ -1,0 +1,107 @@
+BufferAssignment:
+allocation 0: size 14745600, parameter 0, shape |c128[9,320,320]| at ShapeIndex {}, output shape is |c128[9,320,320]|, maybe-live-out:
+ value: <21 input_transpose_fusion.1 @0> (size=14745600,offset=0): c128[102400,9]{1,0}
+ value: <23 param.2 @0> (size=14745600,offset=0): c128[9,320,320]{2,1,0}
+ value: <26 loop_multiply_fusion @0> (size=14745600,offset=0): c128[320,320,3,3,1]{4,3,2,1,0}
+ value: <28 input_transpose_fusion @0> (size=14745600,offset=0): c128[9,102400]{1,0}
+allocation 1: size 14745600, parameter 1, shape |c128[9,320,320]| at ShapeIndex {}:
+ value: <20 param.1.0 @0> (size=14745600,offset=0): c128[9,320,320]{2,1,0}
+allocation 2: size 29491200, preallocated-temp:
+ value: <22 fft.7.0 @0> (size=14745600,offset=14745600): c128[320,320,3,3,1]{4,3,2,1,0}
+ value: <24 input_transpose_fusion.2 @0> (size=14745600,offset=14745600): c128[102400,9]{1,0}
+ value: <25 fft.6.0 @0> (size=14745600,offset=0): c128[320,320,3,3,1]{4,3,2,1,0}
+ value: <27 fft.8.0 @0> (size=14745600,offset=0): c128[320,320,3,3,1]{4,3,2,1,0}
+
+Total bytes used: 58982400 (56.25MiB)
+
+Used values:
+<20 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  input_transpose_fusion.1, operand 0
+ from instruction: %param.1.0 = c128[9,320,320]{2,1,0} parameter(1), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="P_r" scheduling_name="param.1.0"}
+<21 input_transpose_fusion.1 @0>
+ positions:
+  input_transpose_fusion.1
+  bitcast.124.0
+ uses:
+  bitcast.124.0, operand 0
+  fft.7.0, operand 0
+ from instruction: %input_transpose_fusion.1 = c128[102400,9]{1,0} fusion(%param.1.0), kind=kInput, calls=%fused_transpose.1, metadata={op_name="P_r" deduplicated_name="input_transpose_fusion.1" scheduling_name="input_transpose_fusion.1"}
+<22 fft.7.0 @0>
+ positions:
+  fft.7.0
+ uses:
+  loop_multiply_fusion, operand 0
+ from instruction: %fft.7.0 = c128[320,320,3,3,1]{4,3,2,1,0} fft(%bitcast.124.0), fft_type=IFFT, fft_length={3,3,1}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325 scheduling_name="fft.7.0"}
+<23 param.2 @0>
+ positions:
+  param.2
+ uses:
+  input_transpose_fusion.2, operand 0
+ from instruction: %param.2 = c128[9,320,320]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="P_l" scheduling_name="param.2"}
+<24 input_transpose_fusion.2 @0>
+ positions:
+  input_transpose_fusion.2
+  bitcast.106.0
+ uses:
+  bitcast.106.0, operand 0
+  fft.6.0, operand 0
+ from instruction: %input_transpose_fusion.2 = c128[102400,9]{1,0} fusion(%param.2), kind=kInput, calls=%fused_transpose.2, metadata={op_name="P_l" deduplicated_name="input_transpose_fusion.1" scheduling_name="input_transpose_fusion.2"}
+<25 fft.6.0 @0>
+ positions:
+  fft.6.0
+ uses:
+  loop_multiply_fusion, operand 1
+ from instruction: %fft.6.0 = c128[320,320,3,3,1]{4,3,2,1,0} fft(%bitcast.106.0), fft_type=IFFT, fft_length={3,3,1}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=325 scheduling_name="fft.6.0"}
+<26 loop_multiply_fusion @0>
+ positions:
+  loop_multiply_fusion
+ uses:
+  fft.8.0, operand 0
+ from instruction: %loop_multiply_fusion = c128[320,320,3,3,1]{4,3,2,1,0} fusion(%fft.7.0, %fft.6.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=388 scheduling_name="loop_multiply_fusion"}
+<27 fft.8.0 @0>
+ positions:
+  fft.8.0
+ uses:
+  input_transpose_fusion, operand 0
+ from instruction: %fft.8.0 = c128[320,320,3,3,1]{4,3,2,1,0} fft(%loop_multiply_fusion), fft_type=FFT, fft_length={3,3,1}, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343 scheduling_name="fft.8.0"}
+<28 input_transpose_fusion @0>
+ positions:
+  input_transpose_fusion
+  bitcast.96.0
+ uses:
+  bitcast.96.0, operand 0
+ from instruction: %input_transpose_fusion = c128[9,102400]{1,0} fusion(%fft.8.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_compute_CCT_LR)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=404 scheduling_name="input_transpose_fusion"}
+
+
+HloLiveRange (max 12):
+  InstructionSequence:
+    0:param.1.0
+    1:param.2
+    2:input_transpose_fusion.2
+    3:bitcast.106.0
+    4:fft.6.0
+    5:input_transpose_fusion.1
+    6:bitcast.124.0
+    7:fft.7.0
+    8:loop_multiply_fusion
+    9:fft.8.0
+    10:input_transpose_fusion
+    11:bitcast.96.0
+  BufferLiveRange:
+    param.1.0{}:0-12
+    input_transpose_fusion.1{}:5-7
+    fft.7.0{}:7-8
+    param.2{}:0-2
+    input_transpose_fusion.2{}:2-4
+    fft.6.0{}:4-8
+    loop_multiply_fusion{}:8-9
+    fft.8.0{}:9-10
+    input_transpose_fusion{}:10-12
+  Live ranges at 8 (peak):
+    param.1.0: 14745600 bytes
+    fft.7.0: 14745600 bytes
+    fft.6.0: 14745600 bytes
+    loop_multiply_fusion: 14745600 bytes

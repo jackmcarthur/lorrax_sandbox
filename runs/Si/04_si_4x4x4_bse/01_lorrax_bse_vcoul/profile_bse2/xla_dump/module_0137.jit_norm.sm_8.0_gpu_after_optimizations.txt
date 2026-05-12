@@ -1,0 +1,27 @@
+HloModule jit_norm, is_scheduled=true, entry_computation_layout={(c128[20,1024]{1,0})->f64[20,1]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="1a5fbe8defff057df9a22d36b82fdc83"}
+
+%region_0.9 (Arg_0.10: f64[], Arg_1.11: f64[]) -> f64[] {
+  %Arg_1.11 = f64[] parameter(1), metadata={op_name="jit(norm)/jit(main)/reduce_sum" scheduling_name="Arg_1.11"}
+  %Arg_0.10 = f64[] parameter(0), metadata={op_name="jit(norm)/jit(main)/reduce_sum" scheduling_name="Arg_0.10"}
+  ROOT %add.2 = f64[] add(%Arg_0.10, %Arg_1.11), metadata={op_name="jit(norm)/jit(main)/reduce_sum" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=297 scheduling_name="add.2"}
+}
+
+%fused_reduce (param_0.6: c128[20,1024]) -> f64[20] {
+  %param_0.6 = c128[20,1024]{1,0} parameter(0), metadata={scheduling_name="param_0.6"}
+  %real.5.3 = f64[20,1024]{1,0} real(%param_0.6), metadata={op_name="jit(norm)/jit(main)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=297 scheduling_name="real.5.3"}
+  %imag.2.3 = f64[20,1024]{1,0} imag(%param_0.6), metadata={op_name="jit(norm)/jit(main)/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=297 scheduling_name="imag.2.3"}
+  %negate.2.3 = f64[20,1024]{1,0} negate(%imag.2.3), metadata={op_name="jit(norm)/jit(main)/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=297 scheduling_name="negate.2.3"}
+  %complex.2.3 = c128[20,1024]{1,0} complex(%real.5.3, %negate.2.3), metadata={op_name="jit(norm)/jit(main)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=297 scheduling_name="complex.2.3"}
+  %multiply.2.3 = c128[20,1024]{1,0} multiply(%param_0.6, %complex.2.3), metadata={op_name="jit(norm)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=297 scheduling_name="multiply.2.3"}
+  %real.6.3 = f64[20,1024]{1,0} real(%multiply.2.3), metadata={op_name="jit(norm)/jit(main)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=297 scheduling_name="real.6.3"}
+  %constant_2_1 = f64[] constant(0)
+  %reduce.13.1 = f64[20]{0} reduce(%real.6.3, %constant_2_1), dimensions={1}, to_apply=%region_0.9, metadata={op_name="jit(norm)/jit(main)/reduce_sum" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=297 scheduling_name="reduce.13.1"}
+  ROOT %sqrt.3.1 = f64[20]{0} sqrt(%reduce.13.1), metadata={op_name="jit(norm)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=297 scheduling_name="sqrt.3.1"}
+}
+
+ENTRY %main.16 (Arg_0.1.0: c128[20,1024]) -> f64[20,1] {
+  %Arg_0.1.0 = c128[20,1024]{1,0} parameter(0), metadata={op_name="x" scheduling_name="Arg_0.1.0"}
+  %input_reduce_fusion = f64[20]{0} fusion(%Arg_0.1.0), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(norm)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=297 scheduling_name="input_reduce_fusion"}
+  ROOT %bitcast.64 = f64[20,1]{1,0} bitcast(%input_reduce_fusion), metadata={op_name="jit(norm)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=297 scheduling_name="bitcast.64"}
+}
+

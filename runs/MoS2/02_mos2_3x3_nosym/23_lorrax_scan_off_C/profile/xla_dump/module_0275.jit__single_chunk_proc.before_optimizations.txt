@@ -1,0 +1,38 @@
+HloModule jit__single_chunk_proc, entry_computation_layout={(c128[4,640,46080]{2,1,0}, c128[4,24,24,80]{3,2,1,0}, c128[4,1,24,24,80]{4,3,2,1,0})->(c128[4,640,640]{2,1,0}, c128[4,640]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}
+
+%fft_0.9 (Arg_0.10: c128[4,640,24,24,80]) -> c128[4,640,24,24,80] {
+  %Arg_0.10 = c128[4,640,24,24,80]{4,3,2,1,0} parameter(0), metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(jit(fft))/pjit"}
+  ROOT %fft.11 = c128[4,640,24,24,80]{4,3,2,1,0} fft(%Arg_0.10), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(jit(fft))/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385}
+}
+
+%fft.12 (Arg_0.13: c128[4,640,24,24,80]) -> c128[4,640,24,24,80] {
+  %Arg_0.13 = c128[4,640,24,24,80]{4,3,2,1,0} parameter(0), metadata={op_name="jit(_single_chunk_proc)/jit(main)/pjit"}
+  ROOT %call.14 = c128[4,640,24,24,80]{4,3,2,1,0} call(%Arg_0.13), to_apply=%fft_0.9
+}
+
+ENTRY %main.30 (Arg_0.1: c128[4,640,46080], Arg_1.2: c128[4,24,24,80], Arg_2.3: c128[4,1,24,24,80]) -> (c128[4,640,640], c128[4,640]) {
+  %Arg_0.1 = c128[4,640,46080]{2,1,0} parameter(0), metadata={op_name="zeta_q"}
+  %reshape.4 = c128[4,640,24,24,80]{4,3,2,1,0} reshape(%Arg_0.1), metadata={op_name="jit(_single_chunk_proc)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=383}
+  %Arg_2.3 = c128[4,1,24,24,80]{4,3,2,1,0} parameter(2), metadata={op_name="phase_q"}
+  %broadcast.5 = c128[4,1,24,24,80]{4,3,2,1,0} broadcast(%Arg_2.3), dimensions={0,1,2,3,4}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=384}
+  %reshape.6 = c128[4,24,24,80]{3,2,1,0} reshape(%broadcast.5), metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=384}
+  %broadcast.7 = c128[4,640,24,24,80]{4,3,2,1,0} broadcast(%reshape.6), dimensions={0,2,3,4}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=384}
+  %multiply.8 = c128[4,640,24,24,80]{4,3,2,1,0} multiply(%reshape.4, %broadcast.7), metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=384}
+  %call.15 = c128[4,640,24,24,80]{4,3,2,1,0} call(%multiply.8), to_apply=%fft.12
+  %Arg_1.2 = c128[4,24,24,80]{3,2,1,0} parameter(1), metadata={op_name="sqrt_v_q"}
+  %reshape.18 = c128[4,1,24,24,80]{4,3,2,1,0} reshape(%Arg_1.2), metadata={op_name="jit(_single_chunk_proc)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=387}
+  %broadcast.19 = c128[4,1,24,24,80]{4,3,2,1,0} broadcast(%reshape.18), dimensions={0,1,2,3,4}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=387}
+  %reshape.20 = c128[4,24,24,80]{3,2,1,0} reshape(%broadcast.19), metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=387}
+  %broadcast.21 = c128[4,640,24,24,80]{4,3,2,1,0} broadcast(%reshape.20), dimensions={0,2,3,4}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=387}
+  %multiply.22 = c128[4,640,24,24,80]{4,3,2,1,0} multiply(%call.15, %broadcast.21), metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=387}
+  %reshape.23 = c128[4,640,46080]{2,1,0} reshape(%multiply.22), metadata={op_name="jit(_single_chunk_proc)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=388}
+  %real.24 = f64[4,640,46080]{2,1,0} real(%reshape.23), metadata={op_name="jit(_single_chunk_proc)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=398}
+  %imag.25 = f64[4,640,46080]{2,1,0} imag(%reshape.23), metadata={op_name="jit(_single_chunk_proc)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=398}
+  %negate.26 = f64[4,640,46080]{2,1,0} negate(%imag.25), metadata={op_name="jit(_single_chunk_proc)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=398}
+  %complex.27 = c128[4,640,46080]{2,1,0} complex(%real.24, %negate.26), metadata={op_name="jit(_single_chunk_proc)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=398}
+  %dot.28 = c128[4,640,640]{2,1,0} dot(%complex.27, %reshape.23), lhs_batch_dims={0}, lhs_contracting_dims={2}, rhs_batch_dims={0}, rhs_contracting_dims={2}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(mG,nG->mn)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=398}
+  %slice.16 = c128[4,640,1,1,1]{4,3,2,1,0} slice(%call.15), slice={[0:4], [0:640], [0:1], [0:1], [0:1]}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=386}
+  %reshape.17 = c128[4,640]{1,0} reshape(%slice.16), metadata={op_name="jit(_single_chunk_proc)/jit(main)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=386}
+  ROOT %tuple.29 = (c128[4,640,640]{2,1,0}, c128[4,640]{1,0}) tuple(%dot.28, %reshape.17)
+}
+

@@ -1,0 +1,44 @@
+HloModule jit__left_ifft_conj, input_output_alias={ {}: (0, {}, may-alias) }, entry_computation_layout={(c128[4,4,4,240,6656]{4,3,2,1,0})->c128[4,4,4,240,6656]{4,3,2,1,0}}, num_partitions=4
+
+%fft.8 (Arg_0.9: c128[120,3328,4,4,4]) -> c128[120,3328,4,4,4] {
+  %Arg_0.9 = c128[120,3328,4,4,4]{4,3,2,1,0} parameter(0), metadata={op_name="jit(_left_ifft_conj)/jit(main)/jit(shmap_body)/pjit"}
+  ROOT %fft.10 = c128[120,3328,4,4,4]{4,3,2,1,0} fft(%Arg_0.9), fft_type=IFFT, fft_length={4,4,4}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax/src/common/fft_helpers.py" source_line=86}
+}
+
+%region_0.11 (Arg_0.12: c128[], Arg_1.13: c128[]) -> c128[] {
+  %Arg_0.12 = c128[] parameter(0), metadata={op_name="jit(_left_ifft_conj)/jit(main)/jit(shmap_body)/reduce_prod"}
+  %Arg_1.13 = c128[] parameter(1), metadata={op_name="jit(_left_ifft_conj)/jit(main)/jit(shmap_body)/reduce_prod"}
+  ROOT %multiply.14 = c128[] multiply(%Arg_0.12, %Arg_1.13), metadata={op_name="jit(_left_ifft_conj)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/u2/j/jackm/software/lorrax/src/common/fft_helpers.py" source_line=86}
+}
+
+%shmap_body.15 (Arg_0.16: c128[3], Arg_1.17: c128[4,4,4,120,3328]) -> c128[4,4,4,120,3328] {
+  %Arg_1.17 = c128[4,4,4,120,3328]{4,3,2,1,0} parameter(1), metadata={op_name="[None, None, None, (\'x\',), (\'y\',)]"}
+  %transpose.19 = c128[120,3328,4,4,4]{1,0,4,3,2} transpose(%Arg_1.17), dimensions={3,4,0,1,2}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/jit(shmap_body)/transpose" source_file="/global/u2/j/jackm/software/lorrax/src/common/fft_helpers.py" source_line=86}
+  %call.20 = c128[120,3328,4,4,4]{4,3,2,1,0} call(%transpose.19), to_apply=%fft.8
+  %Arg_0.16 = c128[3]{0} parameter(0), metadata={op_name="[None]"}
+  %constant.18 = c128[] constant((1, 0))
+  %reduce.21 = c128[] reduce(%Arg_0.16, %constant.18), dimensions={0}, to_apply=%region_0.11, metadata={op_name="jit(_left_ifft_conj)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/u2/j/jackm/software/lorrax/src/common/fft_helpers.py" source_line=86}
+  %broadcast.22 = c128[120,3328,4,4,4]{4,3,2,1,0} broadcast(%reduce.21), dimensions={}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/fft_helpers.py" source_line=86}
+  %multiply.23 = c128[120,3328,4,4,4]{4,3,2,1,0} multiply(%call.20, %broadcast.22), metadata={op_name="jit(_left_ifft_conj)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/fft_helpers.py" source_line=86}
+  ROOT %transpose.24 = c128[4,4,4,120,3328]{2,1,0,4,3} transpose(%multiply.23), dimensions={2,3,4,0,1}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/jit(shmap_body)/transpose" source_file="/global/u2/j/jackm/software/lorrax/src/common/fft_helpers.py" source_line=86}
+}
+
+ENTRY %main.34 (Arg_0.1: c128[4,4,4,240,6656]) -> c128[4,4,4,240,6656] {
+  %constant.2 = c128[] constant((4, 0))
+  %broadcast.3 = c128[3]{0} broadcast(%constant.2), dimensions={}
+  %custom-call.4 = c128[3]{0} custom-call(%broadcast.3), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=335}
+  %custom-call.5 = c128[3]{0} custom-call(%custom-call.4), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=335}
+  %Arg_0.1 = c128[4,4,4,240,6656]{4,3,2,1,0} parameter(0), sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="P_l_3d"}
+  %custom-call.6 = c128[4,4,4,240,6656]{4,3,2,1,0} custom-call(%Arg_0.1), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=335}
+  %custom-call.7 = c128[4,4,4,120,3328]{4,3,2,1,0} custom-call(%custom-call.6), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=335}
+  %call.25 = c128[4,4,4,120,3328]{2,1,0,4,3} call(%custom-call.5, %custom-call.7), to_apply=%shmap_body.15
+  %custom-call.26 = c128[4,4,4,120,3328]{4,3,2,1,0} custom-call(%call.25), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=335}
+  %custom-call.27 = c128[4,4,4,240,6656]{4,3,2,1,0} custom-call(%custom-call.26), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_left_ifft_conj)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=335}
+  %real.28 = f64[4,4,4,240,6656]{4,3,2,1,0} real(%custom-call.27), metadata={op_name="jit(_left_ifft_conj)/jit(main)/real" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=335}
+  %imag.29 = f64[4,4,4,240,6656]{4,3,2,1,0} imag(%custom-call.27), metadata={op_name="jit(_left_ifft_conj)/jit(main)/imag" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=335}
+  %negate.30 = f64[4,4,4,240,6656]{4,3,2,1,0} negate(%imag.29), metadata={op_name="jit(_left_ifft_conj)/jit(main)/neg" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=335}
+  %complex.31 = c128[4,4,4,240,6656]{4,3,2,1,0} complex(%real.28, %negate.30), metadata={op_name="jit(_left_ifft_conj)/jit(main)/complex" source_file="/global/u2/j/jackm/software/lorrax/src/common/isdf_fitting.py" source_line=335}
+  %tuple.32 = (c128[4,4,4,240,6656]{4,3,2,1,0}) tuple(%complex.31)
+  ROOT %get-tuple-element.33 = c128[4,4,4,240,6656]{4,3,2,1,0} get-tuple-element(%tuple.32), index=0, sharding={devices=[1,1,1,2,2]<=[4]}
+}
+

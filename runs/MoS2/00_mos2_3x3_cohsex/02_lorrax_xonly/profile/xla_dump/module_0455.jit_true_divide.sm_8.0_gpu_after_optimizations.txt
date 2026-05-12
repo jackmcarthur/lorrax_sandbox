@@ -1,0 +1,16 @@
+HloModule jit_true_divide, is_scheduled=true, entry_computation_layout={(f64[], s64[3]{0})->f64[3]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="9e125a6b982ff05dda1d5f68480988c0"}
+
+%fused_divide (param_0.2: f64[], param_1.2: s64[3]) -> f64[3] {
+  %param_0.2 = f64[] parameter(0), metadata={scheduling_name="param_0.2"}
+  %broadcast.2.1 = f64[3]{0} broadcast(%param_0.2), dimensions={}, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/coulomb/base.py" source_line=128 scheduling_name="broadcast.2.1"}
+  %param_1.2 = s64[3]{0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %convert.2.1 = f64[3]{0} convert(%param_1.2), metadata={op_name="jit(true_divide)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/coulomb/base.py" source_line=128 scheduling_name="convert.2.1"}
+  ROOT %divide.2.1 = f64[3]{0} divide(%broadcast.2.1, %convert.2.1), metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/coulomb/base.py" source_line=128 scheduling_name="divide.2.1"}
+}
+
+ENTRY %main.6 (Arg_0.1.0: f64[], Arg_1.2.0: s64[3]) -> f64[3] {
+  %Arg_0.1.0 = f64[] parameter(0), metadata={op_name="x1" scheduling_name="Arg_0.1.0"}
+  %Arg_1.2.0 = s64[3]{0} parameter(1), metadata={op_name="x2" scheduling_name="Arg_1.2.0"}
+  ROOT %loop_divide_fusion = f64[3]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_divide, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/coulomb/base.py" source_line=128 scheduling_name="loop_divide_fusion"}
+}
+

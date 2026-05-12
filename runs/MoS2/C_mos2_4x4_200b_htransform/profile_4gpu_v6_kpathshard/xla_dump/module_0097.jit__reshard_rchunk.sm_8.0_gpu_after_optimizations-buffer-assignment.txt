@@ -1,0 +1,118 @@
+BufferAssignment:
+allocation 0: size 707788800, output shape is |c128[16,60,2,23040]|, maybe-live-out:
+ value: <8 loop_transpose_fusion.2 @0> (size=353894400,offset=0): c128[2,480,23040]{2,1,0}
+ value: <11 loop_transpose_fusion.1 @0> (size=353894400,offset=0): c128[2,15,16,46080]{3,2,1,0}
+ value: <14 loop_transpose_fusion @0> (size=707788800,offset=0): c128[16,60,46080]{2,1,0}
+allocation 1: size 353894400, parameter 0, shape |c128[16,15,2,46080]| at ShapeIndex {}:
+ value: <7 param.1 @0> (size=353894400,offset=0): c128[16,15,2,46080]{3,2,1,0}
+allocation 2: size 707789184, preallocated-temp:
+ value: <6 all-to-all.2 @0> (size=353894400,offset=384): c128[16,1,15,2,2,23040]{5,3,2,1,0,4}
+ value: <9 all-to-all-start{} @0> (size=16,offset=0): ((c128[16,1,15,2,2,23040]{5,3,2,1,0,4}), c128[16,1,15,2,2,23040]{5,3,2,1,0,4})
+ value: <10 all-to-all-start{0} @0> (size=8,offset=256): (c128[16,1,15,2,2,23040]{5,3,2,1,0,4})
+ value: <12 all-gather-start{} @0> (size=16,offset=128): (c128[16,30,2,23040]{3,2,0,1}, c128[16,60,2,23040]{3,2,0,1})
+ value: <13 all-gather-start{1} @0> (size=707788800,offset=384): c128[16,60,2,23040]{3,2,0,1}
+
+Total bytes used: 1769472384 (1.65GiB)
+
+Used values:
+<6 all-to-all.2 @0>
+ positions:
+  all-to-all.2
+  all-to-all-start {1}
+  all-to-all-done
+ uses:
+  all-to-all-done, operand 0 {1}
+  loop_transpose_fusion.1, operand 0
+ from instruction: %all-to-all.2 = c128[16,1,15,2,2,23040]{5,3,2,1,0,4} all-to-all(%param_0.6), channel_id=1, replica_groups={{0,1},{2,3}}, dimensions={4}, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=412 scheduling_name="all-to-all.2"}
+<7 param.1 @0>
+ positions:
+  param.1
+ uses:
+  loop_transpose_fusion.2, operand 0
+ from instruction: %param.1 = c128[16,15,2,46080]{3,2,1,0} parameter(0), sharding={devices=[1,4,1,1]<=[4]}, metadata={op_name="psi_rchunk" scheduling_name="param.1"}
+<8 loop_transpose_fusion.2 @0>
+ positions:
+  loop_transpose_fusion.2
+  bitcast.64.0
+  all-to-all-start {0,0}
+  param_0.6
+ uses:
+  bitcast.64.0, operand 0
+  all-to-all-start, operand 0
+  all-to-all-done, operand 0 {0,0}
+  all-to-all.2, operand 0
+ from instruction: %loop_transpose_fusion.2 = c128[2,480,23040]{2,1,0} fusion(%param.1), kind=kLoop, calls=%fused_transpose.2, metadata={op_name="psi_rchunk" scheduling_name="loop_transpose_fusion.2"}
+<9 all-to-all-start{} @0>
+ positions:
+  all-to-all-start {}
+ uses:
+  all-to-all-done, operand 0 {}
+ from instruction: %all-to-all-start = ((c128[16,1,15,2,2,23040]{5,3,2,1,0,4}), c128[16,1,15,2,2,23040]{5,3,2,1,0,4}) all-to-all-start(%bitcast.64.0), channel_id=1, replica_groups={{0,1},{2,3}}, dimensions={4}, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=412 scheduling_name="all-to-all-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<10 all-to-all-start{0} @0>
+ positions:
+  all-to-all-start {0}
+ uses:
+  all-to-all-done, operand 0 {0}
+ from instruction: %all-to-all-start = ((c128[16,1,15,2,2,23040]{5,3,2,1,0,4}), c128[16,1,15,2,2,23040]{5,3,2,1,0,4}) all-to-all-start(%bitcast.64.0), channel_id=1, replica_groups={{0,1},{2,3}}, dimensions={4}, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=412 scheduling_name="all-to-all-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<11 loop_transpose_fusion.1 @0>
+ positions:
+  loop_transpose_fusion.1
+  bitcast.71.0
+  all-gather-start {0}
+ uses:
+  bitcast.71.0, operand 0
+  all-gather-start, operand 0
+  all-gather-done, operand 0 {0}
+ from instruction: %loop_transpose_fusion.1 = c128[2,15,16,46080]{3,2,1,0} fusion(%all-to-all-done), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="jit(_reshard_rchunk)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=412 scheduling_name="loop_transpose_fusion.1"}
+<12 all-gather-start{} @0>
+ positions:
+  all-gather-start {}
+ uses:
+  all-gather-done, operand 0 {}
+ from instruction: %all-gather-start = (c128[16,30,2,23040]{3,2,0,1}, c128[16,60,2,23040]{3,2,0,1}) all-gather-start(%bitcast.71.0), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={1}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<13 all-gather-start{1} @0>
+ positions:
+  all-gather-start {1}
+  all-gather-done
+ uses:
+  all-gather-done, operand 0 {1}
+  loop_transpose_fusion, operand 0
+ from instruction: %all-gather-start = (c128[16,30,2,23040]{3,2,0,1}, c128[16,60,2,23040]{3,2,0,1}) all-gather-start(%bitcast.71.0), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={1}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<14 loop_transpose_fusion @0>
+ positions:
+  loop_transpose_fusion
+  bitcast.52.0
+ uses:
+  bitcast.52.0, operand 0
+ from instruction: %loop_transpose_fusion = c128[16,60,46080]{2,1,0} fusion(%all-gather-done), kind=kLoop, calls=%fused_transpose, metadata={scheduling_name="loop_transpose_fusion"}
+
+
+HloLiveRange (max 13):
+  InstructionSequence:
+    0:param.1
+    1:loop_transpose_fusion.2
+    2:bitcast.64.0
+    3:param_0.6
+    4:all-to-all.2
+    5:all-to-all-start
+    6:all-to-all-done
+    7:loop_transpose_fusion.1
+    8:bitcast.71.0
+    9:all-gather-start
+    10:all-gather-done
+    11:loop_transpose_fusion
+    12:bitcast.52.0
+  BufferLiveRange:
+    all-to-all.2{}:4-7
+    param.1{}:0-13
+    loop_transpose_fusion.2{}:1-6
+    all-to-all-start{}:5-6
+    all-to-all-start{0}:5-6
+    loop_transpose_fusion.1{}:7-10
+    all-gather-start{}:9-10
+    all-gather-start{1}:9-11
+    loop_transpose_fusion{}:11-13
+  Live ranges at 7 (peak):
+    all-to-all.2: 353894400 bytes
+    param.1: 353894400 bytes
+    loop_transpose_fusion.1: 353894400 bytes

@@ -1,0 +1,16 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(c128[], f64[59892]{0})->c128[59892]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="3465a27881c7820c9d0d13ec1515adc1"}
+
+%fused_multiply (param_0.1: f64[59892], param_1.2: c128[]) -> c128[59892] {
+  %param_1.2 = c128[] parameter(1), metadata={scheduling_name="param_1.2"}
+  %broadcast.2.1 = c128[59892]{0} broadcast(%param_1.2), dimensions={}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/bispinor_init.py" source_line=35 scheduling_name="broadcast.2.1"}
+  %param_0.1 = f64[59892]{0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %convert.2.1 = c128[59892]{0} convert(%param_0.1), metadata={op_name="jit(multiply)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/bispinor_init.py" source_line=35 scheduling_name="convert.2.1"}
+  ROOT %multiply.2.1 = c128[59892]{0} multiply(%broadcast.2.1, %convert.2.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/bispinor_init.py" source_line=35 scheduling_name="multiply.2.1"}
+}
+
+ENTRY %main.6 (Arg_0.1.0: c128[], Arg_1.2.0: f64[59892]) -> c128[59892] {
+  %Arg_0.1.0 = c128[] parameter(0), metadata={op_name="x" scheduling_name="Arg_0.1.0"}
+  %Arg_1.2.0 = f64[59892]{0} parameter(1), metadata={op_name="y" scheduling_name="Arg_1.2.0"}
+  ROOT %loop_multiply_fusion = c128[59892]{0} fusion(%Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/bispinor_init.py" source_line=35 scheduling_name="loop_multiply_fusion"}
+}
+

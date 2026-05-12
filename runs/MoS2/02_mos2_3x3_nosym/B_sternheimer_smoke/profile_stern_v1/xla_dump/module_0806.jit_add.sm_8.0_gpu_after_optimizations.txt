@@ -1,0 +1,24 @@
+HloModule jit_add, is_scheduled=true, entry_computation_layout={(f64[1963,3]{1,0}, f64[1,3]{1,0}, f64[1,3]{1,0})->(f64[1963,3]{1,0}, f64[1963,3]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="528160ce558decdc9e82e7e5f7b87f29"}
+
+%fused_add_broadcast (param_0_0: f64[1,3], param_1_0: f64[1963,3], param_1_1: f64[1,3]) -> (f64[1963,3], f64[1963,3]) {
+  %param_0_0 = f64[1,3]{1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %bitcast.42.2 = f64[3]{0} bitcast(%param_0_0), metadata={scheduling_name="bitcast.42.2"}
+  %broadcast.7.2 = f64[1963,3]{1,0} broadcast(%bitcast.42.2), dimensions={1}, metadata={op_name="jit(add)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=344 scheduling_name="broadcast.7.2"}
+  %param_1_0 = f64[1963,3]{1,0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %param_1_1 = f64[1,3]{1,0} parameter(2), metadata={scheduling_name="param_1_1"}
+  %bitcast.36.4 = f64[3]{0} bitcast(%param_1_1), metadata={scheduling_name="bitcast.36.4"}
+  %broadcast.5.4 = f64[1963,3]{1,0} broadcast(%bitcast.36.4), dimensions={1}, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=344 scheduling_name="broadcast.5.4"}
+  %add.2.2 = f64[1963,3]{1,0} add(%param_1_0, %broadcast.5.4), metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=344 scheduling_name="add.2.2"}
+  ROOT %tuple = (f64[1963,3]{1,0}, f64[1963,3]{1,0}) tuple(%broadcast.7.2, %add.2.2), metadata={scheduling_name="tuple"}
+}
+
+ENTRY %main.11 (Arg_0.1.0: f64[1963,3], Arg_1.2.0: f64[1,3], Arg_2.3.0: f64[1,3]) -> (f64[1963,3], f64[1963,3]) {
+  %Arg_2.3.0 = f64[1,3]{1,0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = f64[1,3]{1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[1963,3]{1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %loop_add_broadcast_fusion = (f64[1963,3]{1,0}, f64[1963,3]{1,0}) fusion(%Arg_2.3.0, %Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_add_broadcast, metadata={scheduling_name="loop_add_broadcast_fusion"}
+  %get-tuple-element.1 = f64[1963,3]{1,0} get-tuple-element(%loop_add_broadcast_fusion), index=1, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=344 scheduling_name="get-tuple-element.1"}
+  %get-tuple-element = f64[1963,3]{1,0} get-tuple-element(%loop_add_broadcast_fusion), index=0, metadata={op_name="jit(add)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=344 scheduling_name="get-tuple-element"}
+  ROOT %tuple.10.0 = (f64[1963,3]{1,0}, f64[1963,3]{1,0}) tuple(%get-tuple-element.1, %get-tuple-element), metadata={scheduling_name="tuple.10.0"}
+}
+

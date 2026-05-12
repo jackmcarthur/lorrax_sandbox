@@ -1,0 +1,26 @@
+HloModule jit__broadcast_arrays, is_scheduled=true, entry_computation_layout={(f64[24,1,1]{2,1,0}, f64[1,24,1]{2,1,0}, f64[1,1,80]{2,1,0})->(f64[24,24,80]{2,1,0}, f64[24,24,80]{2,1,0}, f64[24,24,80]{2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true,true}, frontend_attributes={fingerprint_before_lhs="bac9e39dcf318573ed4af51bb840a972"}
+
+%fused_broadcast (param_0_0: f64[1,1,80], param_1_0: f64[1,24,1], param_2_0: f64[24,1,1]) -> (f64[24,24,80], f64[24,24,80], f64[24,24,80]) {
+  %param_0_0 = f64[1,1,80]{2,1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %bitcast.51.2 = f64[80]{0} bitcast(%param_0_0), metadata={scheduling_name="bitcast.51.2"}
+  %broadcast.14.2 = f64[24,24,80]{2,1,0} broadcast(%bitcast.51.2), dimensions={2}, metadata={op_name="jit(_broadcast_arrays)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=253 scheduling_name="broadcast.14.2"}
+  %param_1_0 = f64[1,24,1]{2,1,0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %bitcast.46.2 = f64[24]{0} bitcast(%param_1_0), metadata={scheduling_name="bitcast.46.2"}
+  %broadcast.13.2 = f64[24,24,80]{2,1,0} broadcast(%bitcast.46.2), dimensions={1}, metadata={op_name="jit(_broadcast_arrays)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=253 scheduling_name="broadcast.13.2"}
+  %param_2_0 = f64[24,1,1]{2,1,0} parameter(2), metadata={scheduling_name="param_2_0"}
+  %bitcast.41.2 = f64[24]{0} bitcast(%param_2_0), metadata={scheduling_name="bitcast.41.2"}
+  %broadcast.11.2 = f64[24,24,80]{2,1,0} broadcast(%bitcast.41.2), dimensions={0}, metadata={op_name="jit(_broadcast_arrays)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=253 scheduling_name="broadcast.11.2"}
+  ROOT %tuple = (f64[24,24,80]{2,1,0}, f64[24,24,80]{2,1,0}, f64[24,24,80]{2,1,0}) tuple(%broadcast.14.2, %broadcast.13.2, %broadcast.11.2), metadata={scheduling_name="tuple"}
+}
+
+ENTRY %main.14 (Arg_0.1.0: f64[24,1,1], Arg_1.2.0: f64[1,24,1], Arg_2.3.0: f64[1,1,80]) -> (f64[24,24,80], f64[24,24,80], f64[24,24,80]) {
+  %Arg_2.3.0 = f64[1,1,80]{2,1,0} parameter(2), metadata={op_name="args[2]" scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = f64[1,24,1]{2,1,0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[24,1,1]{2,1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  %loop_broadcast_fusion = (f64[24,24,80]{2,1,0}, f64[24,24,80]{2,1,0}, f64[24,24,80]{2,1,0}) fusion(%Arg_2.3.0, %Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_broadcast, metadata={scheduling_name="loop_broadcast_fusion"}
+  %get-tuple-element.2 = f64[24,24,80]{2,1,0} get-tuple-element(%loop_broadcast_fusion), index=2, metadata={op_name="jit(_broadcast_arrays)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=253 scheduling_name="get-tuple-element.2"}
+  %get-tuple-element.1 = f64[24,24,80]{2,1,0} get-tuple-element(%loop_broadcast_fusion), index=1, metadata={op_name="jit(_broadcast_arrays)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=253 scheduling_name="get-tuple-element.1"}
+  %get-tuple-element = f64[24,24,80]{2,1,0} get-tuple-element(%loop_broadcast_fusion), index=0, metadata={op_name="jit(_broadcast_arrays)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=253 scheduling_name="get-tuple-element"}
+  ROOT %tuple.13.0 = (f64[24,24,80]{2,1,0}, f64[24,24,80]{2,1,0}, f64[24,24,80]{2,1,0}) tuple(%get-tuple-element.2, %get-tuple-element.1, %get-tuple-element), metadata={scheduling_name="tuple.13.0"}
+}
+

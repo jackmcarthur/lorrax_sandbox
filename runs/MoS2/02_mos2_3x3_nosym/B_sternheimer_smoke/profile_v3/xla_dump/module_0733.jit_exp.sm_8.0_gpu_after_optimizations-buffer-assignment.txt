@@ -1,0 +1,68 @@
+BufferAssignment:
+allocation 0: size 86497632, maybe-live-out:
+ value: <34 loop_multiply_fusion @0> (size=86497632,offset=0): c128[9,3,1963,102]{3,2,1,0}
+allocation 1: size 28832544, maybe-live-out:
+ value: <32 loop_complex_fusion @0> (size=28832544,offset=0): c128[9,1963,102]{2,1,0}
+allocation 2: size 28832544, parameter 0, shape |c128[9,1963,102]| at ShapeIndex {}:
+ value: <31 Arg_0.1.0 @0> (size=28832544,offset=0): c128[9,1963,102]{2,1,0}
+allocation 3: size 9610848, parameter 1, shape |c128[3,1963,102]| at ShapeIndex {}:
+ value: <33 Arg_1.2.0 @0> (size=9610848,offset=0): c128[3,1963,102]{2,1,0}
+allocation 4: size 16, output shape is |(c128[9,1963,102], c128[9,3,1963,102])|, maybe-live-out:
+ value: <35 tuple.37.0{} @0> (size=16,offset=0): (c128[9,1963,102]{2,1,0}, c128[9,3,1963,102]{3,2,1,0})
+
+Total bytes used: 153773584 (146.65MiB)
+
+Used values:
+<31 Arg_0.1.0 @0>
+ positions:
+  Arg_0.1.0
+ uses:
+  loop_complex_fusion, operand 0
+ from instruction: %Arg_0.1.0 = c128[9,1963,102]{2,1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+<32 loop_complex_fusion @0>
+ positions:
+  loop_complex_fusion
+  tuple.37.0 {0}
+ uses:
+  loop_multiply_fusion, operand 0
+  tuple.37.0, operand 0
+ from instruction: %loop_complex_fusion = c128[9,1963,102]{2,1,0} fusion(%Arg_0.1.0), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(exp)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=373 scheduling_name="loop_complex_fusion"}
+<33 Arg_1.2.0 @0>
+ positions:
+  Arg_1.2.0
+ uses:
+  loop_multiply_fusion, operand 1
+ from instruction: %Arg_1.2.0 = c128[3,1963,102]{2,1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+<34 loop_multiply_fusion @0>
+ positions:
+  loop_multiply_fusion
+  tuple.37.0 {1}
+ uses:
+  tuple.37.0, operand 1
+ from instruction: %loop_multiply_fusion = c128[9,3,1963,102]{3,2,1,0} fusion(%loop_complex_fusion, %Arg_1.2.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(exp)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=373 scheduling_name="loop_multiply_fusion"}
+<35 tuple.37.0{} @0>
+ positions:
+  tuple.37.0 {}
+ uses:
+ from instruction: %tuple.37.0 = (c128[9,1963,102]{2,1,0}, c128[9,3,1963,102]{3,2,1,0}) tuple(%loop_complex_fusion, %loop_multiply_fusion), metadata={scheduling_name="tuple.37.0"}
+
+
+HloLiveRange (max 5):
+  InstructionSequence:
+    0:Arg_1.2.0
+    1:Arg_0.1.0
+    2:loop_complex_fusion
+    3:loop_multiply_fusion
+    4:tuple.37.0
+  BufferLiveRange:
+    Arg_0.1.0{}:0-5
+    loop_complex_fusion{}:2-5
+    Arg_1.2.0{}:0-5
+    loop_multiply_fusion{}:3-5
+    tuple.37.0{}:4-5
+  Live ranges at 4 (peak):
+    Arg_0.1.0: 28832544 bytes
+    loop_complex_fusion: 28832544 bytes
+    Arg_1.2.0: 9610848 bytes
+    loop_multiply_fusion: 86497632 bytes
+    tuple.37.0: 16 bytes

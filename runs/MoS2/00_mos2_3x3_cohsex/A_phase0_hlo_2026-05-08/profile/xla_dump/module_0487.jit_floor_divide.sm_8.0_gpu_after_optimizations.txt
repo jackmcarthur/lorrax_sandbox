@@ -1,0 +1,28 @@
+HloModule jit_floor_divide, is_scheduled=true, entry_computation_layout={(s64[4]{0}, s64[])->s64[4]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="74ca574f045782aeb8e7f129d4ecac1b"}
+
+%fused_select (param_0.16: s64[4], param_1.24: s64[]) -> s64[4] {
+  %param_0.16 = s64[4]{0} parameter(0), metadata={scheduling_name="param_0.16"}
+  %sign.4.3 = s64[4]{0} sign(%param_0.16), metadata={op_name="jit(floor_divide)/jit(main)/sign" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="sign.4.3"}
+  %param_1.24 = s64[] parameter(1), metadata={scheduling_name="param_1.24"}
+  %sign.5.3 = s64[] sign(%param_1.24), metadata={op_name="jit(floor_divide)/jit(main)/sign" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="sign.5.3"}
+  %broadcast.14.5 = s64[4]{0} broadcast(%sign.5.3), dimensions={}, metadata={op_name="jit(floor_divide)/jit(main)/ne" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="broadcast.14.5"}
+  %compare.4.5 = pred[4]{0} compare(%sign.4.3, %broadcast.14.5), direction=NE, metadata={op_name="jit(floor_divide)/jit(main)/ne" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="compare.4.5"}
+  %broadcast.15.8 = s64[4]{0} broadcast(%param_1.24), dimensions={}, metadata={op_name="jit(floor_divide)/jit(main)/rem" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="broadcast.15.8"}
+  %remainder.2.5 = s64[4]{0} remainder(%param_0.16, %broadcast.15.8), metadata={op_name="jit(floor_divide)/jit(main)/rem" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="remainder.2.5"}
+  %constant_5_1 = s64[] constant(0)
+  %broadcast.16.3 = s64[4]{0} broadcast(%constant_5_1), dimensions={}, metadata={scheduling_name="broadcast.16.3"}
+  %compare.5.3 = pred[4]{0} compare(%remainder.2.5, %broadcast.16.3), direction=NE, metadata={op_name="jit(floor_divide)/jit(main)/ne" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="compare.5.3"}
+  %and.2.3 = pred[4]{0} and(%compare.4.5, %compare.5.3), metadata={op_name="jit(floor_divide)/jit(main)/and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="and.2.3"}
+  %divide.2.3 = s64[4]{0} divide(%param_0.16, %broadcast.15.8), metadata={op_name="jit(floor_divide)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="divide.2.3"}
+  %constant_10 = s64[] constant(-1)
+  %broadcast.17.3 = s64[4]{0} broadcast(%constant_10), dimensions={}, metadata={scheduling_name="broadcast.17.3"}
+  %add.3.3 = s64[4]{0} add(%divide.2.3, %broadcast.17.3), metadata={op_name="jit(floor_divide)/jit(main)/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="add.3.3"}
+  ROOT %select.3.1 = s64[4]{0} select(%and.2.3, %add.3.3, %divide.2.3), metadata={op_name="jit(floor_divide)/jit(main)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="select.3.1"}
+}
+
+ENTRY %main.24 (Arg_0.1.0: s64[4], Arg_1.2.0: s64[]) -> s64[4] {
+  %Arg_1.2.0 = s64[] parameter(1), metadata={op_name="x2" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = s64[4]{0} parameter(0), metadata={op_name="x1" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_select_fusion = s64[4]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(floor_divide)/jit(main)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=45 scheduling_name="loop_select_fusion"}
+}
+

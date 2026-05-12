@@ -1,0 +1,14 @@
+HloModule jit_subtract, is_scheduled=true, entry_computation_layout={(c128[9,320,320]{2,1,0}, c128[9,320,320]{2,1,0})->c128[9,320,320]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="e487511d8808bee5320e56d91f165346"}
+
+%wrapped_subtract_computation (param_0: c128[9,320,320], param_1: c128[9,320,320]) -> c128[9,320,320] {
+  %param_0 = c128[9,320,320]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1 = c128[9,320,320]{2,1,0} parameter(1), metadata={scheduling_name="param_1"}
+  ROOT %subtract.4.1 = c128[9,320,320]{2,1,0} subtract(%param_0, %param_1), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=614 scheduling_name="subtract.4.1"}
+}
+
+ENTRY %main.4_spmd (param.2: c128[9,320,320], param.1.0: c128[9,320,320]) -> c128[9,320,320] {
+  %param.1.0 = c128[9,320,320]{2,1,0} parameter(1), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="y" scheduling_name="param.1.0"}
+  %param.2 = c128[9,320,320]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="x" scheduling_name="param.2"}
+  ROOT %wrapped_subtract = c128[9,320,320]{2,1,0} fusion(%param.2, %param.1.0), kind=kLoop, calls=%wrapped_subtract_computation, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=614 scheduling_name="wrapped_subtract"}
+}
+

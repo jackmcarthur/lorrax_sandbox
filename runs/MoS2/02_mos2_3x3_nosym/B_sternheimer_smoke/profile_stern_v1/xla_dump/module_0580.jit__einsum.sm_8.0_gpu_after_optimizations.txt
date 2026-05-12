@@ -1,0 +1,25 @@
+HloModule jit__einsum, is_scheduled=true, entry_computation_layout={(f64[1963,3]{1,0}, f64[3,3]{1,0}, f64[1963,3]{1,0})->f64[1963]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="2e087de9e15ea6920da9c688864224fa"}
+
+%scalar_add_computation (scalar_lhs: f64[], scalar_rhs: f64[]) -> f64[] {
+  %scalar_rhs = f64[] parameter(1), metadata={scheduling_name="scalar_rhs"}
+  %scalar_lhs = f64[] parameter(0), metadata={scheduling_name="scalar_lhs"}
+  ROOT %add.3 = f64[] add(%scalar_lhs, %scalar_rhs), metadata={scheduling_name="add.3"}
+}
+
+%fused_reduce (param_0.2: f64[1963,3], param_1.2: f64[1963,3]) -> f64[1963] {
+  %param_0.2 = f64[1963,3]{1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %param_1.2 = f64[1963,3]{1,0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %multiply.3.1 = f64[1963,3]{1,0} multiply(%param_0.2, %param_1.2), metadata={scheduling_name="multiply.3.1"}
+  %constant_2 = f64[] constant(0)
+  ROOT %reduce.2 = f64[1963]{0} reduce(%multiply.3.1, %constant_2), dimensions={1}, to_apply=%scalar_add_computation, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="reduce.2"}
+}
+
+ENTRY %main.6 (Arg_0.1.0: f64[1963,3], Arg_1.2.0: f64[3,3], Arg_2.3.0: f64[1963,3]) -> f64[1963] {
+  %Arg_2.3.0 = f64[1963,3]{1,0} parameter(2), metadata={op_name="operands[2]" scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = f64[3,3]{1,0} parameter(1), metadata={op_name="operands[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[1963,3]{1,0} parameter(0), metadata={op_name="operands[0]" scheduling_name="Arg_0.1.0"}
+  %custom-call.1.0 = (f64[1963,3]{1,0}, s8[47184]{0}) custom-call(%Arg_0.1.0, %Arg_1.2.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"5889","rhs_stride":"9","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.1 = f64[1963,3]{1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="get-tuple-element.1"}
+  ROOT %loop_reduce_fusion = f64[1963]{0} fusion(%Arg_2.3.0, %get-tuple-element.1), kind=kLoop, calls=%fused_reduce, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=628 scheduling_name="loop_reduce_fusion"}
+}
+

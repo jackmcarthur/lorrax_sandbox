@@ -1,0 +1,23 @@
+HloModule jit_gather, is_scheduled=true, entry_computation_layout={(c128[1,24,24,80]{3,2,1,0}, s32[1,3]{1,0})->c128[1,1]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="827efde4fc36a24f45d3cc3317b3cb97"}
+
+%fused_dynamic_slice (param_0: c128[1,24,24,80], param_1.1: s32[1,3]) -> c128[1,1,1,1] {
+  %param_0 = c128[1,24,24,80]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %constant_20_1 = s32[] constant(0)
+  %param_1.1 = s32[1,3]{1,0} parameter(1), metadata={scheduling_name="param_1.1"}
+  %slice.30.1 = s32[1,1]{1,0} slice(%param_1.1), slice={[0:1], [0:1]}, metadata={scheduling_name="slice.30.1"}
+  %bitcast.73.1 = s32[] bitcast(%slice.30.1), metadata={scheduling_name="bitcast.73.1"}
+  %bitcast.76.6 = s32[3]{0} bitcast(%param_1.1), metadata={scheduling_name="bitcast.76.6"}
+  %slice.31.3 = s32[1]{0} slice(%bitcast.76.6), slice={[1:2]}, metadata={scheduling_name="slice.31.3"}
+  %bitcast.80.1 = s32[] bitcast(%slice.31.3), metadata={scheduling_name="bitcast.80.1"}
+  %slice.32.3 = s32[1]{0} slice(%bitcast.76.6), slice={[2:3]}, metadata={scheduling_name="slice.32.3"}
+  %bitcast.85.1 = s32[] bitcast(%slice.32.3), metadata={scheduling_name="bitcast.85.1"}
+  ROOT %dynamic-slice.7.1 = c128[1,1,1,1]{3,2,1,0} dynamic-slice(%param_0, %constant_20_1, %bitcast.73.1, %bitcast.80.1, %bitcast.85.1), dynamic_slice_sizes={1,1,1,1}, metadata={scheduling_name="dynamic-slice.7.1"}
+}
+
+ENTRY %main.4 (Arg_0.1.0: c128[1,24,24,80], Arg_1.2.0: s32[1,3]) -> c128[1,1] {
+  %Arg_1.2.0 = s32[1,3]{1,0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[1,24,24,80]{3,2,1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  %loop_dynamic_slice_fusion = c128[1,1,1,1]{3,2,1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_dynamic_slice, metadata={scheduling_name="loop_dynamic_slice_fusion"}
+  ROOT %bitcast.4.0 = c128[1,1]{1,0} bitcast(%loop_dynamic_slice_fusion), metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=98 scheduling_name="bitcast.4.0"}
+}
+

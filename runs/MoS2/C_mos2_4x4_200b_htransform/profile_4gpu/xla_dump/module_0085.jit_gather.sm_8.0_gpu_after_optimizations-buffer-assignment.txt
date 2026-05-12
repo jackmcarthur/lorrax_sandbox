@@ -1,0 +1,70 @@
+BufferAssignment:
+allocation 0: size 3686400, parameter 0, shape |c128[4,60,960]| at ShapeIndex {}:
+ value: <4 param.2.0 @0> (size=3686400,offset=0): c128[4,60,960]{2,1,0}
+allocation 1: size 921600, output shape is |c128[60,960]|, maybe-live-out:
+ value: <8 loop_dynamic_slice_fusion @0> (size=921600,offset=0): c128[1,60,960]{2,1,0}
+allocation 2: size 4, parameter 1, shape |s32[1]| at ShapeIndex {}:
+ value: <7 param.3.0 @0> (size=4,offset=0): s32[1]{0}
+allocation 3: size 14745728, preallocated-temp:
+ value: <5 all-gather-start{} @0> (size=16,offset=0): (c128[4,60,960]{2,1,0}, c128[16,60,960]{2,1,0})
+ value: <6 all-gather-start{1} @0> (size=14745600,offset=128): c128[16,60,960]{2,1,0}
+
+Total bytes used: 19353732 (18.46MiB)
+
+Used values:
+<4 param.2.0 @0>
+ positions:
+  param.2.0
+  all-gather-start {0}
+ uses:
+  all-gather-start, operand 0
+  all-gather-done, operand 0 {0}
+ from instruction: %param.2.0 = c128[4,60,960]{2,1,0} parameter(0), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="args[0]" scheduling_name="param.2.0"}
+<5 all-gather-start{} @0>
+ positions:
+  all-gather-start {}
+ uses:
+  all-gather-done, operand 0 {}
+ from instruction: %all-gather-start = (c128[4,60,960]{2,1,0}, c128[16,60,960]{2,1,0}) all-gather-start(%param.2.0), channel_id=1, replica_groups=[1,4]<=[4], dimensions={0}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<6 all-gather-start{1} @0>
+ positions:
+  all-gather-start {1}
+  all-gather-done
+ uses:
+  all-gather-done, operand 0 {1}
+  loop_dynamic_slice_fusion, operand 0
+ from instruction: %all-gather-start = (c128[4,60,960]{2,1,0}, c128[16,60,960]{2,1,0}) all-gather-start(%param.2.0), channel_id=1, replica_groups=[1,4]<=[4], dimensions={0}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+<7 param.3.0 @0>
+ positions:
+  param.3.0
+ uses:
+  loop_dynamic_slice_fusion, operand 1
+ from instruction: %param.3.0 = s32[1]{0} parameter(1), sharding={replicated}, metadata={op_name="args[1]" scheduling_name="param.3.0"}
+<8 loop_dynamic_slice_fusion @0>
+ positions:
+  loop_dynamic_slice_fusion
+  bitcast.1.0
+ uses:
+  bitcast.1.0, operand 0
+ from instruction: %loop_dynamic_slice_fusion = c128[1,60,960]{2,1,0} fusion(%all-gather-done, %param.3.0), kind=kLoop, calls=%fused_dynamic_slice, metadata={scheduling_name="loop_dynamic_slice_fusion"}
+
+
+HloLiveRange (max 6):
+  InstructionSequence:
+    0:param.2.0
+    1:param.3.0
+    2:all-gather-start
+    3:all-gather-done
+    4:loop_dynamic_slice_fusion
+    5:bitcast.1.0
+  BufferLiveRange:
+    param.2.0{}:0-6
+    all-gather-start{}:2-3
+    all-gather-start{1}:2-4
+    param.3.0{}:0-6
+    loop_dynamic_slice_fusion{}:4-6
+  Live ranges at 4 (peak):
+    param.2.0: 3686400 bytes
+    all-gather-start: 16 bytes
+    param.3.0: 4 bytes
+    loop_dynamic_slice_fusion: 921600 bytes

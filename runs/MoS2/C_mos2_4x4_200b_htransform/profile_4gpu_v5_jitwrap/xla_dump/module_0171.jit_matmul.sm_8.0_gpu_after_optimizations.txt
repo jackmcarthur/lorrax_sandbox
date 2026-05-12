@@ -1,0 +1,25 @@
+HloModule jit_matmul, is_scheduled=true, entry_computation_layout={(c128[1,16]{1,0}, c128[16,460800]{1,0})->c128[1,460800]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="32c2d84400fb9045d46cf99b1abb55f2"}
+
+%scalar_add_computation (scalar_lhs: c128[], scalar_rhs: c128[]) -> c128[] {
+  %scalar_rhs = c128[] parameter(1), metadata={scheduling_name="scalar_rhs"}
+  %scalar_lhs = c128[] parameter(0), metadata={scheduling_name="scalar_lhs"}
+  ROOT %add.3 = c128[] add(%scalar_lhs, %scalar_rhs), metadata={scheduling_name="add.3"}
+}
+
+%fused_reduce (param_0.8: c128[16,460800], param_1.7: c128[1,16]) -> c128[460800] {
+  %param_1.7 = c128[1,16]{1,0} parameter(1), metadata={scheduling_name="param_1.7"}
+  %bitcast.43.5 = c128[16]{0} bitcast(%param_1.7), metadata={scheduling_name="bitcast.43.5"}
+  %broadcast.5.5 = c128[16,460800]{1,0} broadcast(%bitcast.43.5), dimensions={0}, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650 scheduling_name="broadcast.5.5"}
+  %param_0.8 = c128[16,460800]{1,0} parameter(0), metadata={scheduling_name="param_0.8"}
+  %multiply.5.3 = c128[16,460800]{1,0} multiply(%broadcast.5.5, %param_0.8), metadata={scheduling_name="multiply.5.3"}
+  %constant_1_1 = c128[] constant((0, 0))
+  ROOT %reduce.2.1 = c128[460800]{0} reduce(%multiply.5.3, %constant_1_1), dimensions={0}, to_apply=%scalar_add_computation, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650 scheduling_name="reduce.2.1"}
+}
+
+ENTRY %main.4_spmd (param.2: c128[1,16], param.1.0: c128[16,460800]) -> c128[1,460800] {
+  %param.1.0 = c128[16,460800]{1,0} parameter(1), sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="b" scheduling_name="param.1.0"}
+  %param.2 = c128[1,16]{1,0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.2"}
+  %loop_reduce_fusion = c128[460800]{0} fusion(%param.1.0, %param.2), kind=kLoop, calls=%fused_reduce, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650 scheduling_name="loop_reduce_fusion"}
+  ROOT %bitcast.1.0 = c128[1,460800]{1,0} bitcast(%loop_reduce_fusion), metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=650 scheduling_name="bitcast.1.0"}
+}
+

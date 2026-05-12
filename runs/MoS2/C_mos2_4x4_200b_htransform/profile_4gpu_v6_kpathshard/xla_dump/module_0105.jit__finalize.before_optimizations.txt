@@ -1,0 +1,36 @@
+HloModule jit__finalize, entry_computation_layout={(c128[960,960]{1,0}, c128[960,960]{1,0})->(c128[16,60,960]{2,1,0}, f64[])}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true,true}, num_partitions=4
+
+%region_0.24 (Arg_0.25: f64[], Arg_1.26: f64[]) -> f64[] {
+  %Arg_0.25 = f64[] parameter(0), metadata={op_name="jit(_finalize)/jit(main)/reduce_max"}
+  %Arg_1.26 = f64[] parameter(1), metadata={op_name="jit(_finalize)/jit(main)/reduce_max"}
+  ROOT %maximum.27 = f64[] maximum(%Arg_0.25, %Arg_1.26), metadata={op_name="jit(_finalize)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193}
+}
+
+ENTRY %main.30 (Arg_0.1: c128[960,960], Arg_1.2: c128[960,960]) -> (c128[16,60,960], f64[]) {
+  %Arg_0.1 = c128[960,960]{1,0} parameter(0), sharding={replicated}, metadata={op_name="coeffs"}
+  %Arg_1.2 = c128[960,960]{1,0} parameter(1), sharding={replicated}, metadata={op_name="L"}
+  %dot.4 = c128[960,960]{1,0} dot(%Arg_0.1, %Arg_1.2), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(_finalize)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=190}
+  %reshape.5 = c128[16,60,960]{2,1,0} reshape(%dot.4), metadata={op_name="jit(_finalize)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=191}
+  %slice.6 = c128[1,60,960]{2,1,0} slice(%reshape.5), slice={[0:1], [0:60], [0:960]}, metadata={op_name="jit(_finalize)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192}
+  %reshape.7 = c128[60,960]{1,0} reshape(%slice.6), metadata={op_name="jit(_finalize)/jit(main)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192}
+  %slice.8 = c128[1,60,960]{2,1,0} slice(%reshape.5), slice={[0:1], [0:60], [0:960]}, metadata={op_name="jit(_finalize)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192}
+  %reshape.9 = c128[60,960]{1,0} reshape(%slice.8), metadata={op_name="jit(_finalize)/jit(main)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192}
+  %real.10 = f64[60,960]{1,0} real(%reshape.9), metadata={op_name="jit(_finalize)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192}
+  %imag.11 = f64[60,960]{1,0} imag(%reshape.9), metadata={op_name="jit(_finalize)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192}
+  %negate.12 = f64[60,960]{1,0} negate(%imag.11), metadata={op_name="jit(_finalize)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192}
+  %complex.13 = c128[60,960]{1,0} complex(%real.10, %negate.12), metadata={op_name="jit(_finalize)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192}
+  %transpose.14 = c128[960,60]{0,1} transpose(%complex.13), dimensions={1,0}, metadata={op_name="jit(_finalize)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192}
+  %dot.15 = c128[60,60]{1,0} dot(%reshape.7, %transpose.14), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(_finalize)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=192}
+  %iota.16 = s64[60]{0} iota(), iota_dimension=0, metadata={op_name="jit(_finalize)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193}
+  %broadcast.17 = s64[60,60]{1,0} broadcast(%iota.16), dimensions={0}, metadata={op_name="jit(_finalize)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193}
+  %iota.18 = s64[60]{0} iota(), iota_dimension=0, metadata={op_name="jit(_finalize)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193}
+  %broadcast.19 = s64[60,60]{1,0} broadcast(%iota.18), dimensions={1}, metadata={op_name="jit(_finalize)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193}
+  %compare.20 = pred[60,60]{1,0} compare(%broadcast.17, %broadcast.19), direction=EQ, metadata={op_name="jit(_finalize)/jit(main)/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193}
+  %convert.21 = c128[60,60]{1,0} convert(%compare.20), metadata={op_name="jit(_finalize)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193}
+  %subtract.22 = c128[60,60]{1,0} subtract(%dot.15, %convert.21), metadata={op_name="jit(_finalize)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193}
+  %abs.23 = f64[60,60]{1,0} abs(%subtract.22), metadata={op_name="jit(_finalize)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193}
+  %constant.3 = f64[] constant(-inf)
+  %reduce.28 = f64[] reduce(%abs.23, %constant.3), dimensions={0,1}, to_apply=%region_0.24, metadata={op_name="jit(_finalize)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=193}
+  ROOT %tuple.29 = (c128[16,60,960]{2,1,0}, f64[]) tuple(%reshape.5, %reduce.28)
+}
+

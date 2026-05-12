@@ -1,0 +1,54 @@
+HloModule jit_eigh, is_scheduled=true, entry_computation_layout={(c128[9,80,80]{2,1,0})->(f64[9,80]{1,0}, c128[9,80,80]{2,1,0})}, allow_spmd_sharding_propagation_to_output={true,true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="ac02fa30e082c93ee6f5fb4ef10a382d"}
+
+%fused_transpose (param_0.15: c128[9,80,80]) -> c128[9,80,80] {
+  %param_0.15 = c128[9,80,80]{2,1,0} parameter(0), metadata={scheduling_name="param_0.15"}
+  %transpose.20.1 = c128[9,80,80]{2,1,0} transpose(%param_0.15), dimensions={0,2,1}, metadata={op_name="a" scheduling_name="transpose.20.1"}
+  %real.4.1 = f64[9,80,80]{2,1,0} real(%param_0.15), metadata={op_name="jit(eigh)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="real.4.1"}
+  %imag.4.3 = f64[9,80,80]{2,1,0} imag(%param_0.15), metadata={op_name="jit(eigh)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="imag.4.3"}
+  %negate.4.3 = f64[9,80,80]{2,1,0} negate(%imag.4.3), metadata={op_name="jit(eigh)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="negate.4.3"}
+  %complex.4.1 = c128[9,80,80]{2,1,0} complex(%real.4.1, %negate.4.3), metadata={op_name="jit(eigh)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="complex.4.1"}
+  %add.3.1 = c128[9,80,80]{2,1,0} add(%transpose.20.1, %complex.4.1), metadata={op_name="jit(eigh)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="add.3.1"}
+  %constant_1_1 = c128[] constant((0.5, 0))
+  %broadcast.27.1 = c128[9,80,80]{2,1,0} broadcast(%constant_1_1), dimensions={}, metadata={scheduling_name="broadcast.27.1"}
+  ROOT %multiply.4.1 = c128[9,80,80]{2,1,0} multiply(%add.3.1, %broadcast.27.1), metadata={op_name="jit(eigh)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="multiply.4.1"}
+}
+
+%fused_transpose.1 (param_0.16: c128[9,80,80], param_1.20: s32[9]) -> c128[9,80,80] {
+  %param_1.20 = s32[9]{0} parameter(1), metadata={scheduling_name="param_1.20"}
+  %constant_3_2 = s32[] constant(0)
+  %broadcast.29.3 = s32[9]{0} broadcast(%constant_3_2), dimensions={}, metadata={scheduling_name="broadcast.29.3"}
+  %compare.3.3 = pred[9]{0} compare(%param_1.20, %broadcast.29.3), direction=EQ, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="compare.3.3"}
+  %broadcast.33.1 = pred[9,80,80]{2,1,0} broadcast(%compare.3.3), dimensions={0}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="broadcast.33.1"}
+  %param_0.16 = c128[9,80,80]{1,2,0} parameter(0), metadata={scheduling_name="param_0.16"}
+  %bitcast.116.3 = c128[9,80,80]{2,1,0} bitcast(%param_0.16), metadata={scheduling_name="bitcast.116.3"}
+  %constant_7_1 = c128[] constant((nan, nan))
+  %broadcast.34.3 = c128[9,80,80]{2,1,0} broadcast(%constant_7_1), dimensions={}, metadata={scheduling_name="broadcast.34.3"}
+  %select.7.3 = c128[9,80,80]{2,1,0} select(%broadcast.33.1, %bitcast.116.3, %broadcast.34.3), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="select.7.3"}
+  ROOT %transpose.21.1 = c128[9,80,80]{2,1,0} transpose(%select.7.3), dimensions={0,2,1}, metadata={scheduling_name="transpose.21.1"}
+}
+
+%fused_select (param_0.11: f64[9,80], param_1.19: s32[9]) -> f64[9,80] {
+  %param_1.19 = s32[9]{0} parameter(1), metadata={scheduling_name="param_1.19"}
+  %constant_3_1 = s32[] constant(0)
+  %broadcast.29.5 = s32[9]{0} broadcast(%constant_3_1), dimensions={}, metadata={scheduling_name="broadcast.29.5"}
+  %compare.3.5 = pred[9]{0} compare(%param_1.19, %broadcast.29.5), direction=EQ, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="compare.3.5"}
+  %broadcast.31.1 = pred[9,80]{1,0} broadcast(%compare.3.5), dimensions={0}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="broadcast.31.1"}
+  %param_0.11 = f64[9,80]{1,0} parameter(0), metadata={scheduling_name="param_0.11"}
+  %constant_5_1 = f64[] constant(nan)
+  %broadcast.32.1 = f64[9,80]{1,0} broadcast(%constant_5_1), dimensions={}, metadata={scheduling_name="broadcast.32.1"}
+  ROOT %select.6.1 = f64[9,80]{1,0} select(%broadcast.31.1, %param_0.11, %broadcast.32.1), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="select.6.1"}
+}
+
+ENTRY %main.33_spmd (param.1: c128[9,80,80]) -> (f64[9,80], c128[9,80,80]) {
+  %param.1 = c128[9,80,80]{2,1,0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.1"}
+  %input_transpose_fusion = c128[9,80,80]{2,1,0} fusion(%param.1), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(eigh)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="input_transpose_fusion"}
+  %bitcast.99.0 = c128[9,80,80]{1,2,0} bitcast(%input_transpose_fusion), metadata={scheduling_name="bitcast.99.0"}
+  %custom-call.1 = (c128[9,80,80]{1,2,0}, f64[9,80]{1,0}, s32[9]{0}) custom-call(%bitcast.99.0), custom_call_target="cusolver_syevd_ffi", operand_layout_constraints={c128[9,80,80]{1,2,0}}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="custom-call.1"}, backend_config={algorithm = 0 : ui8, lower = true}
+  %get-tuple-element.5 = s32[9]{0} get-tuple-element(%custom-call.1), index=2, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="get-tuple-element.5"}
+  %get-tuple-element.2.0 = c128[9,80,80]{1,2,0} get-tuple-element(%custom-call.1), index=0, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="get-tuple-element.2.0"}
+  %get-tuple-element.1.0 = f64[9,80]{1,0} get-tuple-element(%custom-call.1), index=1, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="get-tuple-element.1.0"}
+  %loop_select_fusion = f64[9,80]{1,0} fusion(%get-tuple-element.1.0, %get-tuple-element.5), kind=kLoop, calls=%fused_select, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_jax.py" source_line=546 scheduling_name="loop_select_fusion"}
+  %input_transpose_fusion.1 = c128[9,80,80]{2,1,0} fusion(%get-tuple-element.2.0, %get-tuple-element.5), kind=kInput, calls=%fused_transpose.1, metadata={scheduling_name="input_transpose_fusion.1"}
+  ROOT %tuple.1.0 = (f64[9,80]{1,0}, c128[9,80,80]{2,1,0}) tuple(%loop_select_fusion, %input_transpose_fusion.1), metadata={scheduling_name="tuple.1.0"}
+}
+

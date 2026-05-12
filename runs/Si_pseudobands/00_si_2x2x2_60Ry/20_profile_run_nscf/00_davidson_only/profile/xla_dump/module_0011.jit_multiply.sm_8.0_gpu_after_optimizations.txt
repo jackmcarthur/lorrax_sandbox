@@ -1,0 +1,16 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(f64[36,36,36]{2,1,0}, s64[])->f64[36,36,36]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="9e97b823843d6ba282a5ff006d8d2e28"}
+
+%fused_multiply (param_0: f64[36,36,36], param_1.2: s64[]) -> f64[36,36,36] {
+  %param_0 = f64[36,36,36]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.2 = s64[] parameter(1), metadata={scheduling_name="param_1.2"}
+  %convert.2.1 = f64[] convert(%param_1.2), metadata={op_name="jit(multiply)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/ionic_gspace.py" source_line=193 scheduling_name="convert.2.1"}
+  %broadcast.2.1 = f64[36,36,36]{2,1,0} broadcast(%convert.2.1), dimensions={}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/ionic_gspace.py" source_line=193 scheduling_name="broadcast.2.1"}
+  ROOT %multiply.2.1 = f64[36,36,36]{2,1,0} multiply(%param_0, %broadcast.2.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/ionic_gspace.py" source_line=193 scheduling_name="multiply.2.1"}
+}
+
+ENTRY %main.6 (Arg_0.1.0: f64[36,36,36], Arg_1.2.0: s64[]) -> f64[36,36,36] {
+  %Arg_1.2.0 = s64[] parameter(1), metadata={op_name="y" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[36,36,36]{2,1,0} parameter(0), metadata={op_name="x" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_multiply_fusion = f64[36,36,36]{2,1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/ionic_gspace.py" source_line=193 scheduling_name="loop_multiply_fusion"}
+}
+

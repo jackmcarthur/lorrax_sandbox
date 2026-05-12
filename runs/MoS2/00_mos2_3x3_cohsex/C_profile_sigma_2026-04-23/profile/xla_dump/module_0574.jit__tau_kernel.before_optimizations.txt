@@ -1,0 +1,227 @@
+HloModule jit__tau_kernel, entry_computation_layout={(c128[9,2,640,80]{3,2,1,0}, c128[9,80,2,640]{3,2,1,0}, c128[9,80,2,640]{3,2,1,0}, c128[9,2,640,80]{3,2,1,0}, f64[9,80]{1,0}, /*index=5*/pred[9,80]{1,0}, c128[9,640,640]{2,1,0}, f64[9,640,640]{2,1,0}, pred[9,640,640]{2,1,0}, f64[], /*index=10*/f64[], c128[])->(c128[9,80,80]{2,1,0}, c128[9,80,80]{2,1,0})}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,false,true,false,false,false,true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, num_partitions=4
+
+%_where.13 (Arg_0.14: pred[9,640,640], Arg_1.15: c128[9,640,640], Arg_2.16: c128[]) -> c128[9,640,640] {
+  %Arg_0.14 = pred[9,640,640]{2,1,0} parameter(0), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/pjit"}
+  %Arg_1.15 = c128[9,640,640]{2,1,0} parameter(1), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/pjit"}
+  %Arg_2.16 = c128[] parameter(2), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/pjit"}
+  %broadcast.17 = c128[9,640,640]{2,1,0} broadcast(%Arg_2.16), dimensions={}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/minimax_screening.py" source_line=444}
+  ROOT %select.18 = c128[9,640,640]{2,1,0} select(%Arg_0.14, %Arg_1.15, %broadcast.17), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/minimax_screening.py" source_line=444}
+}
+
+%_build_W_t_q.19 (Arg_0.20: c128[9,640,640], Arg_1.21: f64[9,640,640], Arg_2.22: pred[9,640,640], Arg_3.23: f64[], Arg_4.24: c128[]) -> c128[9,640,640] {
+  %Arg_2.22 = pred[9,640,640]{2,1,0} parameter(2), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %Arg_0.20 = c128[9,640,640]{2,1,0} parameter(0), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %Arg_1.21 = f64[9,640,640]{2,1,0} parameter(1), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %Arg_3.23 = f64[] parameter(3), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %broadcast.34 = f64[9,640,640]{2,1,0} broadcast(%Arg_3.23), dimensions={}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %subtract.35 = f64[9,640,640]{2,1,0} subtract(%Arg_1.21, %broadcast.34), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %convert.36 = c128[9,640,640]{2,1,0} convert(%subtract.35), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %constant.25 = c128[] constant((-0, -1))
+  %broadcast.26 = c128[9,640,640]{2,1,0} broadcast(%constant.25), dimensions={}
+  %multiply.37 = c128[9,640,640]{2,1,0} multiply(%convert.36, %broadcast.26), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %Arg_4.24 = c128[] parameter(4), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %broadcast.38 = c128[9,640,640]{2,1,0} broadcast(%Arg_4.24), dimensions={}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %multiply.39 = c128[9,640,640]{2,1,0} multiply(%multiply.37, %broadcast.38), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %real.40 = f64[9,640,640]{2,1,0} real(%multiply.39), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %exponential.41 = f64[9,640,640]{2,1,0} exponential(%real.40), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %constant.31 = f64[] constant(inf)
+  %broadcast.32 = f64[9,640,640]{2,1,0} broadcast(%constant.31), dimensions={}
+  %compare.42 = pred[9,640,640]{2,1,0} compare(%exponential.41, %broadcast.32), direction=EQ, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %constant.29 = f64[] constant(0.5)
+  %broadcast.30 = f64[9,640,640]{2,1,0} broadcast(%constant.29), dimensions={}
+  %multiply.43 = f64[9,640,640]{2,1,0} multiply(%real.40, %broadcast.30), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %exponential.44 = f64[9,640,640]{2,1,0} exponential(%multiply.43), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %imag.45 = f64[9,640,640]{2,1,0} imag(%multiply.39), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %cosine.46 = f64[9,640,640]{2,1,0} cosine(%imag.45), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %multiply.47 = f64[9,640,640]{2,1,0} multiply(%exponential.44, %cosine.46), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %multiply.48 = f64[9,640,640]{2,1,0} multiply(%multiply.47, %exponential.44), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %multiply.49 = f64[9,640,640]{2,1,0} multiply(%exponential.41, %cosine.46), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %select.50 = f64[9,640,640]{2,1,0} select(%compare.42, %multiply.48, %multiply.49), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %constant.27 = f64[] constant(0)
+  %broadcast.28 = f64[9,640,640]{2,1,0} broadcast(%constant.27), dimensions={}
+  %compare.51 = pred[9,640,640]{2,1,0} compare(%imag.45, %broadcast.28), direction=EQ, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %sine.52 = f64[9,640,640]{2,1,0} sine(%imag.45), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %multiply.53 = f64[9,640,640]{2,1,0} multiply(%exponential.44, %sine.52), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %multiply.54 = f64[9,640,640]{2,1,0} multiply(%multiply.53, %exponential.44), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %multiply.55 = f64[9,640,640]{2,1,0} multiply(%exponential.41, %sine.52), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %select.56 = f64[9,640,640]{2,1,0} select(%compare.42, %multiply.54, %multiply.55), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %select.57 = f64[9,640,640]{2,1,0} select(%compare.51, %broadcast.28, %select.56), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %complex.58 = c128[9,640,640]{2,1,0} complex(%select.50, %select.57), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=523}
+  %multiply.59 = c128[9,640,640]{2,1,0} multiply(%Arg_0.20, %complex.58), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=524}
+  %constant.33 = c128[] constant((0, 0))
+  %call.60 = c128[9,640,640]{2,1,0} call(%Arg_2.22, %multiply.59, %constant.33), to_apply=%_where.13
+  ROOT %custom-call.61 = c128[9,640,640]{2,1,0} custom-call(%call.60), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_build_W_t_q)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=526}
+}
+
+%_where_0.63 (Arg_0.64: pred[9,80], Arg_1.65: c128[9,80], Arg_2.66: c128[]) -> c128[9,80] {
+  %Arg_0.64 = pred[9,80]{1,0} parameter(0), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/pjit"}
+  %Arg_1.65 = c128[9,80]{1,0} parameter(1), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/pjit"}
+  %Arg_2.66 = c128[] parameter(2), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/pjit"}
+  %broadcast.67 = c128[9,80]{1,0} broadcast(%Arg_2.66), dimensions={}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=56}
+  ROOT %select.68 = c128[9,80]{1,0} select(%Arg_0.64, %Arg_1.65, %broadcast.67), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=56}
+}
+
+%region_0.69 (Arg_0.70: c128[], Arg_1.71: c128[]) -> c128[] {
+  %Arg_0.70 = c128[] parameter(0), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/reduce_scatter"}
+  %Arg_1.71 = c128[] parameter(1), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/reduce_scatter"}
+  ROOT %add.72 = c128[] add(%Arg_0.70, %Arg_1.71), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=425}
+}
+
+%region_1.73 (Arg_0.74: c128[], Arg_1.75: c128[]) -> c128[] {
+  %Arg_0.74 = c128[] parameter(0), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/reduce_scatter"}
+  %Arg_1.75 = c128[] parameter(1), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/reduce_scatter"}
+  ROOT %add.76 = c128[] add(%Arg_0.74, %Arg_1.75), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=431}
+}
+
+%region_2.77 (Arg_0.78: c128[], Arg_1.79: c128[]) -> c128[] {
+  %Arg_0.78 = c128[] parameter(0), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/reduce_scatter"}
+  %Arg_1.79 = c128[] parameter(1), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/reduce_scatter"}
+  ROOT %add.80 = c128[] add(%Arg_0.78, %Arg_1.79), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=425}
+}
+
+%region_3.81 (Arg_0.82: c128[], Arg_1.83: c128[]) -> c128[] {
+  %Arg_0.82 = c128[] parameter(0), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/reduce_scatter"}
+  %Arg_1.83 = c128[] parameter(1), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/reduce_scatter"}
+  ROOT %add.84 = c128[] add(%Arg_0.82, %Arg_1.83), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=431}
+}
+
+%shmap_body.85 (Arg_0.86: c128[9,80,2,320], Arg_1.87: c128[9,2,320,2,320], Arg_2.88: c128[9,2,320,80]) -> (c128[9,40,40], c128[9,40,40]) {
+  %Arg_0.86 = c128[9,80,2,320]{3,2,1,0} parameter(0), metadata={op_name="[None, None, None, (\'x\',)]"}
+  %real.90 = f64[9,80,2,320]{3,2,1,0} real(%Arg_0.86), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=423}
+  %imag.91 = f64[9,80,2,320]{3,2,1,0} imag(%Arg_0.86), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=423}
+  %negate.92 = f64[9,80,2,320]{3,2,1,0} negate(%imag.91), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=423}
+  %complex.93 = c128[9,80,2,320]{3,2,1,0} complex(%real.90, %negate.92), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=423}
+  %Arg_1.87 = c128[9,2,320,2,320]{4,3,2,1,0} parameter(1), metadata={op_name="[None, None, (\'x\',), None, (\'y\',)]"}
+  %real.89 = f64[9,2,320,2,320]{4,3,2,1,0} real(%Arg_1.87), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=435}
+  %convert.94 = c128[9,2,320,2,320]{4,3,2,1,0} convert(%real.89), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/kmsx,ksxty->kmty/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=421}
+  %dot.95 = c128[9,80,2,320]{3,2,1,0} dot(%complex.93, %convert.94), lhs_batch_dims={0}, lhs_contracting_dims={2,3}, rhs_batch_dims={0}, rhs_contracting_dims={1,2}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/kmsx,ksxty->kmty/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=421}
+  %reduce-scatter.96 = c128[9,40,2,320]{3,2,1,0} reduce-scatter(%dot.95), channel_id=1, replica_groups={{0,2},{1,3}}, use_global_device_ids=true, dimensions={1}, to_apply=%region_0.69, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/reduce_scatter" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=425}
+  %Arg_2.88 = c128[9,2,320,80]{3,2,1,0} parameter(2), metadata={op_name="[None, None, (\'y\',), None]"}
+  %dot.97 = c128[9,40,80]{2,1,0} dot(%reduce-scatter.96, %Arg_2.88), lhs_batch_dims={0}, lhs_contracting_dims={2,3}, rhs_batch_dims={0}, rhs_contracting_dims={1,2}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/kmty,ktyn->kmn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=428}
+  %reduce-scatter.98 = c128[9,40,40]{2,1,0} reduce-scatter(%dot.97), channel_id=2, replica_groups={{0,1},{2,3}}, use_global_device_ids=true, dimensions={2}, to_apply=%region_1.73, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/reduce_scatter" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=431}
+  %real.100 = f64[9,80,2,320]{3,2,1,0} real(%Arg_0.86), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=423}
+  %imag.101 = f64[9,80,2,320]{3,2,1,0} imag(%Arg_0.86), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=423}
+  %negate.102 = f64[9,80,2,320]{3,2,1,0} negate(%imag.101), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=423}
+  %complex.103 = c128[9,80,2,320]{3,2,1,0} complex(%real.100, %negate.102), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=423}
+  %imag.99 = f64[9,2,320,2,320]{4,3,2,1,0} imag(%Arg_1.87), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=436}
+  %convert.104 = c128[9,2,320,2,320]{4,3,2,1,0} convert(%imag.99), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/kmsx,ksxty->kmty/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=421}
+  %dot.105 = c128[9,80,2,320]{3,2,1,0} dot(%complex.103, %convert.104), lhs_batch_dims={0}, lhs_contracting_dims={2,3}, rhs_batch_dims={0}, rhs_contracting_dims={1,2}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/kmsx,ksxty->kmty/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=421}
+  %reduce-scatter.106 = c128[9,40,2,320]{3,2,1,0} reduce-scatter(%dot.105), channel_id=3, replica_groups={{0,2},{1,3}}, use_global_device_ids=true, dimensions={1}, to_apply=%region_2.77, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/reduce_scatter" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=425}
+  %dot.107 = c128[9,40,80]{2,1,0} dot(%reduce-scatter.106, %Arg_2.88), lhs_batch_dims={0}, lhs_contracting_dims={2,3}, rhs_batch_dims={0}, rhs_contracting_dims={1,2}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/kmty,ktyn->kmn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=428}
+  %reduce-scatter.108 = c128[9,40,40]{2,1,0} reduce-scatter(%dot.107), channel_id=4, replica_groups={{0,1},{2,3}}, use_global_device_ids=true, dimensions={2}, to_apply=%region_3.81, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/jit(shmap_body)/reduce_scatter" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=431}
+  ROOT %tuple.109 = (c128[9,40,40]{2,1,0}, c128[9,40,40]{2,1,0}) tuple(%reduce-scatter.98, %reduce-scatter.108)
+}
+
+%_sigma_kij_kernel.110 (Arg_0.111: c128[9,2,640,80], Arg_1.112: c128[9,80,2,640], Arg_2.113: c128[9,80,2,640], Arg_3.114: c128[9,2,640,80], Arg_4.115: f64[9,80], Arg_5.116: pred[9,80], Arg_6.117: f64[], Arg_7.118: c128[], Arg_8.119: c128[9,640,640]) -> (c128[9,80,80], c128[9,80,80]) {
+  %Arg_2.113 = c128[9,80,2,640]{3,2,1,0} parameter(2), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %custom-call.187 = c128[9,80,2,640]{3,2,1,0} custom-call(%Arg_2.113), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=494}
+  %custom-call.188 = c128[9,80,2,320]{3,2,1,0} custom-call(%custom-call.187), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=494}
+  %Arg_0.111 = c128[9,2,640,80]{3,2,1,0} parameter(0), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %Arg_5.116 = pred[9,80]{1,0} parameter(5), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %Arg_7.118 = c128[] parameter(7), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %constant.128 = c128[] constant((0, 1))
+  %multiply.129 = c128[] multiply(%Arg_7.118, %constant.128), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=488}
+  %negate.130 = c128[] negate(%multiply.129), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %broadcast.134 = c128[9,80]{1,0} broadcast(%negate.130), dimensions={}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %Arg_4.115 = f64[9,80]{1,0} parameter(4), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %Arg_6.117 = f64[] parameter(6), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %broadcast.131 = f64[9,80]{1,0} broadcast(%Arg_6.117), dimensions={}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %subtract.132 = f64[9,80]{1,0} subtract(%Arg_4.115, %broadcast.131), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %convert.133 = c128[9,80]{1,0} convert(%subtract.132), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %multiply.135 = c128[9,80]{1,0} multiply(%broadcast.134, %convert.133), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %real.136 = f64[9,80]{1,0} real(%multiply.135), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %exponential.137 = f64[9,80]{1,0} exponential(%real.136), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %constant.124 = f64[] constant(inf)
+  %broadcast.125 = f64[9,80]{1,0} broadcast(%constant.124), dimensions={}
+  %compare.138 = pred[9,80]{1,0} compare(%exponential.137, %broadcast.125), direction=EQ, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %constant.122 = f64[] constant(0.5)
+  %broadcast.123 = f64[9,80]{1,0} broadcast(%constant.122), dimensions={}
+  %multiply.139 = f64[9,80]{1,0} multiply(%real.136, %broadcast.123), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %exponential.140 = f64[9,80]{1,0} exponential(%multiply.139), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %imag.141 = f64[9,80]{1,0} imag(%multiply.135), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %cosine.142 = f64[9,80]{1,0} cosine(%imag.141), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %multiply.143 = f64[9,80]{1,0} multiply(%exponential.140, %cosine.142), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %multiply.144 = f64[9,80]{1,0} multiply(%multiply.143, %exponential.140), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %multiply.145 = f64[9,80]{1,0} multiply(%exponential.137, %cosine.142), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %select.146 = f64[9,80]{1,0} select(%compare.138, %multiply.144, %multiply.145), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %constant.120 = f64[] constant(0)
+  %broadcast.121 = f64[9,80]{1,0} broadcast(%constant.120), dimensions={}
+  %compare.147 = pred[9,80]{1,0} compare(%imag.141, %broadcast.121), direction=EQ, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %sine.148 = f64[9,80]{1,0} sine(%imag.141), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %multiply.149 = f64[9,80]{1,0} multiply(%exponential.140, %sine.148), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %multiply.150 = f64[9,80]{1,0} multiply(%multiply.149, %exponential.140), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %multiply.151 = f64[9,80]{1,0} multiply(%exponential.137, %sine.148), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %select.152 = f64[9,80]{1,0} select(%compare.138, %multiply.150, %multiply.151), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %select.153 = f64[9,80]{1,0} select(%compare.147, %broadcast.121, %select.152), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %complex.154 = c128[9,80]{1,0} complex(%select.146, %select.153), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=54}
+  %constant.127 = c128[] constant((0, 0))
+  %call.155 = c128[9,80]{1,0} call(%Arg_5.116, %complex.154, %constant.127), to_apply=%_where_0.63
+  %Arg_1.112 = c128[9,80,2,640]{3,2,1,0} parameter(1), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %real.156 = f64[9,80,2,640]{3,2,1,0} real(%Arg_1.112), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=29}
+  %imag.157 = f64[9,80,2,640]{3,2,1,0} imag(%Arg_1.112), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=29}
+  %negate.158 = f64[9,80,2,640]{3,2,1,0} negate(%imag.157), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=29}
+  %complex.159 = c128[9,80,2,640]{3,2,1,0} complex(%real.156, %negate.158), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=29}
+  %dot.160 = c128[9,80,2,640]{3,2,1,0} dot(%call.155, %complex.159), lhs_batch_dims={0,1}, lhs_contracting_dims={}, rhs_batch_dims={0,1}, rhs_contracting_dims={}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=28}
+  %dot.161 = c128[9,2,640,2,640]{4,3,2,1,0} dot(%Arg_0.111, %dot.160), lhs_batch_dims={0}, lhs_contracting_dims={3}, rhs_batch_dims={0}, rhs_contracting_dims={1}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/greens_function_kernel.py" source_line=28}
+  %reshape.162 = c128[3,3,1,2,640,2,640]{6,5,4,3,2,1,0} reshape(%dot.161), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=396}
+  %custom-call.163 = c128[3,3,1,2,640,2,640]{6,5,4,3,2,1,0} custom-call(%reshape.162), custom_call_target="Sharding", sharding={devices=[1,1,1,1,2,1,2]<=[4]}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=395}
+  %custom-call.164 = c128[3,3,1,2,640,2,640]{6,5,4,3,2,1,0} custom-call(%custom-call.163), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259}, backend_config="140164312806368"
+  %custom-call.165 = c128[3,3,1,2,640,2,640]{6,5,4,3,2,1,0} custom-call(%custom-call.164), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259}, backend_config="140164312806656"
+  %custom-call.166 = c128[3,3,1,2,640,2,640]{6,5,4,3,2,1,0} custom-call(%custom-call.165), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259}, backend_config="140164312806608"
+  %reshape.167 = c128[9,2,640,2,640]{4,3,2,1,0} reshape(%custom-call.166), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=397}
+  %Arg_8.119 = c128[9,640,640]{2,1,0} parameter(8), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %reshape.168 = c128[3,3,1,640,640]{4,3,2,1,0} reshape(%Arg_8.119), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=396}
+  %custom-call.169 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%reshape.168), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=395}
+  %custom-call.170 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%custom-call.169), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259}, backend_config="140164312808048"
+  %custom-call.171 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%custom-call.170), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259}, backend_config="140164312808336"
+  %custom-call.172 = c128[3,3,1,640,640]{4,3,2,1,0} custom-call(%custom-call.171), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259}, backend_config="140164312808576"
+  %reshape.173 = c128[9,1,640,1,640]{4,3,2,1,0} reshape(%custom-call.172), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=492}
+  %broadcast.174 = c128[9,1,640,1,640]{4,3,2,1,0} broadcast(%reshape.173), dimensions={0,1,2,3,4}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=493}
+  %reshape.175 = c128[9,640,640]{2,1,0} reshape(%broadcast.174), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=493}
+  %broadcast.176 = c128[9,2,640,2,640]{4,3,2,1,0} broadcast(%reshape.175), dimensions={0,2,4}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=493}
+  %multiply.177 = c128[9,2,640,2,640]{4,3,2,1,0} multiply(%reshape.167, %broadcast.176), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=493}
+  %constant.126 = f64[] constant(-0.33333333333333331)
+  %convert.178 = c128[] convert(%constant.126), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=493}
+  %broadcast.179 = c128[9,2,640,2,640]{4,3,2,1,0} broadcast(%convert.178), dimensions={}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=493}
+  %multiply.180 = c128[9,2,640,2,640]{4,3,2,1,0} multiply(%multiply.177, %broadcast.179), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=493}
+  %reshape.181 = c128[3,3,1,2,640,2,640]{6,5,4,3,2,1,0} reshape(%multiply.180), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=396}
+  %custom-call.182 = c128[3,3,1,2,640,2,640]{6,5,4,3,2,1,0} custom-call(%reshape.181), custom_call_target="Sharding", sharding={devices=[1,1,1,1,2,1,2]<=[4]}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=395}
+  %custom-call.183 = c128[3,3,1,2,640,2,640]{6,5,4,3,2,1,0} custom-call(%custom-call.182), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259}, backend_config="140164312809344"
+  %custom-call.184 = c128[3,3,1,2,640,2,640]{6,5,4,3,2,1,0} custom-call(%custom-call.183), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259}, backend_config="140164312924432"
+  %custom-call.185 = c128[3,3,1,2,640,2,640]{6,5,4,3,2,1,0} custom-call(%custom-call.184), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=259}, backend_config="140164312924672"
+  %reshape.186 = c128[9,2,640,2,640]{4,3,2,1,0} reshape(%custom-call.185), metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=397}
+  %custom-call.189 = c128[9,2,640,2,640]{4,3,2,1,0} custom-call(%reshape.186), custom_call_target="Sharding", sharding={devices=[1,1,2,1,2]<=[4]}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=494}
+  %custom-call.190 = c128[9,2,320,2,320]{4,3,2,1,0} custom-call(%custom-call.189), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=494}
+  %Arg_3.114 = c128[9,2,640,80]{3,2,1,0} parameter(3), metadata={op_name="jit(_tau_kernel)/jit(main)/pjit"}
+  %custom-call.191 = c128[9,2,640,80]{3,2,1,0} custom-call(%Arg_3.114), custom_call_target="Sharding", sharding={devices=[1,1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=494}
+  %custom-call.192 = c128[9,2,320,80]{3,2,1,0} custom-call(%custom-call.191), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=494}
+  %call.193 = (c128[9,40,40]{2,1,0}, c128[9,40,40]{2,1,0}) call(%custom-call.188, %custom-call.190, %custom-call.192), to_apply=%shmap_body.85
+  %get-tuple-element.194 = c128[9,40,40]{2,1,0} get-tuple-element(%call.193), index=0
+  %custom-call.196 = c128[9,40,40]{2,1,0} custom-call(%get-tuple-element.194), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=494}
+  %custom-call.197 = c128[9,80,80]{2,1,0} custom-call(%custom-call.196), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=494}
+  %get-tuple-element.195 = c128[9,40,40]{2,1,0} get-tuple-element(%call.193), index=1
+  %custom-call.198 = c128[9,40,40]{2,1,0} custom-call(%get-tuple-element.195), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=494}
+  %custom-call.199 = c128[9,80,80]{2,1,0} custom-call(%custom-call.198), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_tau_kernel)/jit(main)/jit(_sigma_kij_kernel)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/ppm_sigma.py" source_line=494}
+  ROOT %tuple.200 = (c128[9,80,80]{2,1,0}, c128[9,80,80]{2,1,0}) tuple(%custom-call.197, %custom-call.199)
+}
+
+ENTRY %main.205 (Arg_0.1: c128[9,2,640,80], Arg_1.2: c128[9,80,2,640], Arg_2.3: c128[9,80,2,640], Arg_3.4: c128[9,2,640,80], Arg_4.5: f64[9,80], Arg_5.6: pred[9,80], Arg_6.7: c128[9,640,640], Arg_7.8: f64[9,640,640], Arg_8.9: pred[9,640,640], Arg_9.10: f64[], Arg_10.11: f64[], Arg_11.12: c128[]) -> (c128[9,80,80], c128[9,80,80]) {
+  %Arg_0.1 = c128[9,2,640,80]{3,2,1,0} parameter(0), sharding={devices=[1,1,2,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="psi_coh_xn"}
+  %Arg_1.2 = c128[9,80,2,640]{3,2,1,0} parameter(1), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="psi_coh_yr"}
+  %Arg_2.3 = c128[9,80,2,640]{3,2,1,0} parameter(2), sharding={devices=[1,1,1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="psi_proj_xr"}
+  %Arg_3.4 = c128[9,2,640,80]{3,2,1,0} parameter(3), sharding={devices=[1,1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="psi_proj_yn"}
+  %Arg_4.5 = f64[9,80]{1,0} parameter(4), sharding={replicated}, metadata={op_name="E_A"}
+  %Arg_5.6 = pred[9,80]{1,0} parameter(5), metadata={op_name="mask_A"}
+  %Arg_9.10 = f64[] parameter(9), metadata={op_name="E_ref_A"}
+  %Arg_11.12 = c128[] parameter(11), metadata={op_name="t_node"}
+  %Arg_6.7 = c128[9,640,640]{2,1,0} parameter(6), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="B_q"}
+  %Arg_7.8 = f64[9,640,640]{2,1,0} parameter(7), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="Omega_q"}
+  %Arg_8.9 = pred[9,640,640]{2,1,0} parameter(8), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="mask_B"}
+  %Arg_10.11 = f64[] parameter(10), metadata={op_name="E_ref_B"}
+  %call.62 = c128[9,640,640]{2,1,0} call(%Arg_6.7, %Arg_7.8, %Arg_8.9, %Arg_10.11, %Arg_11.12), to_apply=%_build_W_t_q.19
+  %call.201 = (c128[9,80,80]{2,1,0}, c128[9,80,80]{2,1,0}) call(%Arg_0.1, %Arg_1.2, %Arg_2.3, %Arg_3.4, %Arg_4.5, /*index=5*/%Arg_5.6, %Arg_9.10, %Arg_11.12, %call.62), to_apply=%_sigma_kij_kernel.110
+  %get-tuple-element.202 = c128[9,80,80]{2,1,0} get-tuple-element(%call.201), index=0
+  %get-tuple-element.203 = c128[9,80,80]{2,1,0} get-tuple-element(%call.201), index=1
+  ROOT %tuple.204 = (c128[9,80,80]{2,1,0}, c128[9,80,80]{2,1,0}) tuple(%get-tuple-element.202, %get-tuple-element.203)
+}
+

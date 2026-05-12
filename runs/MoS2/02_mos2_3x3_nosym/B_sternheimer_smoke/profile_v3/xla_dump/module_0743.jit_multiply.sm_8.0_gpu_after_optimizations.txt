@@ -1,0 +1,33 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(c128[9,102,1963]{2,1,0}, f64[9,102,1963]{2,1,0}, c128[9,3,102,1963]{3,2,1,0}, f64[9,3,102,1963]{3,2,1,0})->(c128[9,102,1963]{2,1,0}, c128[9,3,102,1963]{3,2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="025e63d824ef13b680e03434f7c8d2ca"}
+
+%fused_add (param_0.1: f64[9,3,102,1963], param_1.3: c128[9,102,1963], param_2.3: c128[9,3,102,1963], param_3.2: f64[9,102,1963]) -> c128[9,3,102,1963] {
+  %param_2.3 = c128[9,3,102,1963]{3,2,1,0} parameter(2), metadata={scheduling_name="param_2.3"}
+  %param_3.2 = f64[9,102,1963]{2,1,0} parameter(3), metadata={scheduling_name="param_3.2"}
+  %convert.4.1 = c128[9,102,1963]{2,1,0} convert(%param_3.2), metadata={op_name="jit(multiply)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=376 scheduling_name="convert.4.1"}
+  %broadcast.6.1 = c128[9,3,102,1963]{3,2,1,0} broadcast(%convert.4.1), dimensions={0,2,3}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=376 scheduling_name="broadcast.6.1"}
+  %multiply.8.1 = c128[9,3,102,1963]{3,2,1,0} multiply(%param_2.3, %broadcast.6.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=376 scheduling_name="multiply.8.1"}
+  %param_1.3 = c128[9,102,1963]{2,1,0} parameter(1), metadata={scheduling_name="param_1.3"}
+  %broadcast.7.1 = c128[9,3,102,1963]{3,2,1,0} broadcast(%param_1.3), dimensions={0,2,3}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=376 scheduling_name="broadcast.7.1"}
+  %param_0.1 = f64[9,3,102,1963]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %convert.7.1 = c128[9,3,102,1963]{3,2,1,0} convert(%param_0.1), metadata={op_name="jit(multiply)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=376 scheduling_name="convert.7.1"}
+  %multiply.9.1 = c128[9,3,102,1963]{3,2,1,0} multiply(%broadcast.7.1, %convert.7.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=376 scheduling_name="multiply.9.1"}
+  ROOT %add.2.1 = c128[9,3,102,1963]{3,2,1,0} add(%multiply.8.1, %multiply.9.1), metadata={op_name="jit(multiply)/jit(main)/add_any" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=376 scheduling_name="add.2.1"}
+}
+
+%fused_multiply (param_0.2: c128[9,102,1963], param_1.5: f64[9,102,1963]) -> c128[9,102,1963] {
+  %param_0.2 = c128[9,102,1963]{2,1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %param_1.5 = f64[9,102,1963]{2,1,0} parameter(1), metadata={scheduling_name="param_1.5"}
+  %convert.4.2 = c128[9,102,1963]{2,1,0} convert(%param_1.5), metadata={op_name="jit(multiply)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=376 scheduling_name="convert.4.2"}
+  ROOT %multiply.6.1 = c128[9,102,1963]{2,1,0} multiply(%param_0.2, %convert.4.2), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=376 scheduling_name="multiply.6.1"}
+}
+
+ENTRY %main.20 (Arg_0.1.0: c128[9,102,1963], Arg_1.2.0: f64[9,102,1963], Arg_2.3.0: c128[9,3,102,1963], Arg_3.4.0: f64[9,3,102,1963]) -> (c128[9,102,1963], c128[9,3,102,1963]) {
+  %Arg_1.2.0 = f64[9,102,1963]{2,1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[9,102,1963]{2,1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %Arg_3.4.0 = f64[9,3,102,1963]{3,2,1,0} parameter(3), metadata={scheduling_name="Arg_3.4.0"}
+  %Arg_2.3.0 = c128[9,3,102,1963]{3,2,1,0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %loop_multiply_fusion = c128[9,102,1963]{2,1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=376 scheduling_name="loop_multiply_fusion"}
+  %loop_add_fusion = c128[9,3,102,1963]{3,2,1,0} fusion(%Arg_3.4.0, %Arg_0.1.0, %Arg_2.3.0, %Arg_1.2.0), kind=kLoop, calls=%fused_add, metadata={op_name="jit(multiply)/jit(main)/add_any" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=376 scheduling_name="loop_add_fusion"}
+  ROOT %tuple.19.0 = (c128[9,102,1963]{2,1,0}, c128[9,3,102,1963]{3,2,1,0}) tuple(%loop_multiply_fusion, %loop_add_fusion), metadata={scheduling_name="tuple.19.0"}
+}
+

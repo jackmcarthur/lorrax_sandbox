@@ -1,0 +1,34 @@
+HloModule jit__argmin, entry_computation_layout={(f64[192]{0})->s64[]}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}
+
+%region_0.2 (Arg_0.3: f64[], Arg_1.4: s64[], Arg_2.5: f64[], Arg_3.6: s64[]) -> (f64[], s64[]) {
+  %Arg_0.3 = f64[] parameter(0), metadata={op_name="jit(_argmin)/jit(main)/reduce"}
+  %Arg_2.5 = f64[] parameter(2), metadata={op_name="jit(_argmin)/jit(main)/reduce"}
+  %compare.7 = pred[] compare(%Arg_0.3, %Arg_2.5), direction=LT, metadata={op_name="/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+  %compare.8 = pred[] compare(%Arg_0.3, %Arg_0.3), direction=NE, metadata={op_name="/ne" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+  %or.9 = pred[] or(%compare.7, %compare.8), metadata={op_name="/or" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+  %select.14 = f64[] select(%or.9, %Arg_0.3, %Arg_2.5), metadata={op_name="/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+  %compare.10 = pred[] compare(%Arg_0.3, %Arg_2.5), direction=EQ, metadata={op_name="/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+  %Arg_1.4 = s64[] parameter(1), metadata={op_name="jit(_argmin)/jit(main)/reduce"}
+  %Arg_3.6 = s64[] parameter(3), metadata={op_name="jit(_argmin)/jit(main)/reduce"}
+  %compare.11 = pred[] compare(%Arg_1.4, %Arg_3.6), direction=LT, metadata={op_name="/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+  %and.12 = pred[] and(%compare.10, %compare.11), metadata={op_name="/and" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+  %or.13 = pred[] or(%or.9, %and.12), metadata={op_name="/or" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+  %select.15 = s64[] select(%or.13, %Arg_1.4, %Arg_3.6), metadata={op_name="/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+  ROOT %tuple.16 = (f64[], s64[]) tuple(%select.14, %select.15)
+}
+
+%argmin.17 (Arg_0.18: f64[192]) -> s64[] {
+  %Arg_0.18 = f64[192]{0} parameter(0), metadata={op_name="jit(_argmin)/jit(main)/argmin"}
+  %iota.21 = s64[192]{0} iota(), iota_dimension=0, metadata={op_name="jit(_argmin)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+  %constant.20 = f64[] constant(inf)
+  %constant.19 = s64[] constant(0)
+  %reduce.22 = (f64[], s64[]) reduce(%Arg_0.18, %iota.21, %constant.20, %constant.19), dimensions={0}, to_apply=%region_0.2, metadata={op_name="jit(_argmin)/jit(main)/reduce" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+  %get-tuple-element.23 = f64[] get-tuple-element(%reduce.22), index=0, metadata={op_name="jit(_argmin)/jit(main)/reduce" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+  ROOT %get-tuple-element.24 = s64[] get-tuple-element(%reduce.22), index=1, metadata={op_name="jit(_argmin)/jit(main)/reduce" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=661}
+}
+
+ENTRY %main.26 (Arg_0.1: f64[192]) -> s64[] {
+  %Arg_0.1 = f64[192]{0} parameter(0), metadata={op_name="a"}
+  ROOT %call.25 = s64[] call(%Arg_0.1), to_apply=%argmin.17
+}
+

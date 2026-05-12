@@ -1,0 +1,33 @@
+HloModule jit__reduce_sum, is_scheduled=true, entry_computation_layout={(c128[9,1]{1,0}, c128[3,9,1]{2,1,0})->(c128[1]{0}, c128[3,1]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="1284afd8513991ace8ff13c5a5f6d195"}
+
+%region_0.4 (Arg_0.5: c128[], Arg_1.6: c128[]) -> c128[] {
+  %Arg_1.6 = c128[] parameter(1), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_1.6"}
+  %Arg_0.5 = c128[] parameter(0), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_0.5"}
+  ROOT %add.2 = c128[] add(%Arg_0.5, %Arg_1.6), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=281 scheduling_name="add.2"}
+}
+
+%fused_slice (param_0_0: c128[9,1], param_1_0: c128[3,9,1]) -> (c128[1], c128[3]) {
+  %param_0_0 = c128[9,1]{1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %bitcast.44.2 = c128[9]{0} bitcast(%param_0_0), metadata={scheduling_name="bitcast.44.2"}
+  %constant_3_3 = c128[] constant((0, 0))
+  %reduce.4 = c128[] reduce(%bitcast.44.2, %constant_3_3), dimensions={0}, to_apply=%region_0.4, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=281 scheduling_name="reduce.4"}
+  %reshape = c128[1]{0} reshape(%reduce.4), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=281 scheduling_name="reshape"}
+  %param_1_0 = c128[3,9,1]{2,1,0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %bitcast.53.2 = c128[3,9]{1,0} bitcast(%param_1_0), metadata={scheduling_name="bitcast.53.2"}
+  %reduce.1.2 = c128[3]{0} reduce(%bitcast.53.2, %constant_3_3), dimensions={1}, to_apply=%region_0.4, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=281 scheduling_name="reduce.1.2"}
+  %concatenate = c128[4]{0} concatenate(%reshape, %reduce.1.2), dimensions={0}, metadata={scheduling_name="concatenate"}
+  %slice = c128[1]{0} slice(%concatenate), slice={[0:1]}, metadata={scheduling_name="slice"}
+  %slice.1 = c128[3]{0} slice(%concatenate), slice={[1:4]}, metadata={scheduling_name="slice.1"}
+  ROOT %tuple = (c128[1]{0}, c128[3]{0}) tuple(%slice, %slice.1), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=281 scheduling_name="tuple"}
+}
+
+ENTRY %main.15 (Arg_0.1.0: c128[9,1], Arg_1.2.0: c128[3,9,1]) -> (c128[1], c128[3,1]) {
+  %Arg_1.2.0 = c128[3,9,1]{2,1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[9,1]{1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %input_slice_fusion = (c128[1]{0}, c128[3]{0}) fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kInput, calls=%fused_slice, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=281 scheduling_name="input_slice_fusion"}
+  %get-tuple-element = c128[1]{0} get-tuple-element(%input_slice_fusion), index=0, metadata={scheduling_name="get-tuple-element"}
+  %get-tuple-element.1 = c128[3]{0} get-tuple-element(%input_slice_fusion), index=1, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=281 scheduling_name="get-tuple-element.1"}
+  %bitcast.59.0 = c128[3,1]{1,0} bitcast(%get-tuple-element.1), metadata={scheduling_name="bitcast.59.0"}
+  ROOT %tuple.14.0 = (c128[1]{0}, c128[3,1]{1,0}) tuple(%get-tuple-element, %bitcast.59.0), metadata={scheduling_name="tuple.14.0"}
+}
+

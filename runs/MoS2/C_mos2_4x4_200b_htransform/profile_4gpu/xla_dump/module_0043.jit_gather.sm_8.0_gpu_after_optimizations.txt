@@ -1,0 +1,16 @@
+HloModule jit_gather, is_scheduled=true, entry_computation_layout={(f64[960]{0}, s32[1]{0})->f64[]}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="0058f7fcdf1234bf570cec22ddd17165"}
+
+%fused_dynamic_slice (param_0: f64[960], param_1.1: s32[1]) -> f64[1] {
+  %param_0 = f64[960]{0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.1 = s32[1]{0} parameter(1), metadata={scheduling_name="param_1.1"}
+  %bitcast.25.1 = s32[] bitcast(%param_1.1), metadata={scheduling_name="bitcast.25.1"}
+  ROOT %dynamic-slice.7.1 = f64[1]{0} dynamic-slice(%param_0, %bitcast.25.1), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.7.1"}
+}
+
+ENTRY %main.4_spmd (param.2.0: f64[960], param.3.0: s32[1]) -> f64[] {
+  %param.3.0 = s32[1]{0} parameter(1), sharding={replicated}, metadata={op_name="args[1]" scheduling_name="param.3.0"}
+  %param.2.0 = f64[960]{0} parameter(0), sharding={replicated}, metadata={op_name="args[0]" scheduling_name="param.2.0"}
+  %loop_dynamic_slice_fusion = f64[1]{0} fusion(%param.2.0, %param.3.0), kind=kLoop, calls=%fused_dynamic_slice, metadata={scheduling_name="loop_dynamic_slice_fusion"}
+  ROOT %bitcast.1.0 = f64[] bitcast(%loop_dynamic_slice_fusion), metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=164 scheduling_name="bitcast.1.0"}
+}
+

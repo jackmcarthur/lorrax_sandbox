@@ -1,0 +1,111 @@
+HloModule jit__per_rank, entry_computation_layout={(f64[80,2,5,1963,2]{4,3,2,1,0}, c128[9,2,2]{2,1,0}, c128[9,1963]{1,0}, pred[9]{0}, s32[9]{0})->f64[80,2,9,1963,2]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16
+
+%_where.16 (Arg_0.17: pred[9], Arg_1.18: s32[9], Arg_2.19: s32[9]) -> s32[9] {
+  %Arg_0.17 = pred[9]{0} parameter(0), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/pjit"}
+  %Arg_1.18 = s32[9]{0} parameter(1), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/pjit"}
+  %Arg_2.19 = s32[9]{0} parameter(2), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/pjit"}
+  ROOT %select.20 = s32[9]{0} select(%Arg_0.17, %Arg_1.18, %Arg_2.19), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+}
+
+%region_0.21 (Arg_0.22: pred[], Arg_1.23: pred[]) -> pred[] {
+  %Arg_0.22 = pred[] parameter(0), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/reduce_and"}
+  %Arg_1.23 = pred[] parameter(1), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/reduce_and"}
+  ROOT %and.24 = pred[] and(%Arg_0.22, %Arg_1.23), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/reduce_and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+}
+
+%_take.25 (Arg_0.26: c128[5,2,5,1963], Arg_1.27: s32[9]) -> c128[5,2,9,1963] {
+  %Arg_1.27 = s32[9]{0} parameter(1), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/pjit"}
+  %constant.37 = s32[] constant(0)
+  %broadcast.38 = s32[9]{0} broadcast(%constant.37), dimensions={}
+  %compare.39 = pred[9]{0} compare(%Arg_1.27, %broadcast.38), direction=LT, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+  %constant.34 = s32[] constant(5)
+  %broadcast.35 = s32[9]{0} broadcast(%constant.34), dimensions={}
+  %add.40 = s32[9]{0} add(%Arg_1.27, %broadcast.35), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+  %call.41 = s32[9]{0} call(%compare.39, %add.40, %Arg_1.27), to_apply=%_where.16
+  %reshape.42 = s32[9,1]{1,0} reshape(%call.41), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+  %convert.43 = s64[9,1]{1,0} convert(%reshape.42), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+  %constant.32 = s64[] constant(0)
+  %broadcast.33 = s64[9,1]{1,0} broadcast(%constant.32), dimensions={}
+  %compare.44 = pred[9,1]{1,0} compare(%convert.43, %broadcast.33), direction=GE, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/ge" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+  %constant.30 = s64[] constant(4)
+  %broadcast.31 = s64[9,1]{1,0} broadcast(%constant.30), dimensions={}
+  %compare.45 = pred[9,1]{1,0} compare(%convert.43, %broadcast.31), direction=LE, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/le" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+  %and.46 = pred[9,1]{1,0} and(%compare.44, %compare.45), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+  %constant.36 = pred[] constant(true)
+  %reduce.47 = pred[9]{0} reduce(%and.46, %constant.36), dimensions={1}, to_apply=%region_0.21, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/reduce_and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+  %broadcast.49 = pred[5,2,9,1963]{3,2,1,0} broadcast(%reduce.47), dimensions={2}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+  %Arg_0.26 = c128[5,2,5,1963]{3,2,1,0} parameter(0), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/pjit"}
+  %gather.48 = c128[5,2,9,1963]{3,2,1,0} gather(%Arg_0.26, %convert.43), offset_dims={0,1,3}, collapsed_slice_dims={2}, start_index_map={2}, index_vector_dim=1, slice_sizes={5,2,1,1963}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+  %constant.28 = c128[] constant((nan, 0))
+  %broadcast.29 = c128[5,2,9,1963]{3,2,1,0} broadcast(%constant.28), dimensions={}
+  ROOT %select.50 = c128[5,2,9,1963]{3,2,1,0} select(%broadcast.49, %gather.48, %broadcast.29), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=688}
+}
+
+%_where_0.51 (Arg_0.52: pred[1,1,9,1], Arg_1.53: c128[5,2,9,1963], Arg_2.54: c128[5,2,9,1963]) -> c128[5,2,9,1963] {
+  %Arg_0.52 = pred[1,1,9,1]{3,2,1,0} parameter(0), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/pjit"}
+  %broadcast.55 = pred[1,1,9,1]{3,2,1,0} broadcast(%Arg_0.52), dimensions={0,1,2,3}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_where)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=694}
+  %reshape.56 = pred[9]{0} reshape(%broadcast.55), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_where)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=694}
+  %broadcast.57 = pred[5,2,9,1963]{3,2,1,0} broadcast(%reshape.56), dimensions={2}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_where)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=694}
+  %Arg_1.53 = c128[5,2,9,1963]{3,2,1,0} parameter(1), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/pjit"}
+  %Arg_2.54 = c128[5,2,9,1963]{3,2,1,0} parameter(2), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/pjit"}
+  ROOT %select.58 = c128[5,2,9,1963]{3,2,1,0} select(%broadcast.57, %Arg_1.53, %Arg_2.54), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=694}
+}
+
+%shmap_body.59 (Arg_0.60: f64[5,2,5,1963,2], Arg_1.61: c128[9,2,2], Arg_2.62: c128[9,1963], Arg_3.63: pred[9], Arg_4.64: s32[9]) -> f64[5,2,9,1963,2] {
+  %Arg_3.63 = pred[9]{0} parameter(3), metadata={op_name="[None]"}
+  %reshape.76 = pred[1,1,9,1]{3,2,1,0} reshape(%Arg_3.63), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=695}
+  %Arg_0.60 = f64[5,2,5,1963,2]{4,3,2,1,0} parameter(0), metadata={op_name="[(\'x\', \'y\'), None, None, None, None]"}
+  %slice.67 = f64[5,2,5,1963,1]{4,3,2,1,0} slice(%Arg_0.60), slice={[0:5], [0:2], [0:5], [0:1963], [0:1]}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=684}
+  %reshape.68 = f64[5,2,5,1963]{3,2,1,0} reshape(%slice.67), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/squeeze" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=684}
+  %convert.73 = c128[5,2,5,1963]{3,2,1,0} convert(%reshape.68), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=684}
+  %slice.69 = f64[5,2,5,1963,1]{4,3,2,1,0} slice(%Arg_0.60), slice={[0:5], [0:2], [0:5], [0:1963], [1:2]}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=684}
+  %reshape.70 = f64[5,2,5,1963]{3,2,1,0} reshape(%slice.69), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/squeeze" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=684}
+  %convert.71 = c128[5,2,5,1963]{3,2,1,0} convert(%reshape.70), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=684}
+  %constant.65 = c128[] constant((0, 1))
+  %broadcast.66 = c128[5,2,5,1963]{3,2,1,0} broadcast(%constant.65), dimensions={}
+  %multiply.72 = c128[5,2,5,1963]{3,2,1,0} multiply(%convert.71, %broadcast.66), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=684}
+  %add.74 = c128[5,2,5,1963]{3,2,1,0} add(%convert.73, %multiply.72), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=684}
+  %Arg_4.64 = s32[9]{0} parameter(4), metadata={op_name="[None]"}
+  %call.75 = c128[5,2,9,1963]{3,2,1,0} call(%add.74, %Arg_4.64), to_apply=%_take.25
+  %real.77 = f64[5,2,9,1963]{3,2,1,0} real(%call.75), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=695}
+  %imag.78 = f64[5,2,9,1963]{3,2,1,0} imag(%call.75), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=695}
+  %negate.79 = f64[5,2,9,1963]{3,2,1,0} negate(%imag.78), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=695}
+  %complex.80 = c128[5,2,9,1963]{3,2,1,0} complex(%real.77, %negate.79), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=695}
+  %call.81 = c128[5,2,9,1963]{3,2,1,0} call(%reshape.76, %complex.80, %call.75), to_apply=%_where_0.51
+  %Arg_2.62 = c128[9,1963]{1,0} parameter(2), metadata={op_name="[None, None]"}
+  %reshape.82 = c128[1,1,9,1963]{3,2,1,0} reshape(%Arg_2.62), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=698}
+  %broadcast.83 = c128[1,1,9,1963]{3,2,1,0} broadcast(%reshape.82), dimensions={0,1,2,3}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=698}
+  %reshape.84 = c128[9,1963]{1,0} reshape(%broadcast.83), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=698}
+  %broadcast.85 = c128[5,2,9,1963]{3,2,1,0} broadcast(%reshape.84), dimensions={2,3}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=698}
+  %multiply.86 = c128[5,2,9,1963]{3,2,1,0} multiply(%call.81, %broadcast.85), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=698}
+  %Arg_1.61 = c128[9,2,2]{2,1,0} parameter(1), metadata={op_name="[None, None, None]"}
+  %dot.87 = c128[9,5,1963,2]{3,2,1,0} dot(%multiply.86, %Arg_1.61), lhs_batch_dims={2}, lhs_contracting_dims={1}, rhs_batch_dims={0}, rhs_contracting_dims={2}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/kac,bckg->bakg/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=701}
+  %transpose.88 = c128[5,2,9,1963]{1,3,0,2} transpose(%dot.87), dimensions={1,3,0,2}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/kac,bckg->bakg/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=701}
+  %real.89 = f64[5,2,9,1963]{1,3,0,2} real(%transpose.88), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=704}
+  %reshape.91 = f64[5,2,9,1963,1]{4,3,2,1,0} reshape(%real.89), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=704}
+  %imag.90 = f64[5,2,9,1963]{1,3,0,2} imag(%transpose.88), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=704}
+  %reshape.92 = f64[5,2,9,1963,1]{4,3,2,1,0} reshape(%imag.90), metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=704}
+  ROOT %concatenate.93 = f64[5,2,9,1963,2]{4,3,2,1,0} concatenate(%reshape.91, %reshape.92), dimensions={4}, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/concatenate" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=704}
+}
+
+ENTRY %main.97 (Arg_0.1: f64[80,2,5,1963,2], Arg_1.2: c128[9,2,2], Arg_2.3: c128[9,1963], Arg_3.4: pred[9], Arg_4.5: s32[9]) -> f64[80,2,9,1963,2] {
+  %Arg_0.1 = f64[80,2,5,1963,2]{4,3,2,1,0} parameter(0), sharding={devices=[16,1,1,1,1]<=[16]}, metadata={op_name="cnk_at_ibz"}
+  %custom-call.6 = f64[80,2,5,1963,2]{4,3,2,1,0} custom-call(%Arg_0.1), custom_call_target="Sharding", sharding={devices=[16,1,1,1,1]<=[16]}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=175}
+  %custom-call.7 = f64[5,2,5,1963,2]{4,3,2,1,0} custom-call(%custom-call.6), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=175}
+  %Arg_1.2 = c128[9,2,2]{2,1,0} parameter(1), sharding={replicated}, metadata={op_name="U_per_k"}
+  %custom-call.8 = c128[9,2,2]{2,1,0} custom-call(%Arg_1.2), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=175}
+  %custom-call.9 = c128[9,2,2]{2,1,0} custom-call(%custom-call.8), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=175}
+  %Arg_2.3 = c128[9,1963]{1,0} parameter(2), sharding={replicated}, metadata={op_name="phase_per_k"}
+  %custom-call.10 = c128[9,1963]{1,0} custom-call(%Arg_2.3), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=175}
+  %custom-call.11 = c128[9,1963]{1,0} custom-call(%custom-call.10), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=175}
+  %Arg_3.4 = pred[9]{0} parameter(3), sharding={replicated}, metadata={op_name="tr_mask_per_k"}
+  %custom-call.12 = pred[9]{0} custom-call(%Arg_3.4), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=175}
+  %custom-call.13 = pred[9]{0} custom-call(%custom-call.12), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=175}
+  %Arg_4.5 = s32[9]{0} parameter(4), metadata={op_name="position_in_reads"}
+  %custom-call.14 = s32[9]{0} custom-call(%Arg_4.5), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=175}
+  %custom-call.15 = s32[9]{0} custom-call(%custom-call.14), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=175}
+  %call.94 = f64[5,2,9,1963,2]{4,3,2,1,0} call(%custom-call.7, %custom-call.9, %custom-call.11, %custom-call.13, %custom-call.15), to_apply=%shmap_body.59
+  %custom-call.95 = f64[5,2,9,1963,2]{4,3,2,1,0} custom-call(%call.94), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=175}
+  ROOT %custom-call.96 = f64[80,2,9,1963,2]{4,3,2,1,0} custom-call(%custom-call.95), custom_call_target="SPMDShardToFullShape", sharding={devices=[16,1,1,1,1]<=[16]}, metadata={op_name="jit(_per_rank)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/phdf5_wfn_reader.py" source_line=175}
+}
+

@@ -1,0 +1,23 @@
+run_id: A_phase0_hlo_chi0w_2026-05-08
+system: MoS2
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: 01_lorrax_gnppm
+reuse_from_parent:
+  - WFN.h5
+  - kin_ion.h5
+  - centroids_frac_640.txt
+overrides:
+  XLA_FLAGS: --xla_dump_to=./profile/xla_dump
+  mesh: 4x4 (16 GPUs) instead of 2x2 — match the bispinor V_q profiling mesh
+purpose: |
+  Phase 0b of the n_rmu padding refactor.  Captures compiled HLO for
+  chi0 (compute_chi0_minimax) and W solve (_get_w_solve_fn /
+  _get_w_solve_fn_low_mem) at n_rmu=640 on a 4x4 mesh.  Needed to
+  inventory all-gather / all-to-all sites in those jits before we
+  decide whether W solve needs a defensive unpad.
+
+steps:
+  qe:        { state: reused }
+  00_lorrax: { state: pending }

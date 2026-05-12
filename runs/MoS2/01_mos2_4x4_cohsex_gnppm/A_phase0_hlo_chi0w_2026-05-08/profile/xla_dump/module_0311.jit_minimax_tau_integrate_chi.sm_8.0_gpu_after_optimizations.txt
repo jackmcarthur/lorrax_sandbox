@@ -1,0 +1,202 @@
+HloModule jit_minimax_tau_integrate_chi, is_scheduled=true, entry_computation_layout={(c128[9]{0}, c128[9]{0}, c128[16,2,160,26]{3,2,1,0}, c128[16,26,2,160]{3,2,1,0}, c128[16,54,2,160]{3,2,1,0}, /*index=5*/c128[16,2,160,54]{3,2,1,0}, f64[16,26]{1,0}, f64[16,54]{1,0}, f64[], f64[])->c128[16,160,160]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,false,false,false,false,false,false}, num_partitions=16, frontend_attributes={fingerprint_before_lhs="58b1b3103bfa99dccc3590c577af5ed5"}
+
+%scalar_add_computation (scalar_lhs: c128[], scalar_rhs: c128[]) -> c128[] {
+  %scalar_rhs = c128[] parameter(1), metadata={scheduling_name="scalar_rhs"}
+  %scalar_lhs = c128[] parameter(0), metadata={scheduling_name="scalar_lhs"}
+  ROOT %add.68 = c128[] add(%scalar_lhs, %scalar_rhs), metadata={scheduling_name="add.68"}
+}
+
+%fused_transpose (param_0.1: c128[16,160,160], param_1.97: c128[2,160,2,160,4,4,1], param_2.62: c128[2,160,2,160,4,4,1], param_3.43: c128[9], param_4.29: s64[]) -> c128[16,160,160] {
+  %param_0.1 = c128[16,160,160]{2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %param_3.43 = c128[9]{0} parameter(3), metadata={scheduling_name="param_3.43"}
+  %param_4.29 = s64[] parameter(4), metadata={scheduling_name="param_4.29"}
+  %dynamic-slice.8.1 = c128[1]{0} dynamic-slice(%param_3.43, %param_4.29), dynamic_slice_sizes={1}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/dynamic_slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=189 scheduling_name="dynamic-slice.8.1"}
+  %bitcast.435.5 = c128[] bitcast(%dynamic-slice.8.1), metadata={scheduling_name="bitcast.435.5"}
+  %broadcast.58.5 = c128[1,4,4,160,160]{4,3,2,1,0} broadcast(%bitcast.435.5), dimensions={}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=187 scheduling_name="broadcast.58.5"}
+  %param_2.62 = c128[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} parameter(2), metadata={scheduling_name="param_2.62"}
+  %constant_360_1 = c128[] constant((0.25, 0)), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(shmap_body)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343}
+  %broadcast.62.36 = c128[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} broadcast(%constant_360_1), dimensions={}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343 scheduling_name="broadcast.62.36"}
+  %multiply.245.13 = c128[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} multiply(%param_2.62, %broadcast.62.36), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343 scheduling_name="multiply.245.13"}
+  %param_1.97 = c128[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1.97"}
+  %multiply.248.23 = c128[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} multiply(%param_1.97, %broadcast.62.36), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343 scheduling_name="multiply.248.23"}
+  %real.47.9 = f64[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} real(%multiply.248.23), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=182 scheduling_name="real.47.9"}
+  %imag.40.11 = f64[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} imag(%multiply.248.23), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=182 scheduling_name="imag.40.11"}
+  %negate.63.9 = f64[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} negate(%imag.40.11), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=182 scheduling_name="negate.63.9"}
+  %complex.40.9 = c128[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} complex(%real.47.9, %negate.63.9), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=182 scheduling_name="complex.40.9"}
+  %multiply.249.11 = c128[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} multiply(%multiply.245.13, %complex.40.9), metadata={scheduling_name="multiply.249.11"}
+  %bitcast.546.9 = c128[2,160,2,160,4,4]{5,4,3,2,1,0} bitcast(%multiply.249.11), metadata={scheduling_name="bitcast.546.9"}
+  %constant_229_1 = c128[] constant((0, 0))
+  %reduce.15.9 = c128[160,2,160,4,4]{4,3,2,1,0} reduce(%bitcast.546.9, %constant_229_1), dimensions={0}, to_apply=%scalar_add_computation, metadata={scheduling_name="reduce.15.9"}
+  %reduce.14.7 = c128[160,160,4,4]{3,2,1,0} reduce(%reduce.15.9, %constant_229_1), dimensions={1}, to_apply=%scalar_add_computation, metadata={scheduling_name="reduce.14.7"}
+  %bitcast.552.5 = c128[25600,16]{1,0} bitcast(%reduce.14.7), metadata={scheduling_name="bitcast.552.5"}
+  %transpose.66.5 = c128[16,25600]{1,0} transpose(%bitcast.552.5), dimensions={1,0}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/Rambn,Rambn->Rmn/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=181 scheduling_name="transpose.66.5"}
+  %bitcast.555.3 = c128[1,4,4,160,160]{4,3,2,1,0} bitcast(%transpose.66.5), metadata={scheduling_name="bitcast.555.3"}
+  %multiply.250.3 = c128[1,4,4,160,160]{4,3,2,1,0} multiply(%broadcast.58.5, %bitcast.555.3), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=187 scheduling_name="multiply.250.3"}
+  %bitcast.558.1 = c128[16,160,160]{2,1,0} bitcast(%multiply.250.3), metadata={scheduling_name="bitcast.558.1"}
+  ROOT %add.70.1 = c128[16,160,160]{2,1,0} add(%param_0.1, %bitcast.558.1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=187 scheduling_name="add.70.1"}
+}
+
+%fused_transpose.1 (param_0.40: c128[16,320,320]) -> c128[102400,16] {
+  %param_0.40 = c128[16,320,320]{2,1,0} parameter(0), metadata={scheduling_name="param_0.40"}
+  %real.46.1 = f64[16,320,320]{2,1,0} real(%param_0.40), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=124 scheduling_name="real.46.1"}
+  %imag.39.1 = f64[16,320,320]{2,1,0} imag(%param_0.40), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=124 scheduling_name="imag.39.1"}
+  %negate.62.1 = f64[16,320,320]{2,1,0} negate(%imag.39.1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=124 scheduling_name="negate.62.1"}
+  %complex.39.1 = c128[16,320,320]{2,1,0} complex(%real.46.1, %negate.62.1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=124 scheduling_name="complex.39.1"}
+  %bitcast.527.1 = c128[16,102400]{1,0} bitcast(%complex.39.1), metadata={scheduling_name="bitcast.527.1"}
+  ROOT %transpose.65.1 = c128[102400,16]{1,0} transpose(%bitcast.527.1), dimensions={1,0}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=403 scheduling_name="transpose.65.1"}
+}
+
+%fused_transpose.2 (param_0.41: c128[16,320,320]) -> c128[102400,16] {
+  %param_0.41 = c128[16,320,320]{2,1,0} parameter(0), metadata={scheduling_name="param_0.41"}
+  %real.44.1 = f64[16,320,320]{2,1,0} real(%param_0.41), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=124 scheduling_name="real.44.1"}
+  %imag.37.1 = f64[16,320,320]{2,1,0} imag(%param_0.41), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=124 scheduling_name="imag.37.1"}
+  %negate.60.1 = f64[16,320,320]{2,1,0} negate(%imag.37.1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=124 scheduling_name="negate.60.1"}
+  %complex.37.1 = c128[16,320,320]{2,1,0} complex(%real.44.1, %negate.60.1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=124 scheduling_name="complex.37.1"}
+  %bitcast.481.1 = c128[16,102400]{1,0} bitcast(%complex.37.1), metadata={scheduling_name="bitcast.481.1"}
+  ROOT %transpose.64.1 = c128[102400,16]{1,0} transpose(%bitcast.481.1), dimensions={1,0}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=403 scheduling_name="transpose.64.1"}
+}
+
+%fused_multiply (param_0.56: c128[16,54,2,160], param_1.95: f64[16,54], param_2.60: f64[], param_3.41: c128[9], param_4.27: s64[]) -> c128[16,54,2,160] {
+  %param_3.41 = c128[9]{0} parameter(3), metadata={scheduling_name="param_3.41"}
+  %param_4.27 = s64[] parameter(4), metadata={scheduling_name="param_4.27"}
+  %dynamic-slice.9.7 = c128[1]{0} dynamic-slice(%param_3.41, %param_4.27), dynamic_slice_sizes={1}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/dynamic_slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=189 scheduling_name="dynamic-slice.9.7"}
+  %real.42.7 = f64[1]{0} real(%dynamic-slice.9.7), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=173 scheduling_name="real.42.7"}
+  %bitcast.448.12 = f64[] bitcast(%real.42.7), metadata={scheduling_name="bitcast.448.12"}
+  %negate.58.5 = f64[] negate(%bitcast.448.12), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=54 scheduling_name="negate.58.5"}
+  %broadcast.59.3 = f64[16,54]{1,0} broadcast(%negate.58.5), dimensions={}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=54 scheduling_name="broadcast.59.3"}
+  %param_1.95 = f64[16,54]{1,0} parameter(1), metadata={scheduling_name="param_1.95"}
+  %param_2.60 = f64[] parameter(2), metadata={scheduling_name="param_2.60"}
+  %broadcast.60.3 = f64[16,54]{1,0} broadcast(%param_2.60), dimensions={}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=54 scheduling_name="broadcast.60.3"}
+  %subtract.10.3 = f64[16,54]{1,0} subtract(%param_1.95, %broadcast.60.3), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=54 scheduling_name="subtract.10.3"}
+  %multiply.243.3 = f64[16,54]{1,0} multiply(%broadcast.59.3, %subtract.10.3), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=54 scheduling_name="multiply.243.3"}
+  %exponential.10.3 = f64[16,54]{1,0} exponential(%multiply.243.3), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=54 scheduling_name="exponential.10.3"}
+  %convert.10.1 = c128[16,54]{1,0} convert(%exponential.10.3), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=29 scheduling_name="convert.10.1"}
+  %broadcast.61.1 = c128[16,54,2,160]{3,2,1,0} broadcast(%convert.10.1), dimensions={0,1}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=28 scheduling_name="broadcast.61.1"}
+  %param_0.56 = c128[16,54,2,160]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.56"}
+  %real.43.1 = f64[16,54,2,160]{3,2,1,0} real(%param_0.56), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=29 scheduling_name="real.43.1"}
+  %imag.36.1 = f64[16,54,2,160]{3,2,1,0} imag(%param_0.56), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=29 scheduling_name="imag.36.1"}
+  %negate.59.1 = f64[16,54,2,160]{3,2,1,0} negate(%imag.36.1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=29 scheduling_name="negate.59.1"}
+  %complex.36.1 = c128[16,54,2,160]{3,2,1,0} complex(%real.43.1, %negate.59.1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=28 scheduling_name="complex.36.1"}
+  ROOT %multiply.244.1 = c128[16,54,2,160]{3,2,1,0} multiply(%broadcast.61.1, %complex.36.1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=28 scheduling_name="multiply.244.1"}
+}
+
+%fused_multiply.1 (param_0.57: c128[16,26,2,160], param_1.89: f64[16,26], param_2.54: f64[], param_3.32: c128[9], param_4.26: s64[]) -> c128[16,26,2,160] {
+  %param_3.32 = c128[9]{0} parameter(3), metadata={scheduling_name="param_3.32"}
+  %param_4.26 = s64[] parameter(4), metadata={scheduling_name="param_4.26"}
+  %dynamic-slice.9.3 = c128[1]{0} dynamic-slice(%param_3.32, %param_4.26), dynamic_slice_sizes={1}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/dynamic_slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=189 scheduling_name="dynamic-slice.9.3"}
+  %real.42.3 = f64[1]{0} real(%dynamic-slice.9.3), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=173 scheduling_name="real.42.3"}
+  %bitcast.448.10 = f64[] bitcast(%real.42.3), metadata={scheduling_name="bitcast.448.10"}
+  %broadcast.63.7 = f64[16,26]{1,0} broadcast(%bitcast.448.10), dimensions={}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=54 scheduling_name="broadcast.63.7"}
+  %param_1.89 = f64[16,26]{1,0} parameter(1), metadata={scheduling_name="param_1.89"}
+  %param_2.54 = f64[] parameter(2), metadata={scheduling_name="param_2.54"}
+  %broadcast.64.7 = f64[16,26]{1,0} broadcast(%param_2.54), dimensions={}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=54 scheduling_name="broadcast.64.7"}
+  %subtract.11.7 = f64[16,26]{1,0} subtract(%param_1.89, %broadcast.64.7), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=54 scheduling_name="subtract.11.7"}
+  %multiply.246.5 = f64[16,26]{1,0} multiply(%broadcast.63.7, %subtract.11.7), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=54 scheduling_name="multiply.246.5"}
+  %exponential.11.3 = f64[16,26]{1,0} exponential(%multiply.246.5), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=54 scheduling_name="exponential.11.3"}
+  %convert.11.1 = c128[16,26]{1,0} convert(%exponential.11.3), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=29 scheduling_name="convert.11.1"}
+  %broadcast.65.1 = c128[16,26,2,160]{3,2,1,0} broadcast(%convert.11.1), dimensions={0,1}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=28 scheduling_name="broadcast.65.1"}
+  %param_0.57 = c128[16,26,2,160]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.57"}
+  %real.45.1 = f64[16,26,2,160]{3,2,1,0} real(%param_0.57), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=29 scheduling_name="real.45.1"}
+  %imag.38.1 = f64[16,26,2,160]{3,2,1,0} imag(%param_0.57), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=29 scheduling_name="imag.38.1"}
+  %negate.61.1 = f64[16,26,2,160]{3,2,1,0} negate(%imag.38.1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=29 scheduling_name="negate.61.1"}
+  %complex.38.1 = c128[16,26,2,160]{3,2,1,0} complex(%real.45.1, %negate.61.1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=28 scheduling_name="complex.38.1"}
+  ROOT %multiply.247.1 = c128[16,26,2,160]{3,2,1,0} multiply(%broadcast.65.1, %complex.38.1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=28 scheduling_name="multiply.247.1"}
+}
+
+%fused_add (param_0.78: s64[]) -> s64[] {
+  %param_0.78 = s64[] parameter(0), metadata={scheduling_name="param_0.78"}
+  %constant_154_1 = s64[] constant(1)
+  ROOT %add.69.1 = s64[] add(%param_0.78, %constant_154_1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=189 scheduling_name="add.69.1"}
+}
+
+%region_0.356_spmd (param.1.0: (s64[], c128[16,160,160], c128[9], c128[9], c128[16,2,160,26], /*index=5*/c128[16,26,2,160], c128[16,54,2,160], c128[16,2,160,54], f64[16,26], f64[16,54], /*index=10*/f64[], f64[])) -> (s64[], c128[16,160,160], c128[9], c128[9], c128[16,2,160,26], /*index=5*/c128[16,26,2,160], c128[16,54,2,160], c128[16,2,160,54], f64[16,26], f64[16,54], /*index=10*/f64[], f64[]) {
+  %param.1.0 = (s64[], c128[16,160,160]{2,1,0}, c128[9]{0}, c128[9]{0}, c128[16,2,160,26]{3,2,1,0}, /*index=5*/c128[16,26,2,160]{3,2,1,0}, c128[16,54,2,160]{3,2,1,0}, c128[16,2,160,54]{3,2,1,0}, f64[16,26]{1,0}, f64[16,54]{1,0}, /*index=10*/f64[], f64[]) parameter(0), metadata={scheduling_name="param.1.0"}
+  %get-tuple-element.30 = s64[] get-tuple-element(%param.1.0), index=0, metadata={scheduling_name="get-tuple-element.30"}
+  %get-tuple-element.52 = f64[] get-tuple-element(%param.1.0), index=10, metadata={scheduling_name="get-tuple-element.52"}
+  %get-tuple-element.53 = f64[] get-tuple-element(%param.1.0), index=11, metadata={scheduling_name="get-tuple-element.53"}
+  %get-tuple-element.44 = c128[9]{0} get-tuple-element(%param.1.0), index=2, metadata={scheduling_name="get-tuple-element.44"}
+  %get-tuple-element.45 = c128[9]{0} get-tuple-element(%param.1.0), index=3, metadata={scheduling_name="get-tuple-element.45"}
+  %get-tuple-element.46 = c128[16,2,160,26]{3,2,1,0} get-tuple-element(%param.1.0), index=4, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/pjit" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=174 scheduling_name="get-tuple-element.46"}
+  %get-tuple-element.47 = c128[16,26,2,160]{3,2,1,0} get-tuple-element(%param.1.0), index=5, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/pjit" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=174 scheduling_name="get-tuple-element.47"}
+  %get-tuple-element.48 = c128[16,54,2,160]{3,2,1,0} get-tuple-element(%param.1.0), index=6, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/pjit" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=174 scheduling_name="get-tuple-element.48"}
+  %get-tuple-element.49 = c128[16,2,160,54]{3,2,1,0} get-tuple-element(%param.1.0), index=7, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/pjit" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=174 scheduling_name="get-tuple-element.49"}
+  %get-tuple-element.50 = f64[16,26]{1,0} get-tuple-element(%param.1.0), index=8, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/pjit" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=174 scheduling_name="get-tuple-element.50"}
+  %get-tuple-element.51 = f64[16,54]{1,0} get-tuple-element(%param.1.0), index=9, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/pjit" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=174 scheduling_name="get-tuple-element.51"}
+  %bitcast.441.0 = c128[16,320,54]{2,1,0} bitcast(%get-tuple-element.49), metadata={scheduling_name="bitcast.441.0"}
+  %bitcast.494.0 = c128[16,320,26]{2,1,0} bitcast(%get-tuple-element.46), metadata={scheduling_name="bitcast.494.0"}
+  %get-tuple-element.31 = c128[16,160,160]{2,1,0} get-tuple-element(%param.1.0), index=1, metadata={scheduling_name="get-tuple-element.31"}
+  %loop_multiply_fusion.1 = c128[16,26,2,160]{3,2,1,0} fusion(%get-tuple-element.47, %get-tuple-element.50, %get-tuple-element.52, %get-tuple-element.44, %get-tuple-element.30), kind=kLoop, calls=%fused_multiply.1, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=28 scheduling_name="loop_multiply_fusion.1"}
+  %bitcast.518.0 = c128[16,26,320]{2,1,0} bitcast(%loop_multiply_fusion.1), metadata={scheduling_name="bitcast.518.0"}
+  %loop_multiply_fusion = c128[16,54,2,160]{3,2,1,0} fusion(%get-tuple-element.48, %get-tuple-element.51, %get-tuple-element.53, %get-tuple-element.44, %get-tuple-element.30), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=28 scheduling_name="loop_multiply_fusion"}
+  %bitcast.472.0 = c128[16,54,320]{2,1,0} bitcast(%loop_multiply_fusion), metadata={scheduling_name="bitcast.472.0"}
+  %custom-call.44.0 = (c128[16,320,320]{2,1,0}, s8[4194304]{0}) custom-call(%bitcast.441.0, %bitcast.472.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=28 scheduling_name="custom-call.44.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"17280","rhs_stride":"17280","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.16.0 = c128[16,320,320]{2,1,0} get-tuple-element(%custom-call.44.0), index=0, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=28 scheduling_name="get-tuple-element.16.0"}
+  %input_transpose_fusion.2 = c128[102400,16]{1,0} fusion(%get-tuple-element.16.0), kind=kInput, calls=%fused_transpose.2, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=403 deduplicated_name="input_transpose_fusion.1" scheduling_name="input_transpose_fusion.2"}
+  %bitcast.485.0 = c128[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} bitcast(%input_transpose_fusion.2), metadata={scheduling_name="bitcast.485.0"}
+  %fft.8.0 = c128[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} fft(%bitcast.485.0), fft_type=FFT, fft_length={4,4,1}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343 scheduling_name="fft.8.0"}
+  %custom-call.45.0 = (c128[16,320,320]{2,1,0}, s8[4194304]{0}) custom-call(%bitcast.494.0, %bitcast.518.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=28 scheduling_name="custom-call.45.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"8320","rhs_stride":"8320","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.17.0 = c128[16,320,320]{2,1,0} get-tuple-element(%custom-call.45.0), index=0, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(_build_Gv_Gc)/ksxn,kn,knty->ksxty/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/greens_function_kernel.py" source_line=28 scheduling_name="get-tuple-element.17.0"}
+  %input_transpose_fusion.1 = c128[102400,16]{1,0} fusion(%get-tuple-element.17.0), kind=kInput, calls=%fused_transpose.1, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=403 deduplicated_name="input_transpose_fusion.1" scheduling_name="input_transpose_fusion.1"}
+  %bitcast.531.0 = c128[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} bitcast(%input_transpose_fusion.1), metadata={scheduling_name="bitcast.531.0"}
+  %fft.9.0 = c128[2,160,2,160,4,4,1]{6,5,4,3,2,1,0} fft(%bitcast.531.0), fft_type=FFT, fft_length={4,4,1}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343 scheduling_name="fft.9.0"}
+  %input_transpose_fusion = c128[16,160,160]{2,1,0} fusion(%get-tuple-element.31, %fft.9.0, %fft.8.0, %get-tuple-element.45, %get-tuple-element.30), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=187 scheduling_name="input_transpose_fusion"}
+  %loop_add_fusion = s64[] fusion(%get-tuple-element.30), kind=kLoop, calls=%fused_add, control-predecessors={%input_transpose_fusion, %loop_multiply_fusion, %loop_multiply_fusion.1}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=189 scheduling_name="loop_add_fusion"}
+  ROOT %tuple.6 = (s64[], c128[16,160,160]{2,1,0}, c128[9]{0}, c128[9]{0}, c128[16,2,160,26]{3,2,1,0}, /*index=5*/c128[16,26,2,160]{3,2,1,0}, c128[16,54,2,160]{3,2,1,0}, c128[16,2,160,54]{3,2,1,0}, f64[16,26]{1,0}, f64[16,54]{1,0}, /*index=10*/f64[], f64[]) tuple(%loop_add_fusion, %input_transpose_fusion, %get-tuple-element.44, %get-tuple-element.45, %get-tuple-element.46, /*index=5*/%get-tuple-element.47, %get-tuple-element.48, %get-tuple-element.49, %get-tuple-element.50, %get-tuple-element.51, /*index=10*/%get-tuple-element.52, %get-tuple-element.53), metadata={scheduling_name="tuple.6"}
+}
+
+%fused_compare (param_0: s64[]) -> pred[] {
+  %param_0 = s64[] parameter(0), metadata={scheduling_name="param_0"}
+  %constant_144_1 = s64[] constant(9)
+  ROOT %compare.120.1 = pred[] compare(%param_0, %constant_144_1), direction=LT, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/cond/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=189 scheduling_name="compare.120.1"}
+}
+
+%region_3.379_spmd (param.12: (s64[], c128[16,160,160], c128[9], c128[9], c128[16,2,160,26], /*index=5*/c128[16,26,2,160], c128[16,54,2,160], c128[16,2,160,54], f64[16,26], f64[16,54], /*index=10*/f64[], f64[])) -> pred[] {
+  %param.12 = (s64[], c128[16,160,160]{2,1,0}, c128[9]{0}, c128[9]{0}, c128[16,2,160,26]{3,2,1,0}, /*index=5*/c128[16,26,2,160]{3,2,1,0}, c128[16,54,2,160]{3,2,1,0}, c128[16,2,160,54]{3,2,1,0}, f64[16,26]{1,0}, f64[16,54]{1,0}, /*index=10*/f64[], f64[]) parameter(0), metadata={scheduling_name="param.12"}
+  %get-tuple-element.2.0 = s64[] get-tuple-element(%param.12), index=0, metadata={scheduling_name="get-tuple-element.2.0"}
+  ROOT %loop_compare_fusion = pred[] fusion(%get-tuple-element.2.0), kind=kLoop, calls=%fused_compare, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while/cond/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=189 scheduling_name="loop_compare_fusion"}
+}
+
+%fused_transpose.3 (param_0.83: c128[160,160,4,4,1]) -> c128[16,25600] {
+  %param_0.83 = c128[160,160,4,4,1]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.83"}
+  %constant_464_1 = c128[] constant((0.25, 0)), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/jit(shmap_body)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343}
+  %broadcast.68.1 = c128[160,160,4,4,1]{4,3,2,1,0} broadcast(%constant_464_1), dimensions={}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343 scheduling_name="broadcast.68.1"}
+  %multiply.251.1 = c128[160,160,4,4,1]{4,3,2,1,0} multiply(%param_0.83, %broadcast.68.1), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343 scheduling_name="multiply.251.1"}
+  %bitcast.596.1 = c128[25600,16]{1,0} bitcast(%multiply.251.1), metadata={scheduling_name="bitcast.596.1"}
+  ROOT %transpose.68.1 = c128[16,25600]{1,0} transpose(%bitcast.596.1), dimensions={1,0}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404 scheduling_name="transpose.68.1"}
+}
+
+%fused_transpose.4 (param_0.82: c128[16,160,160]) -> c128[25600,16] {
+  %param_0.82 = c128[16,160,160]{2,1,0} parameter(0), metadata={scheduling_name="param_0.82"}
+  %bitcast.586.1 = c128[16,25600]{1,0} bitcast(%param_0.82), metadata={scheduling_name="bitcast.586.1"}
+  ROOT %transpose.67.1 = c128[25600,16]{1,0} transpose(%bitcast.586.1), dimensions={1,0}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=189 scheduling_name="transpose.67.1"}
+}
+
+%fused_broadcast () -> c128[16,160,160] {
+  %constant_235_1 = c128[] constant((0, 0))
+  ROOT %broadcast.67.1 = c128[16,160,160]{2,1,0} broadcast(%constant_235_1), dimensions={}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=164 scheduling_name="broadcast.67.1"}
+}
+
+ENTRY %main.528_spmd (param.2.0: c128[9], param.3.0: c128[9], param.4.0: c128[16,2,160,26], param.5.0: c128[16,26,2,160], param.6.0: c128[16,54,2,160], param.7.0: c128[16,2,160,54], param.8.0: f64[16,26], param.9.0: f64[16,54], param.10.0: f64[], param.11.0: f64[]) -> c128[16,160,160] {
+  %param.11.0 = f64[] parameter(9), sharding={replicated}, metadata={op_name="cmin" scheduling_name="param.11.0"}
+  %param.10.0 = f64[] parameter(8), sharding={replicated}, metadata={op_name="vmax" scheduling_name="param.10.0"}
+  %constant_234_0 = s64[] constant(0)
+  %param.9.0 = f64[16,54]{1,0} parameter(7), sharding={replicated}, metadata={op_name="enk_c" scheduling_name="param.9.0"}
+  %param.8.0 = f64[16,26]{1,0} parameter(6), sharding={replicated}, metadata={op_name="enk_v" scheduling_name="param.8.0"}
+  %param.7.0 = c128[16,2,160,54]{3,2,1,0} parameter(5), sharding={devices=[1,1,4,1,4]<=[16] last_tile_dim_replicate}, metadata={op_name="psi_c_xn" scheduling_name="param.7.0"}
+  %param.6.0 = c128[16,54,2,160]{3,2,1,0} parameter(4), sharding={devices=[1,1,1,4,4]<=[4,4]T(1,0) last_tile_dim_replicate}, metadata={op_name="psi_c_yr" scheduling_name="param.6.0"}
+  %param.5.0 = c128[16,26,2,160]{3,2,1,0} parameter(3), sharding={devices=[1,1,1,4,4]<=[4,4]T(1,0) last_tile_dim_replicate}, metadata={op_name="psi_v_yr" scheduling_name="param.5.0"}
+  %param.4.0 = c128[16,2,160,26]{3,2,1,0} parameter(2), sharding={devices=[1,1,4,1,4]<=[16] last_tile_dim_replicate}, metadata={op_name="psi_v_xn" scheduling_name="param.4.0"}
+  %param.3.0 = c128[9]{0} parameter(1), sharding={replicated}, metadata={op_name="nodes.alpha" scheduling_name="param.3.0"}
+  %param.2.0 = c128[9]{0} parameter(0), sharding={replicated}, metadata={op_name="nodes.t" scheduling_name="param.2.0"}
+  %copy.69 = s64[] copy(%constant_234_0)
+  %loop_broadcast_fusion = c128[16,160,160]{2,1,0} fusion(), kind=kLoop, calls=%fused_broadcast, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=164 scheduling_name="loop_broadcast_fusion"}
+  %tuple.4 = (s64[], c128[16,160,160]{2,1,0}, c128[9]{0}, c128[9]{0}, c128[16,2,160,26]{3,2,1,0}, /*index=5*/c128[16,26,2,160]{3,2,1,0}, c128[16,54,2,160]{3,2,1,0}, c128[16,2,160,54]{3,2,1,0}, f64[16,26]{1,0}, f64[16,54]{1,0}, /*index=10*/f64[], f64[]) tuple(%copy.69, %loop_broadcast_fusion, %param.2.0, %param.3.0, %param.4.0, /*index=5*/%param.5.0, %param.6.0, %param.7.0, %param.8.0, %param.9.0, /*index=10*/%param.10.0, %param.11.0), metadata={scheduling_name="tuple.4"}
+  %while.1 = (s64[], c128[16,160,160]{2,1,0}, c128[9]{0}, c128[9]{0}, c128[16,2,160,26]{3,2,1,0}, /*index=5*/c128[16,26,2,160]{3,2,1,0}, c128[16,54,2,160]{3,2,1,0}, c128[16,2,160,54]{3,2,1,0}, f64[16,26]{1,0}, f64[16,54]{1,0}, /*index=10*/f64[], f64[]) while(%tuple.4), condition=%region_3.379_spmd, body=%region_0.356_spmd, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=189 scheduling_name="while.1"}, backend_config={"known_trip_count":{"n":"9"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %get-tuple-element.15.0 = c128[16,160,160]{2,1,0} get-tuple-element(%while.1), index=1, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=189 scheduling_name="get-tuple-element.15.0"}
+  %input_transpose_fusion.4 = c128[25600,16]{1,0} fusion(%get-tuple-element.15.0), kind=kInput, calls=%fused_transpose.4, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/w_isdf.py" source_line=189 scheduling_name="input_transpose_fusion.4"}
+  %bitcast.590.0 = c128[160,160,4,4,1]{4,3,2,1,0} bitcast(%input_transpose_fusion.4), metadata={scheduling_name="bitcast.590.0"}
+  %fft.10.0 = c128[160,160,4,4,1]{4,3,2,1,0} fft(%bitcast.590.0), fft_type=FFT, fft_length={4,4,1}, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343 scheduling_name="fft.10.0"}
+  %input_transpose_fusion.3 = c128[16,25600]{1,0} fusion(%fft.10.0), kind=kInput, calls=%fused_transpose.3, metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404 scheduling_name="input_transpose_fusion.3"}
+  ROOT %bitcast.407.0 = c128[16,160,160]{2,1,0} bitcast(%input_transpose_fusion.3), metadata={op_name="jit(minimax_tau_integrate_chi)/jit(main)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404 scheduling_name="bitcast.407.0"}
+}
+

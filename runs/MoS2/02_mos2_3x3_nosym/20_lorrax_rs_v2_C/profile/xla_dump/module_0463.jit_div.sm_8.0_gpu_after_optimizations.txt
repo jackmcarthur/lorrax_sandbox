@@ -1,0 +1,15 @@
+HloModule jit_div, is_scheduled=true, entry_computation_layout={(c128[3,3,1,640,640]{4,3,2,1,0}, c128[])->c128[3,3,1,640,640]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="63001840da4934f240e8f47ca6515000"}
+
+%fused_divide (param_0: c128[3,3,1,640,640], param_1.1: c128[]) -> c128[3,3,1,640,640] {
+  %param_0 = c128[3,3,1,640,640]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.1 = c128[] parameter(1), metadata={scheduling_name="param_1.1"}
+  %broadcast.4.1 = c128[3,3,1,640,640]{4,3,2,1,0} broadcast(%param_1.1), dimensions={}, metadata={op_name="jit(div)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=124 scheduling_name="broadcast.4.1"}
+  ROOT %divide.3.1 = c128[3,3,1,640,640]{4,3,2,1,0} divide(%param_0, %broadcast.4.1), metadata={op_name="jit(div)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=124 scheduling_name="divide.3.1"}
+}
+
+ENTRY %main.5_spmd (param.2: c128[3,3,1,640,640], param.1.0: c128[]) -> c128[3,3,1,640,640] {
+  %param.1.0 = c128[] parameter(1), sharding={replicated}, metadata={op_name="args[1]" scheduling_name="param.1.0"}
+  %param.2 = c128[3,3,1,640,640]{4,3,2,1,0} parameter(0), sharding={replicated}, metadata={op_name="args[0]" scheduling_name="param.2"}
+  ROOT %loop_divide_fusion = c128[3,3,1,640,640]{4,3,2,1,0} fusion(%param.2, %param.1.0), kind=kLoop, calls=%fused_divide, metadata={op_name="jit(div)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=124 scheduling_name="loop_divide_fusion"}
+}
+

@@ -1,0 +1,100 @@
+HloModule jit__fft_and_rslice, is_scheduled=true, entry_computation_layout={(c128[64,9,2,24,24,24]{5,4,3,2,1,0}, s64[])->c128[64,9,2,6656]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="180170f99fc0e16a9c3555db8efa5a4c"}
+
+%fused_dynamic_slice (param_0.89: c128[64,9,2,24,24,24], param_1.111: f64[64,24,24,24], param_2.88: f64[64,24,24,24], param_3.61: s64[]) -> c128[64,9,2,6656] {
+  %param_0.89 = c128[64,9,2,24,24,24]{5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.89"}
+  %param_1.111 = f64[64,24,24,24]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1.111"}
+  %param_2.88 = f64[64,24,24,24]{3,2,1,0} parameter(2), metadata={scheduling_name="param_2.88"}
+  %complex.3.1 = c128[64,24,24,24]{3,2,1,0} complex(%param_1.111, %param_2.88), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="complex.3.1"}
+  %broadcast.101.1 = c128[64,9,2,24,24,24]{5,4,3,2,1,0} broadcast(%complex.3.1), dimensions={0,3,4,5}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=329 scheduling_name="broadcast.101.1"}
+  %multiply.52.1 = c128[64,9,2,24,24,24]{5,4,3,2,1,0} multiply(%param_0.89, %broadcast.101.1), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=329 scheduling_name="multiply.52.1"}
+  %constant_34_1 = c128[] constant((117.57550765359255, 0)), metadata={op_name="jit(_fft_and_rslice)/jit(main)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=330}
+  %broadcast.102.1 = c128[64,9,2,24,24,24]{5,4,3,2,1,0} broadcast(%constant_34_1), dimensions={}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=330 scheduling_name="broadcast.102.1"}
+  %multiply.53.1 = c128[64,9,2,24,24,24]{5,4,3,2,1,0} multiply(%multiply.52.1, %broadcast.102.1), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=330 scheduling_name="multiply.53.1"}
+  %bitcast.323.1 = c128[64,9,2,13824]{3,2,1,0} bitcast(%multiply.53.1), metadata={scheduling_name="bitcast.323.1"}
+  %constant_36_1 = s64[] constant(0)
+  %param_3.61 = s64[] parameter(3), metadata={scheduling_name="param_3.61"}
+  %compare.12.1 = pred[] compare(%param_3.61, %constant_36_1), direction=LT, metadata={op_name="jit(_fft_and_rslice)/jit(main)/jit(shmap_body)/lt" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=338 scheduling_name="compare.12.1"}
+  %constant_38_1 = s64[] constant(13824)
+  %add.12.1 = s64[] add(%param_3.61, %constant_38_1), metadata={op_name="jit(_fft_and_rslice)/jit(main)/jit(shmap_body)/add" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=338 scheduling_name="add.12.1"}
+  %select.16.1 = s64[] select(%compare.12.1, %add.12.1, %param_3.61), metadata={op_name="jit(_fft_and_rslice)/jit(main)/jit(shmap_body)/select_n" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=338 scheduling_name="select.16.1"}
+  ROOT %dynamic-slice.4.1 = c128[64,9,2,6656]{3,2,1,0} dynamic-slice(%bitcast.323.1, %constant_36_1, %constant_36_1, %constant_36_1, %select.16.1), dynamic_slice_sizes={64,9,2,6656}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/jit(shmap_body)/dynamic_slice" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=338 scheduling_name="dynamic-slice.4.1"}
+}
+
+%fused_select (param_0.87: f64[1,1,64,24], param_1.109: f64[1,1,64,24], param_2.84: f64[1,1,64,24]) -> (f64[64,24,24,24], f64[64,24,24,24]) {
+  %param_2.84 = f64[1,1,64,24]{3,2,1,0} parameter(2), metadata={scheduling_name="param_2.84"}
+  %bitcast.240.13 = f64[64,24]{1,0} bitcast(%param_2.84), metadata={scheduling_name="bitcast.240.13"}
+  %broadcast.85.13 = f64[1,64,24,24]{3,2,1,0} broadcast(%bitcast.240.13), dimensions={1,2}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324 scheduling_name="broadcast.85.13"}
+  %param_1.109 = f64[1,1,64,24]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1.109"}
+  %bitcast.249.13 = f64[64,24]{1,0} bitcast(%param_1.109), metadata={scheduling_name="bitcast.249.13"}
+  %broadcast.90.13 = f64[1,64,24,24]{3,2,1,0} broadcast(%bitcast.249.13), dimensions={1,3}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324 scheduling_name="broadcast.90.13"}
+  %add.10.11 = f64[1,64,24,24]{3,2,1,0} add(%broadcast.85.13, %broadcast.90.13), metadata={op_name="jit(_fft_and_rslice)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324 scheduling_name="add.10.11"}
+  %bitcast.253.37 = f64[64,24,24]{2,1,0} bitcast(%add.10.11), metadata={scheduling_name="bitcast.253.37"}
+  %broadcast.92.37 = f64[64,24,24,24]{3,2,1,0} broadcast(%bitcast.253.37), dimensions={0,1,2}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324 scheduling_name="broadcast.92.37"}
+  %param_0.87 = f64[1,1,64,24]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.87"}
+  %bitcast.262.37 = f64[64,24]{1,0} bitcast(%param_0.87), metadata={scheduling_name="bitcast.262.37"}
+  %broadcast.95.37 = f64[64,24,24,24]{3,2,1,0} broadcast(%bitcast.262.37), dimensions={0,3}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324 scheduling_name="broadcast.95.37"}
+  %add.11.35 = f64[64,24,24,24]{3,2,1,0} add(%broadcast.92.37, %broadcast.95.37), metadata={op_name="jit(_fft_and_rslice)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324 scheduling_name="add.11.35"}
+  %convert.3.35 = c128[64,24,24,24]{3,2,1,0} convert(%add.11.35), metadata={op_name="jit(_fft_and_rslice)/jit(main)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=323 scheduling_name="convert.3.35"}
+  %constant_30_1 = c128[] constant((0, 6.2831853071795862))
+  %broadcast.96.35 = c128[64,24,24,24]{3,2,1,0} broadcast(%constant_30_1), dimensions={}, metadata={scheduling_name="broadcast.96.35"}
+  %multiply.44.35 = c128[64,24,24,24]{3,2,1,0} multiply(%convert.3.35, %broadcast.96.35), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=323 scheduling_name="multiply.44.35"}
+  %real.3.21 = f64[64,24,24,24]{3,2,1,0} real(%multiply.44.35), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="real.3.21"}
+  %exponential.6.11 = f64[64,24,24,24]{3,2,1,0} exponential(%real.3.21), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="exponential.6.11"}
+  %constant_31_1 = f64[] constant(inf)
+  %broadcast.97.5 = f64[64,24,24,24]{3,2,1,0} broadcast(%constant_31_1), dimensions={}, metadata={scheduling_name="broadcast.97.5"}
+  %compare.10.5 = pred[64,24,24,24]{3,2,1,0} compare(%exponential.6.11, %broadcast.97.5), direction=EQ, metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="compare.10.5"}
+  %constant_32_1 = f64[] constant(0.5)
+  %broadcast.98.5 = f64[64,24,24,24]{3,2,1,0} broadcast(%constant_32_1), dimensions={}, metadata={scheduling_name="broadcast.98.5"}
+  %multiply.45.7 = f64[64,24,24,24]{3,2,1,0} multiply(%real.3.21, %broadcast.98.5), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="multiply.45.7"}
+  %exponential.7.5 = f64[64,24,24,24]{3,2,1,0} exponential(%multiply.45.7), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="exponential.7.5"}
+  %imag.3.9 = f64[64,24,24,24]{3,2,1,0} imag(%multiply.44.35), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="imag.3.9"}
+  %cosine.3.3 = f64[64,24,24,24]{3,2,1,0} cosine(%imag.3.9), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="cosine.3.3"}
+  %multiply.46.3 = f64[64,24,24,24]{3,2,1,0} multiply(%exponential.7.5, %cosine.3.3), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="multiply.46.3"}
+  %multiply.47.3 = f64[64,24,24,24]{3,2,1,0} multiply(%multiply.46.3, %exponential.7.5), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="multiply.47.3"}
+  %multiply.48.1 = f64[64,24,24,24]{3,2,1,0} multiply(%exponential.6.11, %cosine.3.3), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="multiply.48.1"}
+  %select.13.1 = f64[64,24,24,24]{3,2,1,0} select(%compare.10.5, %multiply.47.3, %multiply.48.1), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="select.13.1"}
+  %constant_33_1_clone_1 = f64[] constant(0)
+  %broadcast.99.4.clone.1 = f64[64,24,24,24]{3,2,1,0} broadcast(%constant_33_1_clone_1), dimensions={}, metadata={scheduling_name="broadcast.99.4.clone.1"}
+  %compare.11.3.clone.1 = pred[64,24,24,24]{3,2,1,0} compare(%imag.3.9, %broadcast.99.4.clone.1), direction=EQ, metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="compare.11.3.clone.1"}
+  %sine.3.3.clone.1 = f64[64,24,24,24]{3,2,1,0} sine(%imag.3.9), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="sine.3.3.clone.1"}
+  %multiply.49.5.clone.1 = f64[64,24,24,24]{3,2,1,0} multiply(%exponential.7.5, %sine.3.3.clone.1), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="multiply.49.5.clone.1"}
+  %multiply.50.5.clone.1 = f64[64,24,24,24]{3,2,1,0} multiply(%multiply.49.5.clone.1, %exponential.7.5), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="multiply.50.5.clone.1"}
+  %multiply.51.3.clone.1 = f64[64,24,24,24]{3,2,1,0} multiply(%exponential.6.11, %sine.3.3.clone.1), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="multiply.51.3.clone.1"}
+  %select.14.3.clone.1 = f64[64,24,24,24]{3,2,1,0} select(%compare.10.5, %multiply.50.5.clone.1, %multiply.51.3.clone.1), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="select.14.3.clone.1"}
+  %select.15.1.clone.1 = f64[64,24,24,24]{3,2,1,0} select(%compare.11.3.clone.1, %broadcast.99.4.clone.1, %select.14.3.clone.1), metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="select.15.1.clone.1"}
+  ROOT %tuple = (f64[64,24,24,24]{3,2,1,0}, f64[64,24,24,24]{3,2,1,0}) tuple(%select.13.1, %select.15.1.clone.1), metadata={scheduling_name="tuple"}
+}
+
+%fused_multiply (param_0_0: f64[24], param_0_1: f64[64], param_2.89: f64[64], param_3.73: f64[64]) -> (f64[1,1,64,24], f64[1,1,64,24], f64[1,1,64,24]) {
+  %param_0_1 = f64[64]{0} parameter(1), metadata={scheduling_name="param_0_1"}
+  %broadcast.83.2 = f64[1,1,64,24]{3,2,1,0} broadcast(%param_0_1), dimensions={2}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324 scheduling_name="broadcast.83.2"}
+  %param_0_0 = f64[24]{0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %broadcast.84.4 = f64[1,1,64,24]{3,2,1,0} broadcast(%param_0_0), dimensions={3}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324 scheduling_name="broadcast.84.4"}
+  %multiply.40.2 = f64[1,1,64,24]{3,2,1,0} multiply(%broadcast.83.2, %broadcast.84.4), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324 scheduling_name="multiply.40.2"}
+  %param_2.89 = f64[64]{0} parameter(2), metadata={scheduling_name="param_2.89"}
+  %broadcast.87.2 = f64[1,1,64,24]{3,2,1,0} broadcast(%param_2.89), dimensions={2}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=325 scheduling_name="broadcast.87.2"}
+  %multiply.41.2 = f64[1,1,64,24]{3,2,1,0} multiply(%broadcast.87.2, %broadcast.84.4), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=325 scheduling_name="multiply.41.2"}
+  %param_3.73 = f64[64]{0} parameter(3), metadata={scheduling_name="param_3.73"}
+  %broadcast.93.2 = f64[1,1,64,24]{3,2,1,0} broadcast(%param_3.73), dimensions={2}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=326 scheduling_name="broadcast.93.2"}
+  %multiply.43.2 = f64[1,1,64,24]{3,2,1,0} multiply(%broadcast.93.2, %broadcast.84.4), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=326 scheduling_name="multiply.43.2"}
+  ROOT %tuple.1 = (f64[1,1,64,24]{3,2,1,0}, f64[1,1,64,24]{3,2,1,0}, f64[1,1,64,24]{3,2,1,0}) tuple(%multiply.40.2, %multiply.41.2, %multiply.43.2), metadata={scheduling_name="tuple.1"}
+}
+
+ENTRY %main.112_spmd (param.2: c128[64,9,2,24,24,24], param.1.0: s64[]) -> c128[64,9,2,6656] {
+  %param.1.0 = s64[] parameter(1), sharding={replicated}, metadata={op_name="r_start_dyn" scheduling_name="param.1.0"}
+  %constant_28_0 = f64[64]{0} constant({...}), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=326}
+  %constant_26_0 = f64[64]{0} constant({...}), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=325}
+  %constant_25_0 = f64[24]{0} constant({...}), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324}
+  %constant_24_0 = f64[64]{0} constant({...}), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324}
+  %param.2 = c128[64,9,2,24,24,24]{5,4,3,2,1,0} parameter(0), sharding={devices=[1,4,1,1,1,1]<=[4]}, metadata={op_name="psi_G" scheduling_name="param.2"}
+  %loop_multiply_fusion = (f64[1,1,64,24]{3,2,1,0}, f64[1,1,64,24]{3,2,1,0}, f64[1,1,64,24]{3,2,1,0}) fusion(%constant_25_0, %constant_24_0, %constant_26_0, %constant_28_0), kind=kLoop, calls=%fused_multiply, metadata={scheduling_name="loop_multiply_fusion"}
+  %get-tuple-element.4 = f64[1,1,64,24]{3,2,1,0} get-tuple-element(%loop_multiply_fusion), index=2, metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=326 scheduling_name="get-tuple-element.4"}
+  %get-tuple-element.3 = f64[1,1,64,24]{3,2,1,0} get-tuple-element(%loop_multiply_fusion), index=1, metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=325 scheduling_name="get-tuple-element.3"}
+  %get-tuple-element.2 = f64[1,1,64,24]{3,2,1,0} get-tuple-element(%loop_multiply_fusion), index=0, metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324 scheduling_name="get-tuple-element.2"}
+  %loop_select_fusion = (f64[64,24,24,24]{3,2,1,0}, f64[64,24,24,24]{3,2,1,0}) fusion(%get-tuple-element.4, %get-tuple-element.3, %get-tuple-element.2), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="loop_select_fusion"}
+  %get-tuple-element.1 = f64[64,24,24,24]{3,2,1,0} get-tuple-element(%loop_select_fusion), index=1, metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="get-tuple-element.1"}
+  %get-tuple-element = f64[64,24,24,24]{3,2,1,0} get-tuple-element(%loop_select_fusion), index=0, metadata={op_name="jit(_fft_and_rslice)/jit(main)/exp" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=322 scheduling_name="get-tuple-element"}
+  %fft.2.0 = c128[64,9,2,24,24,24]{5,4,3,2,1,0} fft(%param.2), fft_type=IFFT, fft_length={24,24,24}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax/src/common/fft_helpers.py" source_line=86 scheduling_name="fft.2.0"}
+  ROOT %loop_dynamic_slice_fusion = c128[64,9,2,6656]{3,2,1,0} fusion(%fft.2.0, %get-tuple-element, %get-tuple-element.1, %param.1.0), kind=kLoop, calls=%fused_dynamic_slice, metadata={op_name="jit(_fft_and_rslice)/jit(main)/jit(shmap_body)/dynamic_slice" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=338 scheduling_name="loop_dynamic_slice_fusion"}
+}
+

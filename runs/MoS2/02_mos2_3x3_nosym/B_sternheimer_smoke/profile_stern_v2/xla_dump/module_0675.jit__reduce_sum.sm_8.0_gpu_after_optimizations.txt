@@ -1,0 +1,21 @@
+HloModule jit__reduce_sum, is_scheduled=true, entry_computation_layout={(c128[9,1]{1,0})->c128[1]{0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="fb029f2ea2a483e21b33f26b65f1db2c"}
+
+%region_0.3 (Arg_0.4: c128[], Arg_1.5: c128[]) -> c128[] {
+  %Arg_1.5 = c128[] parameter(1), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_1.5"}
+  %Arg_0.4 = c128[] parameter(0), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" scheduling_name="Arg_0.4"}
+  ROOT %add.2 = c128[] add(%Arg_0.4, %Arg_1.5), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=281 scheduling_name="add.2"}
+}
+
+%fused_reduce (param_0.2: c128[9,1]) -> c128[] {
+  %param_0.2 = c128[9,1]{1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %bitcast.26.1 = c128[9]{0} bitcast(%param_0.2), metadata={scheduling_name="bitcast.26.1"}
+  %constant_2_1 = c128[] constant((0, 0))
+  ROOT %reduce.2 = c128[] reduce(%bitcast.26.1, %constant_2_1), dimensions={0}, to_apply=%region_0.3, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=281 scheduling_name="reduce.2"}
+}
+
+ENTRY %main.8 (Arg_0.1.0: c128[9,1]) -> c128[1] {
+  %Arg_0.1.0 = c128[9,1]{1,0} parameter(0), metadata={op_name="a" scheduling_name="Arg_0.1.0"}
+  %loop_reduce_fusion = c128[] fusion(%Arg_0.1.0), kind=kLoop, calls=%fused_reduce, metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=281 scheduling_name="loop_reduce_fusion"}
+  ROOT %bitcast.17.0 = c128[1]{0} bitcast(%loop_reduce_fusion), metadata={op_name="jit(_reduce_sum)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=281 scheduling_name="bitcast.17.0"}
+}
+

@@ -1,0 +1,101 @@
+BufferAssignment:
+allocation 0: size 471859200, output shape is |c128[960,960,32]|, maybe-live-out:
+ value: <9 input_transpose_fusion.1 @0> (size=471859200,offset=0): c128[30720,960]{1,0}
+ value: <13 input_transpose_fusion @0> (size=471859200,offset=0): c128[960,30720]{1,0}
+allocation 1: size 471859200, parameter 1, shape |c128[960,960,32]| at ShapeIndex {}:
+ value: <8 param.1.0 @0> (size=471859200,offset=0): c128[960,960,32]{2,1,0}
+allocation 2: size 14745600, parameter 0, shape |c128[960,960]| at ShapeIndex {}:
+ value: <6 param.2 @0> (size=14745600,offset=0): c128[960,960]{1,0}
+allocation 3: size 486604928, preallocated-temp:
+ value: <7 wrapped_transpose @0> (size=14745600,offset=471859328): c128[960,960]{1,0}
+ value: <10 triangular-solve.1.0{} @0> (size=16,offset=0): (c128[960,30720]{0,1}, s8[0]{0})
+ value: <11 triangular-solve.1.0{0} @0> (size=471859200,offset=128): c128[960,30720]{0,1}
+ value: <12 triangular-solve.1.0{1} @0> (size=0,offset=128): s8[0]{0}
+
+Total bytes used: 1445068928 (1.35GiB)
+
+Used values:
+<6 param.2 @0>
+ positions:
+  param.2
+ uses:
+  wrapped_transpose, operand 0
+ from instruction: %param.2 = c128[960,960]{1,0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.2"}
+<7 wrapped_transpose @0>
+ positions:
+  wrapped_transpose
+  bitcast.50.0
+ uses:
+  bitcast.50.0, operand 0
+  triangular-solve.1.0, operand 0
+ from instruction: %wrapped_transpose = c128[960,960]{1,0} fusion(%param.2), kind=kInput, calls=%wrapped_transpose_computation, metadata={op_name="a" scheduling_name="wrapped_transpose"}
+<8 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  input_transpose_fusion.1, operand 0
+ from instruction: %param.1.0 = c128[960,960,32]{2,1,0} parameter(1), sharding={replicated}, metadata={op_name="b" scheduling_name="param.1.0"}
+<9 input_transpose_fusion.1 @0>
+ positions:
+  input_transpose_fusion.1
+  bitcast.57.0
+ uses:
+  bitcast.57.0, operand 0
+  triangular-solve.1.0, operand 1
+ from instruction: %input_transpose_fusion.1 = c128[30720,960]{1,0} fusion(%param.1.0), kind=kInput, calls=%fused_transpose.1, metadata={op_name="b" scheduling_name="input_transpose_fusion.1"}
+<10 triangular-solve.1.0{} @0>
+ positions:
+  triangular-solve.1.0 {}
+ uses:
+  get-tuple-element.1, operand 0 {}
+ from instruction: %triangular-solve.1.0 = (c128[960,30720]{0,1}, s8[0]{0}) custom-call(%bitcast.50.0, %bitcast.57.0), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_solve_triangular)/jit(main)/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600 scheduling_name="triangular-solve.1.0"}, backend_config={"left_side":true,"lower":true,"unit_diagonal":false,"transpose_a":"ADJOINT"}
+<11 triangular-solve.1.0{0} @0>
+ positions:
+  triangular-solve.1.0 {0}
+  get-tuple-element.1
+ uses:
+  input_transpose_fusion, operand 0
+ from instruction: %triangular-solve.1.0 = (c128[960,30720]{0,1}, s8[0]{0}) custom-call(%bitcast.50.0, %bitcast.57.0), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_solve_triangular)/jit(main)/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600 scheduling_name="triangular-solve.1.0"}, backend_config={"left_side":true,"lower":true,"unit_diagonal":false,"transpose_a":"ADJOINT"}
+<12 triangular-solve.1.0{1} @0>
+ positions:
+  triangular-solve.1.0 {1}
+ uses:
+ from instruction: %triangular-solve.1.0 = (c128[960,30720]{0,1}, s8[0]{0}) custom-call(%bitcast.50.0, %bitcast.57.0), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_solve_triangular)/jit(main)/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600 scheduling_name="triangular-solve.1.0"}, backend_config={"left_side":true,"lower":true,"unit_diagonal":false,"transpose_a":"ADJOINT"}
+<13 input_transpose_fusion @0>
+ positions:
+  input_transpose_fusion
+  bitcast.43.0
+ uses:
+  bitcast.43.0, operand 0
+ from instruction: %input_transpose_fusion = c128[960,30720]{1,0} fusion(%get-tuple-element.1), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_solve_triangular)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=600 scheduling_name="input_transpose_fusion"}
+
+
+HloLiveRange (max 10):
+  InstructionSequence:
+    0:param.1.0
+    1:param.2
+    2:wrapped_transpose
+    3:bitcast.50.0
+    4:input_transpose_fusion.1
+    5:bitcast.57.0
+    6:triangular-solve.1.0
+    7:get-tuple-element.1
+    8:input_transpose_fusion
+    9:bitcast.43.0
+  BufferLiveRange:
+    param.2{}:0-10
+    wrapped_transpose{}:2-6
+    param.1.0{}:0-10
+    input_transpose_fusion.1{}:4-6
+    triangular-solve.1.0{}:6-7
+    triangular-solve.1.0{0}:6-8
+    triangular-solve.1.0{1}:6-6
+    input_transpose_fusion{}:8-10
+  Live ranges at 6 (peak):
+    param.2: 14745600 bytes
+    wrapped_transpose: 14745600 bytes
+    param.1.0: 471859200 bytes
+    input_transpose_fusion.1: 471859200 bytes
+    triangular-solve.1.0: 16 bytes
+    triangular-solve.1.0: 16 bytes
+    triangular-solve.1.0: 16 bytes

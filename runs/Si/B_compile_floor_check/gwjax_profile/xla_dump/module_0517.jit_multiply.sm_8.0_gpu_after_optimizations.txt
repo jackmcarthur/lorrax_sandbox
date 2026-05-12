@@ -1,0 +1,15 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(c128[], f64[])->c128[]}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="4ca5b07293ed0c7a83d9974ab123d5d6"}
+
+%fused_multiply (param_0: c128[], param_1.1: f64[]) -> c128[] {
+  %param_0 = c128[] parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.1 = f64[] parameter(1), metadata={scheduling_name="param_1.1"}
+  %convert.2.1 = c128[] convert(%param_1.1), metadata={op_name="jit(multiply)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/chi_from_dipole.py" source_line=53 scheduling_name="convert.2.1"}
+  ROOT %multiply.2.1 = c128[] multiply(%param_0, %convert.2.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/chi_from_dipole.py" source_line=53 scheduling_name="multiply.2.1"}
+}
+
+ENTRY %main.5 (Arg_0.1.0: c128[], Arg_1.2.0: f64[]) -> c128[] {
+  %Arg_1.2.0 = f64[] parameter(1), metadata={op_name="y" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[] parameter(0), metadata={op_name="x" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_multiply_fusion = c128[] fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/chi_from_dipole.py" source_line=53 scheduling_name="loop_multiply_fusion"}
+}
+

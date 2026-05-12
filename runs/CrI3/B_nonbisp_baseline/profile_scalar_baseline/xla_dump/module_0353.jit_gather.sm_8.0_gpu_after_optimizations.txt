@@ -1,0 +1,20 @@
+HloModule jit_gather, is_scheduled=true, entry_computation_layout={(c128[6,6,1,900,450]{4,3,2,1,0}, s32[3]{0})->c128[900,450]{1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=8, frontend_attributes={fingerprint_before_lhs="ca4b2ed683279e94814f4eca4db6e762"}
+
+%fused_dynamic_slice (param_0: c128[6,6,1,900,450], param_1.2: s32[3]) -> c128[1,1,1,900,450] {
+  %param_0 = c128[6,6,1,900,450]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.2 = s32[3]{0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %slice.37.1 = s32[1]{0} slice(%param_1.2), slice={[0:1]}, metadata={scheduling_name="slice.37.1"}
+  %bitcast.45.1 = s32[] bitcast(%slice.37.1), metadata={scheduling_name="bitcast.45.1"}
+  %slice.38.1 = s32[1]{0} slice(%param_1.2), slice={[1:2]}, metadata={scheduling_name="slice.38.1"}
+  %bitcast.50.1 = s32[] bitcast(%slice.38.1), metadata={scheduling_name="bitcast.50.1"}
+  %constant_22_1 = s32[] constant(0)
+  ROOT %dynamic-slice.8.1 = c128[1,1,1,900,450]{4,3,2,1,0} dynamic-slice(%param_0, %bitcast.45.1, %bitcast.50.1, %constant_22_1, %constant_22_1, /*index=5*/%constant_22_1), dynamic_slice_sizes={1,1,1,900,450}, metadata={scheduling_name="dynamic-slice.8.1"}
+}
+
+ENTRY %main.4_spmd (param.2.0: c128[6,6,1,900,450], param.3.0: s32[3]) -> c128[900,450] {
+  %param.3.0 = s32[3]{0} parameter(1), sharding={replicated}, metadata={op_name="args[1]" scheduling_name="param.3.0"}
+  %param.2.0 = c128[6,6,1,900,450]{4,3,2,1,0} parameter(0), sharding={devices=[1,1,1,2,4]<=[8]}, metadata={op_name="args[0]" scheduling_name="param.2.0"}
+  %loop_dynamic_slice_fusion = c128[1,1,1,900,450]{4,3,2,1,0} fusion(%param.2.0, %param.3.0), kind=kLoop, calls=%fused_dynamic_slice, metadata={scheduling_name="loop_dynamic_slice_fusion"}
+  ROOT %bitcast.2.0 = c128[900,450]{1,0} bitcast(%loop_dynamic_slice_fusion), metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_init.py" source_line=795 scheduling_name="bitcast.2.0"}
+}
+

@@ -1,0 +1,28 @@
+HloModule jit_add, is_scheduled=true, entry_computation_layout={(c128[9,168,168]{2,1,0}, c128[1,672,672]{2,1,0})->c128[9,168,168]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16, frontend_attributes={fingerprint_before_lhs="aecbd5100db7c933bb5d03d7fab63ed1"}
+
+%fused_add (param_0.3: c128[9,168,168], param_1.5: c128[1,672,672], param_2.6: s32[16], param_3.8: u32[], param_4.7: s32[16]) -> c128[9,168,168] {
+  %param_0.3 = c128[9,168,168]{2,1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %param_1.5 = c128[1,672,672]{2,1,0} parameter(1), metadata={scheduling_name="param_1.5"}
+  %constant_6 = s32[] constant(0), metadata={op_name="jit(add)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=538}
+  %param_4.7 = s32[16]{0} parameter(4), metadata={scheduling_name="param_4.7"}
+  %param_3.8 = u32[] parameter(3), metadata={scheduling_name="param_3.8"}
+  %dynamic-slice.9.3 = s32[1]{0} dynamic-slice(%param_4.7, %param_3.8), dynamic_slice_sizes={1}, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=538 scheduling_name="dynamic-slice.9.3"}
+  %bitcast.67.3 = s32[] bitcast(%dynamic-slice.9.3), metadata={scheduling_name="bitcast.67.3"}
+  %param_2.6 = s32[16]{0} parameter(2), metadata={scheduling_name="param_2.6"}
+  %dynamic-slice.10.3 = s32[1]{0} dynamic-slice(%param_2.6, %param_3.8), dynamic_slice_sizes={1}, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=538 scheduling_name="dynamic-slice.10.3"}
+  %bitcast.73.3 = s32[] bitcast(%dynamic-slice.10.3), metadata={scheduling_name="bitcast.73.3"}
+  %dynamic-slice.11.3 = c128[1,168,168]{2,1,0} dynamic-slice(%param_1.5, %constant_6, %bitcast.67.3, %bitcast.73.3), dynamic_slice_sizes={1,168,168}, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=538 scheduling_name="dynamic-slice.11.3"}
+  %bitcast.75.3 = c128[168,168]{1,0} bitcast(%dynamic-slice.11.3), metadata={scheduling_name="bitcast.75.3"}
+  %broadcast.4.3 = c128[9,168,168]{2,1,0} broadcast(%bitcast.75.3), dimensions={1,2}, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=538 scheduling_name="broadcast.4.3"}
+  ROOT %add.3.1 = c128[9,168,168]{2,1,0} add(%param_0.3, %broadcast.4.3), metadata={op_name="jit(add)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=538 scheduling_name="add.3.1"}
+}
+
+ENTRY %main.7_spmd (param.2: c128[9,168,168], param.1.0: c128[1,672,672]) -> c128[9,168,168] {
+  %constant_2_0 = s32[16]{0} constant({...}), metadata={op_name="jit(add)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=538}
+  %constant_1_0 = s32[16]{0} constant({...}), metadata={op_name="jit(add)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=538}
+  %param.1.0 = c128[1,672,672]{2,1,0} parameter(1), sharding={replicated}, metadata={op_name="y" scheduling_name="param.1.0"}
+  %param.2 = c128[9,168,168]{2,1,0} parameter(0), sharding={devices=[1,4,4]<=[16]}, metadata={op_name="x" scheduling_name="param.2"}
+  %partition-id.1 = u32[] partition-id(), metadata={scheduling_name="partition-id.1"}
+  ROOT %loop_add_fusion = c128[9,168,168]{2,1,0} fusion(%param.2, %param.1.0, %constant_2_0, %partition-id.1, %constant_1_0), kind=kLoop, calls=%fused_add, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=538 scheduling_name="loop_add_fusion"}
+}
+

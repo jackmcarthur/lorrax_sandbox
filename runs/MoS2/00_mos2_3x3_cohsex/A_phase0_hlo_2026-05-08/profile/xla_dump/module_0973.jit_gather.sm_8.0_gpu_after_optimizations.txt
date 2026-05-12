@@ -1,0 +1,41 @@
+HloModule jit_gather, is_scheduled=true, entry_computation_layout={(c128[9,160,160]{2,1,0}, s32[2]{0})->c128[9,160,160]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16, frontend_attributes={fingerprint_before_lhs="4317cd00a19b10bc58364d2f3a01f396"}
+
+%fused_transpose (param_0.3: c128[9,160,640]) -> c128[160,9,640] {
+  %param_0.3 = c128[9,160,640]{1,0,2} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.78.1 = c128[640,9,160]{2,1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.78.1"}
+  ROOT %transpose.9.1 = c128[160,9,640]{2,1,0} transpose(%bitcast.78.1), dimensions={2,1,0}, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/tagged_arrays.py" source_line=294 scheduling_name="transpose.9.1"}
+}
+
+%fused_transpose.1 (param_0.5: c128[9,160,160]) -> c128[160,1440] {
+  %param_0.5 = c128[9,160,160]{2,1,0} parameter(0), metadata={scheduling_name="param_0.5"}
+  %bitcast.71.1 = c128[1440,160]{1,0} bitcast(%param_0.5), metadata={scheduling_name="bitcast.71.1"}
+  ROOT %transpose.8.1 = c128[160,1440]{1,0} transpose(%bitcast.71.1), dimensions={1,0}, metadata={op_name="args[0]" scheduling_name="transpose.8.1"}
+}
+
+%fused_transpose.2 (param_0.10: c128[9,640,640], param_1.9: s32[2]) -> c128[9,160,160] {
+  %param_0.10 = c128[9,640,640]{2,0,1} parameter(0), metadata={scheduling_name="param_0.10"}
+  %bitcast.85.3 = c128[640,9,640]{2,1,0} bitcast(%param_0.10), metadata={scheduling_name="bitcast.85.3"}
+  %param_1.9 = s32[2]{0} parameter(1), metadata={scheduling_name="param_1.9"}
+  %slice.29.1 = s32[1]{0} slice(%param_1.9), slice={[0:1]}, metadata={scheduling_name="slice.29.1"}
+  %bitcast.91.3 = s32[] bitcast(%slice.29.1), metadata={scheduling_name="bitcast.91.3"}
+  %constant_21_1 = s32[] constant(0)
+  %slice.30.1 = s32[1]{0} slice(%param_1.9), slice={[1:2]}, metadata={scheduling_name="slice.30.1"}
+  %bitcast.97.3 = s32[] bitcast(%slice.30.1), metadata={scheduling_name="bitcast.97.3"}
+  %dynamic-slice.8.3 = c128[160,9,160]{2,1,0} dynamic-slice(%bitcast.85.3, %bitcast.91.3, %constant_21_1, %bitcast.97.3), dynamic_slice_sizes={160,9,160}, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/tagged_arrays.py" source_line=294 scheduling_name="dynamic-slice.8.3"}
+  ROOT %transpose.10.1 = c128[9,160,160]{2,1,0} transpose(%dynamic-slice.8.3), dimensions={1,0,2}, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/tagged_arrays.py" source_line=294 scheduling_name="transpose.10.1"}
+}
+
+ENTRY %main.4_spmd (param.2.0: c128[9,160,160], param.3.0: s32[2]) -> c128[9,160,160] {
+  %param.2.0 = c128[9,160,160]{2,1,0} parameter(0), sharding={devices=[1,4,4]<=[16]}, metadata={op_name="args[0]" scheduling_name="param.2.0"}
+  %param.3.0 = s32[2]{0} parameter(1), sharding={replicated}, metadata={op_name="args[1]" scheduling_name="param.3.0"}
+  %input_transpose_fusion.1 = c128[160,1440]{1,0} fusion(%param.2.0), kind=kInput, calls=%fused_transpose.1, metadata={op_name="args[0]" scheduling_name="input_transpose_fusion.1"}
+  %bitcast.75.0 = c128[9,160,160]{1,0,2} bitcast(%input_transpose_fusion.1), metadata={scheduling_name="bitcast.75.0"}
+  %all-gather-start = (c128[9,160,160]{1,0,2}, c128[9,160,640]{1,0,2}) all-gather-start(%bitcast.75.0), channel_id=1, replica_groups=[4,4]<=[16], dimensions={2}, use_global_device_ids=true, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/tagged_arrays.py" source_line=294 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done = c128[9,160,640]{1,0,2} all-gather-done(%all-gather-start), metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/tagged_arrays.py" source_line=294 scheduling_name="all-gather-done"}
+  %input_transpose_fusion = c128[160,9,640]{2,1,0} fusion(%all-gather-done), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/tagged_arrays.py" source_line=294 scheduling_name="input_transpose_fusion"}
+  %bitcast.82.0 = c128[9,160,640]{2,0,1} bitcast(%input_transpose_fusion), metadata={scheduling_name="bitcast.82.0"}
+  %all-gather-start.1 = (c128[9,160,640]{2,0,1}, c128[9,640,640]{2,0,1}) all-gather-start(%bitcast.82.0), channel_id=2, replica_groups=[4,4]<=[4,4]T(1,0), dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/tagged_arrays.py" source_line=294 scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done.1 = c128[9,640,640]{2,0,1} all-gather-done(%all-gather-start.1), metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/tagged_arrays.py" source_line=294 scheduling_name="all-gather-done.1"}
+  ROOT %loop_transpose_fusion = c128[9,160,160]{2,1,0} fusion(%all-gather-done.1, %param.3.0), kind=kLoop, calls=%fused_transpose.2, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/file_io/tagged_arrays.py" source_line=294 scheduling_name="loop_transpose_fusion"}
+}
+

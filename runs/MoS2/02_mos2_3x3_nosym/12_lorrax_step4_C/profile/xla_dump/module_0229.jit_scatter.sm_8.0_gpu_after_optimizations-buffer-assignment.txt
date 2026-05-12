@@ -1,0 +1,77 @@
+BufferAssignment:
+allocation 0: size 192, output shape is |f64[24]|, maybe-live-out:
+ value: <16 copy.2 @0> (size=192,offset=0): f64[24]{0}
+ value: <20 loop_dynamic_update_slice_fusion @0> (size=192,offset=0): f64[24]{0}
+allocation 1: size 192, parameter 0, shape |f64[24]| at ShapeIndex {}:
+ value: <15 Arg_0.1.0 @0> (size=192,offset=0): f64[24]{0}
+allocation 2: size 96, parameter 2, shape |f64[12]| at ShapeIndex {}:
+ value: <17 Arg_2.3.0 @0> (size=96,offset=0): f64[12]{0}
+allocation 3: size 4, parameter 1, shape |s32[1]| at ShapeIndex {}:
+ value: <18 Arg_1.2.0 @0> (size=4,offset=0): s32[1]{0}
+allocation 4: size 96, preallocated-temp:
+ value: <19 loop_select_fusion @0> (size=96,offset=0): f64[12]{0}
+
+Total bytes used: 580 (580B)
+
+Used values:
+<15 Arg_0.1.0 @0>
+ positions:
+  Arg_0.1.0
+ uses:
+  copy.2, operand 0
+ from instruction: %Arg_0.1.0 = f64[24]{0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+<16 copy.2 @0>
+ positions:
+  copy.2
+ uses:
+  loop_dynamic_update_slice_fusion, operand 0
+  loop_select_fusion, operand 1
+ from instruction: %copy.2 = f64[24]{0} copy(%Arg_0.1.0)
+<17 Arg_2.3.0 @0>
+ positions:
+  Arg_2.3.0
+ uses:
+  loop_select_fusion, operand 0
+ from instruction: %Arg_2.3.0 = f64[12]{0} parameter(2), metadata={op_name="args[2]" scheduling_name="Arg_2.3.0"}
+<18 Arg_1.2.0 @0>
+ positions:
+  Arg_1.2.0
+ uses:
+  loop_dynamic_update_slice_fusion, operand 2
+  loop_select_fusion, operand 2
+ from instruction: %Arg_1.2.0 = s32[1]{0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+<19 loop_select_fusion @0>
+ positions:
+  loop_select_fusion
+ uses:
+  loop_dynamic_update_slice_fusion, operand 1
+ from instruction: %loop_select_fusion = f64[12]{0} fusion(%Arg_2.3.0, %copy.2, %Arg_1.2.0), kind=kLoop, calls=%fused_select, metadata={scheduling_name="loop_select_fusion"}
+<20 loop_dynamic_update_slice_fusion @0>
+ positions:
+  loop_dynamic_update_slice_fusion
+ uses:
+ from instruction: %loop_dynamic_update_slice_fusion = f64[24]{0} fusion(%copy.2, %loop_select_fusion, %Arg_1.2.0), kind=kLoop, calls=%fused_dynamic_update_slice, metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=47 scheduling_name="loop_dynamic_update_slice_fusion"}
+
+
+HloLiveRange (max 6):
+  InstructionSequence:
+    0:Arg_1.2.0
+    1:Arg_2.3.0
+    2:Arg_0.1.0
+    3:copy.2
+    4:loop_select_fusion
+    5:loop_dynamic_update_slice_fusion
+  BufferLiveRange:
+    Arg_0.1.0{}:0-6
+    copy.2{}:3-5
+    Arg_2.3.0{}:0-6
+    Arg_1.2.0{}:0-6
+    loop_select_fusion{}:4-5
+    loop_dynamic_update_slice_fusion{}:5-6
+  Live ranges at 5 (peak):
+    Arg_0.1.0: 192 bytes
+    copy.2: 192 bytes
+    Arg_2.3.0: 96 bytes
+    Arg_1.2.0: 4 bytes
+    loop_select_fusion: 96 bytes
+    loop_dynamic_update_slice_fusion: 192 bytes

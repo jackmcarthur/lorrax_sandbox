@@ -1,0 +1,58 @@
+HloModule jit__kernel, is_scheduled=true, input_output_alias={ {0}: (0, {}, may-alias), {1}: (1, {}, may-alias) }, entry_computation_layout={(c128[9,334,334]{2,1,0}, c128[9,334]{1,0}, c128[9,46080,167]{2,1,0}, c128[9,2419]{1,0}, c128[9,1,24,24,80]{4,3,2,1,0}, /*index=5*/s32[], s32[], s32[])->(c128[9,334,334]{2,1,0}, c128[9,334]{1,0})}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,false,false,false,false}, allow_spmd_sharding_propagation_to_output={false,false}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="096f98aeaa2ca865ba699cce0457af02"}
+
+%fused_gather (param_0.3: s64[2419,1], param_1.3: c128[9,167,24,24,80]) -> c128[2419,1,9,167] {
+  %param_1.3 = c128[9,167,24,24,80]{4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1.3"}
+  %bitcast.137.1 = c128[46080,9,167]{0,2,1} bitcast(%param_1.3), metadata={scheduling_name="bitcast.137.1"}
+  %param_0.3 = s64[2419,1]{1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  ROOT %gather.2.1 = c128[2419,1,9,167]{0,2,3,1} gather(%bitcast.137.1, %param_0.3), offset_dims={1,2,3}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,9,167}, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366 scheduling_name="gather.2.1"}
+}
+
+%fused_transpose (param_0.10: c128[9,1,24,24,80], param_1.8: c128[9,46080,167]) -> c128[9,167,24,24,80] {
+  %param_1.8 = c128[9,46080,167]{2,1,0} parameter(1), metadata={scheduling_name="param_1.8"}
+  %transpose.8.1 = c128[9,167,46080]{2,1,0} transpose(%param_1.8), dimensions={0,2,1}, metadata={op_name="jit(_kernel)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=356 scheduling_name="transpose.8.1"}
+  %bitcast.126.1 = c128[9,167,24,24,80]{4,3,2,1,0} bitcast(%transpose.8.1), metadata={scheduling_name="bitcast.126.1"}
+  %param_0.10 = c128[9,1,24,24,80]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.10"}
+  %bitcast.130.3 = c128[9,24,24,80]{3,2,1,0} bitcast(%param_0.10), metadata={scheduling_name="bitcast.130.3"}
+  %broadcast.15.3 = c128[9,167,24,24,80]{4,3,2,1,0} broadcast(%bitcast.130.3), dimensions={0,2,3,4}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=359 scheduling_name="broadcast.15.3"}
+  ROOT %multiply.6.1 = c128[9,167,24,24,80]{4,3,2,1,0} multiply(%bitcast.126.1, %broadcast.15.3), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=359 scheduling_name="multiply.6.1"}
+}
+
+%fused_complex (param_0.24: c128[9,2419], param_1.25: c128[9,334,2419]) -> c128[334,9,2419] {
+  %param_1.25 = c128[9,334,2419]{2,0,1} parameter(1), metadata={scheduling_name="param_1.25"}
+  %bitcast.145.7 = c128[334,9,2419]{2,1,0} bitcast(%param_1.25), metadata={scheduling_name="bitcast.145.7"}
+  %param_0.24 = c128[9,2419]{1,0} parameter(0), metadata={scheduling_name="param_0.24"}
+  %broadcast.17.7 = c128[334,9,2419]{2,1,0} broadcast(%param_0.24), dimensions={1,2}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=399 scheduling_name="broadcast.17.7"}
+  %multiply.7.7 = c128[334,9,2419]{2,1,0} multiply(%bitcast.145.7, %broadcast.17.7), metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=399 scheduling_name="multiply.7.7"}
+  %real.3.3 = f64[334,9,2419]{2,1,0} real(%multiply.7.7), metadata={op_name="jit(_kernel)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=402 scheduling_name="real.3.3"}
+  %imag.3.3 = f64[334,9,2419]{2,1,0} imag(%multiply.7.7), metadata={op_name="jit(_kernel)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=402 scheduling_name="imag.3.3"}
+  %negate.3.1 = f64[334,9,2419]{2,1,0} negate(%imag.3.3), metadata={op_name="jit(_kernel)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=402 scheduling_name="negate.3.1"}
+  ROOT %complex.3.1 = c128[334,9,2419]{2,1,0} complex(%real.3.3, %negate.3.1), metadata={op_name="jit(_kernel)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=402 scheduling_name="complex.3.1"}
+}
+
+ENTRY %main.99_spmd (param.8: c128[9,334,334], param.7.0: c128[9,334], param.4.0: c128[9,46080,167], param.6.0: c128[9,2419], param.5.0: c128[9,1,24,24,80], param.1.0: s32[], param.2.0: s32[], param.3.0: s32[]) -> (c128[9,334,334], c128[9,334]) {
+  %param.5.0 = c128[9,1,24,24,80]{4,3,2,1,0} parameter(4), sharding={replicated}, metadata={op_name="phase_batch" scheduling_name="param.5.0"}
+  %param.4.0 = c128[9,46080,167]{2,1,0} parameter(2), sharding={devices=[1,1,4]<=[4]}, metadata={op_name="zeta_mu_disk" scheduling_name="param.4.0"}
+  %constant_21_0 = s64[2419,1]{1,0} constant({...}), metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366}
+  %param.6.0 = c128[9,2419]{1,0} parameter(3), sharding={replicated}, metadata={op_name="v_per_G_batch" scheduling_name="param.6.0"}
+  %param.3.0 = s32[] parameter(7), sharding={replicated}, metadata={op_name="nu_lo_dyn" scheduling_name="param.3.0"}
+  %param.2.0 = s32[] parameter(6), sharding={replicated}, metadata={op_name="mu_lo_dyn" scheduling_name="param.2.0"}
+  %param.1.0 = s32[] parameter(5), sharding={replicated}, metadata={op_name="q_lo_dyn" scheduling_name="param.1.0"}
+  %param.8 = c128[9,334,334]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="V_acc" scheduling_name="param.8"}
+  %param.7.0 = c128[9,334]{1,0} parameter(1), sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="g0_acc" scheduling_name="param.7.0"}
+  %input_transpose_fusion = c128[9,167,24,24,80]{4,3,2,1,0} fusion(%param.5.0, %param.4.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=359 scheduling_name="input_transpose_fusion"}
+  %fft.2.0 = c128[9,167,24,24,80]{4,3,2,1,0} fft(%input_transpose_fusion), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343 scheduling_name="fft.2.0"}
+  %loop_gather_fusion = c128[2419,1,9,167]{0,2,3,1} fusion(%constant_21_0, %fft.2.0), kind=kLoop, calls=%fused_gather, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=366 scheduling_name="loop_gather_fusion"}
+  %bitcast.158.0 = c128[9,167,2419]{2,0,1} bitcast(%loop_gather_fusion), metadata={scheduling_name="bitcast.158.0"}
+  %collective-permute-start = (c128[9,167,2419]{2,0,1}, c128[9,167,2419]{2,0,1}) collective-permute-start(%bitcast.158.0), channel_id=2, source_target_pairs={{0,0},{1,2},{2,1},{3,3}}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=391 scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %collective-permute-done = c128[9,167,2419]{2,0,1} collective-permute-done(%collective-permute-start), metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=391 scheduling_name="collective-permute-done"}
+  %all-gather-start = (c128[9,167,2419]{2,0,1}, c128[9,334,2419]{2,0,1}) all-gather-start(%bitcast.158.0), channel_id=1, replica_groups={{0,1},{2,3}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=390 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done = c128[9,334,2419]{2,0,1} all-gather-done(%all-gather-start), metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=390 scheduling_name="all-gather-done"}
+  %all-gather-start.1 = (c128[9,167,2419]{2,0,1}, c128[9,334,2419]{2,0,1}) all-gather-start(%collective-permute-done), channel_id=3, replica_groups={{0,2},{1,3}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=391 scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":true,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %loop_complex_fusion = c128[334,9,2419]{2,1,0} fusion(%param.6.0, %all-gather-done), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(_kernel)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=402 scheduling_name="loop_complex_fusion"}
+  %all-gather-done.1 = c128[9,334,2419]{2,0,1} all-gather-done(%all-gather-start.1), metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=391 scheduling_name="all-gather-done.1"}
+  %bitcast.164.0 = c128[334,9,2419]{2,1,0} bitcast(%all-gather-done.1), metadata={scheduling_name="bitcast.164.0"}
+  %custom-call.1.0 = (c128[9,334,334]{2,1,0}, s8[4194304]{0}) custom-call(%loop_complex_fusion, %bitcast.164.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_kernel)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=401 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["2"],"lhs_batch_dimensions":["1"],"rhs_batch_dimensions":["1"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"21771","rhs_stride":"21771","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.2 = c128[9,334,334]{2,1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(_kernel)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=401 scheduling_name="get-tuple-element.2"}
+  ROOT %tuple.2 = (c128[9,334,334]{2,1,0}, c128[9,334]{1,0}) tuple(%get-tuple-element.2, %param.7.0), metadata={scheduling_name="tuple.2"}
+}
+

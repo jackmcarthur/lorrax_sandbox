@@ -1,0 +1,149 @@
+HloModule jit_get_sqrt_v_and_phase, is_scheduled=true, entry_computation_layout={(f64[3]{0})->(c128[17252]{0}, c128[1,24,24,80]{3,2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="16294a045979188945b6a17443ceea32"}
+
+%region_0.105 (Arg_0.106: f64[], Arg_1.107: f64[]) -> f64[] {
+  %Arg_1.107 = f64[] parameter(1), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/reduce_sum" scheduling_name="Arg_1.107"}
+  %Arg_0.106 = f64[] parameter(0), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/reduce_sum" scheduling_name="Arg_0.106"}
+  ROOT %add.12 = f64[] add(%Arg_0.106, %Arg_1.107), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=400 scheduling_name="add.12"}
+}
+
+%fused_gather (param_0.50: s32[17252,1], param_1.185: f64[24,24,80,3], param_2.125: f64[3,3], param_3.81: f64[3]) -> c128[17252,1] {
+  %param_3.81 = f64[3]{0} parameter(3), metadata={scheduling_name="param_3.81"}
+  %slice.12.11 = f64[1]{0} slice(%param_3.81), slice={[0:1]}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=393 scheduling_name="slice.12.11"}
+  %constant_10_2 = f64[1]{0} constant({0.33333333333333331})
+  %multiply.61.11 = f64[1]{0} multiply(%slice.12.11, %constant_10_2), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=393 scheduling_name="multiply.61.11"}
+  %slice.13.11 = f64[1]{0} slice(%param_3.81), slice={[1:2]}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=394 scheduling_name="slice.13.11"}
+  %multiply.62.11 = f64[1]{0} multiply(%slice.13.11, %constant_10_2), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=394 scheduling_name="multiply.62.11"}
+  %slice.14.8 = f64[1]{0} slice(%param_3.81), slice={[2:3]}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=395 scheduling_name="slice.14.8"}
+  %concatenate.2.7 = f64[3]{0} concatenate(%multiply.61.11, %multiply.62.11, %slice.14.8), dimensions={0}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/concatenate" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=392 scheduling_name="concatenate.2.7"}
+  %broadcast.90.7 = f64[3,3]{1,0} broadcast(%concatenate.2.7), dimensions={1}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/a,ab->b/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=397 scheduling_name="broadcast.90.7"}
+  %param_2.125 = f64[3,3]{1,0} parameter(2), metadata={scheduling_name="param_2.125"}
+  %multiply.63.5 = f64[3,3]{1,0} multiply(%broadcast.90.7, %param_2.125), metadata={scheduling_name="multiply.63.5"}
+  %constant_3_1 = f64[] constant(0)
+  %reduce.4 = f64[3]{0} reduce(%multiply.63.5, %constant_3_1), dimensions={1}, to_apply=%region_0.105, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/a,ab->b/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=397 scheduling_name="reduce.4"}
+  %broadcast.91.25 = f64[24,24,80,3]{3,2,1,0} broadcast(%reduce.4), dimensions={3}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=398 scheduling_name="broadcast.91.25"}
+  %param_1.185 = f64[24,24,80,3]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1.185"}
+  %add.13.25 = f64[24,24,80,3]{3,2,1,0} add(%broadcast.91.25, %param_1.185), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=398 scheduling_name="add.13.25"}
+  %multiply.64.5 = f64[24,24,80,3]{3,2,1,0} multiply(%add.13.25, %add.13.25), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=400 scheduling_name="multiply.64.5"}
+  %reduce.109.5 = f64[24,24,80]{2,1,0} reduce(%multiply.64.5, %constant_3_1), dimensions={3}, to_apply=%region_0.105, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=400 scheduling_name="reduce.109.5"}
+  %constant_5_1 = f64[] constant(120)
+  %broadcast.92.1 = f64[24,24,80]{2,1,0} broadcast(%constant_5_1), dimensions={}, metadata={scheduling_name="broadcast.92.1"}
+  %compare.10.3 = pred[24,24,80]{2,1,0} compare(%reduce.109.5, %broadcast.92.1), direction=GT, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/gt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=412 scheduling_name="compare.10.3"}
+  %broadcast.93.14 = f64[24,24,80]{2,1,0} broadcast(%constant_3_1), dimensions={}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=402 scheduling_name="broadcast.93.14"}
+  %constant_17_1 = f64[] constant(1e-12)
+  %broadcast.94.1 = f64[24,24,80]{2,1,0} broadcast(%constant_17_1), dimensions={}, metadata={scheduling_name="broadcast.94.1"}
+  %compare.11.3 = pred[24,24,80]{2,1,0} compare(%reduce.109.5, %broadcast.94.1), direction=LT, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=401 scheduling_name="compare.11.3"}
+  %constant_9_1 = f64[] constant(25.132741228718345)
+  %broadcast.96.1 = f64[24,24,80]{2,1,0} broadcast(%constant_9_1), dimensions={}, metadata={scheduling_name="broadcast.96.1"}
+  %constant_11_1 = f64[] constant(1)
+  %broadcast.97.1 = f64[24,24,80]{2,1,0} broadcast(%constant_11_1), dimensions={}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=402 scheduling_name="broadcast.97.1"}
+  %select.18.11 = f64[24,24,80]{2,1,0} select(%compare.11.3, %broadcast.97.1, %reduce.109.5), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=402 scheduling_name="select.18.11"}
+  %divide.2.11 = f64[24,24,80]{2,1,0} divide(%broadcast.96.1, %select.18.11), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=408 scheduling_name="divide.2.11"}
+  %broadcast.98.1 = f64[24,24,80,1]{3,2,1,0} broadcast(%constant_11_1), dimensions={}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=402 scheduling_name="broadcast.98.1"}
+  %slice.15.5 = f64[24,24,80,1]{3,2,1,0} slice(%add.13.25), slice={[0:24], [0:24], [0:80], [0:1]}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=404 scheduling_name="slice.15.5"}
+  %multiply.66.5 = f64[24,24,80,1]{3,2,1,0} multiply(%slice.15.5, %slice.15.5), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/integer_pow" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=404 scheduling_name="multiply.66.5"}
+  %slice.16.5 = f64[24,24,80,1]{3,2,1,0} slice(%add.13.25), slice={[0:24], [0:24], [0:80], [1:2]}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=404 scheduling_name="slice.16.5"}
+  %multiply.67.5 = f64[24,24,80,1]{3,2,1,0} multiply(%slice.16.5, %slice.16.5), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/integer_pow" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=404 scheduling_name="multiply.67.5"}
+  %add.14.5 = f64[24,24,80,1]{3,2,1,0} add(%multiply.66.5, %multiply.67.5), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=404 scheduling_name="add.14.5"}
+  %sqrt.5.3 = f64[24,24,80,1]{3,2,1,0} sqrt(%add.14.5), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=404 scheduling_name="sqrt.5.3"}
+  %constant_15_1 = f64[] constant(-11.33835674775462)
+  %broadcast.99.1 = f64[24,24,80,1]{3,2,1,0} broadcast(%constant_15_1), dimensions={}, metadata={scheduling_name="broadcast.99.1"}
+  %multiply.68.3 = f64[24,24,80,1]{3,2,1,0} multiply(%sqrt.5.3, %broadcast.99.1), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=406 scheduling_name="multiply.68.3"}
+  %exponential.7.3 = f64[24,24,80,1]{3,2,1,0} exponential(%multiply.68.3), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=406 scheduling_name="exponential.7.3"}
+  %slice.17.9 = f64[24,24,80,1]{3,2,1,0} slice(%add.13.25), slice={[0:24], [0:24], [0:80], [2:3]}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=405 scheduling_name="slice.17.9"}
+  %constant_13_1 = f64[] constant(11.33835674775462)
+  %broadcast.101.1 = f64[24,24,80,1]{3,2,1,0} broadcast(%constant_13_1), dimensions={}, metadata={scheduling_name="broadcast.101.1"}
+  %multiply.70.7 = f64[24,24,80,1]{3,2,1,0} multiply(%slice.17.9, %broadcast.101.1), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=406 scheduling_name="multiply.70.7"}
+  %cosine.5.5 = f64[24,24,80,1]{3,2,1,0} cosine(%multiply.70.7), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/cos" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=406 scheduling_name="cosine.5.5"}
+  %multiply.71.7 = f64[24,24,80,1]{3,2,1,0} multiply(%exponential.7.3, %cosine.5.5), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=406 scheduling_name="multiply.71.7"}
+  %subtract.3.7 = f64[24,24,80,1]{3,2,1,0} subtract(%broadcast.98.1, %multiply.71.7), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=406 scheduling_name="subtract.3.7"}
+  %bitcast.509.9 = f64[24,24,80]{2,1,0} bitcast(%subtract.3.7), metadata={scheduling_name="bitcast.509.9"}
+  %multiply.72.9 = f64[24,24,80]{2,1,0} multiply(%divide.2.11, %bitcast.509.9), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=408 scheduling_name="multiply.72.9"}
+  %constant_7_1 = f64[] constant(0.0014240933398978817)
+  %broadcast.103.3 = f64[24,24,80]{2,1,0} broadcast(%constant_7_1), dimensions={}, metadata={scheduling_name="broadcast.103.3"}
+  %multiply.76.7 = f64[24,24,80]{2,1,0} multiply(%multiply.72.9, %broadcast.103.3), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=409 scheduling_name="multiply.76.7"}
+  %select.19.5 = f64[24,24,80]{2,1,0} select(%compare.11.3, %broadcast.93.14, %multiply.76.7), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=402 scheduling_name="select.19.5"}
+  %select.20.3 = f64[24,24,80]{2,1,0} select(%compare.10.3, %broadcast.93.14, %select.19.5), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=402 scheduling_name="select.20.3"}
+  %compare.12.3 = pred[24,24,80]{2,1,0} compare(%select.20.3, %broadcast.93.14), direction=GT, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/gt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=413 scheduling_name="compare.12.3"}
+  %sqrt.6.3 = f64[24,24,80]{2,1,0} sqrt(%select.20.3), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=413 scheduling_name="sqrt.6.3"}
+  %select.21.3 = f64[24,24,80]{2,1,0} select(%compare.12.3, %sqrt.6.3, %broadcast.93.14), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=413 scheduling_name="select.21.3"}
+  %bitcast.528.3 = f64[46080]{0} bitcast(%select.21.3), metadata={scheduling_name="bitcast.528.3"}
+  %convert.7.3 = c128[46080]{0} convert(%bitcast.528.3), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=415 scheduling_name="convert.7.3"}
+  %param_0.50 = s32[17252,1]{1,0} parameter(0), metadata={scheduling_name="param_0.50"}
+  ROOT %gather.2 = c128[17252,1]{1,0} gather(%convert.7.3, %param_0.50), offset_dims={1}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=415 scheduling_name="gather.2"}
+}
+
+%fused_complex (param_0.157: f64[1,1,1,80], param_1.188: f64[3], param_2.128: f64[1,1,24,1], param_3.85: f64[1,24,1,1]) -> c128[1,24,24,80] {
+  %param_1.188 = f64[3]{0} parameter(1), metadata={scheduling_name="param_1.188"}
+  %slice.12.9 = f64[1]{0} slice(%param_1.188), slice={[0:1]}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=393 scheduling_name="slice.12.9"}
+  %constant_10_1 = f64[1]{0} constant({0.33333333333333331})
+  %multiply.61.9 = f64[1]{0} multiply(%slice.12.9, %constant_10_1), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=393 scheduling_name="multiply.61.9"}
+  %bitcast.538.5 = f64[] bitcast(%multiply.61.9), metadata={scheduling_name="bitcast.538.5"}
+  %broadcast.106.5 = f64[1,24,1,1]{3,2,1,0} broadcast(%bitcast.538.5), dimensions={}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=386 scheduling_name="broadcast.106.5"}
+  %param_3.85 = f64[1,24,1,1]{3,2,1,0} parameter(3), metadata={scheduling_name="param_3.85"}
+  %multiply.77.3 = f64[1,24,1,1]{3,2,1,0} multiply(%broadcast.106.5, %param_3.85), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=386 scheduling_name="multiply.77.3"}
+  %bitcast.543.5 = f64[24]{0} bitcast(%multiply.77.3), metadata={scheduling_name="bitcast.543.5"}
+  %broadcast.107.5 = f64[1,1,24,24]{3,2,1,0} broadcast(%bitcast.543.5), dimensions={2}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=386 scheduling_name="broadcast.107.5"}
+  %slice.13.9 = f64[1]{0} slice(%param_1.188), slice={[1:2]}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=394 scheduling_name="slice.13.9"}
+  %multiply.62.9 = f64[1]{0} multiply(%slice.13.9, %constant_10_1), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=394 scheduling_name="multiply.62.9"}
+  %bitcast.548.5 = f64[] bitcast(%multiply.62.9), metadata={scheduling_name="bitcast.548.5"}
+  %broadcast.108.5 = f64[1,1,24,1]{3,2,1,0} broadcast(%bitcast.548.5), dimensions={}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=387 scheduling_name="broadcast.108.5"}
+  %param_2.128 = f64[1,1,24,1]{3,2,1,0} parameter(2), metadata={scheduling_name="param_2.128"}
+  %multiply.78.3 = f64[1,1,24,1]{3,2,1,0} multiply(%broadcast.108.5, %param_2.128), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=387 scheduling_name="multiply.78.3"}
+  %bitcast.553.5 = f64[24]{0} bitcast(%multiply.78.3), metadata={scheduling_name="bitcast.553.5"}
+  %broadcast.109.5 = f64[1,1,24,24]{3,2,1,0} broadcast(%bitcast.553.5), dimensions={3}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=386 scheduling_name="broadcast.109.5"}
+  %add.15.3 = f64[1,1,24,24]{3,2,1,0} add(%broadcast.107.5, %broadcast.109.5), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=386 scheduling_name="add.15.3"}
+  %bitcast.557.21 = f64[24,24]{1,0} bitcast(%add.15.3), metadata={scheduling_name="bitcast.557.21"}
+  %broadcast.110.21 = f64[1,24,24,80]{3,2,1,0} broadcast(%bitcast.557.21), dimensions={1,2}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=386 scheduling_name="broadcast.110.21"}
+  %slice.14.6 = f64[1]{0} slice(%param_1.188), slice={[2:3]}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=395 scheduling_name="slice.14.6"}
+  %bitcast.562.5 = f64[] bitcast(%slice.14.6), metadata={scheduling_name="bitcast.562.5"}
+  %broadcast.111.5 = f64[1,1,1,80]{3,2,1,0} broadcast(%bitcast.562.5), dimensions={}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=388 scheduling_name="broadcast.111.5"}
+  %param_0.157 = f64[1,1,1,80]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.157"}
+  %multiply.82.3 = f64[1,1,1,80]{3,2,1,0} multiply(%broadcast.111.5, %param_0.157), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=388 scheduling_name="multiply.82.3"}
+  %bitcast.567.21 = f64[80]{0} bitcast(%multiply.82.3), metadata={scheduling_name="bitcast.567.21"}
+  %broadcast.112.21 = f64[1,24,24,80]{3,2,1,0} broadcast(%bitcast.567.21), dimensions={3}, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=386 scheduling_name="broadcast.112.21"}
+  %add.16.19 = f64[1,24,24,80]{3,2,1,0} add(%broadcast.110.21, %broadcast.112.21), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=386 scheduling_name="add.16.19"}
+  %convert.8.19 = c128[1,24,24,80]{3,2,1,0} convert(%add.16.19), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="convert.8.19"}
+  %constant_19_1 = c128[] constant((0, -6.2831853071795862))
+  %broadcast.113.19 = c128[1,24,24,80]{3,2,1,0} broadcast(%constant_19_1), dimensions={}, metadata={scheduling_name="broadcast.113.19"}
+  %multiply.83.19 = c128[1,24,24,80]{3,2,1,0} multiply(%convert.8.19, %broadcast.113.19), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="multiply.83.19"}
+  %real.2.11 = f64[1,24,24,80]{3,2,1,0} real(%multiply.83.19), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="real.2.11"}
+  %exponential.8.3 = f64[1,24,24,80]{3,2,1,0} exponential(%real.2.11), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="exponential.8.3"}
+  %constant_25_1 = f64[] constant(inf)
+  %broadcast.114.1 = f64[1,24,24,80]{3,2,1,0} broadcast(%constant_25_1), dimensions={}, metadata={scheduling_name="broadcast.114.1"}
+  %compare.13.1 = pred[1,24,24,80]{3,2,1,0} compare(%exponential.8.3, %broadcast.114.1), direction=EQ, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="compare.13.1"}
+  %constant_23_1 = f64[] constant(0.5)
+  %broadcast.116.1 = f64[1,24,24,80]{3,2,1,0} broadcast(%constant_23_1), dimensions={}, metadata={scheduling_name="broadcast.116.1"}
+  %multiply.84.5 = f64[1,24,24,80]{3,2,1,0} multiply(%real.2.11, %broadcast.116.1), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="multiply.84.5"}
+  %exponential.9.3 = f64[1,24,24,80]{3,2,1,0} exponential(%multiply.84.5), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="exponential.9.3"}
+  %imag.2.5 = f64[1,24,24,80]{3,2,1,0} imag(%multiply.83.19), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="imag.2.5"}
+  %cosine.6.1 = f64[1,24,24,80]{3,2,1,0} cosine(%imag.2.5), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="cosine.6.1"}
+  %multiply.85.5 = f64[1,24,24,80]{3,2,1,0} multiply(%exponential.9.3, %cosine.6.1), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="multiply.85.5"}
+  %multiply.86.5 = f64[1,24,24,80]{3,2,1,0} multiply(%multiply.85.5, %exponential.9.3), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="multiply.86.5"}
+  %multiply.87.3 = f64[1,24,24,80]{3,2,1,0} multiply(%exponential.8.3, %cosine.6.1), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="multiply.87.3"}
+  %select.22.3 = f64[1,24,24,80]{3,2,1,0} select(%compare.13.1, %multiply.86.5, %multiply.87.3), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="select.22.3"}
+  %constant_3_2 = f64[] constant(0)
+  %broadcast.117.6 = f64[1,24,24,80]{3,2,1,0} broadcast(%constant_3_2), dimensions={}, metadata={scheduling_name="broadcast.117.6"}
+  %compare.14.3 = pred[1,24,24,80]{3,2,1,0} compare(%imag.2.5, %broadcast.117.6), direction=EQ, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="compare.14.3"}
+  %sine.2.1 = f64[1,24,24,80]{3,2,1,0} sine(%imag.2.5), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="sine.2.1"}
+  %multiply.88.3 = f64[1,24,24,80]{3,2,1,0} multiply(%exponential.9.3, %sine.2.1), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="multiply.88.3"}
+  %multiply.89.3 = f64[1,24,24,80]{3,2,1,0} multiply(%multiply.88.3, %exponential.9.3), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="multiply.89.3"}
+  %multiply.90.1 = f64[1,24,24,80]{3,2,1,0} multiply(%exponential.8.3, %sine.2.1), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="multiply.90.1"}
+  %select.23.1 = f64[1,24,24,80]{3,2,1,0} select(%compare.13.1, %multiply.89.3, %multiply.90.1), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="select.23.1"}
+  %select.24.3 = f64[1,24,24,80]{3,2,1,0} select(%compare.14.3, %broadcast.117.6, %select.23.1), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="select.24.3"}
+  ROOT %complex.2.1 = c128[1,24,24,80]{3,2,1,0} complex(%select.22.3, %select.24.3), metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="complex.2.1"}
+}
+
+ENTRY %main.165 (Arg_0.1.0: f64[3]) -> (c128[17252], c128[1,24,24,80]) {
+  %Arg_0.1.0 = f64[3]{0} parameter(0), metadata={op_name="qvec_wrapped" scheduling_name="Arg_0.1.0"}
+  %constant_14_0 = f64[3,3]{1,0} constant({ { 1.0507622167739268, 0, 0 }, { 0.60665637184174681, 1.2133158112027018, -0 }, { -0, 0, 0.27707653970333357 } })
+  %constant_34_0 = f64[24,24,80,3]{3,2,1,0} constant({...})
+  %constant_32_0 = f64[1,1,1,80]{3,2,1,0} constant({...})
+  %constant_30_0 = f64[1,1,24,1]{3,2,1,0} constant({...})
+  %constant_29_0 = f64[1,24,1,1]{3,2,1,0} constant({...})
+  %constant_2_0 = s32[17252,1]{1,0} constant({...})
+  %loop_gather_fusion = c128[17252,1]{1,0} fusion(%constant_2_0, %constant_34_0, %constant_14_0, %Arg_0.1.0), kind=kLoop, calls=%fused_gather, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=415 scheduling_name="loop_gather_fusion"}
+  %bitcast.535.0 = c128[17252]{0} bitcast(%loop_gather_fusion), metadata={scheduling_name="bitcast.535.0"}
+  %loop_complex_fusion = c128[1,24,24,80]{3,2,1,0} fusion(%constant_32_0, %Arg_0.1.0, %constant_30_0, %constant_29_0), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(get_sqrt_v_and_phase)/jit(main)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=385 scheduling_name="loop_complex_fusion"}
+  ROOT %tuple.164.0 = (c128[17252]{0}, c128[1,24,24,80]{3,2,1,0}) tuple(%bitcast.535.0, %loop_complex_fusion), metadata={scheduling_name="tuple.164.0"}
+}
+

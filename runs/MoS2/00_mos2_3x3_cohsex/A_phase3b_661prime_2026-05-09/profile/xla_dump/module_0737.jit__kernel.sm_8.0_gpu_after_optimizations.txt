@@ -1,0 +1,449 @@
+HloModule jit__kernel, is_scheduled=true, entry_computation_layout={(token[], c128[9,168,80,4]{3,2,1,0}, c128[9,168,80,4]{3,2,1,0}, c128[9,168,168]{2,1,0}, f64[80]{0}, /*index=5*/f64[80]{0}, s32[])->(token[], c128[9,672,2880]{2,1,0})}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,true,true,true}, allow_spmd_sharding_propagation_to_output={false,true}, num_partitions=16, frontend_attributes={fingerprint_before_lhs="1a122715e3a52325a34dde4014595511"}
+
+%fused_transpose (param_0.1: c128[9,672,2880]) -> c128[9,672,2880] {
+  %param_0.1 = c128[9,672,2880]{1,2,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.1285.1 = c128[9,2880,672]{2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.1285.1"}
+  ROOT %transpose.141.1 = c128[9,672,2880]{2,1,0} transpose(%bitcast.1285.1), dimensions={0,2,1}, metadata={scheduling_name="transpose.141.1"}
+}
+
+%fused_transpose.1 (param_0.174: c128[9,672,1,2880], param_1.194: s32[9,672]) -> c128[9,2880,672] {
+  %param_0.174 = c128[9,672,1,2880]{3,1,0,2} parameter(0), metadata={scheduling_name="param_0.174"}
+  %bitcast.1250.3 = c128[9,672,2880,1]{2,1,0,3} bitcast(%param_0.174), metadata={scheduling_name="bitcast.1250.3"}
+  %iota.42.1 = s32[1,9,672]{2,1,0} iota(), iota_dimension=1, metadata={scheduling_name="iota.42.1"}
+  %param_1.194 = s32[9,672]{1,0} parameter(1), metadata={scheduling_name="param_1.194"}
+  %constant_127_1 = s32[] constant(0)
+  %broadcast.367.3 = s32[9,672]{1,0} broadcast(%constant_127_1), dimensions={}, metadata={scheduling_name="broadcast.367.3"}
+  %compare.54.3 = pred[9,672]{1,0} compare(%param_1.194, %broadcast.367.3), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/vmap(jit(_lu_solve))/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="compare.54.3"}
+  %constant_234_1 = s32[] constant(672)
+  %broadcast.368.1 = s32[9,672]{1,0} broadcast(%constant_234_1), dimensions={}, metadata={scheduling_name="broadcast.368.1"}
+  %add.44.3 = s32[9,672]{1,0} add(%param_1.194, %broadcast.368.1), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/vmap(jit(_lu_solve))/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="add.44.3"}
+  %select.55.3 = s32[9,672]{1,0} select(%compare.54.3, %add.44.3, %param_1.194), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/vmap(jit(_lu_solve))/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="select.55.3"}
+  %bitcast.1269.3 = s32[1,9,672]{2,1,0} bitcast(%select.55.3), metadata={scheduling_name="bitcast.1269.3"}
+  %concatenate.3.3 = s32[2,9,672]{2,1,0} concatenate(%iota.42.1, %bitcast.1269.3), dimensions={0}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/vmap(jit(_lu_solve))/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="concatenate.3.3"}
+  %bitcast.1273.3 = s32[6048,2]{0,1} bitcast(%concatenate.3.3), metadata={scheduling_name="bitcast.1273.3"}
+  %gather.14.3 = c128[6048,1,1,2880,1]{4,3,2,1,0} gather(%bitcast.1250.3, %bitcast.1273.3), offset_dims={1,2,3,4}, collapsed_slice_dims={}, start_index_map={0,1}, index_vector_dim=1, slice_sizes={1,1,2880,1}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/vmap(jit(_lu_solve))/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="gather.14.3"}
+  %bitcast.1276.1 = c128[9,672,2880]{2,1,0} bitcast(%gather.14.3), metadata={scheduling_name="bitcast.1276.1"}
+  ROOT %transpose.140.1 = c128[9,2880,672]{2,1,0} transpose(%bitcast.1276.1), dimensions={0,2,1}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/vmap(jit(_lu_solve))/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="transpose.140.1"}
+}
+
+%fused_slice (param_0.8: c128[3,672,1,4,2880]) -> c128[3,3,672,1,2880] {
+  %param_0.8 = c128[3,672,1,4,2880]{4,2,1,0,3} parameter(0), metadata={scheduling_name="param_0.8"}
+  %bitcast.1242.1 = c128[4,3,672,1,2880]{4,3,2,1,0} bitcast(%param_0.8), metadata={scheduling_name="bitcast.1242.1"}
+  ROOT %slice.7.1 = c128[3,3,672,1,2880]{4,3,2,1,0} slice(%bitcast.1242.1), slice={[0:3], [0:3], [0:672], [0:1], [0:2880]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=885 scheduling_name="slice.7.1"}
+}
+
+%fused_transpose.2 (param_0.93: c128[4,3,168,11520]) -> c128[4,2016,2880] {
+  %param_0.93 = c128[4,3,168,11520]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.93"}
+  %bitcast.1232.3 = c128[4,3,1935360]{2,1,0} bitcast(%param_0.93), metadata={scheduling_name="bitcast.1232.3"}
+  %transpose.138.3 = c128[3,4,1935360]{2,1,0} transpose(%bitcast.1232.3), dimensions={1,0,2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=884 scheduling_name="transpose.138.3"}
+  %bitcast.1235.1 = c128[2016,4,2880]{2,1,0} bitcast(%transpose.138.3), metadata={scheduling_name="bitcast.1235.1"}
+  ROOT %transpose.139.1 = c128[4,2016,2880]{2,1,0} transpose(%bitcast.1235.1), dimensions={1,0,2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=884 scheduling_name="transpose.139.1"}
+}
+
+%fused_transpose.3 (param_0.221: c128[168,11520,3,3,1]) -> c128[12,1935360] {
+  %param_0.221 = c128[168,11520,3,3,1]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.221"}
+  %constant_245_1 = c128[] constant((0.1111111111111111, 0)), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/jit(shmap_body)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343}
+  %broadcast.365.1 = c128[168,11520,3,3,1]{4,3,2,1,0} broadcast(%constant_245_1), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343 scheduling_name="broadcast.365.1"}
+  %multiply.157.1 = c128[168,11520,3,3,1]{4,3,2,1,0} multiply(%param_0.221, %broadcast.365.1), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343 scheduling_name="multiply.157.1"}
+  %bitcast.1222.3 = c128[168,11520,9]{2,1,0} bitcast(%multiply.157.1), metadata={scheduling_name="bitcast.1222.3"}
+  %constant_124_2 = c128[] constant((0, 0))
+  %pad.3.3 = c128[168,11520,12]{2,1,0} pad(%bitcast.1222.3, %constant_124_2), padding=0_0x0_0x0_3, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=884 scheduling_name="pad.3.3"}
+  %bitcast.1225.1 = c128[1935360,12]{1,0} bitcast(%pad.3.3), metadata={scheduling_name="bitcast.1225.1"}
+  ROOT %transpose.137.1 = c128[12,1935360]{1,0} transpose(%bitcast.1225.1), dimensions={1,0}, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=884 scheduling_name="transpose.137.1"}
+}
+
+%region_4.336 (Arg_0.337: c128[], Arg_1.338: c128[]) -> c128[] {
+  %Arg_1.338 = c128[] parameter(1), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/reduce_sum" scheduling_name="Arg_1.338"}
+  %Arg_0.337 = c128[] parameter(0), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/reduce_sum" scheduling_name="Arg_0.337"}
+  ROOT %add.39 = c128[] add(%Arg_0.337, %Arg_1.338), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/reduce_sum" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=164 scheduling_name="add.39"}
+}
+
+%fused_reduce (param_0.222: c128[4], param_1.234: s64[4,1], param_2.150: c128[4,4,168,11520,3,3,1], param_3.94: c128[4,4,168,11520,3,3,1]) -> c128[168,11520,9] {
+  %param_3.94 = c128[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} parameter(3), metadata={scheduling_name="param_3.94"}
+  %constant_235_1 = c128[] constant((9, 0)), metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/jit(shmap_body)/reduce_prod" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325}
+  %broadcast.360.20 = c128[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} broadcast(%constant_235_1), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325 scheduling_name="broadcast.360.20"}
+  %multiply.151.7 = c128[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} multiply(%param_3.94, %broadcast.360.20), metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325 scheduling_name="multiply.151.7"}
+  %real.11.3 = f64[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} real(%multiply.151.7), metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=430 scheduling_name="real.11.3"}
+  %imag.11.5 = f64[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} imag(%multiply.151.7), metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=430 scheduling_name="imag.11.5"}
+  %negate.7.3 = f64[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} negate(%imag.11.5), metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=430 scheduling_name="negate.7.3"}
+  %complex.11.1 = c128[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} complex(%real.11.3, %negate.7.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=430 scheduling_name="complex.11.1"}
+  %bitcast.1157.3 = c128[4,4,168,11520,9]{4,3,2,1,0} bitcast(%complex.11.1), metadata={scheduling_name="bitcast.1157.3"}
+  %param_2.150 = c128[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} parameter(2), metadata={scheduling_name="param_2.150"}
+  %multiply.152.13 = c128[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} multiply(%param_2.150, %broadcast.360.20), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325 scheduling_name="multiply.152.13"}
+  %bitcast.1187.11 = c128[4,9,4,168,11520]{1,4,3,2,0} bitcast(%multiply.152.13), metadata={scheduling_name="bitcast.1187.11"}
+  %param_1.234 = s64[4,1]{1,0} parameter(1), metadata={scheduling_name="param_1.234"}
+  %gather.12.11 = c128[4,1,9,4,168,11520]{2,5,4,0,3,1} gather(%bitcast.1187.11, %param_1.234), offset_dims={1,2,3,4,5}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,9,4,168,11520}, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/jit(_take)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122 scheduling_name="gather.12.11"}
+  %bitcast.1191.9 = c128[1,4,4,168,11520,9]{5,4,3,2,1,0} bitcast(%gather.12.11), metadata={scheduling_name="bitcast.1191.9"}
+  %param_0.222 = c128[4]{0} parameter(0), metadata={scheduling_name="param_0.222"}
+  %broadcast.363.14 = c128[1,4,4,168,11520,9]{5,4,3,2,1,0} broadcast(%param_0.222), dimensions={2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125 scheduling_name="broadcast.363.14"}
+  %multiply.153.9 = c128[1,4,4,168,11520,9]{5,4,3,2,1,0} multiply(%bitcast.1191.9, %broadcast.363.14), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125 scheduling_name="multiply.153.9"}
+  %bitcast.1197.7 = c128[4,9,4,168,11520]{1,4,3,2,0} bitcast(%multiply.153.9), metadata={scheduling_name="bitcast.1197.7"}
+  %gather.13.7 = c128[4,1,9,4,168,11520]{2,5,4,0,3,1} gather(%bitcast.1197.7, %param_1.234), offset_dims={1,2,3,4,5}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,9,4,168,11520}, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/jit(_take)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122 scheduling_name="gather.13.7"}
+  %bitcast.1200.5 = c128[1,4,4,168,11520,9]{5,4,3,2,1,0} bitcast(%gather.13.7), metadata={scheduling_name="bitcast.1200.5"}
+  %multiply.154.5 = c128[1,4,4,168,11520,9]{5,4,3,2,1,0} multiply(%bitcast.1200.5, %broadcast.363.14), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125 scheduling_name="multiply.154.5"}
+  %bitcast.1206.3 = c128[4,4,168,11520,9]{4,3,2,1,0} bitcast(%multiply.154.5), metadata={scheduling_name="bitcast.1206.3"}
+  %multiply.156.3 = c128[4,4,168,11520,9]{4,3,2,1,0} multiply(%bitcast.1157.3, %bitcast.1206.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=164 scheduling_name="multiply.156.3"}
+  %bitcast.1210.1 = c128[16,168,11520,9]{3,2,1,0} bitcast(%multiply.156.3), metadata={scheduling_name="bitcast.1210.1"}
+  %constant_124_3 = c128[] constant((0, 0))
+  ROOT %reduce.20.1 = c128[168,11520,9]{2,1,0} reduce(%bitcast.1210.1, %constant_124_3), dimensions={0}, to_apply=%region_4.336, metadata={scheduling_name="reduce.20.1"}
+}
+
+%fused_transpose.6 (param_0.38: c128[9,1,5,4,4,11520]) -> c128[4,5,9,46080] {
+  %param_0.38 = c128[9,1,5,4,4,11520]{5,3,2,1,0,4} parameter(0), metadata={scheduling_name="param_0.38"}
+  %bitcast.1118.1 = c128[4,9,5,46080]{3,2,1,0} bitcast(%param_0.38), metadata={scheduling_name="bitcast.1118.1"}
+  ROOT %transpose.132.1 = c128[4,5,9,46080]{3,2,1,0} transpose(%bitcast.1118.1), dimensions={0,2,1,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_rchunk)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=429 scheduling_name="transpose.132.1"}
+}
+
+%fused_transpose.7 (param_0.229: c128[9,5,4,24,24,80], param_1.239: f64[9,24,24,80], param_2.154: f64[9,24,24,80]) -> c128[4,180,11520] {
+  %param_0.229 = c128[9,5,4,24,24,80]{5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.229"}
+  %param_1.239 = f64[9,24,24,80]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1.239"}
+  %param_2.154 = f64[9,24,24,80]{3,2,1,0} parameter(2), metadata={scheduling_name="param_2.154"}
+  %complex.10.1 = c128[9,24,24,80]{3,2,1,0} complex(%param_1.239, %param_2.154), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="complex.10.1"}
+  %broadcast.357.1 = c128[9,5,4,24,24,80]{5,4,3,2,1,0} broadcast(%complex.10.1), dimensions={0,3,4,5}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=383 scheduling_name="broadcast.357.1"}
+  %multiply.149.1 = c128[9,5,4,24,24,80]{5,4,3,2,1,0} multiply(%param_0.229, %broadcast.357.1), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=383 scheduling_name="multiply.149.1"}
+  %constant_141_1 = c128[] constant((214.66252583997982, 0)), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=384}
+  %broadcast.358.1 = c128[9,5,4,24,24,80]{5,4,3,2,1,0} broadcast(%constant_141_1), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=384 scheduling_name="broadcast.358.1"}
+  %multiply.150.1 = c128[9,5,4,24,24,80]{5,4,3,2,1,0} multiply(%multiply.149.1, %broadcast.358.1), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=384 scheduling_name="multiply.150.1"}
+  %bitcast.1111.1 = c128[180,4,11520]{2,1,0} bitcast(%multiply.150.1), metadata={scheduling_name="bitcast.1111.1"}
+  ROOT %transpose.131.1 = c128[4,180,11520]{2,1,0} transpose(%bitcast.1111.1), dimensions={1,0,2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_rchunk)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=429 scheduling_name="transpose.131.1"}
+}
+
+%fused_select (param_0.127: c128[9,672,672], param_1.235: s32[9]) -> c128[9,672,672] {
+  %param_1.235 = s32[9]{0} parameter(1), metadata={scheduling_name="param_1.235"}
+  %constant_127_2 = s32[] constant(0)
+  %broadcast.336.3 = s32[9]{0} broadcast(%constant_127_2), dimensions={}, metadata={scheduling_name="broadcast.336.3"}
+  %compare.51.3 = pred[9]{0} compare(%param_1.235, %broadcast.336.3), direction=GE, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/lu" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="compare.51.3"}
+  %broadcast.337.1 = pred[9,672,672]{2,1,0} broadcast(%compare.51.3), dimensions={0}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/lu" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="broadcast.337.1"}
+  %param_0.127 = c128[9,672,672]{1,2,0} parameter(0), metadata={scheduling_name="param_0.127"}
+  %bitcast.998.1 = c128[9,672,672]{2,1,0} bitcast(%param_0.127), metadata={scheduling_name="bitcast.998.1"}
+  %constant_128_1 = c128[] constant((nan, nan))
+  %broadcast.338.1 = c128[9,672,672]{2,1,0} broadcast(%constant_128_1), dimensions={}, metadata={scheduling_name="broadcast.338.1"}
+  ROOT %select.51.1 = c128[9,672,672]{2,1,0} select(%broadcast.337.1, %bitcast.998.1, %broadcast.338.1), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/lu" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="select.51.1"}
+}
+
+%fused_transpose.8 (param_0.107: c128[9,672,672], param_1.176: f64[9]) -> c128[6048,672] {
+  %param_0.107 = c128[9,672,672]{2,0,1} parameter(0), metadata={scheduling_name="param_0.107"}
+  %bitcast.964.4 = c128[672,9,672]{2,1,0} bitcast(%param_0.107), metadata={scheduling_name="bitcast.964.4"}
+  %param_1.176 = f64[9]{0} parameter(1), metadata={scheduling_name="param_1.176"}
+  %convert.43.1 = c128[9]{0} convert(%param_1.176), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=788 scheduling_name="convert.43.1"}
+  %broadcast.333.3 = c128[672,9,672]{2,1,0} broadcast(%convert.43.1), dimensions={1}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=788 scheduling_name="broadcast.333.3"}
+  %iota.37.3 = s64[672,672]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(trace))/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="iota.37.3"}
+  %iota.38.3 = s64[672,672]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(trace))/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="iota.38.3"}
+  %compare.50.3 = pred[672,672]{1,0} compare(%iota.37.3, %iota.38.3), direction=EQ, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(trace))/eq" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="compare.50.3"}
+  %convert.44.1 = c128[672,672]{1,0} convert(%compare.50.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=788 scheduling_name="convert.44.1"}
+  %broadcast.335.3 = c128[672,9,672]{2,1,0} broadcast(%convert.44.1), dimensions={0,2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=788 scheduling_name="broadcast.335.3"}
+  %multiply.126.3 = c128[672,9,672]{2,1,0} multiply(%broadcast.333.3, %broadcast.335.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=788 scheduling_name="multiply.126.3"}
+  %add.40.3 = c128[672,9,672]{2,1,0} add(%bitcast.964.4, %multiply.126.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=788 scheduling_name="add.40.3"}
+  %bitcast.985.1 = c128[672,6048]{1,0} bitcast(%add.40.3), metadata={scheduling_name="bitcast.985.1"}
+  ROOT %transpose.130.1 = c128[6048,672]{1,0} transpose(%bitcast.985.1), dimensions={1,0}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=788 scheduling_name="transpose.130.1"}
+}
+
+%fused_transpose.9 (param_0.60: c128[9,168,672]) -> c128[168,9,672] {
+  %param_0.60 = c128[9,168,672]{1,0,2} parameter(0), metadata={scheduling_name="param_0.60"}
+  %bitcast.951.1 = c128[672,9,168]{2,1,0} bitcast(%param_0.60), metadata={scheduling_name="bitcast.951.1"}
+  ROOT %transpose.129.1 = c128[168,9,672]{2,1,0} transpose(%bitcast.951.1), dimensions={2,1,0}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=832 scheduling_name="transpose.129.1"}
+}
+
+%fused_transpose.10 (param_0.62: c128[9,168,168]) -> c128[168,1512] {
+  %param_0.62 = c128[9,168,168]{2,1,0} parameter(0), metadata={scheduling_name="param_0.62"}
+  %bitcast.944.1 = c128[1512,168]{1,0} bitcast(%param_0.62), metadata={scheduling_name="bitcast.944.1"}
+  ROOT %transpose.128.1 = c128[168,1512]{1,0} transpose(%bitcast.944.1), dimensions={1,0}, metadata={op_name="L_q" scheduling_name="transpose.128.1"}
+}
+
+%fused_reduce.1 (param_0.223: c128[9,672,672]) -> c128[672,9] {
+  %iota.37.5 = s64[672,672]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(trace))/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="iota.37.5"}
+  %iota.38.5 = s64[672,672]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(trace))/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="iota.38.5"}
+  %compare.50.5 = pred[672,672]{1,0} compare(%iota.37.5, %iota.38.5), direction=EQ, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(trace))/eq" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="compare.50.5"}
+  %broadcast.330.1 = pred[672,9,672]{2,1,0} broadcast(%compare.50.5), dimensions={0,2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(trace))/jit(_where)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="broadcast.330.1"}
+  %param_0.223 = c128[9,672,672]{2,0,1} parameter(0), metadata={scheduling_name="param_0.223"}
+  %bitcast.964.6 = c128[672,9,672]{2,1,0} bitcast(%param_0.223), metadata={scheduling_name="bitcast.964.6"}
+  %constant_124_4 = c128[] constant((0, 0))
+  %broadcast.331.3 = c128[672,9,672]{2,1,0} broadcast(%constant_124_4), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(trace))/jit(_where)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="broadcast.331.3"}
+  %select.50.3 = c128[672,9,672]{2,1,0} select(%broadcast.330.1, %bitcast.964.6, %broadcast.331.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(trace))/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="select.50.3"}
+  ROOT %reduce.22.1 = c128[672,9]{1,0} reduce(%select.50.3, %constant_124_4), dimensions={2}, to_apply=%region_4.336, metadata={scheduling_name="reduce.22.1"}
+}
+
+%fused_select.1 (param_0.228: f64[1,1,1,80], param_1.238: f64[1,9,24,24]) -> (f64[9,24,24,80], f64[9,24,24,80]) {
+  %param_1.238 = f64[1,9,24,24]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1.238"}
+  %bitcast.1039.33 = f64[9,24,24]{2,1,0} bitcast(%param_1.238), metadata={scheduling_name="bitcast.1039.33"}
+  %broadcast.347.33 = f64[9,24,24,80]{3,2,1,0} broadcast(%bitcast.1039.33), dimensions={0,1,2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="broadcast.347.33"}
+  %param_0.228 = f64[1,1,1,80]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.228"}
+  %bitcast.1049.33 = f64[80]{0} bitcast(%param_0.228), metadata={scheduling_name="bitcast.1049.33"}
+  %broadcast.350.33 = f64[9,24,24,80]{3,2,1,0} broadcast(%bitcast.1049.33), dimensions={3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="broadcast.350.33"}
+  %add.42.31 = f64[9,24,24,80]{3,2,1,0} add(%broadcast.347.33, %broadcast.350.33), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="add.42.31"}
+  %convert.45.31 = c128[9,24,24,80]{3,2,1,0} convert(%add.42.31), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=377 scheduling_name="convert.45.31"}
+  %constant_137_2 = c128[] constant((0, 6.2831853071795862))
+  %broadcast.351.31 = c128[9,24,24,80]{3,2,1,0} broadcast(%constant_137_2), dimensions={}, metadata={scheduling_name="broadcast.351.31"}
+  %multiply.134.31 = c128[9,24,24,80]{3,2,1,0} multiply(%convert.45.31, %broadcast.351.31), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=377 scheduling_name="multiply.134.31"}
+  %imag.10.11 = f64[9,24,24,80]{3,2,1,0} imag(%multiply.134.31), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="imag.10.11"}
+  %constant_135_1 = f64[] constant(0), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=380}
+  %broadcast.354.4 = f64[9,24,24,80]{3,2,1,0} broadcast(%constant_135_1), dimensions={}, metadata={scheduling_name="broadcast.354.4"}
+  %compare.53.3 = pred[9,24,24,80]{3,2,1,0} compare(%imag.10.11, %broadcast.354.4), direction=EQ, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="compare.53.3"}
+  %real.10.19 = f64[9,24,24,80]{3,2,1,0} real(%multiply.134.31), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="real.10.19"}
+  %exponential.8.9 = f64[9,24,24,80]{3,2,1,0} exponential(%real.10.19), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="exponential.8.9"}
+  %constant_138_2 = f64[] constant(inf)
+  %broadcast.352.3 = f64[9,24,24,80]{3,2,1,0} broadcast(%constant_138_2), dimensions={}, metadata={scheduling_name="broadcast.352.3"}
+  %compare.52.3 = pred[9,24,24,80]{3,2,1,0} compare(%exponential.8.9, %broadcast.352.3), direction=EQ, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="compare.52.3"}
+  %constant_139_2 = f64[] constant(0.5)
+  %broadcast.353.3 = f64[9,24,24,80]{3,2,1,0} broadcast(%constant_139_2), dimensions={}, metadata={scheduling_name="broadcast.353.3"}
+  %multiply.136.5 = f64[9,24,24,80]{3,2,1,0} multiply(%real.10.19, %broadcast.353.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="multiply.136.5"}
+  %exponential.9.3 = f64[9,24,24,80]{3,2,1,0} exponential(%multiply.136.5), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="exponential.9.3"}
+  %sine.4.3 = f64[9,24,24,80]{3,2,1,0} sine(%imag.10.11), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="sine.4.3"}
+  %multiply.143.5 = f64[9,24,24,80]{3,2,1,0} multiply(%exponential.9.3, %sine.4.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="multiply.143.5"}
+  %multiply.144.5 = f64[9,24,24,80]{3,2,1,0} multiply(%multiply.143.5, %exponential.9.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="multiply.144.5"}
+  %multiply.148.3 = f64[9,24,24,80]{3,2,1,0} multiply(%exponential.8.9, %sine.4.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="multiply.148.3"}
+  %select.53.3 = f64[9,24,24,80]{3,2,1,0} select(%compare.52.3, %multiply.144.5, %multiply.148.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="select.53.3"}
+  %select.54.1 = f64[9,24,24,80]{3,2,1,0} select(%compare.53.3, %broadcast.354.4, %select.53.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="select.54.1"}
+  %cosine.4.3.clone.1 = f64[9,24,24,80]{3,2,1,0} cosine(%imag.10.11), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="cosine.4.3.clone.1"}
+  %multiply.137.3.clone.1 = f64[9,24,24,80]{3,2,1,0} multiply(%exponential.9.3, %cosine.4.3.clone.1), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="multiply.137.3.clone.1"}
+  %multiply.138.3.clone.1 = f64[9,24,24,80]{3,2,1,0} multiply(%multiply.137.3.clone.1, %exponential.9.3), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="multiply.138.3.clone.1"}
+  %multiply.142.1.clone.1 = f64[9,24,24,80]{3,2,1,0} multiply(%exponential.8.9, %cosine.4.3.clone.1), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="multiply.142.1.clone.1"}
+  %select.52.1.clone.1 = f64[9,24,24,80]{3,2,1,0} select(%compare.52.3, %multiply.138.3.clone.1, %multiply.142.1.clone.1), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="select.52.1.clone.1"}
+  ROOT %tuple.4 = (f64[9,24,24,80]{3,2,1,0}, f64[9,24,24,80]{3,2,1,0}) tuple(%select.54.1, %select.52.1.clone.1), metadata={scheduling_name="tuple.4"}
+}
+
+%fused_add (param_0.184: s32[9,672]) -> s32[9,672] {
+  %param_0.184 = s32[9,672]{1,0} parameter(0), metadata={scheduling_name="param_0.184"}
+  %constant_232_1 = s32[] constant(-1)
+  %broadcast.366.1 = s32[9,672]{1,0} broadcast(%constant_232_1), dimensions={}, metadata={scheduling_name="broadcast.366.1"}
+  ROOT %add.43.1 = s32[9,672]{1,0} add(%param_0.184, %broadcast.366.1), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/lu" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="add.43.1"}
+}
+
+%fused_multiply (param_0.224: c128[9]) -> f64[9] {
+  %param_0.224 = c128[9]{0} parameter(0), metadata={scheduling_name="param_0.224"}
+  %abs.5.1 = f64[9]{0} abs(%param_0.224), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/abs" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="abs.5.1"}
+  %constant_126_1 = f64[] constant(1.4880952380952379e-15)
+  %broadcast.332.1 = f64[9]{0} broadcast(%constant_126_1), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="broadcast.332.1"}
+  ROOT %multiply.125.1 = f64[9]{0} multiply(%abs.5.1, %broadcast.332.1), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="multiply.125.1"}
+}
+
+%fused_reduce.2 (param_0.220: c128[672,9]) -> c128[9] {
+  %param_0.220 = c128[672,9]{1,0} parameter(0), metadata={scheduling_name="param_0.220"}
+  %constant_124_1 = c128[] constant((0, 0))
+  ROOT %reduce.14.1 = c128[9]{0} reduce(%param_0.220, %constant_124_1), dimensions={0}, to_apply=%region_4.336, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(trace))/reduce_sum" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="reduce.14.1"}
+}
+
+%fused_convert (param_0_0: f64[80], param_1_0: f64[80]) -> (c128[80], c128[80]) {
+  %param_0_0 = f64[80]{0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %convert.46.2 = c128[80]{0} convert(%param_0_0), metadata={op_name="jit(_kernel)/jit(main)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1100 scheduling_name="convert.46.2"}
+  %param_1_0 = f64[80]{0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %convert.47.2 = c128[80]{0} convert(%param_1_0), metadata={op_name="jit(_kernel)/jit(main)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1100 scheduling_name="convert.47.2"}
+  ROOT %tuple.5 = (c128[80]{0}, c128[80]{0}) tuple(%convert.46.2, %convert.47.2), metadata={scheduling_name="tuple.5"}
+}
+
+%fused_slice.1 (param_1_0.1: f64[9], param_1_1: f64[9]) -> (f64[80], f64[5184]) {
+  %constant_135_3 = f64[] constant(0), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=380}
+  %broadcast.348.2 = f64[1,1,1,80]{3,2,1,0} broadcast(%constant_135_3), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=380 scheduling_name="broadcast.348.2"}
+  %iota.41.4 = f64[1,1,1,80]{3,2,1,0} iota(), iota_dimension=3, metadata={op_name="jit(_kernel)/jit(main)/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=361 scheduling_name="iota.41.4"}
+  %constant_136_2 = f64[] constant(0.0125)
+  %broadcast.349.4 = f64[1,1,1,80]{3,2,1,0} broadcast(%constant_136_2), dimensions={}, metadata={scheduling_name="broadcast.349.4"}
+  %multiply.132.4 = f64[1,1,1,80]{3,2,1,0} multiply(%iota.41.4, %broadcast.349.4), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=361 scheduling_name="multiply.132.4"}
+  %multiply.133.2 = f64[1,1,1,80]{3,2,1,0} multiply(%broadcast.348.2, %multiply.132.4), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=380 scheduling_name="multiply.133.2"}
+  %reshape.278 = f64[80]{0} reshape(%multiply.133.2), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=380 scheduling_name="reshape.278"}
+  %param_1_1 = f64[9]{0} parameter(1), metadata={scheduling_name="param_1_1"}
+  %broadcast.339.4 = f64[1,1,9,24]{3,2,1,0} broadcast(%param_1_1), dimensions={2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="broadcast.339.4"}
+  %iota.39.4 = f64[1,24,1,1]{3,2,1,0} iota(), iota_dimension=1, metadata={op_name="jit(_kernel)/jit(main)/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=359 scheduling_name="iota.39.4"}
+  %constant_132_2 = f64[] constant(0.041666666666666664)
+  %broadcast.340.4 = f64[1,24,1,1]{3,2,1,0} broadcast(%constant_132_2), dimensions={}, metadata={scheduling_name="broadcast.340.4"}
+  %multiply.127.4 = f64[1,24,1,1]{3,2,1,0} multiply(%iota.39.4, %broadcast.340.4), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=359 scheduling_name="multiply.127.4"}
+  %bitcast.1017.6 = f64[24]{0} bitcast(%multiply.127.4), metadata={scheduling_name="bitcast.1017.6"}
+  %broadcast.341.6 = f64[1,1,9,24]{3,2,1,0} broadcast(%bitcast.1017.6), dimensions={3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="broadcast.341.6"}
+  %multiply.128.4 = f64[1,1,9,24]{3,2,1,0} multiply(%broadcast.339.4, %broadcast.341.6), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="multiply.128.4"}
+  %bitcast.1021.4 = f64[9,24]{1,0} bitcast(%multiply.128.4), metadata={scheduling_name="bitcast.1021.4"}
+  %broadcast.342.4 = f64[1,9,24,24]{3,2,1,0} broadcast(%bitcast.1021.4), dimensions={1,2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="broadcast.342.4"}
+  %param_1_0.1 = f64[9]{0} parameter(0), metadata={scheduling_name="param_1_0.1"}
+  %broadcast.343.4 = f64[1,1,9,24]{3,2,1,0} broadcast(%param_1_0.1), dimensions={2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=379 scheduling_name="broadcast.343.4"}
+  %iota.40.4 = f64[1,1,24,1]{3,2,1,0} iota(), iota_dimension=2, metadata={op_name="jit(_kernel)/jit(main)/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=360 scheduling_name="iota.40.4"}
+  %broadcast.344.4 = f64[1,1,24,1]{3,2,1,0} broadcast(%constant_132_2), dimensions={}, metadata={scheduling_name="broadcast.344.4"}
+  %multiply.129.4 = f64[1,1,24,1]{3,2,1,0} multiply(%iota.40.4, %broadcast.344.4), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=360 scheduling_name="multiply.129.4"}
+  %bitcast.1031.6 = f64[24]{0} bitcast(%multiply.129.4), metadata={scheduling_name="bitcast.1031.6"}
+  %broadcast.345.6 = f64[1,1,9,24]{3,2,1,0} broadcast(%bitcast.1031.6), dimensions={3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=379 scheduling_name="broadcast.345.6"}
+  %multiply.130.4 = f64[1,1,9,24]{3,2,1,0} multiply(%broadcast.343.4, %broadcast.345.6), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=379 scheduling_name="multiply.130.4"}
+  %bitcast.1035.4 = f64[9,24]{1,0} bitcast(%multiply.130.4), metadata={scheduling_name="bitcast.1035.4"}
+  %broadcast.346.4 = f64[1,9,24,24]{3,2,1,0} broadcast(%bitcast.1035.4), dimensions={1,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="broadcast.346.4"}
+  %add.41.2 = f64[1,9,24,24]{3,2,1,0} add(%broadcast.342.4, %broadcast.346.4), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="add.41.2"}
+  %reshape.279 = f64[5184]{0} reshape(%add.41.2), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="reshape.279"}
+  %concatenate.4 = f64[5264]{0} concatenate(%reshape.278, %reshape.279), dimensions={0}, metadata={scheduling_name="concatenate.4"}
+  %slice.8 = f64[80]{0} slice(%concatenate.4), slice={[0:80]}, metadata={scheduling_name="slice.8"}
+  %slice.9 = f64[5184]{0} slice(%concatenate.4), slice={[80:5264]}, metadata={scheduling_name="slice.9"}
+  ROOT %tuple.6 = (f64[80]{0}, f64[5184]{0}) tuple(%slice.8, %slice.9), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="tuple.6"}
+}
+
+%fused_convert.1 (param_0_0.1: u32[]) -> (s32[], s32[]) {
+  %param_0_0.1 = u32[] parameter(0), metadata={scheduling_name="param_0_0.1"}
+  %constant_122_3 = u32[] constant(3), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/axis_index" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=285}
+  %and.15.2 = u32[] and(%param_0_0.1, %constant_122_3), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/axis_index" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=286 scheduling_name="and.15.2"}
+  %convert.42.2 = s32[] convert(%and.15.2), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/axis_index" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=286 scheduling_name="convert.42.2"}
+  %constant_121_2 = u32[] constant(2), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/axis_index" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=285}
+  %shift-right-logical.4.2 = u32[] shift-right-logical(%param_0_0.1, %constant_121_2), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/axis_index" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=285 scheduling_name="shift-right-logical.4.2"}
+  %and.14.2 = u32[] and(%shift-right-logical.4.2, %constant_122_3), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/axis_index" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=285 scheduling_name="and.14.2"}
+  %convert.41.2 = s32[] convert(%and.14.2), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/axis_index" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=285 scheduling_name="convert.41.2"}
+  ROOT %tuple.7 = (s32[], s32[]) tuple(%convert.42.2, %convert.41.2), metadata={scheduling_name="tuple.7"}
+}
+
+%async_computation (param_0.232: c128[9,1,5,4,4,11520]) -> c128[9,1,5,4,4,11520] {
+  %param_0.232 = c128[9,1,5,4,4,11520]{5,3,2,1,0,4} parameter(0), metadata={scheduling_name="param_0.232"}
+  ROOT %all-to-all.4 = c128[9,1,5,4,4,11520]{5,3,2,1,0,4} all-to-all(%param_0.232), channel_id=3, replica_groups={{0,1,2,3},{4,5,6,7},{8,9,10,11},{12,13,14,15}}, dimensions={4}, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_rchunk)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=429 scheduling_name="all-to-all.4"}
+}
+
+%async_computation.1 (param_0.233: c128[4,3,168,11520]) -> c128[4,3,168,11520] {
+  %param_0.233 = c128[4,3,168,11520]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.233"}
+  ROOT %all-to-all.1.1 = c128[4,3,168,11520]{3,2,1,0} all-to-all(%param_0.233), channel_id=5, replica_groups={{0,4,8,12},{1,5,9,13},{2,6,10,14},{3,7,11,15}}, dimensions={0}, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=884 scheduling_name="all-to-all.1.1"}
+}
+
+%async_computation.2 (param_0.234: c128[3,672,1,4,2880]) -> c128[3,672,1,4,2880] {
+  %param_0.234 = c128[3,672,1,4,2880]{4,2,1,0,3} parameter(0), metadata={scheduling_name="param_0.234"}
+  ROOT %all-to-all.2.1 = c128[3,672,1,4,2880]{4,2,1,0,3} all-to-all(%param_0.234), channel_id=6, replica_groups={{0,4,8,12},{1,5,9,13},{2,6,10,14},{3,7,11,15}}, dimensions={3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=885 scheduling_name="all-to-all.2.1"}
+}
+
+%wrapped_transpose_computation.1 (param_0.236: c128[9,168,80,4]) -> c128[9,80,168,4] {
+  %param_0.236 = c128[9,168,80,4]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.236"}
+  ROOT %transpose.133.1 = c128[9,80,168,4]{3,2,1,0} transpose(%param_0.236), dimensions={0,2,1,3}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=148 scheduling_name="transpose.133.1"}
+}
+
+%fused_divide (param_0.94: c128[9,80,4,11520], param_1.67: c128[80], param_2.156: c128[80]) -> (c128[80,9,4,11520], c128[80,9,4,11520]) {
+  %param_0.94 = c128[9,80,4,11520]{3,2,0,1} parameter(0), metadata={scheduling_name="param_0.94"}
+  %bitcast.1125.2 = c128[80,9,4,11520]{3,2,1,0} bitcast(%param_0.94), metadata={scheduling_name="bitcast.1125.2"}
+  %param_1.67 = c128[80]{0} parameter(1), metadata={scheduling_name="param_1.67"}
+  %broadcast.361.1 = c128[80,9,4,11520]{3,2,1,0} broadcast(%param_1.67), dimensions={0}, metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1100 scheduling_name="broadcast.361.1"}
+  %divide.14.1 = c128[80,9,4,11520]{3,2,1,0} divide(%bitcast.1125.2, %broadcast.361.1), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1100 scheduling_name="divide.14.1"}
+  %param_2.156 = c128[80]{0} parameter(2), metadata={scheduling_name="param_2.156"}
+  %broadcast.359.1.clone.1 = c128[80,9,4,11520]{3,2,1,0} broadcast(%param_2.156), dimensions={0}, metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1100 scheduling_name="broadcast.359.1.clone.1"}
+  %divide.13.1.clone.1 = c128[80,9,4,11520]{3,2,1,0} divide(%bitcast.1125.2, %broadcast.359.1.clone.1), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1100 scheduling_name="divide.13.1.clone.1"}
+  ROOT %tuple.3 = (c128[80,9,4,11520]{3,2,1,0}, c128[80,9,4,11520]{3,2,1,0}) tuple(%divide.14.1, %divide.13.1.clone.1), metadata={scheduling_name="tuple.3"}
+}
+
+%wrapped_transpose_computation (param_0.235: c128[9,168,80,4]) -> c128[9,80,168,4] {
+  %param_0.235 = c128[9,168,80,4]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.235"}
+  ROOT %transpose.135.1 = c128[9,80,168,4]{3,2,1,0} transpose(%param_0.235), dimensions={0,2,1,3}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=148 scheduling_name="transpose.135.1"}
+}
+
+%fused_transpose.5 (param_0.32: c128[9,46080,672]) -> c128[4,4,168,11520,9] {
+  %param_0.32 = c128[9,46080,672]{2,1,0} parameter(0), metadata={scheduling_name="param_0.32"}
+  %bitcast.1141.1 = c128[9,4,11520,168,4]{4,3,2,1,0} bitcast(%param_0.32), metadata={scheduling_name="bitcast.1141.1"}
+  ROOT %transpose.134.1 = c128[4,4,168,11520,9]{4,3,2,1,0} transpose(%bitcast.1141.1), dimensions={4,1,3,2,0}, metadata={op_name="jit(_kernel)/jit(main)/jit(_accum)/kmna,knbr->kabmr/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=145 scheduling_name="transpose.134.1"}
+}
+
+%fused_transpose.4 (param_0.29: c128[9,46080,672]) -> c128[4,4,168,11520,9] {
+  %param_0.29 = c128[9,46080,672]{2,1,0} parameter(0), metadata={scheduling_name="param_0.29"}
+  %bitcast.1175.1 = c128[9,4,11520,168,4]{4,3,2,1,0} bitcast(%param_0.29), metadata={scheduling_name="bitcast.1175.1"}
+  ROOT %transpose.136.1 = c128[4,4,168,11520,9]{4,3,2,1,0} transpose(%bitcast.1175.1), dimensions={4,1,3,2,0}, metadata={op_name="jit(_kernel)/jit(main)/jit(_accum)/kmna,knbr->kabmr/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=145 scheduling_name="transpose.136.1"}
+}
+
+%command_buffer (p: c128[9,80,4,11520], p.1: c128[80], p.2: c128[80], p.3: c128[9,168,80,4], p.4: c128[9,80,168,4]) -> (c128[4,4,168,11520,9], c128[4,4,168,11520,9]) {
+  %p = c128[9,80,4,11520]{3,2,0,1} parameter(0)
+  %p.1 = c128[80]{0} parameter(1)
+  %p.2 = c128[80]{0} parameter(2)
+  %p.3 = c128[9,168,80,4]{3,2,1,0} parameter(3)
+  %p.4 = c128[9,80,168,4]{3,2,1,0} parameter(4)
+  %loop_divide_fusion = (c128[80,9,4,11520]{3,2,1,0}, c128[80,9,4,11520]{3,2,1,0}) fusion(%p, %p.1, %p.2), kind=kLoop, calls=%fused_divide, metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1100 scheduling_name="loop_divide_fusion"}
+  %wrapped_transpose = c128[9,80,168,4]{3,2,1,0} fusion(%p.3), kind=kLoop, calls=%wrapped_transpose_computation, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=148 scheduling_name="wrapped_transpose"}
+  %get-tuple-element.23 = c128[80,9,4,11520]{3,2,1,0} get-tuple-element(%loop_divide_fusion), index=1, metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1100 scheduling_name="get-tuple-element.23"}
+  %bitcast.1133.0 = c128[80,9,46080]{2,1,0} bitcast(%get-tuple-element.23), metadata={scheduling_name="bitcast.1133.0"}
+  %bitcast.1138.0 = c128[9,80,672]{2,1,0} bitcast(%p.4), metadata={scheduling_name="bitcast.1138.0"}
+  %custom-call.76.0 = (c128[9,46080,672]{2,1,0}, s8[4194304]{0}) custom-call(%bitcast.1133.0, %bitcast.1138.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_kernel)/jit(main)/jit(_accum)/kmna,knbr->kabmr/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=145 scheduling_name="custom-call.76.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["0"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["1"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"414720","rhs_stride":"53760","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.22 = c128[80,9,4,11520]{3,2,1,0} get-tuple-element(%loop_divide_fusion), index=0, metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1100 scheduling_name="get-tuple-element.22"}
+  %bitcast.1167.0 = c128[80,9,46080]{2,1,0} bitcast(%get-tuple-element.22), metadata={scheduling_name="bitcast.1167.0"}
+  %bitcast.1172.0 = c128[9,80,672]{2,1,0} bitcast(%wrapped_transpose), metadata={scheduling_name="bitcast.1172.0"}
+  %custom-call.77.0 = (c128[9,46080,672]{2,1,0}, s8[4194304]{0}) custom-call(%bitcast.1167.0, %bitcast.1172.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(_kernel)/jit(main)/jit(_accum)/kmna,knbr->kabmr/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=145 scheduling_name="custom-call.77.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["0"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["1"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"414720","rhs_stride":"53760","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.18.0 = c128[9,46080,672]{2,1,0} get-tuple-element(%custom-call.76.0), index=0, metadata={op_name="jit(_kernel)/jit(main)/jit(_accum)/kmna,knbr->kabmr/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=145 scheduling_name="get-tuple-element.18.0"}
+  %loop_transpose_fusion.2 = c128[4,4,168,11520,9]{4,3,2,1,0} fusion(%get-tuple-element.18.0), kind=kLoop, calls=%fused_transpose.5, metadata={op_name="jit(_kernel)/jit(main)/jit(_accum)/kmna,knbr->kabmr/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=145 deduplicated_name="loop_transpose_fusion.1" scheduling_name="loop_transpose_fusion.2"}
+  %get-tuple-element.19.0 = c128[9,46080,672]{2,1,0} get-tuple-element(%custom-call.77.0), index=0, metadata={op_name="jit(_kernel)/jit(main)/jit(_accum)/kmna,knbr->kabmr/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=145 scheduling_name="get-tuple-element.19.0"}
+  %loop_transpose_fusion.1 = c128[4,4,168,11520,9]{4,3,2,1,0} fusion(%get-tuple-element.19.0), kind=kLoop, calls=%fused_transpose.4, metadata={op_name="jit(_kernel)/jit(main)/jit(_accum)/kmna,knbr->kabmr/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=145 deduplicated_name="loop_transpose_fusion.1" scheduling_name="loop_transpose_fusion.1"}
+  ROOT %tuple.8 = (c128[4,4,168,11520,9]{4,3,2,1,0}, c128[4,4,168,11520,9]{4,3,2,1,0}) tuple(%loop_transpose_fusion.2, %loop_transpose_fusion.1)
+}
+
+ENTRY %main.524_spmd (param.1.0: token[], param.4.0: c128[9,168,80,4], param.6.0: c128[9,168,80,4], param.2.0: c128[9,168,168], param.3.0: f64[80], param.5.0: f64[80], param.7: s32[]) -> (token[], c128[9,672,2880]) {
+  %constant_131_0 = f64[9]{0} constant({0, 0, 0, 0.33333333333333331, 0.33333333333333331, 0.33333333333333331, 0.66666666666666663, 0.66666666666666663, 0.66666666666666663}), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378}
+  %constant_133_0 = f64[9]{0} constant({0, 0.33333333333333331, 0.66666666666666663, 0, 0.33333333333333331, 0.66666666666666663, 0, 0.33333333333333331, 0.66666666666666663}), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=379}
+  %constant_120_0 = s64[] constant(65891424)
+  %param.1.0 = token[] parameter(0), sharding={replicated}, metadata={scheduling_name="param.1.0"}
+  %param.4.0 = c128[9,168,80,4]{3,2,1,0} parameter(1), sharding={devices=[1,4,1,1,4]<=[16] last_tile_dim_replicate}, metadata={op_name="psi_l_rmuT_X_fit" scheduling_name="param.4.0"}
+  %param.3.0 = f64[80]{0} parameter(4), sharding={replicated}, metadata={op_name="norms_l" scheduling_name="param.3.0"}
+  %param.5.0 = f64[80]{0} parameter(5), sharding={replicated}, metadata={op_name="norms_r" scheduling_name="param.5.0"}
+  %param.2.0 = c128[9,168,168]{2,1,0} parameter(3), sharding={devices=[1,4,4]<=[16]}, metadata={op_name="L_q" scheduling_name="param.2.0"}
+  %param.6.0 = c128[9,168,80,4]{3,2,1,0} parameter(2), sharding={devices=[1,4,1,1,4]<=[16] last_tile_dim_replicate}, metadata={op_name="psi_r_rmuT_X_fit" scheduling_name="param.6.0"}
+  %constant_189_0 = c128[4]{0} constant({(-0, -1), (0, 1), (-0, -1), (0, 1)}), metadata={op_name="jit(_kernel)/jit(main)/squeeze" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=99}
+  %constant_240_0 = s64[4,1]{1,0} constant({ {3}, {2}, {1}, {0} }), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/jit(_take)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %param.7 = s32[] parameter(6), sharding={replicated}, metadata={op_name="r_start_dyn" scheduling_name="param.7"}
+  %partition-id.3.0 = u32[] partition-id(), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/axis_index" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=285 scheduling_name="partition-id.3.0"}
+  %loop_convert_fusion.1 = (s32[], s32[]) fusion(%partition-id.3.0), kind=kLoop, calls=%fused_convert.1, metadata={scheduling_name="loop_convert_fusion.1"}
+  %input_slice_fusion = (f64[80]{0}, f64[5184]{0}) fusion(%constant_133_0, %constant_131_0), kind=kInput, calls=%fused_slice.1, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="input_slice_fusion"}
+  %get-tuple-element.30 = s32[] get-tuple-element(%loop_convert_fusion.1), index=0, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/axis_index" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=286 scheduling_name="get-tuple-element.30"}
+  %get-tuple-element.31 = s32[] get-tuple-element(%loop_convert_fusion.1), index=1, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/axis_index" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=285 scheduling_name="get-tuple-element.31"}
+  %custom-call.71.0 = (token[], c128[9,5,4,24,24,80]{5,4,3,2,1,0}) custom-call(%constant_120_0, %param.1.0, %get-tuple-element.31, %get-tuple-element.30), custom_call_target="xla_python_gpu_callback", operand_layout_constraints={s64[], token[], s32[], s32[]}, custom_call_has_side_effect=true, api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/io_callback" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=287 scheduling_name="custom-call.71.0"}, backend_config="65891424"
+  %get-tuple-element.28 = f64[80]{0} get-tuple-element(%input_slice_fusion), index=0, metadata={scheduling_name="get-tuple-element.28"}
+  %bitcast.1373 = f64[1,1,1,80]{3,2,1,0} bitcast(%get-tuple-element.28), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=380 scheduling_name="bitcast.1373"}
+  %get-tuple-element.29 = f64[5184]{0} get-tuple-element(%input_slice_fusion), index=1, metadata={scheduling_name="get-tuple-element.29"}
+  %bitcast.1374 = f64[1,9,24,24]{3,2,1,0} bitcast(%get-tuple-element.29), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=378 scheduling_name="bitcast.1374"}
+  %loop_select_fusion.1 = (f64[9,24,24,80]{3,2,1,0}, f64[9,24,24,80]{3,2,1,0}) fusion(%bitcast.1373, %bitcast.1374), kind=kLoop, calls=%fused_select.1, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="loop_select_fusion.1"}
+  %get-tuple-element.14.0 = c128[9,5,4,24,24,80]{5,4,3,2,1,0} get-tuple-element(%custom-call.71.0), index=1, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/io_callback" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=287 scheduling_name="get-tuple-element.14.0"}
+  %fft.12.0 = c128[9,5,4,24,24,80]{5,4,3,2,1,0} fft(%get-tuple-element.14.0), fft_type=IFFT, fft_length={24,24,80}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325 scheduling_name="fft.12.0"}
+  %get-tuple-element.24 = f64[9,24,24,80]{3,2,1,0} get-tuple-element(%loop_select_fusion.1), index=0, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="get-tuple-element.24"}
+  %get-tuple-element.25 = f64[9,24,24,80]{3,2,1,0} get-tuple-element(%loop_select_fusion.1), index=1, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=376 scheduling_name="get-tuple-element.25"}
+  %loop_transpose_fusion.4 = c128[4,180,11520]{2,1,0} fusion(%fft.12.0, %get-tuple-element.25, %get-tuple-element.24), kind=kLoop, calls=%fused_transpose.7, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_rchunk)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=429 scheduling_name="loop_transpose_fusion.4"}
+  %bitcast.1115.0 = c128[9,1,5,4,4,11520]{5,3,2,1,0,4} bitcast(%loop_transpose_fusion.4), metadata={scheduling_name="bitcast.1115.0"}
+  %all-to-all-start = ((c128[9,1,5,4,4,11520]{5,3,2,1,0,4}), c128[9,1,5,4,4,11520]{5,3,2,1,0,4}) async-start(%bitcast.1115.0), calls=%async_computation, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_rchunk)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=429 scheduling_name="all-to-all-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-to-all-done = c128[9,1,5,4,4,11520]{5,3,2,1,0,4} async-done(%all-to-all-start), metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_rchunk)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=429 scheduling_name="all-to-all-done"}
+  %loop_transpose_fusion.3 = c128[4,5,9,46080]{3,2,1,0} fusion(%all-to-all-done), kind=kLoop, calls=%fused_transpose.6, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_rchunk)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=429 scheduling_name="loop_transpose_fusion.3"}
+  %bitcast.1122.0 = c128[9,20,4,11520]{3,2,0,1} bitcast(%loop_transpose_fusion.3), metadata={scheduling_name="bitcast.1122.0"}
+  %all-gather-start.2 = (c128[9,20,4,11520]{3,2,0,1}, c128[9,80,4,11520]{3,2,0,1}) all-gather-start(%bitcast.1122.0), channel_id=4, replica_groups=[4,4]<=[4,4]T(1,0), dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=433 scheduling_name="all-gather-start.2"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":true,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %wrapped_transpose.1 = c128[9,80,168,4]{3,2,1,0} fusion(%param.4.0), kind=kLoop, calls=%wrapped_transpose_computation.1, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=148 scheduling_name="wrapped_transpose.1"}
+  %loop_convert_fusion = (c128[80]{0}, c128[80]{0}) fusion(%param.3.0, %param.5.0), kind=kLoop, calls=%fused_convert, metadata={scheduling_name="loop_convert_fusion"}
+  %input_transpose_fusion.5 = c128[168,1512]{1,0} fusion(%param.2.0), kind=kInput, calls=%fused_transpose.10, metadata={op_name="L_q" scheduling_name="input_transpose_fusion.5"}
+  %all-gather-done.2 = c128[9,80,4,11520]{3,2,0,1} all-gather-done(%all-gather-start.2), metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=433 scheduling_name="all-gather-done.2"}
+  %bitcast.948.0 = c128[9,168,168]{1,0,2} bitcast(%input_transpose_fusion.5), metadata={scheduling_name="bitcast.948.0"}
+  %all-gather-start = (c128[9,168,168]{1,0,2}, c128[9,168,672]{1,0,2}) all-gather-start(%bitcast.948.0), channel_id=1, replica_groups=[4,4]<=[16], dimensions={2}, use_global_device_ids=true, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=832 scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %get-tuple-element.26 = c128[80]{0} get-tuple-element(%loop_convert_fusion), index=0, metadata={op_name="jit(_kernel)/jit(main)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1100 scheduling_name="get-tuple-element.26"}
+  %get-tuple-element.27 = c128[80]{0} get-tuple-element(%loop_convert_fusion), index=1, metadata={op_name="jit(_kernel)/jit(main)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=1100 scheduling_name="get-tuple-element.27"}
+  %call = (c128[4,4,168,11520,9]{4,3,2,1,0}, c128[4,4,168,11520,9]{4,3,2,1,0}) call(%all-gather-done.2, %get-tuple-element.27, %get-tuple-element.26, %param.6.0, %wrapped_transpose.1), to_apply=%command_buffer
+  %get-tuple-element.34 = c128[4,4,168,11520,9]{4,3,2,1,0} get-tuple-element(%call), index=0
+  %get-tuple-element.37 = c128[4,4,168,11520,9]{4,3,2,1,0} get-tuple-element(%call), index=1
+  %bitcast.1145.0 = c128[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} bitcast(%get-tuple-element.34), metadata={scheduling_name="bitcast.1145.0"}
+  %fft.13.0 = c128[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} fft(%bitcast.1145.0), fft_type=IFFT, fft_length={3,3,1}, metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325 scheduling_name="fft.13.0"}
+  %bitcast.1179.0 = c128[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} bitcast(%get-tuple-element.37), metadata={scheduling_name="bitcast.1179.0"}
+  %fft.14.0 = c128[4,4,168,11520,3,3,1]{6,5,4,3,2,1,0} fft(%bitcast.1179.0), fft_type=IFFT, fft_length={3,3,1}, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325 scheduling_name="fft.14.0"}
+  %loop_reduce_fusion = c128[168,11520,9]{2,1,0} fusion(%constant_189_0, %constant_240_0, %fft.14.0, %fft.13.0), kind=kLoop, calls=%fused_reduce, metadata={scheduling_name="loop_reduce_fusion"}
+  %bitcast.1216.0 = c128[168,11520,3,3,1]{4,3,2,1,0} bitcast(%loop_reduce_fusion), metadata={scheduling_name="bitcast.1216.0"}
+  %fft.15.0 = c128[168,11520,3,3,1]{4,3,2,1,0} fft(%bitcast.1216.0), fft_type=FFT, fft_length={3,3,1}, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_contract_fft)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343 scheduling_name="fft.15.0"}
+  %input_transpose_fusion.2 = c128[12,1935360]{1,0} fusion(%fft.15.0), kind=kInput, calls=%fused_transpose.3, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=884 scheduling_name="input_transpose_fusion.2"}
+  %all-gather-done = c128[9,168,672]{1,0,2} all-gather-done(%all-gather-start), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=832 scheduling_name="all-gather-done"}
+  %bitcast.1229.0 = c128[4,3,168,11520]{3,2,1,0} bitcast(%input_transpose_fusion.2), metadata={scheduling_name="bitcast.1229.0"}
+  %all-to-all-start.1 = ((c128[4,3,168,11520]{3,2,1,0}), c128[4,3,168,11520]{3,2,1,0}) async-start(%bitcast.1229.0), calls=%async_computation.1, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=884 scheduling_name="all-to-all-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":true,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %input_transpose_fusion.4 = c128[168,9,672]{2,1,0} fusion(%all-gather-done), kind=kInput, calls=%fused_transpose.9, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=832 scheduling_name="input_transpose_fusion.4"}
+  %all-to-all-done.1 = c128[4,3,168,11520]{3,2,1,0} async-done(%all-to-all-start.1), metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=884 scheduling_name="all-to-all-done.1"}
+  %bitcast.955.0 = c128[9,168,672]{2,0,1} bitcast(%input_transpose_fusion.4), metadata={scheduling_name="bitcast.955.0"}
+  %all-gather-start.1 = (c128[9,168,672]{2,0,1}, c128[9,672,672]{2,0,1}) all-gather-start(%bitcast.955.0), channel_id=2, replica_groups=[4,4]<=[4,4]T(1,0), dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=832 scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":true,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %loop_transpose_fusion = c128[4,2016,2880]{2,1,0} fusion(%all-to-all-done.1), kind=kLoop, calls=%fused_transpose.2, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=884 scheduling_name="loop_transpose_fusion"}
+  %all-gather-done.1 = c128[9,672,672]{2,0,1} all-gather-done(%all-gather-start.1), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=832 scheduling_name="all-gather-done.1"}
+  %bitcast.1239.0 = c128[3,672,1,4,2880]{4,2,1,0,3} bitcast(%loop_transpose_fusion), metadata={scheduling_name="bitcast.1239.0"}
+  %all-to-all-start.2 = ((c128[3,672,1,4,2880]{4,2,1,0,3}), c128[3,672,1,4,2880]{4,2,1,0,3}) async-start(%bitcast.1239.0), calls=%async_computation.2, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=885 scheduling_name="all-to-all-start.2"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":true,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %input_reduce_fusion = c128[672,9]{1,0} fusion(%all-gather-done.1), kind=kInput, calls=%fused_reduce.1, metadata={scheduling_name="input_reduce_fusion"}
+  %all-to-all-done.2 = c128[3,672,1,4,2880]{4,2,1,0,3} async-done(%all-to-all-start.2), metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=885 scheduling_name="all-to-all-done.2"}
+  %loop_slice_fusion = c128[3,3,672,1,2880]{4,3,2,1,0} fusion(%all-to-all-done.2), kind=kLoop, calls=%fused_slice, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=885 scheduling_name="loop_slice_fusion"}
+  %input_reduce_fusion.1 = c128[9]{0} fusion(%input_reduce_fusion), kind=kInput, calls=%fused_reduce.2, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(trace))/reduce_sum" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="input_reduce_fusion.1"}
+  %bitcast.1246.0 = c128[9,672,1,2880]{3,1,0,2} bitcast(%loop_slice_fusion), metadata={scheduling_name="bitcast.1246.0"}
+  %collective-permute-start = (c128[9,672,1,2880]{3,1,0,2}, c128[9,672,1,2880]{3,1,0,2}) collective-permute-start(%bitcast.1246.0), channel_id=7, source_target_pairs={{0,0},{4,1},{8,2},{12,3},{1,4},{5,5},{9,6},{13,7},{2,8},{6,9},{10,10},{14,11},{3,12},{7,13},{11,14},{15,15}}, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=885 scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %loop_multiply_fusion = f64[9]{0} fusion(%input_reduce_fusion.1), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=787 scheduling_name="loop_multiply_fusion"}
+  %input_transpose_fusion.3 = c128[6048,672]{1,0} fusion(%all-gather-done.1, %loop_multiply_fusion), kind=kInput, calls=%fused_transpose.8, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=788 scheduling_name="input_transpose_fusion.3"}
+  %bitcast.989.0 = c128[9,672,672]{1,2,0} bitcast(%input_transpose_fusion.3), metadata={scheduling_name="bitcast.989.0"}
+  %custom-call.72.0 = (c128[9,672,672]{1,2,0}, s32[9,672]{1,0}, s32[9]{0}) custom-call(%bitcast.989.0), custom_call_target="cusolver_getrf_ffi", operand_layout_constraints={c128[9,672,672]{1,2,0}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/lu" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="custom-call.72.0"}, backend_config={}
+  %get-tuple-element.15.0 = s32[9,672]{1,0} get-tuple-element(%custom-call.72.0), index=1, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/lu" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="get-tuple-element.15.0"}
+  %loop_add_fusion = s32[9,672]{1,0} fusion(%get-tuple-element.15.0), kind=kLoop, calls=%fused_add, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/lu" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="loop_add_fusion"}
+  %custom-call.73.0 = s32[9,672]{1,0} custom-call(%loop_add_fusion), custom_call_target="cu_lu_pivots_to_permutation", operand_layout_constraints={s32[9,672]{1,0}}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/lu_pivots_to_permutation" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="custom-call.73.0"}, backend_config={}
+  %get-tuple-element.12.0 = s32[9]{0} get-tuple-element(%custom-call.72.0), index=2, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/lu" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="get-tuple-element.12.0"}
+  %get-tuple-element.13.0 = c128[9,672,672]{1,2,0} get-tuple-element(%custom-call.72.0), index=0, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/lu" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="get-tuple-element.13.0"}
+  %loop_select_fusion = c128[9,672,672]{2,1,0} fusion(%get-tuple-element.13.0, %get-tuple-element.12.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/lu" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="loop_select_fusion"}
+  %collective-permute-done = c128[9,672,1,2880]{3,1,0,2} collective-permute-done(%collective-permute-start), metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=885 scheduling_name="collective-permute-done"}
+  %input_transpose_fusion.1 = c128[9,2880,672]{2,1,0} fusion(%collective-permute-done, %custom-call.73.0), kind=kInput, calls=%fused_transpose.1, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/vmap(jit(_lu_solve))/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="input_transpose_fusion.1"}
+  %bitcast.1280.0 = c128[9,672,2880]{1,2,0} bitcast(%input_transpose_fusion.1), metadata={scheduling_name="bitcast.1280.0"}
+  %bitcast.1006.0 = c128[9,672,672]{1,2,0} bitcast(%loop_select_fusion), metadata={scheduling_name="bitcast.1006.0"}
+  %triangular-solve.10.0 = (c128[9,672,2880]{1,2,0}, s8[144]{0}) custom-call(%bitcast.1006.0, %bitcast.1280.0), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/vmap(jit(_lu_solve))/triangular_solve" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="triangular-solve.10.0"}, backend_config={"left_side":true,"lower":true,"unit_diagonal":true,"transpose_a":"NO_TRANSPOSE"}
+  %get-tuple-element.20.0 = c128[9,672,2880]{1,2,0} get-tuple-element(%triangular-solve.10.0), index=0, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/vmap(jit(_lu_solve))/triangular_solve" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="get-tuple-element.20.0"}
+  %triangular-solve.11.0 = (c128[9,672,2880]{1,2,0}, s8[144]{0}) custom-call(%bitcast.1006.0, %get-tuple-element.20.0), custom_call_target="__cublas$triangularSolve", metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/vmap(jit(_lu_solve))/triangular_solve" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="triangular-solve.11.0"}, backend_config={"left_side":true,"lower":false,"unit_diagonal":false,"transpose_a":"NO_TRANSPOSE"}
+  %get-tuple-element.21.0 = c128[9,672,2880]{1,2,0} get-tuple-element(%triangular-solve.11.0), index=0, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(solve))/vmap(jit(_lu_solve))/triangular_solve" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=789 scheduling_name="get-tuple-element.21.0"}
+  %input_transpose_fusion = c128[9,672,2880]{2,1,0} fusion(%get-tuple-element.21.0), kind=kInput, calls=%fused_transpose, metadata={scheduling_name="input_transpose_fusion"}
+  %get-tuple-element.16.0 = token[] get-tuple-element(%custom-call.71.0), index=0, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/io_callback" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/psi_G_store.py" source_line=287 scheduling_name="get-tuple-element.16.0"}
+  ROOT %tuple.2.0 = (token[], c128[9,672,2880]{2,1,0}) tuple(%get-tuple-element.16.0, %input_transpose_fusion), metadata={scheduling_name="tuple.2.0"}
+}
+

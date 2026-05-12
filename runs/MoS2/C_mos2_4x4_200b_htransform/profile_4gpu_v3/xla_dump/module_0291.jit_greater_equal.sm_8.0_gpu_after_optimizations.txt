@@ -1,0 +1,16 @@
+HloModule jit_greater_equal, is_scheduled=true, entry_computation_layout={(f64[4]{0}, s64[])->pred[4]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="a6b8f88575335d03b5d736258cccbeb1"}
+
+%fused_compare (param_0: f64[4], param_1.2: s64[]) -> pred[4] {
+  %param_0 = f64[4]{0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.2 = s64[] parameter(1), metadata={scheduling_name="param_1.2"}
+  %convert.2.1 = f64[] convert(%param_1.2), metadata={op_name="jit(greater_equal)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=391 scheduling_name="convert.2.1"}
+  %broadcast.2.1 = f64[4]{0} broadcast(%convert.2.1), dimensions={}, metadata={op_name="jit(greater_equal)/jit(main)/ge" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=391 scheduling_name="broadcast.2.1"}
+  ROOT %compare.2.1 = pred[4]{0} compare(%param_0, %broadcast.2.1), direction=GE, metadata={op_name="jit(greater_equal)/jit(main)/ge" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=391 scheduling_name="compare.2.1"}
+}
+
+ENTRY %main.6 (Arg_0.1.0: f64[4], Arg_1.2.0: s64[]) -> pred[4] {
+  %Arg_1.2.0 = s64[] parameter(1), metadata={op_name="y" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[4]{0} parameter(0), metadata={op_name="x" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_compare_fusion = pred[4]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_compare, metadata={op_name="jit(greater_equal)/jit(main)/ge" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=391 scheduling_name="loop_compare_fusion"}
+}
+

@@ -1,0 +1,573 @@
+HloModule jit_scan, is_scheduled=true, entry_computation_layout={(c128[64,4,4,480]{3,2,1,0}, c128[64,4,4,480]{3,2,1,0}, c128[480,480]{1,0}, c128[480,480,4,4,4]{4,3,2,1,0}, f64[64,4]{1,0}, /*index=5*/f64[64,4]{1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{3,2,1,0}, /*index=10*/s64[], c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, c128[1024]{0})->(s64[], c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, c128[1024]{0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true,true,true,true,true,true,true,true,true,true,true,true,true}, allow_spmd_sharding_propagation_to_output={true,true,true,true,true}, frontend_attributes={fingerprint_before_lhs="74454acb97066aee4fc84b254640cba6"}
+
+%fused_subtract (param_0: c128[1024], param_1.18: c128[1024,200], param_2.25: s64[], param_3.15: c128[], param_4.16: s64[]) -> c128[1024] {
+  %param_0 = c128[1024]{0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_2.25 = s64[] parameter(2), metadata={scheduling_name="param_2.25"}
+  %param_4.16 = s64[] parameter(4), metadata={scheduling_name="param_4.16"}
+  %compare.201.3 = pred[] compare(%param_2.25, %param_4.16), direction=LT, metadata={op_name="jit(scan)/jit(main)/while/body/while/body/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=269 scheduling_name="compare.201.3"}
+  %param_3.15 = c128[] parameter(3), metadata={scheduling_name="param_3.15"}
+  %constant_318_2 = c128[] constant((0, 0))
+  %select.211.3 = c128[] select(%compare.201.3, %param_3.15, %constant_318_2), metadata={op_name="jit(scan)/jit(main)/while/body/while/body/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=271 scheduling_name="select.211.3"}
+  %broadcast.172.1 = c128[1024,1]{1,0} broadcast(%select.211.3), dimensions={}, metadata={op_name="jit(scan)/jit(main)/while/body/while/body/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=272 scheduling_name="broadcast.172.1"}
+  %param_1.18 = c128[1024,200]{1,0} parameter(1), metadata={scheduling_name="param_1.18"}
+  %constant_320_2 = s64[] constant(0)
+  %compare.203.2 = pred[] compare(%param_2.25, %constant_320_2), direction=LT, metadata={op_name="jit(scan)/jit(main)/while/body/while/body/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=270 scheduling_name="compare.203.2"}
+  %constant_319_1 = s64[] constant(200)
+  %add.149.2 = s64[] add(%param_2.25, %constant_319_1), metadata={op_name="jit(scan)/jit(main)/while/body/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=270 scheduling_name="add.149.2"}
+  %select.210.1 = s64[] select(%compare.203.2, %add.149.2, %param_2.25), metadata={op_name="jit(scan)/jit(main)/while/body/while/body/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=270 scheduling_name="select.210.1"}
+  %dynamic-slice.37.3 = c128[1024,1]{1,0} dynamic-slice(%param_1.18, %constant_320_2, %select.210.1), dynamic_slice_sizes={1024,1}, metadata={op_name="jit(scan)/jit(main)/while/body/while/body/dynamic_slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=270 scheduling_name="dynamic-slice.37.3"}
+  %multiply.295.1 = c128[1024,1]{1,0} multiply(%broadcast.172.1, %dynamic-slice.37.3), metadata={op_name="jit(scan)/jit(main)/while/body/while/body/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=272 scheduling_name="multiply.295.1"}
+  %bitcast.1144.1 = c128[1024]{0} bitcast(%multiply.295.1), metadata={scheduling_name="bitcast.1144.1"}
+  ROOT %subtract.27.1 = c128[1024]{0} subtract(%param_0, %bitcast.1144.1), metadata={op_name="jit(scan)/jit(main)/while/body/while/body/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=272 scheduling_name="subtract.27.1"}
+}
+
+%scalar_add_computation (scalar_lhs: c128[], scalar_rhs: c128[]) -> c128[] {
+  %scalar_rhs = c128[] parameter(1), metadata={scheduling_name="scalar_rhs"}
+  %scalar_lhs = c128[] parameter(0), metadata={scheduling_name="scalar_lhs"}
+  ROOT %add.147 = c128[] add(%scalar_lhs, %scalar_rhs), metadata={scheduling_name="add.147"}
+}
+
+%fused_reduce (param_0.19: c128[1024], param_1.23: c128[1024,200], param_2.24: s64[]) -> c128[] {
+  %param_1.23 = c128[1024,200]{1,0} parameter(1), metadata={scheduling_name="param_1.23"}
+  %constant_320_1 = s64[] constant(0)
+  %param_2.24 = s64[] parameter(2), metadata={scheduling_name="param_2.24"}
+  %compare.203.4 = pred[] compare(%param_2.24, %constant_320_1), direction=LT, metadata={op_name="jit(scan)/jit(main)/while/body/while/body/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=270 scheduling_name="compare.203.4"}
+  %constant_319_2 = s64[] constant(200)
+  %add.149.4 = s64[] add(%param_2.24, %constant_319_2), metadata={op_name="jit(scan)/jit(main)/while/body/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=270 scheduling_name="add.149.4"}
+  %select.210.4 = s64[] select(%compare.203.4, %add.149.4, %param_2.24), metadata={op_name="jit(scan)/jit(main)/while/body/while/body/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=270 scheduling_name="select.210.4"}
+  %dynamic-slice.37.13 = c128[1024,1]{1,0} dynamic-slice(%param_1.23, %constant_320_1, %select.210.4), dynamic_slice_sizes={1024,1}, metadata={op_name="jit(scan)/jit(main)/while/body/while/body/dynamic_slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=270 scheduling_name="dynamic-slice.37.13"}
+  %real.33.5 = f64[1024,1]{1,0} real(%dynamic-slice.37.13), metadata={op_name="jit(scan)/jit(main)/while/body/while/body/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=271 scheduling_name="real.33.5"}
+  %imag.22.7 = f64[1024,1]{1,0} imag(%dynamic-slice.37.13), metadata={op_name="jit(scan)/jit(main)/while/body/while/body/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=271 scheduling_name="imag.22.7"}
+  %negate.39.5 = f64[1024,1]{1,0} negate(%imag.22.7), metadata={op_name="jit(scan)/jit(main)/while/body/while/body/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=271 scheduling_name="negate.39.5"}
+  %complex.22.3 = c128[1024,1]{1,0} complex(%real.33.5, %negate.39.5), metadata={op_name="jit(scan)/jit(main)/while/body/while/body/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=271 scheduling_name="complex.22.3"}
+  %bitcast.1133.3 = c128[1024]{0} bitcast(%complex.22.3), metadata={scheduling_name="bitcast.1133.3"}
+  %param_0.19 = c128[1024]{0} parameter(0), metadata={scheduling_name="param_0.19"}
+  %multiply.294.3 = c128[1024]{0} multiply(%bitcast.1133.3, %param_0.19), metadata={scheduling_name="multiply.294.3"}
+  %constant_318_1 = c128[] constant((0, 0))
+  ROOT %reduce.9.1 = c128[] reduce(%multiply.294.3, %constant_318_1), dimensions={0}, to_apply=%scalar_add_computation, metadata={op_name="jit(scan)/jit(main)/while/body/while/body/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=271 scheduling_name="reduce.9.1"}
+}
+
+%fused_add (param_0.20: s64[]) -> s64[] {
+  %param_0.20 = s64[] parameter(0), metadata={scheduling_name="param_0.20"}
+  %constant_321_1 = s64[] constant(1)
+  ROOT %add.148.1 = s64[] add(%param_0.20, %constant_321_1), metadata={op_name="jit(scan)/jit(main)/while/body/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=275 scheduling_name="add.148.1"}
+}
+
+%region_4.311 (arg_tuple.312.0: (s64[], c128[1024], s64[], s64[], c128[1024,200])) -> (s64[], c128[1024], s64[], s64[], c128[1024,200]) {
+  %arg_tuple.312.0 = (s64[], c128[1024]{0}, s64[], s64[], c128[1024,200]{1,0}) parameter(0), metadata={scheduling_name="arg_tuple.312.0"}
+  %get-tuple-element.223 = s64[] get-tuple-element(%arg_tuple.312.0), index=0, metadata={scheduling_name="get-tuple-element.223"}
+  %get-tuple-element.230 = s64[] get-tuple-element(%arg_tuple.312.0), index=2, metadata={scheduling_name="get-tuple-element.230"}
+  %get-tuple-element.231 = s64[] get-tuple-element(%arg_tuple.312.0), index=3, metadata={scheduling_name="get-tuple-element.231"}
+  %get-tuple-element.232 = c128[1024,200]{1,0} get-tuple-element(%arg_tuple.312.0), index=4, metadata={scheduling_name="get-tuple-element.232"}
+  %get-tuple-element.224 = c128[1024]{0} get-tuple-element(%arg_tuple.312.0), index=1, metadata={scheduling_name="get-tuple-element.224"}
+  %input_reduce_fusion = c128[] fusion(%get-tuple-element.224, %get-tuple-element.232, %get-tuple-element.223), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(scan)/jit(main)/while/body/while/body/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=271 scheduling_name="input_reduce_fusion"}
+  %loop_subtract_fusion = c128[1024]{0} fusion(%get-tuple-element.224, %get-tuple-element.232, %get-tuple-element.223, %input_reduce_fusion, %get-tuple-element.231), kind=kLoop, calls=%fused_subtract, control-predecessors={%input_reduce_fusion}, metadata={op_name="jit(scan)/jit(main)/while/body/while/body/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=272 scheduling_name="loop_subtract_fusion"}
+  %loop_add_fusion = s64[] fusion(%get-tuple-element.223), kind=kLoop, calls=%fused_add, control-predecessors={%loop_subtract_fusion, %input_reduce_fusion}, metadata={op_name="jit(scan)/jit(main)/while/body/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=275 deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion"}
+  ROOT %tuple.45 = (s64[], c128[1024]{0}, s64[], s64[], c128[1024,200]{1,0}) tuple(%loop_add_fusion, %loop_subtract_fusion, %get-tuple-element.230, %get-tuple-element.231, %get-tuple-element.232), metadata={scheduling_name="tuple.45"}
+}
+
+%wrapped_compare_computation (param_0.135: s64[], param_1.153: s64[]) -> pred[] {
+  %param_0.135 = s64[] parameter(0), metadata={scheduling_name="param_0.135"}
+  %param_1.153 = s64[] parameter(1), metadata={scheduling_name="param_1.153"}
+  ROOT %compare.200.1 = pred[] compare(%param_0.135, %param_1.153), direction=LT, metadata={op_name="jit(scan)/jit(main)/while/body/while/cond/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=275 scheduling_name="compare.200.1"}
+}
+
+%region_5.339 (arg_tuple.340.0: (s64[], c128[1024], s64[], s64[], c128[1024,200])) -> pred[] {
+  %arg_tuple.340.0 = (s64[], c128[1024]{0}, s64[], s64[], c128[1024,200]{1,0}) parameter(0), metadata={scheduling_name="arg_tuple.340.0"}
+  %get-tuple-element.341.0 = s64[] get-tuple-element(%arg_tuple.340.0), index=0, metadata={scheduling_name="get-tuple-element.341.0"}
+  %get-tuple-element.343.0 = s64[] get-tuple-element(%arg_tuple.340.0), index=2, metadata={scheduling_name="get-tuple-element.343.0"}
+  ROOT %wrapped_compare = pred[] fusion(%get-tuple-element.341.0, %get-tuple-element.343.0), kind=kLoop, calls=%wrapped_compare_computation, metadata={op_name="jit(scan)/jit(main)/while/body/while/cond/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=275 scheduling_name="wrapped_compare"}
+}
+
+%fused_multiply (param_0.48: c128[1,480,480,2,2,4,4,4], param_1.59: c128[480,480,4,4,4]) -> c128[1,480,480,2,2,4,4,4] {
+  %param_0.48 = c128[1,480,480,2,2,4,4,4]{7,6,5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.48"}
+  %param_1.59 = c128[480,480,4,4,4]{4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1.59"}
+  %constant_254_1 = c128[] constant((8, 0)), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=82}
+  %broadcast.183.3 = c128[480,480,4,4,4]{4,3,2,1,0} broadcast(%constant_254_1), dimensions={}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=95 scheduling_name="broadcast.183.3"}
+  %multiply.302.3 = c128[480,480,4,4,4]{4,3,2,1,0} multiply(%param_1.59, %broadcast.183.3), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=95 scheduling_name="multiply.302.3"}
+  %broadcast.184.1 = c128[1,480,480,2,2,4,4,4]{7,6,5,4,3,2,1,0} broadcast(%multiply.302.3), dimensions={1,2,5,6,7}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=95 scheduling_name="broadcast.184.1"}
+  ROOT %multiply.303.1 = c128[1,480,480,2,2,4,4,4]{7,6,5,4,3,2,1,0} multiply(%param_0.48, %broadcast.184.1), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=95 scheduling_name="multiply.303.1"}
+}
+
+%fused_transpose.3 (param_0.43: c128[1024]) -> c128[64,16] {
+  %param_0.43 = c128[1024]{0} parameter(0), metadata={scheduling_name="param_0.43"}
+  %bitcast.1217.1 = c128[16,64]{1,0} bitcast(%param_0.43), metadata={scheduling_name="bitcast.1217.1"}
+  ROOT %transpose.133.1 = c128[64,16]{1,0} transpose(%bitcast.1217.1), dimensions={1,0}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=63 scheduling_name="transpose.133.1"}
+}
+
+%wrapped_transpose_computation.1 (param_0.133: c128[64,4,960]) -> c128[64,960,4] {
+  %param_0.133 = c128[64,4,960]{2,1,0} parameter(0), metadata={scheduling_name="param_0.133"}
+  ROOT %transpose.134.1 = c128[64,960,4]{2,1,0} transpose(%param_0.133), dimensions={0,2,1}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kvsN,bcvk->bcksN/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=89 scheduling_name="transpose.134.1"}
+}
+
+%fused_transpose.2 (param_0.38: c128[64,960,960]) -> c128[480,960,2,64] {
+  %param_0.38 = c128[64,960,960]{2,1,0} parameter(0), metadata={scheduling_name="param_0.38"}
+  %bitcast.1271.1 = c128[64,2,960,480]{3,2,1,0} bitcast(%param_0.38), metadata={scheduling_name="bitcast.1271.1"}
+  ROOT %transpose.135.1 = c128[480,960,2,64]{3,2,1,0} transpose(%bitcast.1271.1), dimensions={3,2,1,0}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kctM,bcksN->bMNtsk/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=90 scheduling_name="transpose.135.1"}
+}
+
+%command_buffer (p: c128[1024], p.1: (s64[], s64[], c128[1024,200], f64[200], f64[200], /*index=5*/c128[1024], c128[64,4,4,480], c128[64,4,4,480], c128[480,480], c128[480,480,4,4,4], /*index=10*/f64[64,4], f64[64,4], c128[64,4,2,480], c128[64,4,2,480], c128[64,4,2,480], /*index=15*/c128[64,4,2,480])) -> (c128[64,16], c128[64,4,2,480], c128[64,4,2,480], c128[480,960,2,64]) {
+  %p = c128[1024]{0} parameter(0)
+  %p.1 = (s64[], s64[], c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, /*index=5*/c128[1024]{0}, c128[64,4,4,480]{3,2,1,0}, c128[64,4,4,480]{3,2,1,0}, c128[480,480]{1,0}, c128[480,480,4,4,4]{4,3,2,1,0}, /*index=10*/f64[64,4]{1,0}, f64[64,4]{1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{1,3,2,0}, c128[64,4,2,480]{1,2,3,0}, /*index=15*/c128[64,4,2,480]{3,2,1,0}) parameter(1)
+  %input_transpose_fusion.3 = c128[64,16]{1,0} fusion(%p), kind=kInput, calls=%fused_transpose.3, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=63 scheduling_name="input_transpose_fusion.3"}
+  %bitcast.1257.0 = c128[64,4,4]{2,1,0} bitcast(%input_transpose_fusion.3), metadata={scheduling_name="bitcast.1257.0"}
+  %get-tuple-element.280 = c128[64,4,2,480]{3,2,1,0} get-tuple-element(%p.1), index=15, metadata={scheduling_name="get-tuple-element.280"}
+  %bitcast.1261.0 = c128[64,4,960]{2,1,0} bitcast(%get-tuple-element.280), metadata={scheduling_name="bitcast.1261.0"}
+  %custom-call.6.0 = (c128[64,4,960]{2,1,0}, s8[3948544]{0}) custom-call(%bitcast.1257.0, %bitcast.1261.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kvsN,bcvk->bcksN/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=89 scheduling_name="custom-call.6.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"16","rhs_stride":"3840","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.212.0 = c128[64,4,960]{2,1,0} get-tuple-element(%custom-call.6.0), index=0, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kvsN,bcvk->bcksN/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=89 scheduling_name="get-tuple-element.212.0"}
+  %wrapped_transpose.1 = c128[64,960,4]{2,1,0} fusion(%get-tuple-element.212.0), kind=kLoop, calls=%wrapped_transpose_computation.1, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kvsN,bcvk->bcksN/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=89 scheduling_name="wrapped_transpose.1"}
+  %get-tuple-element.277 = c128[64,4,2,480]{3,2,1,0} get-tuple-element(%p.1), index=12, metadata={scheduling_name="get-tuple-element.277"}
+  %bitcast.1268.0 = c128[64,4,960]{2,1,0} bitcast(%get-tuple-element.277), metadata={scheduling_name="bitcast.1268.0"}
+  %custom-call.7.0 = (c128[64,960,960]{2,1,0}, s8[4194304]{0}) custom-call(%wrapped_transpose.1, %bitcast.1268.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kctM,bcksN->bMNtsk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=90 scheduling_name="custom-call.7.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"3840","rhs_stride":"3840","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.213.0 = c128[64,960,960]{2,1,0} get-tuple-element(%custom-call.7.0), index=0, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kctM,bcksN->bMNtsk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=90 scheduling_name="get-tuple-element.213.0"}
+  %input_transpose_fusion.2 = c128[480,960,2,64]{3,2,1,0} fusion(%get-tuple-element.213.0), kind=kInput, calls=%fused_transpose.2, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kctM,bcksN->bMNtsk/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=90 scheduling_name="input_transpose_fusion.2"}
+  ROOT %tuple.51 = (c128[64,16]{1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{3,2,1,0}, c128[480,960,2,64]{3,2,1,0}) tuple(%input_transpose_fusion.3, %get-tuple-element.280, %get-tuple-element.277, %input_transpose_fusion.2)
+}
+
+%fused_transpose.1 (param_0.47: c128[1,480,480,2,2,4,4,4]) -> c128[64,480,2,2,480] {
+  %param_0.47 = c128[1,480,480,2,2,4,4,4]{7,6,5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.47"}
+  %constant_456_3 = c128[] constant((0.125, 0)), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=96}
+  %broadcast.186.1 = c128[1,480,480,2,2,4,4,4]{7,6,5,4,3,2,1,0} broadcast(%constant_456_3), dimensions={}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=96 scheduling_name="broadcast.186.1"}
+  %multiply.304.1 = c128[1,480,480,2,2,4,4,4]{7,6,5,4,3,2,1,0} multiply(%param_0.47, %broadcast.186.1), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=96 scheduling_name="multiply.304.1"}
+  %bitcast.1291.1 = c128[480,480,2,2,64]{4,3,2,1,0} bitcast(%multiply.304.1), metadata={scheduling_name="bitcast.1291.1"}
+  ROOT %transpose.136.1 = c128[64,480,2,2,480]{4,3,2,1,0} transpose(%bitcast.1291.1), dimensions={4,1,3,2,0}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=97 scheduling_name="transpose.136.1"}
+}
+
+%wrapped_transpose_computation.2 (param_0.134: c128[64,960,4]) -> c128[64,4,960] {
+  %param_0.134 = c128[64,960,4]{2,1,0} parameter(0), metadata={scheduling_name="param_0.134"}
+  ROOT %transpose.137.1 = c128[64,4,960]{2,1,0} transpose(%param_0.134), dimensions={0,2,1}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kctM,bMNtsk->bcNsk/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=98 scheduling_name="transpose.137.1"}
+}
+
+%fused_multiply.1 (param_0.124: c128[64,4,4,480], param_1.151: c128[64,16]) -> c128[64,480] {
+  %param_1.151 = c128[64,16]{1,0} parameter(1), metadata={scheduling_name="param_1.151"}
+  %broadcast.178.3 = c128[64,16,480]{2,1,0} broadcast(%param_1.151), dimensions={0,1}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kcvN,bcvk->bNk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=82 scheduling_name="broadcast.178.3"}
+  %param_0.124 = c128[64,4,4,480]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.124"}
+  %bitcast.1228.5 = c128[64,16,480]{2,1,0} bitcast(%param_0.124), metadata={scheduling_name="bitcast.1228.5"}
+  %multiply.298.5 = c128[64,16,480]{2,1,0} multiply(%broadcast.178.3, %bitcast.1228.5), metadata={scheduling_name="multiply.298.5"}
+  %constant_211_1 = c128[] constant((0, 0))
+  %reduce.24.3 = c128[64,480]{1,0} reduce(%multiply.298.5, %constant_211_1), dimensions={1}, to_apply=%scalar_add_computation, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kcvN,bcvk->bNk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=82 scheduling_name="reduce.24.3"}
+  %constant_456_2 = c128[] constant((0.125, 0)), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=96}
+  %broadcast.179.1 = c128[64,480]{1,0} broadcast(%constant_456_2), dimensions={}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=82 scheduling_name="broadcast.179.1"}
+  ROOT %multiply.299.1 = c128[64,480]{1,0} multiply(%reduce.24.3, %broadcast.179.1), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=82 scheduling_name="multiply.299.1"}
+}
+
+%fused_reduce.1 (param_0.121: c128[64,4,4,480], param_1.148: c128[64,480]) -> c128[64,4,4] {
+  %param_1.148 = c128[64,480]{1,0} parameter(1), metadata={scheduling_name="param_1.148"}
+  %broadcast.180.3 = c128[64,4,4,480]{3,2,1,0} broadcast(%param_1.148), dimensions={0,3}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kcvM,bMk->bcvk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=84 scheduling_name="broadcast.180.3"}
+  %param_0.121 = c128[64,4,4,480]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.121"}
+  %multiply.300.3 = c128[64,4,4,480]{3,2,1,0} multiply(%broadcast.180.3, %param_0.121), metadata={scheduling_name="multiply.300.3"}
+  %constant_211_2 = c128[] constant((0, 0))
+  ROOT %reduce.30.1 = c128[64,4,4]{2,1,0} reduce(%multiply.300.3, %constant_211_2), dimensions={3}, to_apply=%scalar_add_computation, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kcvM,bMk->bcvk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=84 scheduling_name="reduce.30.1"}
+}
+
+%fused_transpose (param_0.116: c128[64,4,4], param_1.142: c128[64,4,4], param_2.116: c128[64,16], param_3.75: f64[64,4], param_4.80: f64[64,4]) -> c128[16,64] {
+  %param_4.80 = f64[64,4]{1,0} parameter(4), metadata={scheduling_name="param_4.80"}
+  %broadcast.176.3 = f64[64,4,4]{2,1,0} broadcast(%param_4.80), dimensions={0,1}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_preconditioner.py" source_line=41 scheduling_name="broadcast.176.3"}
+  %param_3.75 = f64[64,4]{1,0} parameter(3), metadata={scheduling_name="param_3.75"}
+  %broadcast.177.3 = f64[64,4,4]{2,1,0} broadcast(%param_3.75), dimensions={0,2}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_preconditioner.py" source_line=41 scheduling_name="broadcast.177.3"}
+  %subtract.28.3 = f64[64,4,4]{2,1,0} subtract(%broadcast.176.3, %broadcast.177.3), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_preconditioner.py" source_line=41 scheduling_name="subtract.28.3"}
+  %bitcast.1212.7 = f64[1,64,4,4]{3,2,1,0} bitcast(%subtract.28.3), metadata={scheduling_name="bitcast.1212.7"}
+  %convert.51.7 = c128[1,64,4,4]{3,2,1,0} convert(%bitcast.1212.7), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=70 scheduling_name="convert.51.7"}
+  %param_2.116 = c128[64,16]{1,0} parameter(2), metadata={scheduling_name="param_2.116"}
+  %bitcast.1220.5 = c128[1,64,4,4]{3,2,1,0} bitcast(%param_2.116), metadata={scheduling_name="bitcast.1220.5"}
+  %multiply.297.5 = c128[1,64,4,4]{3,2,1,0} multiply(%convert.51.7, %bitcast.1220.5), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=70 scheduling_name="multiply.297.5"}
+  %param_1.142 = c128[64,4,4]{2,1,0} parameter(1), metadata={scheduling_name="param_1.142"}
+  %constant_456_1 = c128[] constant((0.125, 0)), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=96}
+  %broadcast.181.3 = c128[64,4,4]{2,1,0} broadcast(%constant_456_1), dimensions={}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=84 scheduling_name="broadcast.181.3"}
+  %multiply.301.3 = c128[64,4,4]{2,1,0} multiply(%param_1.142, %broadcast.181.3), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=84 scheduling_name="multiply.301.3"}
+  %bitcast.1251.5 = c128[1,64,4,4]{3,2,1,0} bitcast(%multiply.301.3), metadata={scheduling_name="bitcast.1251.5"}
+  %add.156.5 = c128[1,64,4,4]{3,2,1,0} add(%multiply.297.5, %bitcast.1251.5), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=101 scheduling_name="add.156.5"}
+  %param_0.116 = c128[64,4,4]{2,1,0} parameter(0), metadata={scheduling_name="param_0.116"}
+  %bitcast.1309.3 = c128[1,64,4,4]{3,2,1,0} bitcast(%param_0.116), metadata={scheduling_name="bitcast.1309.3"}
+  %subtract.29.3 = c128[1,64,4,4]{3,2,1,0} subtract(%add.156.5, %bitcast.1309.3), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=101 scheduling_name="subtract.29.3"}
+  %bitcast.1312.1 = c128[64,16]{1,0} bitcast(%subtract.29.3), metadata={scheduling_name="bitcast.1312.1"}
+  ROOT %transpose.138.1 = c128[16,64]{1,0} transpose(%bitcast.1312.1), dimensions={1,0}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=101 scheduling_name="transpose.138.1"}
+}
+
+%fused_reduce.3 (param_0.122: c128[16,64], param_1.149: c128[1024]) -> f64[] {
+  %param_1.149 = c128[1024]{0} parameter(1), metadata={scheduling_name="param_1.149"}
+  %real.34.3 = f64[1024]{0} real(%param_1.149), metadata={op_name="jit(scan)/jit(main)/while/body/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=260 scheduling_name="real.34.3"}
+  %imag.23.5 = f64[1024]{0} imag(%param_1.149), metadata={op_name="jit(scan)/jit(main)/while/body/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=260 scheduling_name="imag.23.5"}
+  %negate.40.5 = f64[1024]{0} negate(%imag.23.5), metadata={op_name="jit(scan)/jit(main)/while/body/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=260 scheduling_name="negate.40.5"}
+  %complex.23.3 = c128[1024]{0} complex(%real.34.3, %negate.40.5), metadata={op_name="jit(scan)/jit(main)/while/body/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=260 scheduling_name="complex.23.3"}
+  %param_0.122 = c128[16,64]{1,0} parameter(0), metadata={scheduling_name="param_0.122"}
+  %bitcast.1325.6 = c128[1024]{0} bitcast(%param_0.122), metadata={scheduling_name="bitcast.1325.6"}
+  %multiply.305.3 = c128[1024]{0} multiply(%complex.23.3, %bitcast.1325.6), metadata={scheduling_name="multiply.305.3"}
+  %constant_211_3 = c128[] constant((0, 0))
+  %reduce.26.1 = c128[] reduce(%multiply.305.3, %constant_211_3), dimensions={0}, to_apply=%scalar_add_computation, metadata={op_name="jit(scan)/jit(main)/while/body/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=260 scheduling_name="reduce.26.1"}
+  ROOT %real.35.1 = f64[] real(%reduce.26.1), metadata={op_name="jit(scan)/jit(main)/while/body/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=260 scheduling_name="real.35.1"}
+}
+
+%fused_add_maximum (param_0.127: s64[], param_1.152: s64[]) -> (s64[], s64[]) {
+  %param_0.127 = s64[] parameter(0), metadata={scheduling_name="param_0.127"}
+  %param_1.152 = s64[] parameter(1), metadata={scheduling_name="param_1.152"}
+  %add.152.1 = s64[] add(%param_0.127, %param_1.152), metadata={scheduling_name="add.152.1"}
+  %constant_253_1 = s64[] constant(-10)
+  %add.155.1 = s64[] add(%add.152.1, %constant_253_1), metadata={op_name="jit(scan)/jit(main)/while/body/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=274 scheduling_name="add.155.1"}
+  %constant_192_1 = s64[] constant(0)
+  %maximum.31.1 = s64[] maximum(%add.155.1, %constant_192_1), metadata={op_name="jit(scan)/jit(main)/while/body/max" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=274 scheduling_name="maximum.31.1"}
+  ROOT %tuple.42 = (s64[], s64[]) tuple(%maximum.31.1, %add.152.1), metadata={scheduling_name="tuple.42"}
+}
+
+%fused_subtract.1 (param_0.77: c128[16,64], param_1.95: c128[1024], param_2.62: c128[1024,200], param_3.70: f64[], param_4.75: s64[], param_5.55: f64[200]) -> c128[1024] {
+  %param_0.77 = c128[16,64]{1,0} parameter(0), metadata={scheduling_name="param_0.77"}
+  %bitcast.1325.4 = c128[1024]{0} bitcast(%param_0.77), metadata={scheduling_name="bitcast.1325.4"}
+  %param_3.70 = f64[] parameter(3), metadata={scheduling_name="param_3.70"}
+  %convert.52.1 = c128[] convert(%param_3.70), metadata={op_name="jit(scan)/jit(main)/while/body/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=263 scheduling_name="convert.52.1"}
+  %broadcast.188.1 = c128[1024]{0} broadcast(%convert.52.1), dimensions={}, metadata={op_name="jit(scan)/jit(main)/while/body/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=263 scheduling_name="broadcast.188.1"}
+  %param_1.95 = c128[1024]{0} parameter(1), metadata={scheduling_name="param_1.95"}
+  %multiply.306.1 = c128[1024]{0} multiply(%broadcast.188.1, %param_1.95), metadata={op_name="jit(scan)/jit(main)/while/body/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=263 scheduling_name="multiply.306.1"}
+  %subtract.30.3 = c128[1024]{0} subtract(%bitcast.1325.4, %multiply.306.1), metadata={op_name="jit(scan)/jit(main)/while/body/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=263 scheduling_name="subtract.30.3"}
+  %param_4.75 = s64[] parameter(4), metadata={scheduling_name="param_4.75"}
+  %constant_192_5 = s64[] constant(0)
+  %compare.210.3 = pred[] compare(%param_4.75, %constant_192_5), direction=GT, metadata={op_name="jit(scan)/jit(main)/while/body/gt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=265 scheduling_name="compare.210.3"}
+  %param_5.55 = f64[200]{0} parameter(5), metadata={scheduling_name="param_5.55"}
+  %constant_458_1 = s64[] constant(-1)
+  %add.157.4 = s64[] add(%param_4.75, %constant_458_1), metadata={op_name="jit(scan)/jit(main)/while/body/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=265 scheduling_name="add.157.4"}
+  %compare.211.3 = pred[] compare(%add.157.4, %constant_192_5), direction=LT, metadata={op_name="jit(scan)/jit(main)/while/body/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=265 scheduling_name="compare.211.3"}
+  %constant_205_1 = s64[] constant(199)
+  %add.158.3 = s64[] add(%param_4.75, %constant_205_1), metadata={op_name="jit(scan)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=265 scheduling_name="add.158.3"}
+  %select.213.3 = s64[] select(%compare.211.3, %add.158.3, %add.157.4), metadata={op_name="jit(scan)/jit(main)/while/body/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=265 scheduling_name="select.213.3"}
+  %dynamic-slice.38.3 = f64[1]{0} dynamic-slice(%param_5.55, %select.213.3), dynamic_slice_sizes={1}, metadata={op_name="jit(scan)/jit(main)/while/body/dynamic_slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=265 scheduling_name="dynamic-slice.38.3"}
+  %bitcast.1358.3 = f64[] bitcast(%dynamic-slice.38.3), metadata={scheduling_name="bitcast.1358.3"}
+  %constant_204_2 = f64[] constant(0)
+  %select.214.3 = f64[] select(%compare.210.3, %bitcast.1358.3, %constant_204_2), metadata={op_name="jit(scan)/jit(main)/while/body/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=265 scheduling_name="select.214.3"}
+  %convert.53.1 = c128[] convert(%select.214.3), metadata={op_name="jit(scan)/jit(main)/while/body/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=266 scheduling_name="convert.53.1"}
+  %broadcast.189.1 = c128[1024,1]{1,0} broadcast(%convert.53.1), dimensions={}, metadata={op_name="jit(scan)/jit(main)/while/body/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=266 scheduling_name="broadcast.189.1"}
+  %param_2.62 = c128[1024,200]{1,0} parameter(2), metadata={scheduling_name="param_2.62"}
+  %maximum.32.1 = s64[] maximum(%add.157.4, %constant_192_5), metadata={op_name="jit(scan)/jit(main)/while/body/max" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=264 scheduling_name="maximum.32.1"}
+  %dynamic-slice.39.1 = c128[1024,1]{1,0} dynamic-slice(%param_2.62, %constant_192_5, %maximum.32.1), dynamic_slice_sizes={1024,1}, metadata={op_name="jit(scan)/jit(main)/while/body/dynamic_slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=264 scheduling_name="dynamic-slice.39.1"}
+  %multiply.307.1 = c128[1024,1]{1,0} multiply(%broadcast.189.1, %dynamic-slice.39.1), metadata={op_name="jit(scan)/jit(main)/while/body/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=266 scheduling_name="multiply.307.1"}
+  %bitcast.1375.1 = c128[1024]{0} bitcast(%multiply.307.1), metadata={scheduling_name="bitcast.1375.1"}
+  ROOT %subtract.31.1 = c128[1024]{0} subtract(%subtract.30.3, %bitcast.1375.1), metadata={op_name="jit(scan)/jit(main)/while/body/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=266 scheduling_name="subtract.31.1"}
+}
+
+%fused_add.1 (param_0.117: s64[]) -> s64[] {
+  %param_0.117 = s64[] parameter(0), metadata={scheduling_name="param_0.117"}
+  %constant_190_1 = s64[] constant(1)
+  ROOT %add.153.1 = s64[] add(%param_0.117, %constant_190_1), metadata={op_name="jit(scan)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="add.153.1"}
+}
+
+%command_buffer.2 (p.4: c128[1,480,480,2,2,4,4,4], p.5: (s64[], s64[], c128[1024,200], f64[200], f64[200], /*index=5*/c128[1024], c128[64,4,4,480], c128[64,4,4,480], c128[480,480], c128[480,480,4,4,4], /*index=10*/f64[64,4], f64[64,4], c128[64,4,2,480], c128[64,4,2,480], c128[64,4,2,480], /*index=15*/c128[64,4,2,480]), p.6: c128[64,16], p.7: c128[1024]) -> (c128[64,4,2,480], c128[64,4,2,480], c128[64,4,4,480], c128[480,480], c128[64,4,4,480], /*index=5*/f64[64,4], f64[64,4], f64[], s64[], s64[], /*index=10*/(s64[], s64[]), s64[], c128[1024,200], f64[200], c128[1024], /*index=15*/s64[]) {
+  %p.4 = c128[1,480,480,2,2,4,4,4]{7,6,5,4,3,2,1,0} parameter(0)
+  %p.5 = (s64[], s64[], c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, /*index=5*/c128[1024]{0}, c128[64,4,4,480]{3,2,1,0}, c128[64,4,4,480]{3,2,1,0}, c128[480,480]{1,0}, c128[480,480,4,4,4]{4,3,2,1,0}, /*index=10*/f64[64,4]{1,0}, f64[64,4]{1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{1,3,2,0}, c128[64,4,2,480]{1,2,3,0}, /*index=15*/c128[64,4,2,480]{3,2,1,0}) parameter(1)
+  %p.6 = c128[64,16]{1,0} parameter(2)
+  %p.7 = c128[1024]{0} parameter(3)
+  %input_transpose_fusion.1 = c128[64,480,2,2,480]{4,3,2,1,0} fusion(%p.4), kind=kInput, calls=%fused_transpose.1, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=97 scheduling_name="input_transpose_fusion.1"}
+  %bitcast.1295.0 = c128[64,960,960]{2,1,0} bitcast(%input_transpose_fusion.1), metadata={scheduling_name="bitcast.1295.0"}
+  %get-tuple-element.278 = c128[64,4,2,480]{1,3,2,0} get-tuple-element(%p.5), index=13, metadata={scheduling_name="get-tuple-element.278"}
+  %bitcast.1299.0 = c128[64,960,4]{2,1,0} bitcast(%get-tuple-element.278), metadata={scheduling_name="bitcast.1299.0"}
+  %custom-call.8.0 = (c128[64,960,4]{2,1,0}, s8[4194304]{0}) custom-call(%bitcast.1295.0, %bitcast.1299.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kctM,bMNtsk->bcNsk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=98 scheduling_name="custom-call.8.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"921600","rhs_stride":"3840","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.214.0 = c128[64,960,4]{2,1,0} get-tuple-element(%custom-call.8.0), index=0, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kctM,bMNtsk->bcNsk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=98 scheduling_name="get-tuple-element.214.0"}
+  %wrapped_transpose.2 = c128[64,4,960]{2,1,0} fusion(%get-tuple-element.214.0), kind=kLoop, calls=%wrapped_transpose_computation.2, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kctM,bMNtsk->bcNsk/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=98 scheduling_name="wrapped_transpose.2"}
+  %get-tuple-element.279 = c128[64,4,2,480]{1,2,3,0} get-tuple-element(%p.5), index=14, metadata={scheduling_name="get-tuple-element.279"}
+  %bitcast.1306.0 = c128[64,960,4]{2,1,0} bitcast(%get-tuple-element.279), metadata={scheduling_name="bitcast.1306.0"}
+  %custom-call.9.0 = (c128[64,4,4]{2,1,0}, s8[4194304]{0}) custom-call(%wrapped_transpose.2, %bitcast.1306.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kvsN,bcNsk->bcvk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=99 scheduling_name="custom-call.9.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":0.125,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"3840","rhs_stride":"3840","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.215.0 = c128[64,4,4]{2,1,0} get-tuple-element(%custom-call.9.0), index=0, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kvsN,bcNsk->bcvk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=99 scheduling_name="get-tuple-element.215.0"}
+  %get-tuple-element.271 = c128[64,4,4,480]{3,2,1,0} get-tuple-element(%p.5), index=6, metadata={scheduling_name="get-tuple-element.271"}
+  %loop_multiply_fusion.1 = c128[64,480]{1,0} fusion(%get-tuple-element.271, %p.6), kind=kLoop, calls=%fused_multiply.1, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=82 scheduling_name="loop_multiply_fusion.1"}
+  %get-tuple-element.273 = c128[480,480]{1,0} get-tuple-element(%p.5), index=8, metadata={scheduling_name="get-tuple-element.273"}
+  %custom-call.5.0 = (c128[64,480]{1,0}, s8[4177920]{0}) custom-call(%loop_multiply_fusion.1, %get-tuple-element.273), custom_call_target="__cublas$gemm", metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/MN,bNk->bMk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=83 scheduling_name="custom-call.5.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"30720","rhs_stride":"230400","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.211.0 = c128[64,480]{1,0} get-tuple-element(%custom-call.5.0), index=0, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/MN,bNk->bMk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=83 scheduling_name="get-tuple-element.211.0"}
+  %get-tuple-element.272 = c128[64,4,4,480]{3,2,1,0} get-tuple-element(%p.5), index=7, metadata={scheduling_name="get-tuple-element.272"}
+  %input_reduce_fusion.1 = c128[64,4,4]{2,1,0} fusion(%get-tuple-element.272, %get-tuple-element.211.0), kind=kInput, calls=%fused_reduce.1, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/kcvM,bMk->bcvk/dot_general" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=84 scheduling_name="input_reduce_fusion.1"}
+  %get-tuple-element.275 = f64[64,4]{1,0} get-tuple-element(%p.5), index=10, metadata={scheduling_name="get-tuple-element.275"}
+  %get-tuple-element.276 = f64[64,4]{1,0} get-tuple-element(%p.5), index=11, metadata={scheduling_name="get-tuple-element.276"}
+  %input_transpose_fusion = c128[16,64]{1,0} fusion(%get-tuple-element.215.0, %input_reduce_fusion.1, %p.6, %get-tuple-element.276, %get-tuple-element.275), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=101 scheduling_name="input_transpose_fusion"}
+  %input_reduce_fusion.3 = f64[] fusion(%input_transpose_fusion, %p.7), kind=kInput, calls=%fused_reduce.3, metadata={op_name="jit(scan)/jit(main)/while/body/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=260 scheduling_name="input_reduce_fusion.3"}
+  %get-tuple-element.249 = s64[] get-tuple-element(%p.5), index=0, metadata={scheduling_name="get-tuple-element.249"}
+  %get-tuple-element.266 = s64[] get-tuple-element(%p.5), index=1, metadata={scheduling_name="get-tuple-element.266"}
+  %loop_add_maximum_fusion = (s64[], s64[]) fusion(%get-tuple-element.266, %get-tuple-element.249), kind=kLoop, calls=%fused_add_maximum, metadata={op_name="jit(scan)/jit(main)/while/body/max" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=274 scheduling_name="loop_add_maximum_fusion"}
+  %get-tuple-element.221 = s64[] get-tuple-element(%loop_add_maximum_fusion), index=1, metadata={op_name="jit(scan)/jit(main)/while/body/max" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=274 scheduling_name="get-tuple-element.221"}
+  %get-tuple-element.251 = c128[1024,200]{1,0} get-tuple-element(%p.5), index=2, metadata={scheduling_name="get-tuple-element.251"}
+  %get-tuple-element.253 = f64[200]{0} get-tuple-element(%p.5), index=4, metadata={scheduling_name="get-tuple-element.253"}
+  %loop_subtract_fusion.1 = c128[1024]{0} fusion(%input_transpose_fusion, %p.7, %get-tuple-element.251, %input_reduce_fusion.3, %get-tuple-element.221, /*index=5*/%get-tuple-element.253), kind=kLoop, calls=%fused_subtract.1, metadata={op_name="jit(scan)/jit(main)/while/body/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=266 scheduling_name="loop_subtract_fusion.1"}
+  %loop_add_fusion.1 = s64[] fusion(%get-tuple-element.221), kind=kLoop, calls=%fused_add.1, metadata={op_name="jit(scan)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.1"}
+  ROOT %tuple.53 = (c128[64,4,2,480]{1,3,2,0}, c128[64,4,2,480]{1,2,3,0}, c128[64,4,4,480]{3,2,1,0}, c128[480,480]{1,0}, c128[64,4,4,480]{3,2,1,0}, /*index=5*/f64[64,4]{1,0}, f64[64,4]{1,0}, f64[], s64[], s64[], /*index=10*/(s64[], s64[]), s64[], c128[1024,200]{1,0}, f64[200]{0}, c128[1024]{0}, /*index=15*/s64[]) tuple(%get-tuple-element.278, %get-tuple-element.279, %get-tuple-element.271, %get-tuple-element.273, %get-tuple-element.272, /*index=5*/%get-tuple-element.275, %get-tuple-element.276, %input_reduce_fusion.3, %get-tuple-element.249, %get-tuple-element.266, /*index=10*/%loop_add_maximum_fusion, %get-tuple-element.221, %get-tuple-element.251, %get-tuple-element.253, %loop_subtract_fusion.1, /*index=15*/%loop_add_fusion.1)
+}
+
+%region_6.347 (Arg_0.348: f64[], Arg_1.349: f64[]) -> f64[] {
+  %Arg_1.349 = f64[] parameter(1), metadata={op_name="jit(scan)/jit(main)/while/body/jit(norm)/reduce_sum" scheduling_name="Arg_1.349"}
+  %Arg_0.348 = f64[] parameter(0), metadata={op_name="jit(scan)/jit(main)/while/body/jit(norm)/reduce_sum" scheduling_name="Arg_0.348"}
+  ROOT %add.145 = f64[] add(%Arg_0.348, %Arg_1.349), metadata={op_name="jit(scan)/jit(main)/while/body/jit(norm)/reduce_sum" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=249 scheduling_name="add.145"}
+}
+
+%fused_reduce.2 (param_0.120: c128[1024]) -> f64[] {
+  %param_0.120 = c128[1024]{0} parameter(0), metadata={scheduling_name="param_0.120"}
+  %real.36.3 = f64[1024]{0} real(%param_0.120), metadata={op_name="jit(scan)/jit(main)/while/body/jit(norm)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=249 scheduling_name="real.36.3"}
+  %imag.24.5 = f64[1024]{0} imag(%param_0.120), metadata={op_name="jit(scan)/jit(main)/while/body/jit(norm)/imag" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=249 scheduling_name="imag.24.5"}
+  %negate.41.5 = f64[1024]{0} negate(%imag.24.5), metadata={op_name="jit(scan)/jit(main)/while/body/jit(norm)/neg" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=249 scheduling_name="negate.41.5"}
+  %complex.24.3 = c128[1024]{0} complex(%real.36.3, %negate.41.5), metadata={op_name="jit(scan)/jit(main)/while/body/jit(norm)/complex" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=249 scheduling_name="complex.24.3"}
+  %multiply.308.3 = c128[1024]{0} multiply(%param_0.120, %complex.24.3), metadata={op_name="jit(scan)/jit(main)/while/body/jit(norm)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=249 scheduling_name="multiply.308.3"}
+  %real.37.3 = f64[1024]{0} real(%multiply.308.3), metadata={op_name="jit(scan)/jit(main)/while/body/jit(norm)/real" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=249 scheduling_name="real.37.3"}
+  %constant_204_1 = f64[] constant(0)
+  %reduce.23.1 = f64[] reduce(%real.37.3, %constant_204_1), dimensions={0}, to_apply=%region_6.347, metadata={op_name="jit(scan)/jit(main)/while/body/jit(norm)/reduce_sum" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=249 scheduling_name="reduce.23.1"}
+  ROOT %sqrt.62.1 = f64[] sqrt(%reduce.23.1), metadata={op_name="jit(scan)/jit(main)/while/body/jit(norm)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=249 scheduling_name="sqrt.62.1"}
+}
+
+%fused_divide (param_0.78: c128[1024], param_1.125: f64[]) -> c128[1024] {
+  %param_0.78 = c128[1024]{0} parameter(0), metadata={scheduling_name="param_0.78"}
+  %param_1.125 = f64[] parameter(1), metadata={scheduling_name="param_1.125"}
+  %constant_207_1 = f64[] constant(1e-15)
+  %maximum.33.3 = f64[] maximum(%param_1.125, %constant_207_1), metadata={op_name="jit(scan)/jit(main)/while/body/max" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=280 scheduling_name="maximum.33.3"}
+  %convert.54.3 = c128[] convert(%maximum.33.3), metadata={op_name="jit(scan)/jit(main)/while/body/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=280 scheduling_name="convert.54.3"}
+  %broadcast.190.1 = c128[1024]{0} broadcast(%convert.54.3), dimensions={}, metadata={op_name="jit(scan)/jit(main)/while/body/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=280 scheduling_name="broadcast.190.1"}
+  ROOT %divide.138.1 = c128[1024]{0} divide(%param_0.78, %broadcast.190.1), metadata={op_name="jit(scan)/jit(main)/while/body/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=280 scheduling_name="divide.138.1"}
+}
+
+%and.reduce_sub_computation (lhs: pred[], rhs: pred[]) -> pred[] {
+  %rhs = pred[] parameter(1), metadata={scheduling_name="rhs"}
+  %lhs = pred[] parameter(0), metadata={scheduling_name="lhs"}
+  ROOT %and.38 = pred[] and(%lhs, %rhs), metadata={scheduling_name="and.38"}
+}
+
+%fused_reduce.4 (param_0.123: s64[]) -> pred[] {
+  %constant_208_2 = s32[] constant(0)
+  %broadcast.173.1 = s32[2]{0} broadcast(%constant_208_2), dimensions={}, metadata={scheduling_name="broadcast.173.1"}
+  %constant_232_1 = s32[1]{0} constant({0})
+  %param_0.123 = s64[] parameter(0), metadata={scheduling_name="param_0.123"}
+  %constant_205_2 = s64[] constant(199)
+  %minimum.21.2 = s64[] minimum(%param_0.123, %constant_205_2), metadata={op_name="jit(scan)/jit(main)/while/body/min" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=281 scheduling_name="minimum.21.2"}
+  %constant_192_6 = s64[] constant(0)
+  %compare.205.1 = pred[] compare(%minimum.21.2, %constant_192_6), direction=LT, metadata={op_name="jit(scan)/jit(main)/while/body/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=281 scheduling_name="compare.205.1"}
+  %constant_203_3 = s64[] constant(200)
+  %add.154.1 = s64[] add(%minimum.21.2, %constant_203_3), metadata={op_name="jit(scan)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=281 scheduling_name="add.154.1"}
+  %select.212.2 = s64[] select(%compare.205.1, %add.154.1, %minimum.21.2), metadata={op_name="jit(scan)/jit(main)/while/body/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=281 scheduling_name="select.212.2"}
+  %convert.50.1 = s32[] convert(%select.212.2), metadata={op_name="jit(scan)/jit(main)/while/body/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=281 scheduling_name="convert.50.1"}
+  %bitcast.1182.3 = s32[1]{0} bitcast(%convert.50.1), metadata={scheduling_name="bitcast.1182.3"}
+  %concatenate.8.3 = s32[2]{0} concatenate(%constant_232_1, %bitcast.1182.3), dimensions={0}, metadata={scheduling_name="concatenate.8.3"}
+  %compare.206.1 = pred[2]{0} compare(%broadcast.173.1, %concatenate.8.3), direction=LE, metadata={scheduling_name="compare.206.1"}
+  %iota.6.1 = s32[2]{0} iota(), iota_dimension=0, metadata={scheduling_name="iota.6.1"}
+  %constant_233_2 = s32[] constant(199)
+  %broadcast.174.1 = s32[2]{0} broadcast(%constant_233_2), dimensions={}, metadata={scheduling_name="broadcast.174.1"}
+  %multiply.296.1 = s32[2]{0} multiply(%iota.6.1, %broadcast.174.1), metadata={scheduling_name="multiply.296.1"}
+  %compare.207.1 = pred[2]{0} compare(%multiply.296.1, %concatenate.8.3), direction=GE, metadata={scheduling_name="compare.207.1"}
+  %and.39.1 = pred[2]{0} and(%compare.206.1, %compare.207.1), metadata={scheduling_name="and.39.1"}
+  %constant_234_1 = pred[] constant(true)
+  ROOT %reduce.27.1 = pred[] reduce(%and.39.1, %constant_234_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.27.1"}
+}
+
+%fused_dynamic_update_slice (param_0.74: c128[1024,200], param_1.146: c128[1024], param_2.111: pred[], param_3.73: s64[]) -> c128[1024,200] {
+  %param_0.74 = c128[1024,200]{1,0} parameter(0), metadata={scheduling_name="param_0.74"}
+  %param_2.111 = pred[] parameter(2), metadata={scheduling_name="param_2.111"}
+  %broadcast.175.1 = pred[1024,1]{1,0} broadcast(%param_2.111), dimensions={}, metadata={scheduling_name="broadcast.175.1"}
+  %param_1.146 = c128[1024]{0} parameter(1), metadata={scheduling_name="param_1.146"}
+  %bitcast.1404.3 = c128[1024,1]{1,0} bitcast(%param_1.146), metadata={scheduling_name="bitcast.1404.3"}
+  %constant_208_3 = s32[] constant(0)
+  %param_3.73 = s64[] parameter(3), metadata={scheduling_name="param_3.73"}
+  %constant_205_3 = s64[] constant(199)
+  %minimum.21.1 = s64[] minimum(%param_3.73, %constant_205_3), metadata={op_name="jit(scan)/jit(main)/while/body/min" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=281 scheduling_name="minimum.21.1"}
+  %constant_192_2 = s64[] constant(0)
+  %compare.205.2 = pred[] compare(%minimum.21.1, %constant_192_2), direction=LT, metadata={op_name="jit(scan)/jit(main)/while/body/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=281 scheduling_name="compare.205.2"}
+  %constant_203_2 = s64[] constant(200)
+  %add.154.2 = s64[] add(%minimum.21.1, %constant_203_2), metadata={op_name="jit(scan)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=281 scheduling_name="add.154.2"}
+  %select.212.1 = s64[] select(%compare.205.2, %add.154.2, %minimum.21.1), metadata={op_name="jit(scan)/jit(main)/while/body/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=281 scheduling_name="select.212.1"}
+  %convert.50.2 = s32[] convert(%select.212.1), metadata={op_name="jit(scan)/jit(main)/while/body/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=281 scheduling_name="convert.50.2"}
+  %dynamic-slice.40.1 = c128[1024,1]{1,0} dynamic-slice(%param_0.74, %constant_208_3, %convert.50.2), dynamic_slice_sizes={1024,1}, metadata={scheduling_name="dynamic-slice.40.1"}
+  %select.217.3 = c128[1024,1]{1,0} select(%broadcast.175.1, %bitcast.1404.3, %dynamic-slice.40.1), metadata={scheduling_name="select.217.3"}
+  ROOT %dynamic-update-slice.19.1 = c128[1024,200]{1,0} dynamic-update-slice(%param_0.74, %select.217.3, %constant_208_3, %convert.50.2), metadata={op_name="jit(scan)/jit(main)/while/body/scatter" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=281 scheduling_name="dynamic-update-slice.19.1"}
+}
+
+%fused_dynamic_update_slice.2 (param_0.89: f64[200], param_1.129: f64[], param_2.115: s64[]) -> f64[200] {
+  %param_0.89 = f64[200]{0} parameter(0), metadata={scheduling_name="param_0.89"}
+  %constant_208_4 = s32[] constant(0)
+  %param_2.115 = s64[] parameter(2), metadata={scheduling_name="param_2.115"}
+  %constant_192_4 = s64[] constant(0)
+  %compare.212.3 = pred[] compare(%param_2.115, %constant_192_4), direction=LT, metadata={op_name="jit(scan)/jit(main)/while/body/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=261 scheduling_name="compare.212.3"}
+  %constant_203_4 = s64[] constant(200)
+  %add.159.3 = s64[] add(%param_2.115, %constant_203_4), metadata={op_name="jit(scan)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=261 scheduling_name="add.159.3"}
+  %select.218.3 = s64[] select(%compare.212.3, %add.159.3, %param_2.115), metadata={op_name="jit(scan)/jit(main)/while/body/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=261 scheduling_name="select.218.3"}
+  %convert.55.3 = s32[] convert(%select.218.3), metadata={op_name="jit(scan)/jit(main)/while/body/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=261 scheduling_name="convert.55.3"}
+  %compare.213.3 = pred[] compare(%constant_208_4, %convert.55.3), direction=LE, metadata={scheduling_name="compare.213.3"}
+  %constant_233_3 = s32[] constant(199)
+  %compare.214.3 = pred[] compare(%constant_233_3, %convert.55.3), direction=GE, metadata={scheduling_name="compare.214.3"}
+  %and.40.3 = pred[] and(%compare.213.3, %compare.214.3), metadata={scheduling_name="and.40.3"}
+  %bitcast.1438.6 = pred[1]{0} bitcast(%and.40.3), metadata={scheduling_name="bitcast.1438.6"}
+  %param_1.129 = f64[] parameter(1), metadata={scheduling_name="param_1.129"}
+  %bitcast.1457.3 = f64[1]{0} bitcast(%param_1.129), metadata={scheduling_name="bitcast.1457.3"}
+  %dynamic-slice.42.1 = f64[1]{0} dynamic-slice(%param_0.89, %convert.55.3), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.42.1"}
+  %select.220.3 = f64[1]{0} select(%bitcast.1438.6, %bitcast.1457.3, %dynamic-slice.42.1), metadata={scheduling_name="select.220.3"}
+  ROOT %dynamic-update-slice.21.1 = f64[200]{0} dynamic-update-slice(%param_0.89, %select.220.3, %convert.55.3), metadata={op_name="jit(scan)/jit(main)/while/body/scatter" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=278 scheduling_name="dynamic-update-slice.21.1"}
+}
+
+%fused_dynamic_update_slice.1 (param_0.87: f64[200], param_1.131: f64[], param_2.114: s64[]) -> f64[200] {
+  %param_0.87 = f64[200]{0} parameter(0), metadata={scheduling_name="param_0.87"}
+  %constant_208_1 = s32[] constant(0)
+  %param_2.114 = s64[] parameter(2), metadata={scheduling_name="param_2.114"}
+  %constant_192_3 = s64[] constant(0)
+  %compare.212.5 = pred[] compare(%param_2.114, %constant_192_3), direction=LT, metadata={op_name="jit(scan)/jit(main)/while/body/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=261 scheduling_name="compare.212.5"}
+  %constant_203_1 = s64[] constant(200)
+  %add.159.5 = s64[] add(%param_2.114, %constant_203_1), metadata={op_name="jit(scan)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=261 scheduling_name="add.159.5"}
+  %select.218.5 = s64[] select(%compare.212.5, %add.159.5, %param_2.114), metadata={op_name="jit(scan)/jit(main)/while/body/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=261 scheduling_name="select.218.5"}
+  %convert.55.5 = s32[] convert(%select.218.5), metadata={op_name="jit(scan)/jit(main)/while/body/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=261 scheduling_name="convert.55.5"}
+  %compare.213.5 = pred[] compare(%constant_208_1, %convert.55.5), direction=LE, metadata={scheduling_name="compare.213.5"}
+  %constant_233_1 = s32[] constant(199)
+  %compare.214.5 = pred[] compare(%constant_233_1, %convert.55.5), direction=GE, metadata={scheduling_name="compare.214.5"}
+  %and.40.5 = pred[] and(%compare.213.5, %compare.214.5), metadata={scheduling_name="and.40.5"}
+  %bitcast.1438.4 = pred[1]{0} bitcast(%and.40.5), metadata={scheduling_name="bitcast.1438.4"}
+  %param_1.131 = f64[] parameter(1), metadata={scheduling_name="param_1.131"}
+  %bitcast.1442.3 = f64[1]{0} bitcast(%param_1.131), metadata={scheduling_name="bitcast.1442.3"}
+  %dynamic-slice.41.1 = f64[1]{0} dynamic-slice(%param_0.87, %convert.55.5), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.41.1"}
+  %select.219.3 = f64[1]{0} select(%bitcast.1438.4, %bitcast.1442.3, %dynamic-slice.41.1), metadata={scheduling_name="select.219.3"}
+  ROOT %dynamic-update-slice.20.1 = f64[200]{0} dynamic-update-slice(%param_0.87, %select.219.3, %convert.55.5), metadata={op_name="jit(scan)/jit(main)/while/body/scatter" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=261 scheduling_name="dynamic-update-slice.20.1"}
+}
+
+%fused_add.2 (param_0.118: s64[]) -> s64[] {
+  %param_0.118 = s64[] parameter(0), metadata={scheduling_name="param_0.118"}
+  %constant_190_2 = s64[] constant(1)
+  ROOT %add.150.1 = s64[] add(%param_0.118, %constant_190_2), metadata={op_name="jit(scan)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="add.150.1"}
+}
+
+%command_buffer.4 (p.12: c128[1024], p.13: s64[], p.14: c128[1024,200], p.15: f64[200], p.16: s64[], p.17: (s64[], s64[], c128[1024,200], f64[200], f64[200], /*index=5*/c128[1024], c128[64,4,4,480], c128[64,4,4,480], c128[480,480], c128[480,480,4,4,4], /*index=10*/f64[64,4], f64[64,4], c128[64,4,2,480], c128[64,4,2,480], c128[64,4,2,480], /*index=15*/c128[64,4,2,480]), p.18: f64[], p.19: s64[]) -> (c128[1024], c128[1024,200], f64[200], f64[200], s64[]) {
+  %p.12 = c128[1024]{0} parameter(0)
+  %p.13 = s64[] parameter(1)
+  %p.14 = c128[1024,200]{1,0} parameter(2)
+  %p.15 = f64[200]{0} parameter(3)
+  %p.16 = s64[] parameter(4)
+  %p.17 = (s64[], s64[], c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, /*index=5*/c128[1024]{0}, c128[64,4,4,480]{3,2,1,0}, c128[64,4,4,480]{3,2,1,0}, c128[480,480]{1,0}, c128[480,480,4,4,4]{4,3,2,1,0}, /*index=10*/f64[64,4]{1,0}, f64[64,4]{1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{1,3,2,0}, c128[64,4,2,480]{1,2,3,0}, /*index=15*/c128[64,4,2,480]{3,2,1,0}) parameter(5)
+  %p.18 = f64[] parameter(6)
+  %p.19 = s64[] parameter(7)
+  %input_reduce_fusion.2 = f64[] fusion(%p.12), kind=kInput, calls=%fused_reduce.2, metadata={op_name="jit(scan)/jit(main)/while/body/jit(norm)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=249 scheduling_name="input_reduce_fusion.2"}
+  %loop_divide_fusion = c128[1024]{0} fusion(%p.12, %input_reduce_fusion.2), kind=kLoop, calls=%fused_divide, metadata={op_name="jit(scan)/jit(main)/while/body/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=280 scheduling_name="loop_divide_fusion"}
+  %input_reduce_fusion.4 = pred[] fusion(%p.13), kind=kInput, calls=%fused_reduce.4, metadata={scheduling_name="input_reduce_fusion.4"}
+  %loop_dynamic_update_slice_fusion = c128[1024,200]{1,0} fusion(%p.14, %loop_divide_fusion, %input_reduce_fusion.4, %p.13), kind=kLoop, calls=%fused_dynamic_update_slice, metadata={op_name="jit(scan)/jit(main)/while/body/scatter" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=281 scheduling_name="loop_dynamic_update_slice_fusion"}
+  %loop_dynamic_update_slice_fusion.2 = f64[200]{0} fusion(%p.15, %input_reduce_fusion.2, %p.16), kind=kLoop, calls=%fused_dynamic_update_slice.2, metadata={op_name="jit(scan)/jit(main)/while/body/scatter" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=278 deduplicated_name="loop_dynamic_update_slice_fusion.1" scheduling_name="loop_dynamic_update_slice_fusion.2"}
+  %get-tuple-element.252 = f64[200]{0} get-tuple-element(%p.17), index=3, metadata={scheduling_name="get-tuple-element.252"}
+  %loop_dynamic_update_slice_fusion.1 = f64[200]{0} fusion(%get-tuple-element.252, %p.18, %p.16), kind=kLoop, calls=%fused_dynamic_update_slice.1, metadata={op_name="jit(scan)/jit(main)/while/body/scatter" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=261 deduplicated_name="loop_dynamic_update_slice_fusion.1" scheduling_name="loop_dynamic_update_slice_fusion.1"}
+  %loop_add_fusion.2 = s64[] fusion(%p.19), kind=kLoop, calls=%fused_add.2, metadata={op_name="jit(scan)/jit(main)/while/body/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.2"}
+  ROOT %tuple.55 = (c128[1024]{0}, c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, s64[]) tuple(%loop_divide_fusion, %loop_dynamic_update_slice_fusion, %loop_dynamic_update_slice_fusion.2, %loop_dynamic_update_slice_fusion.1, %loop_add_fusion.2)
+}
+
+%region_0.455.clone.clone (arg_tuple.2.0: (s64[], s64[], c128[1024,200], f64[200], f64[200], /*index=5*/c128[1024], c128[64,4,4,480], c128[64,4,4,480], c128[480,480], c128[480,480,4,4,4], /*index=10*/f64[64,4], f64[64,4], c128[64,4,2,480], c128[64,4,2,480], c128[64,4,2,480], /*index=15*/c128[64,4,2,480])) -> (s64[], s64[], c128[1024,200], f64[200], f64[200], /*index=5*/c128[1024], c128[64,4,4,480], c128[64,4,4,480], c128[480,480], c128[480,480,4,4,4], /*index=10*/f64[64,4], f64[64,4], c128[64,4,2,480], c128[64,4,2,480], c128[64,4,2,480], /*index=15*/c128[64,4,2,480]) {
+  %arg_tuple.2.0 = (s64[], s64[], c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, /*index=5*/c128[1024]{0}, c128[64,4,4,480]{3,2,1,0}, c128[64,4,4,480]{3,2,1,0}, c128[480,480]{1,0}, c128[480,480,4,4,4]{4,3,2,1,0}, /*index=10*/f64[64,4]{1,0}, f64[64,4]{1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{1,3,2,0}, c128[64,4,2,480]{1,2,3,0}, /*index=15*/c128[64,4,2,480]{3,2,1,0}) parameter(0), metadata={scheduling_name="arg_tuple.2.0"}
+  %get-tuple-element.254 = c128[1024]{0} get-tuple-element(%arg_tuple.2.0), index=5, metadata={scheduling_name="get-tuple-element.254"}
+  %call.3 = (c128[64,16]{1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{3,2,1,0}, c128[480,960,2,64]{3,2,1,0}) call(%get-tuple-element.254, %arg_tuple.2.0), to_apply=%command_buffer
+  %get-tuple-element.288 = c128[64,16]{1,0} get-tuple-element(%call.3), index=0
+  %get-tuple-element.289 = c128[64,4,2,480]{3,2,1,0} get-tuple-element(%call.3), index=1
+  %get-tuple-element.290 = c128[64,4,2,480]{3,2,1,0} get-tuple-element(%call.3), index=2
+  %get-tuple-element.291 = c128[480,960,2,64]{3,2,1,0} get-tuple-element(%call.3), index=3
+  %bitcast.1275.0 = c128[1,480,480,2,2,4,4,4]{7,6,5,4,3,2,1,0} bitcast(%get-tuple-element.291), metadata={scheduling_name="bitcast.1275.0"}
+  %fft.8.0 = c128[1,480,480,2,2,4,4,4]{7,6,5,4,3,2,1,0} fft(%bitcast.1275.0), fft_type=IFFT, fft_length={4,4,4}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=92 scheduling_name="fft.8.0"}
+  %get-tuple-element.274 = c128[480,480,4,4,4]{4,3,2,1,0} get-tuple-element(%arg_tuple.2.0), index=9, metadata={scheduling_name="get-tuple-element.274"}
+  %loop_multiply_fusion = c128[1,480,480,2,2,4,4,4]{7,6,5,4,3,2,1,0} fusion(%fft.8.0, %get-tuple-element.274), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=95 scheduling_name="loop_multiply_fusion"}
+  %fft.9.0 = c128[1,480,480,2,2,4,4,4]{7,6,5,4,3,2,1,0} fft(%loop_multiply_fusion), fft_type=FFT, fft_length={4,4,4}, metadata={op_name="jit(scan)/jit(main)/while/body/jit(_matvec_impl)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_serial.py" source_line=96 scheduling_name="fft.9.0"}
+  %call.4 = (c128[64,4,2,480]{1,3,2,0}, c128[64,4,2,480]{1,2,3,0}, c128[64,4,4,480]{3,2,1,0}, c128[480,480]{1,0}, c128[64,4,4,480]{3,2,1,0}, /*index=5*/f64[64,4]{1,0}, f64[64,4]{1,0}, f64[], s64[], s64[], /*index=10*/(s64[], s64[]), s64[], c128[1024,200]{1,0}, f64[200]{0}, c128[1024]{0}, /*index=15*/s64[]) call(%fft.9.0, %arg_tuple.2.0, %get-tuple-element.288, %get-tuple-element.254), to_apply=%command_buffer.2
+  %get-tuple-element.304 = c128[64,4,2,480]{1,3,2,0} get-tuple-element(%call.4), index=0
+  %get-tuple-element.305 = c128[64,4,2,480]{1,2,3,0} get-tuple-element(%call.4), index=1
+  %get-tuple-element.306 = c128[64,4,4,480]{3,2,1,0} get-tuple-element(%call.4), index=2
+  %get-tuple-element.307 = c128[480,480]{1,0} get-tuple-element(%call.4), index=3
+  %get-tuple-element.308 = c128[64,4,4,480]{3,2,1,0} get-tuple-element(%call.4), index=4
+  %get-tuple-element.309 = f64[64,4]{1,0} get-tuple-element(%call.4), index=5
+  %get-tuple-element.310 = f64[64,4]{1,0} get-tuple-element(%call.4), index=6
+  %get-tuple-element.311 = f64[] get-tuple-element(%call.4), index=7
+  %get-tuple-element.312 = s64[] get-tuple-element(%call.4), index=8
+  %get-tuple-element.318 = s64[] get-tuple-element(%call.4), index=9
+  %get-tuple-element.319 = (s64[], s64[]) get-tuple-element(%call.4), index=10
+  %get-tuple-element.320 = s64[] get-tuple-element(%call.4), index=11
+  %get-tuple-element.321 = c128[1024,200]{1,0} get-tuple-element(%call.4), index=12
+  %get-tuple-element.322 = f64[200]{0} get-tuple-element(%call.4), index=13
+  %get-tuple-element.323 = c128[1024]{0} get-tuple-element(%call.4), index=14
+  %get-tuple-element.324 = s64[] get-tuple-element(%call.4), index=15
+  %get-tuple-element.218 = s64[] get-tuple-element(%get-tuple-element.319), index=0, metadata={op_name="jit(scan)/jit(main)/while/body/max" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=274 scheduling_name="get-tuple-element.218"}
+  %tuple.43 = (s64[], c128[1024]{0}, s64[], s64[], c128[1024,200]{1,0}) tuple(%get-tuple-element.218, %get-tuple-element.323, %get-tuple-element.324, %get-tuple-element.320, %get-tuple-element.321), metadata={scheduling_name="tuple.43"}
+  %while.5.0 = (s64[], c128[1024]{0}, s64[], s64[], c128[1024,200]{1,0}) while(%tuple.43), condition=%region_5.339, body=%region_4.311, metadata={op_name="jit(scan)/jit(main)/while/body/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=275 scheduling_name="while.5.0"}
+  %get-tuple-element.125.0 = c128[1024]{0} get-tuple-element(%while.5.0), index=1, metadata={op_name="jit(scan)/jit(main)/while/body/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=275 scheduling_name="get-tuple-element.125.0"}
+  %call.5 = (c128[1024]{0}, c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, s64[]) call(%get-tuple-element.125.0, %get-tuple-element.324, %get-tuple-element.321, %get-tuple-element.322, %get-tuple-element.320, /*index=5*/%arg_tuple.2.0, %get-tuple-element.311, %get-tuple-element.312), to_apply=%command_buffer.4, control-predecessors={%call.3, %call.4, %while.5.0}
+  %get-tuple-element.326 = c128[1024]{0} get-tuple-element(%call.5), index=0
+  %get-tuple-element.327 = c128[1024,200]{1,0} get-tuple-element(%call.5), index=1
+  %get-tuple-element.328 = f64[200]{0} get-tuple-element(%call.5), index=2
+  %get-tuple-element.329 = f64[200]{0} get-tuple-element(%call.5), index=3
+  %get-tuple-element.330 = s64[] get-tuple-element(%call.5), index=4
+  ROOT %tuple.48 = (s64[], s64[], c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, /*index=5*/c128[1024]{0}, c128[64,4,4,480]{3,2,1,0}, c128[64,4,4,480]{3,2,1,0}, c128[480,480]{1,0}, c128[480,480,4,4,4]{4,3,2,1,0}, /*index=10*/f64[64,4]{1,0}, f64[64,4]{1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{1,3,2,0}, c128[64,4,2,480]{1,2,3,0}, /*index=15*/c128[64,4,2,480]{3,2,1,0}) tuple(%get-tuple-element.330, %get-tuple-element.318, %get-tuple-element.327, %get-tuple-element.329, %get-tuple-element.328, /*index=5*/%get-tuple-element.326, %get-tuple-element.306, %get-tuple-element.308, %get-tuple-element.307, %get-tuple-element.274, /*index=10*/%get-tuple-element.309, %get-tuple-element.310, %get-tuple-element.290, %get-tuple-element.304, %get-tuple-element.305, /*index=15*/%get-tuple-element.289), metadata={scheduling_name="tuple.48"}
+}
+
+%fused_compare (param_0.21: s64[]) -> pred[] {
+  %param_0.21 = s64[] parameter(0), metadata={scheduling_name="param_0.21"}
+  %constant_189_1 = s64[] constant(200)
+  ROOT %compare.204.1 = pred[] compare(%param_0.21, %constant_189_1), direction=LT, metadata={op_name="jit(scan)/jit(main)/while/cond/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="compare.204.1"}
+}
+
+%region_9.482.clone (arg_tuple.1.0: (s64[], s64[], c128[1024,200], f64[200], f64[200], /*index=5*/c128[1024], c128[64,4,4,480], c128[64,4,4,480], c128[480,480], c128[480,480,4,4,4], /*index=10*/f64[64,4], f64[64,4], c128[64,4,2,480], c128[64,4,2,480], c128[64,4,2,480], /*index=15*/c128[64,4,2,480])) -> pred[] {
+  %arg_tuple.1.0 = (s64[], s64[], c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, /*index=5*/c128[1024]{0}, c128[64,4,4,480]{3,2,1,0}, c128[64,4,4,480]{3,2,1,0}, c128[480,480]{1,0}, c128[480,480,4,4,4]{4,3,2,1,0}, /*index=10*/f64[64,4]{1,0}, f64[64,4]{1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{1,3,2,0}, c128[64,4,2,480]{1,2,3,0}, /*index=15*/c128[64,4,2,480]{3,2,1,0}) parameter(0), metadata={scheduling_name="arg_tuple.1.0"}
+  %get-tuple-element.91.0 = s64[] get-tuple-element(%arg_tuple.1.0), index=0, metadata={scheduling_name="get-tuple-element.91.0"}
+  ROOT %loop_compare_fusion = pred[] fusion(%get-tuple-element.91.0), kind=kLoop, calls=%fused_compare, metadata={op_name="jit(scan)/jit(main)/while/cond/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="loop_compare_fusion"}
+}
+
+%copy_horizontally_fused_computation (param_0_0: f64[200], param_1_0: f64[200]) -> (f64[200], f64[200]) {
+  %param_0_0 = f64[200]{0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %copy.39 = f64[200]{0} copy(%param_0_0), metadata={scheduling_name="copy.39"}
+  %param_1_0 = f64[200]{0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %copy.40 = f64[200]{0} copy(%param_1_0), metadata={scheduling_name="copy.40"}
+  ROOT %tuple.49 = (f64[200]{0}, f64[200]{0}) tuple(%copy.39, %copy.40), metadata={scheduling_name="tuple.49"}
+}
+
+%copy_horizontally_fused_computation.1 (param_0_0.1: c128[1024], param_1_0.1: c128[1024,200], param_2_0: c128[64,4,2,480]) -> (c128[1024], c128[204800], c128[245760]) {
+  %param_0_0.1 = c128[1024]{0} parameter(0), metadata={scheduling_name="param_0_0.1"}
+  %copy.43 = c128[1024]{0} copy(%param_0_0.1), metadata={scheduling_name="copy.43"}
+  %param_1_0.1 = c128[1024,200]{1,0} parameter(1), metadata={scheduling_name="param_1_0.1"}
+  %copy.44 = c128[1024,200]{1,0} copy(%param_1_0.1), metadata={scheduling_name="copy.44"}
+  %reshape.371 = c128[204800]{0} reshape(%copy.44), metadata={scheduling_name="reshape.371"}
+  %param_2_0 = c128[64,4,2,480]{3,2,1,0} parameter(2), metadata={scheduling_name="param_2_0"}
+  %bitcast.1493.2 = c128[64,4,960]{2,1,0} bitcast(%param_2_0), metadata={scheduling_name="bitcast.1493.2"}
+  %transpose.139.2 = c128[64,960,4]{2,1,0} transpose(%bitcast.1493.2), dimensions={0,2,1}, metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="transpose.139.2"}
+  %reshape.372 = c128[245760]{0} reshape(%transpose.139.2), metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="reshape.372"}
+  %concatenate.9 = c128[451584]{0} concatenate(%copy.43, %reshape.371, %reshape.372), dimensions={0}, metadata={scheduling_name="concatenate.9"}
+  %slice.20 = c128[1024]{0} slice(%concatenate.9), slice={[0:1024]}, metadata={scheduling_name="slice.20"}
+  %slice.21 = c128[204800]{0} slice(%concatenate.9), slice={[1024:205824]}, metadata={scheduling_name="slice.21"}
+  %slice.22 = c128[245760]{0} slice(%concatenate.9), slice={[205824:451584]}, metadata={scheduling_name="slice.22"}
+  ROOT %tuple.50 = (c128[1024]{0}, c128[204800]{0}, c128[245760]{0}) tuple(%slice.20, %slice.21, %slice.22), metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="tuple.50"}
+}
+
+%wrapped_transpose_computation (param_0.132: c128[64,4,2,480]) -> c128[64,480,2,4] {
+  %param_0.132 = c128[64,4,2,480]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.132"}
+  ROOT %transpose.140.1 = c128[64,480,2,4]{3,2,1,0} transpose(%param_0.132), dimensions={0,3,2,1}, metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="transpose.140.1"}
+}
+
+%wrapped_add_computation (param_0.136: s64[], param_1.154: s64[]) -> s64[] {
+  %param_0.136 = s64[] parameter(0), metadata={scheduling_name="param_0.136"}
+  %param_1.154 = s64[] parameter(1), metadata={scheduling_name="param_1.154"}
+  ROOT %add.160.1 = s64[] add(%param_0.136, %param_1.154), metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="add.160.1"}
+}
+
+ENTRY %main.510 (Arg_0.1.0: c128[64,4,4,480], Arg_1.2.0: c128[64,4,4,480], Arg_2.3.0: c128[480,480], Arg_3.4.0: c128[480,480,4,4,4], Arg_4.5.0: f64[64,4], Arg_5.6.0: f64[64,4], Arg_6.7.0: c128[64,4,2,480], Arg_7.8.0: c128[64,4,2,480], Arg_8.9.0: c128[64,4,2,480], Arg_9.10.0: c128[64,4,2,480], Arg_10.11.0: s64[], Arg_11.12.0: c128[1024,200], Arg_12.13.0: f64[200], Arg_13.14.0: f64[200], Arg_14.15.0: c128[1024]) -> (s64[], c128[1024,200], f64[200], f64[200], c128[1024]) {
+  %constant_16_0 = s64[] constant(0)
+  %Arg_10.11.0 = s64[] parameter(10), metadata={op_name="args[11]" scheduling_name="Arg_10.11.0"}
+  %Arg_14.15.0 = c128[1024]{0} parameter(14), metadata={op_name="args[15]" scheduling_name="Arg_14.15.0"}
+  %Arg_13.14.0 = f64[200]{0} parameter(13), metadata={op_name="args[14]" scheduling_name="Arg_13.14.0"}
+  %Arg_12.13.0 = f64[200]{0} parameter(12), metadata={op_name="args[13]" scheduling_name="Arg_12.13.0"}
+  %Arg_11.12.0 = c128[1024,200]{1,0} parameter(11), metadata={op_name="args[12]" scheduling_name="Arg_11.12.0"}
+  %Arg_9.10.0 = c128[64,4,2,480]{3,2,1,0} parameter(9), metadata={op_name="args[10]" scheduling_name="Arg_9.10.0"}
+  %Arg_8.9.0 = c128[64,4,2,480]{3,2,1,0} parameter(8), metadata={op_name="args[9]" scheduling_name="Arg_8.9.0"}
+  %Arg_7.8.0 = c128[64,4,2,480]{3,2,1,0} parameter(7), metadata={op_name="args[8]" scheduling_name="Arg_7.8.0"}
+  %Arg_6.7.0 = c128[64,4,2,480]{3,2,1,0} parameter(6), metadata={op_name="args[7]" scheduling_name="Arg_6.7.0"}
+  %Arg_5.6.0 = f64[64,4]{1,0} parameter(5), metadata={op_name="args[6]" scheduling_name="Arg_5.6.0"}
+  %Arg_4.5.0 = f64[64,4]{1,0} parameter(4), metadata={op_name="args[5]" scheduling_name="Arg_4.5.0"}
+  %Arg_3.4.0 = c128[480,480,4,4,4]{4,3,2,1,0} parameter(3), metadata={op_name="args[3]" scheduling_name="Arg_3.4.0"}
+  %Arg_2.3.0 = c128[480,480]{1,0} parameter(2), metadata={op_name="args[2]" scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = c128[64,4,4,480]{3,2,1,0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[64,4,4,480]{3,2,1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  %copy.45 = s64[] copy(%constant_16_0)
+  %copy_fusion = (f64[200]{0}, f64[200]{0}) fusion(%Arg_12.13.0, %Arg_13.14.0), kind=kLoop, calls=%copy_horizontally_fused_computation, metadata={scheduling_name="copy_fusion"}
+  %get-tuple-element.282 = f64[200]{0} get-tuple-element(%copy_fusion), index=1, metadata={scheduling_name="get-tuple-element.282"}
+  %get-tuple-element.281 = f64[200]{0} get-tuple-element(%copy_fusion), index=0, metadata={scheduling_name="get-tuple-element.281"}
+  %wrapped_transpose = c128[64,480,2,4]{3,2,1,0} fusion(%Arg_8.9.0), kind=kLoop, calls=%wrapped_transpose_computation, metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="wrapped_transpose"}
+  %bitcast.1502.0 = c128[64,4,2,480]{1,2,3,0} bitcast(%wrapped_transpose), metadata={scheduling_name="bitcast.1502.0"}
+  %copy_fusion.1 = (c128[1024]{0}, c128[204800]{0}, c128[245760]{0}) fusion(%Arg_14.15.0, %Arg_11.12.0, %Arg_7.8.0), kind=kInput, calls=%copy_horizontally_fused_computation.1, metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="copy_fusion.1"}
+  %get-tuple-element.285 = c128[245760]{0} get-tuple-element(%copy_fusion.1), index=2, metadata={scheduling_name="get-tuple-element.285"}
+  %bitcast.1562 = c128[64,960,4]{2,1,0} bitcast(%get-tuple-element.285), metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="bitcast.1562"}
+  %bitcast.1497.0 = c128[64,4,2,480]{1,3,2,0} bitcast(%bitcast.1562), metadata={scheduling_name="bitcast.1497.0"}
+  %get-tuple-element.284 = c128[204800]{0} get-tuple-element(%copy_fusion.1), index=1, metadata={scheduling_name="get-tuple-element.284"}
+  %get-tuple-element.283 = c128[1024]{0} get-tuple-element(%copy_fusion.1), index=0, metadata={scheduling_name="get-tuple-element.283"}
+  %bitcast.1561 = c128[1024,200]{1,0} bitcast(%get-tuple-element.284), metadata={scheduling_name="bitcast.1561"}
+  %tuple.46 = (s64[], s64[], c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, /*index=5*/c128[1024]{0}, c128[64,4,4,480]{3,2,1,0}, c128[64,4,4,480]{3,2,1,0}, c128[480,480]{1,0}, c128[480,480,4,4,4]{4,3,2,1,0}, /*index=10*/f64[64,4]{1,0}, f64[64,4]{1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{1,3,2,0}, c128[64,4,2,480]{1,2,3,0}, /*index=15*/c128[64,4,2,480]{3,2,1,0}) tuple(%copy.45, %Arg_10.11.0, %bitcast.1561, %get-tuple-element.281, %get-tuple-element.282, /*index=5*/%get-tuple-element.283, %Arg_0.1.0, %Arg_1.2.0, %Arg_2.3.0, %Arg_3.4.0, /*index=10*/%Arg_4.5.0, %Arg_5.6.0, %Arg_6.7.0, %bitcast.1497.0, %bitcast.1502.0, /*index=15*/%Arg_9.10.0), metadata={scheduling_name="tuple.46"}
+  %while.6.0 = (s64[], s64[], c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, /*index=5*/c128[1024]{0}, c128[64,4,4,480]{3,2,1,0}, c128[64,4,4,480]{3,2,1,0}, c128[480,480]{1,0}, c128[480,480,4,4,4]{4,3,2,1,0}, /*index=10*/f64[64,4]{1,0}, f64[64,4]{1,0}, c128[64,4,2,480]{3,2,1,0}, c128[64,4,2,480]{1,3,2,0}, c128[64,4,2,480]{1,2,3,0}, /*index=15*/c128[64,4,2,480]{3,2,1,0}) while(%tuple.46), condition=%region_9.482.clone, body=%region_0.455.clone.clone, metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="while.6.0"}, backend_config={"known_trip_count":{"n":"200"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %get-tuple-element.179.0 = s64[] get-tuple-element(%while.6.0), index=1, metadata={scheduling_name="get-tuple-element.179.0"}
+  %get-tuple-element.178.0 = s64[] get-tuple-element(%while.6.0), index=0, metadata={scheduling_name="get-tuple-element.178.0"}
+  %wrapped_add = s64[] fusion(%get-tuple-element.179.0, %get-tuple-element.178.0), kind=kLoop, calls=%wrapped_add_computation, metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="wrapped_add"}
+  %get-tuple-element.507.0 = f64[200]{0} get-tuple-element(%while.6.0), index=4, metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="get-tuple-element.507.0"}
+  %get-tuple-element.506.0 = f64[200]{0} get-tuple-element(%while.6.0), index=3, metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="get-tuple-element.506.0"}
+  %get-tuple-element.505.0 = c128[1024,200]{1,0} get-tuple-element(%while.6.0), index=2, metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="get-tuple-element.505.0"}
+  %get-tuple-element.508.0 = c128[1024]{0} get-tuple-element(%while.6.0), index=5, metadata={op_name="jit(scan)/jit(main)/while" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=286 scheduling_name="get-tuple-element.508.0"}
+  ROOT %tuple.509.0 = (s64[], c128[1024,200]{1,0}, f64[200]{0}, f64[200]{0}, c128[1024]{0}) tuple(%wrapped_add, %get-tuple-element.505.0, %get-tuple-element.506.0, %get-tuple-element.507.0, %get-tuple-element.508.0), metadata={scheduling_name="tuple.509.0"}
+}
+

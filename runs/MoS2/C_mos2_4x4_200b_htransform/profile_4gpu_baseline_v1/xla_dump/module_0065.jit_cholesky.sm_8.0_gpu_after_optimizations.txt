@@ -1,0 +1,44 @@
+HloModule jit_cholesky, is_scheduled=true, entry_computation_layout={(c128[960,960]{1,0})->c128[960,960]{1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="8cc27a22873c071c9d0aebf260fc8ed1"}
+
+%fused_transpose (param_0.10: c128[960,960], param_1.19: s32[]) -> c128[960,960] {
+  %iota.8.3 = s32[960,960]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(cholesky)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="iota.8.3"}
+  %iota.9.3 = s32[960,960]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(cholesky)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="iota.9.3"}
+  %compare.6.3 = pred[960,960]{1,0} compare(%iota.8.3, %iota.9.3), direction=GE, metadata={op_name="jit(cholesky)/jit(main)/ge" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="compare.6.3"}
+  %param_1.19 = s32[] parameter(1), metadata={scheduling_name="param_1.19"}
+  %constant_5_1 = s32[] constant(0)
+  %compare.7.1 = pred[] compare(%param_1.19, %constant_5_1), direction=EQ, metadata={scheduling_name="compare.7.1"}
+  %broadcast.19.1 = pred[960,960]{1,0} broadcast(%compare.7.1), dimensions={}, metadata={scheduling_name="broadcast.19.1"}
+  %param_0.10 = c128[960,960]{0,1} parameter(0), metadata={scheduling_name="param_0.10"}
+  %bitcast.99.5 = c128[960,960]{1,0} bitcast(%param_0.10), metadata={scheduling_name="bitcast.99.5"}
+  %constant_6_1 = c128[] constant((nan, nan))
+  %broadcast.20.1 = c128[960,960]{1,0} broadcast(%constant_6_1), dimensions={}, metadata={scheduling_name="broadcast.20.1"}
+  %select.6.5 = c128[960,960]{1,0} select(%broadcast.19.1, %bitcast.99.5, %broadcast.20.1), metadata={op_name="jit(cholesky)/jit(main)/cholesky" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="select.6.5"}
+  %constant_3_1 = c128[] constant((0, 0))
+  %broadcast.21.1 = c128[960,960]{1,0} broadcast(%constant_3_1), dimensions={}, metadata={scheduling_name="broadcast.21.1"}
+  %select.7.3 = c128[960,960]{1,0} select(%compare.6.3, %select.6.5, %broadcast.21.1), metadata={op_name="jit(cholesky)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="select.7.3"}
+  ROOT %transpose.21.1 = c128[960,960]{1,0} transpose(%select.7.3), dimensions={1,0}, metadata={op_name="jit(cholesky)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="transpose.21.1"}
+}
+
+%fused_transpose.1 (param_0.11: c128[960,960]) -> c128[960,960] {
+  %param_0.11 = c128[960,960]{1,0} parameter(0), metadata={scheduling_name="param_0.11"}
+  %transpose.20.1 = c128[960,960]{1,0} transpose(%param_0.11), dimensions={1,0}, metadata={op_name="a" scheduling_name="transpose.20.1"}
+  %real.4.1 = f64[960,960]{1,0} real(%param_0.11), metadata={op_name="jit(cholesky)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="real.4.1"}
+  %imag.4.1 = f64[960,960]{1,0} imag(%param_0.11), metadata={op_name="jit(cholesky)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="imag.4.1"}
+  %negate.4.1 = f64[960,960]{1,0} negate(%imag.4.1), metadata={op_name="jit(cholesky)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="negate.4.1"}
+  %complex.4.1 = c128[960,960]{1,0} complex(%real.4.1, %negate.4.1), metadata={op_name="jit(cholesky)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="complex.4.1"}
+  %add.3.1 = c128[960,960]{1,0} add(%transpose.20.1, %complex.4.1), metadata={op_name="jit(cholesky)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="add.3.1"}
+  %constant_1_1 = c128[] constant((0.5, 0))
+  %broadcast.18.1 = c128[960,960]{1,0} broadcast(%constant_1_1), dimensions={}, metadata={scheduling_name="broadcast.18.1"}
+  ROOT %multiply.4.1 = c128[960,960]{1,0} multiply(%add.3.1, %broadcast.18.1), metadata={op_name="jit(cholesky)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="multiply.4.1"}
+}
+
+ENTRY %main.20_spmd (param.1: c128[960,960]) -> c128[960,960] {
+  %param.1 = c128[960,960]{1,0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.1"}
+  %input_transpose_fusion.1 = c128[960,960]{1,0} fusion(%param.1), kind=kInput, calls=%fused_transpose.1, metadata={op_name="jit(cholesky)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="input_transpose_fusion.1"}
+  %bitcast.91.0 = c128[960,960]{0,1} bitcast(%input_transpose_fusion.1), metadata={scheduling_name="bitcast.91.0"}
+  %custom-call.1 = (c128[960,960]{0,1}, c128[3744]{0}, s32[]) custom-call(%bitcast.91.0), custom_call_target="__cusolver$cholesky", operand_layout_constraints={c128[960,960]{0,1}}, metadata={op_name="jit(cholesky)/jit(main)/cholesky" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="custom-call.1"}, backend_config={"lower":true}
+  %get-tuple-element.1.0 = s32[] get-tuple-element(%custom-call.1), index=2, metadata={scheduling_name="get-tuple-element.1.0"}
+  %get-tuple-element.2 = c128[960,960]{0,1} get-tuple-element(%custom-call.1), index=0, metadata={scheduling_name="get-tuple-element.2"}
+  ROOT %input_transpose_fusion = c128[960,960]{1,0} fusion(%get-tuple-element.2, %get-tuple-element.1.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(cholesky)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=202 scheduling_name="input_transpose_fusion"}
+}
+

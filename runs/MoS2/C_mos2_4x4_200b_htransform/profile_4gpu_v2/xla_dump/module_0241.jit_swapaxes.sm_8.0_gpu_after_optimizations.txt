@@ -1,0 +1,12 @@
+HloModule jit_swapaxes, is_scheduled=true, entry_computation_layout={(c128[16,960,960]{2,1,0})->c128[16,960,960]{2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="158506b2bc56e2923af443e463d3b6e2"}
+
+%wrapped_transpose_computation (param_0: c128[16,960,960]) -> c128[16,960,960] {
+  %param_0 = c128[16,960,960]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  ROOT %transpose.4.1 = c128[16,960,960]{2,1,0} transpose(%param_0), dimensions={0,2,1}, metadata={op_name="a" scheduling_name="transpose.4.1"}
+}
+
+ENTRY %main.3_spmd (param.1: c128[16,960,960]) -> c128[16,960,960] {
+  %param.1 = c128[16,960,960]{2,1,0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.1"}
+  ROOT %wrapped_transpose = c128[16,960,960]{2,1,0} fusion(%param.1), kind=kInput, calls=%wrapped_transpose_computation, metadata={op_name="a" scheduling_name="wrapped_transpose"}
+}
+

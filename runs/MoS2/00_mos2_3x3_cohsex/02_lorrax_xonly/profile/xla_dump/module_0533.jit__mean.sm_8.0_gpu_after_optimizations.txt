@@ -1,0 +1,21 @@
+HloModule jit__mean, is_scheduled=true, entry_computation_layout={(c128[10]{0})->c128[]}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="cd29889c5230ae05ce60aa0055cf825a"}
+
+%region_0.4 (Arg_0.5: c128[], Arg_1.6: c128[]) -> c128[] {
+  %Arg_1.6 = c128[] parameter(1), metadata={op_name="jit(_mean)/jit(main)/reduce_sum" scheduling_name="Arg_1.6"}
+  %Arg_0.5 = c128[] parameter(0), metadata={op_name="jit(_mean)/jit(main)/reduce_sum" scheduling_name="Arg_0.5"}
+  ROOT %add.2 = c128[] add(%Arg_0.5, %Arg_1.6), metadata={op_name="jit(_mean)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/coulomb/slab_2d.py" source_line=89 scheduling_name="add.2"}
+}
+
+%fused_multiply (param_0.2: c128[10]) -> c128[] {
+  %param_0.2 = c128[10]{0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %constant_3_1 = c128[] constant((0, 0))
+  %reduce.8.1 = c128[] reduce(%param_0.2, %constant_3_1), dimensions={0}, to_apply=%region_0.4, metadata={op_name="jit(_mean)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/coulomb/slab_2d.py" source_line=89 scheduling_name="reduce.8.1"}
+  %constant_4 = c128[] constant((0.1, 0))
+  ROOT %multiply.3.1 = c128[] multiply(%reduce.8.1, %constant_4), metadata={op_name="jit(_mean)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/coulomb/slab_2d.py" source_line=89 scheduling_name="multiply.3.1"}
+}
+
+ENTRY %main.10 (Arg_0.1.0: c128[10]) -> c128[] {
+  %Arg_0.1.0 = c128[10]{0} parameter(0), metadata={op_name="a" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_multiply_fusion = c128[] fusion(%Arg_0.1.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_mean)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/gw/coulomb/slab_2d.py" source_line=89 scheduling_name="loop_multiply_fusion"}
+}
+

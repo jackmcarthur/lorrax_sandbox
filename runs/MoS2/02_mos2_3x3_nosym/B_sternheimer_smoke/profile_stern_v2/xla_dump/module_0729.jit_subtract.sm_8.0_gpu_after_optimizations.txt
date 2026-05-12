@@ -1,0 +1,32 @@
+HloModule jit_subtract, is_scheduled=true, entry_computation_layout={(f64[9,3]{1,0}, f64[1,3]{1,0}, f64[3,1,3]{2,1,0})->(f64[9,3]{1,0}, f64[3,9,3]{2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="e8f99c36659f02036dbd80672f3e9991"}
+
+%fused_slice (param_0_0: f64[3,1,3], param_1_0: f64[9,3], param_1_1: f64[1,3]) -> (f64[81], f64[27]) {
+  %param_0_0 = f64[3,1,3]{2,1,0} parameter(0), metadata={scheduling_name="param_0_0"}
+  %negate.2.2 = f64[3,1,3]{2,1,0} negate(%param_0_0), metadata={op_name="jit(subtract)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=271 scheduling_name="negate.2.2"}
+  %bitcast.45.2 = f64[3,3]{1,0} bitcast(%negate.2.2), metadata={scheduling_name="bitcast.45.2"}
+  %broadcast.7.2 = f64[3,9,3]{2,1,0} broadcast(%bitcast.45.2), dimensions={0,2}, metadata={op_name="jit(subtract)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=271 scheduling_name="broadcast.7.2"}
+  %reshape.2 = f64[81]{0} reshape(%broadcast.7.2), metadata={op_name="jit(subtract)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=271 scheduling_name="reshape.2"}
+  %param_1_0 = f64[9,3]{1,0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %param_1_1 = f64[1,3]{1,0} parameter(2), metadata={scheduling_name="param_1_1"}
+  %bitcast.38.4 = f64[3]{0} bitcast(%param_1_1), metadata={scheduling_name="bitcast.38.4"}
+  %broadcast.5.4 = f64[9,3]{1,0} broadcast(%bitcast.38.4), dimensions={1}, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=271 scheduling_name="broadcast.5.4"}
+  %subtract.2.2 = f64[9,3]{1,0} subtract(%param_1_0, %broadcast.5.4), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=271 scheduling_name="subtract.2.2"}
+  %reshape.3 = f64[27]{0} reshape(%subtract.2.2), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=271 scheduling_name="reshape.3"}
+  %concatenate = f64[108]{0} concatenate(%reshape.2, %reshape.3), dimensions={0}, metadata={scheduling_name="concatenate"}
+  %slice = f64[81]{0} slice(%concatenate), slice={[0:81]}, metadata={scheduling_name="slice"}
+  %slice.1 = f64[27]{0} slice(%concatenate), slice={[81:108]}, metadata={scheduling_name="slice.1"}
+  ROOT %tuple = (f64[81]{0}, f64[27]{0}) tuple(%slice, %slice.1), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=271 scheduling_name="tuple"}
+}
+
+ENTRY %main.12 (Arg_0.1.0: f64[9,3], Arg_1.2.0: f64[1,3], Arg_2.3.0: f64[3,1,3]) -> (f64[9,3], f64[3,9,3]) {
+  %Arg_2.3.0 = f64[3,1,3]{2,1,0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = f64[1,3]{1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[9,3]{1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %input_slice_fusion = (f64[81]{0}, f64[27]{0}) fusion(%Arg_2.3.0, %Arg_0.1.0, %Arg_1.2.0), kind=kInput, calls=%fused_slice, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=271 scheduling_name="input_slice_fusion"}
+  %get-tuple-element.1 = f64[27]{0} get-tuple-element(%input_slice_fusion), index=1, metadata={scheduling_name="get-tuple-element.1"}
+  %get-tuple-element = f64[81]{0} get-tuple-element(%input_slice_fusion), index=0, metadata={scheduling_name="get-tuple-element"}
+  %bitcast.50 = f64[3,9,3]{2,1,0} bitcast(%get-tuple-element), metadata={op_name="jit(subtract)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=271 scheduling_name="bitcast.50"}
+  %bitcast.51 = f64[9,3]{1,0} bitcast(%get-tuple-element.1), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/run_full.py" source_line=271 scheduling_name="bitcast.51"}
+  ROOT %tuple.11.0 = (f64[9,3]{1,0}, f64[3,9,3]{2,1,0}) tuple(%bitcast.51, %bitcast.50), metadata={scheduling_name="tuple.11.0"}
+}
+

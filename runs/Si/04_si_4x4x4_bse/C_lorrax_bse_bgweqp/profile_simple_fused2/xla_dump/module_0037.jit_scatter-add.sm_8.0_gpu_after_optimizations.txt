@@ -1,0 +1,54 @@
+HloModule jit_scatter-add, is_scheduled=true, entry_computation_layout={(c128[240,240,4,4,4]{4,3,2,1,0}, s32[3]{0}, c128[240,240]{1,0})->c128[240,240,4,4,4]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="7af6da6a9d3f959e7fa547428e85956f"}
+
+%and.reduce_sub_computation (lhs: pred[], rhs: pred[]) -> pred[] {
+  %rhs = pred[] parameter(1), metadata={scheduling_name="rhs"}
+  %lhs = pred[] parameter(0), metadata={scheduling_name="lhs"}
+  ROOT %and.12 = pred[] and(%lhs, %rhs), metadata={scheduling_name="and.12"}
+}
+
+%fused_complex (param_0.31: c128[240,240,4,4,4], param_1.41: c128[240,240], param_2.34: s32[3], param_3.29: s32[5]) -> c128[240,240,4,4,4] {
+  %param_0.31 = c128[240,240,4,4,4]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.31"}
+  %real.8.4 = f64[240,240,4,4,4]{4,3,2,1,0} real(%param_0.31), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659 scheduling_name="real.8.4"}
+  %constant_54_1 = s32[] constant(0)
+  %broadcast.50.5 = s32[5]{0} broadcast(%constant_54_1), dimensions={}, metadata={scheduling_name="broadcast.50.5"}
+  %constant_55_1 = s32[1]{0} constant({0})
+  %param_2.34 = s32[3]{0} parameter(2), metadata={scheduling_name="param_2.34"}
+  %concatenate.12.3 = s32[5]{0} concatenate(%constant_55_1, %constant_55_1, %param_2.34), dimensions={0}, metadata={scheduling_name="concatenate.12.3"}
+  %compare.18.5 = pred[5]{0} compare(%broadcast.50.5, %concatenate.12.3), direction=LE, metadata={scheduling_name="compare.18.5"}
+  %param_3.29 = s32[5]{0} parameter(3), metadata={scheduling_name="param_3.29"}
+  %compare.19.3 = pred[5]{0} compare(%param_3.29, %concatenate.12.3), direction=GE, metadata={scheduling_name="compare.19.3"}
+  %and.13.3 = pred[5]{0} and(%compare.18.5, %compare.19.3), metadata={scheduling_name="and.13.3"}
+  %constant_57_1 = pred[] constant(true)
+  %reduce.4.1 = pred[] reduce(%and.13.3, %constant_57_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.4.1"}
+  %broadcast.51.1 = pred[240,240,1,1,1]{4,3,2,1,0} broadcast(%reduce.4.1), dimensions={}, metadata={scheduling_name="broadcast.51.1"}
+  %slice.108.1 = s32[1]{0} slice(%param_2.34), slice={[0:1]}, metadata={scheduling_name="slice.108.1"}
+  %bitcast.249.12 = s32[] bitcast(%slice.108.1), metadata={scheduling_name="bitcast.249.12"}
+  %slice.109.1 = s32[1]{0} slice(%param_2.34), slice={[1:2]}, metadata={scheduling_name="slice.109.1"}
+  %bitcast.251.12 = s32[] bitcast(%slice.109.1), metadata={scheduling_name="bitcast.251.12"}
+  %slice.110.1 = s32[1]{0} slice(%param_2.34), slice={[2:3]}, metadata={scheduling_name="slice.110.1"}
+  %bitcast.253.12 = s32[] bitcast(%slice.110.1), metadata={scheduling_name="bitcast.253.12"}
+  %dynamic-slice.20.3 = f64[240,240,1,1,1]{4,3,2,1,0} dynamic-slice(%real.8.4, %constant_54_1, %constant_54_1, %bitcast.249.12, %bitcast.251.12, /*index=5*/%bitcast.253.12), dynamic_slice_sizes={240,240,1,1,1}, metadata={scheduling_name="dynamic-slice.20.3"}
+  %param_1.41 = c128[240,240]{1,0} parameter(1), metadata={scheduling_name="param_1.41"}
+  %real.9.1 = f64[240,240]{1,0} real(%param_1.41), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659 scheduling_name="real.9.1"}
+  %bitcast.234.5 = f64[240,240,1,1,1]{4,3,2,1,0} bitcast(%real.9.1), metadata={scheduling_name="bitcast.234.5"}
+  %add.13.5 = f64[240,240,1,1,1]{4,3,2,1,0} add(%dynamic-slice.20.3, %bitcast.234.5), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659 scheduling_name="add.13.5"}
+  %select.10.3 = f64[240,240,1,1,1]{4,3,2,1,0} select(%broadcast.51.1, %add.13.5, %dynamic-slice.20.3), metadata={scheduling_name="select.10.3"}
+  %dynamic-update-slice.12.3 = f64[240,240,4,4,4]{4,3,2,1,0} dynamic-update-slice(%real.8.4, %select.10.3, %constant_54_1, %constant_54_1, %bitcast.249.12, /*index=5*/%bitcast.251.12, %bitcast.253.12), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659 scheduling_name="dynamic-update-slice.12.3"}
+  %imag.6.4 = f64[240,240,4,4,4]{4,3,2,1,0} imag(%param_0.31), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659 scheduling_name="imag.6.4"}
+  %dynamic-slice.21.3 = f64[240,240,1,1,1]{4,3,2,1,0} dynamic-slice(%imag.6.4, %constant_54_1, %constant_54_1, %bitcast.249.12, %bitcast.251.12, /*index=5*/%bitcast.253.12), dynamic_slice_sizes={240,240,1,1,1}, metadata={scheduling_name="dynamic-slice.21.3"}
+  %imag.7.1 = f64[240,240]{1,0} imag(%param_1.41), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659 scheduling_name="imag.7.1"}
+  %bitcast.258.5 = f64[240,240,1,1,1]{4,3,2,1,0} bitcast(%imag.7.1), metadata={scheduling_name="bitcast.258.5"}
+  %add.14.5 = f64[240,240,1,1,1]{4,3,2,1,0} add(%dynamic-slice.21.3, %bitcast.258.5), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659 scheduling_name="add.14.5"}
+  %select.11.3 = f64[240,240,1,1,1]{4,3,2,1,0} select(%broadcast.51.1, %add.14.5, %dynamic-slice.21.3), metadata={scheduling_name="select.11.3"}
+  %dynamic-update-slice.13.3 = f64[240,240,4,4,4]{4,3,2,1,0} dynamic-update-slice(%imag.6.4, %select.11.3, %constant_54_1, %constant_54_1, %bitcast.249.12, /*index=5*/%bitcast.251.12, %bitcast.253.12), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659 scheduling_name="dynamic-update-slice.13.3"}
+  ROOT %complex.3.1 = c128[240,240,4,4,4]{4,3,2,1,0} complex(%dynamic-update-slice.12.3, %dynamic-update-slice.13.3), metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659 scheduling_name="complex.3.1"}
+}
+
+ENTRY %main.19_spmd (param.4.0: c128[240,240,4,4,4], param.5.0: s32[3], param.6.0: c128[240,240]) -> c128[240,240,4,4,4] {
+  %param.6.0 = c128[240,240]{1,0} parameter(2), sharding={devices=[2,2]<=[4]}, metadata={op_name="args[2]" scheduling_name="param.6.0"}
+  %constant_56_0 = s32[5]{0} constant({0, 0, 3, 3, 3})
+  %param.5.0 = s32[3]{0} parameter(1), sharding={replicated}, metadata={op_name="args[1]" scheduling_name="param.5.0"}
+  %param.4.0 = c128[240,240,4,4,4]{4,3,2,1,0} parameter(0), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="args[0]" scheduling_name="param.4.0"}
+  ROOT %loop_complex_fusion = c128[240,240,4,4,4]{4,3,2,1,0} fusion(%param.4.0, %param.6.0, %param.5.0, %constant_56_0), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=659 scheduling_name="loop_complex_fusion"}
+}
+

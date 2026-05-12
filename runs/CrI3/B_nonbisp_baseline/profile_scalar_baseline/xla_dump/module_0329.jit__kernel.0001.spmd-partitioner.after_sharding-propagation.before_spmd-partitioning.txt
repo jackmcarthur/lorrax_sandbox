@@ -1,0 +1,67 @@
+HloModule jit__kernel, input_output_alias={ {0}: (0, {}, may-alias), {1}: (1, {}, may-alias) }, entry_computation_layout={(c128[36,1800,1800]{2,1,0}, c128[36,1800]{1,0}, c128[1,1125000,1800]{2,1,0}, c128[1,31235]{1,0}, c128[1,1,75,75,200]{4,3,2,1,0}, /*index=5*/s32[], s32[], s32[])->(c128[36,1800,1800]{2,1,0}, c128[36,1800]{1,0})}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,false,false,false,false}, allow_spmd_sharding_propagation_to_output={false,false}, num_partitions=8
+
+ENTRY %main.110 (Arg_0.1: c128[36,1800,1800], Arg_1.2: c128[36,1800], Arg_2.3: c128[1,1125000,1800], Arg_3.4: c128[1,31235], Arg_4.5: c128[1,1,75,75,200], Arg_5.6: s32[], Arg_6.7: s32[], Arg_7.8: s32[]) -> (c128[36,1800,1800], c128[36,1800]) {
+  %Arg_6.7 = s32[] parameter(6), metadata={op_name="mu_lo_dyn"}
+  %Arg_7.8 = s32[] parameter(7), metadata={op_name="nu_lo_dyn"}
+  %constant.10 = s32[] constant(36)
+  %constant.11 = s32[] constant(0)
+  %Arg_0.1 = c128[36,1800,1800]{2,1,0} parameter(0), sharding={devices=[1,2,4]<=[8]}, metadata={op_name="V_acc"}
+  %Arg_2.3 = c128[1,1125000,1800]{2,1,0} parameter(2), sharding={devices=[1,1,8]<=[8]}, metadata={op_name="zeta_mu_disk"}
+  %transpose.13 = c128[1,1800,1125000]{1,2,0} transpose(%Arg_2.3), dimensions={0,2,1}, sharding={devices=[1,8,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=322}
+  %copy.12 = c128[1,1800,1125000]{2,1,0} copy(%transpose.13), sharding={devices=[1,8,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=321}
+  %reshape.15 = c128[1,1800,75,75,200]{4,3,2,1,0} reshape(%copy.12), sharding={devices=[1,8,1,1,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=325}
+  %Arg_4.5 = c128[1,1,75,75,200]{4,3,2,1,0} parameter(4), sharding={replicated}, metadata={op_name="phase_batch"}
+  %reshape.4 = c128[75,75,200]{2,1,0} reshape(%Arg_4.5), sharding={replicated}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=325}
+  %broadcast.18 = c128[1,1800,75,75,200]{4,3,2,1,0} broadcast(%reshape.4), dimensions={2,3,4}, sharding={devices=[1,8,1,1,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=325}
+  %multiply.19 = c128[1,1800,75,75,200]{4,3,2,1,0} multiply(%reshape.15, %broadcast.18), sharding={devices=[1,8,1,1,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=325}
+  %copy.11 = c128[1,1800,75,75,200]{4,3,2,1,0} copy(%multiply.19), sharding={devices=[1,8,1,1,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=324}
+  %copy.10 = c128[1,1800,75,75,200]{4,3,2,1,0} copy(%copy.11), sharding={devices=[1,8,1,1,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=327}
+  %custom-call.22 = c128[1,225,75,75,200]{4,3,2,1,0} custom-call(%copy.10), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=327}
+  %fft.1 = c128[1,225,75,75,200]{4,3,2,1,0} fft(%custom-call.22), fft_type=FFT, fft_length={75,75,200}, sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=343}
+  %copy.9 = c128[1,225,75,75,200]{4,3,2,1,0} copy(%fft.1), sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=327}
+  %custom-call.31 = c128[1,1800,75,75,200]{4,3,2,1,0} custom-call(%copy.9), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,8,1,1,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=327}
+  %reshape.32 = c128[1,1800,1125000]{2,1,0} reshape(%custom-call.31), sharding={devices=[1,8,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=329}
+  %copy.8 = c128[1,1800,1125000]{2,1,0} copy(%reshape.32), sharding={devices=[1,8,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=328}
+  %constant.16 = s64[31235,1]{1,0} constant({...}), sharding={replicated}, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=332}
+  %gather.0 = c128[1,1800,31235]{2,1,0} gather(%copy.8, %constant.16), offset_dims={0,1}, collapsed_slice_dims={2}, start_index_map={2}, index_vector_dim=1, slice_sizes={1,1800,1}, sharding={devices=[1,8,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_take)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=332}
+  %copy.7 = c128[1,1800,31235]{2,1,0} copy(%gather.0), sharding={devices=[1,8,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=335}
+  %copy.6 = c128[1,1800,31235]{2,1,0} copy(%copy.7), sharding={devices=[1,2,1,4]<=[8] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=356}
+  %Arg_3.4 = c128[1,31235]{1,0} parameter(3), sharding={replicated}, metadata={op_name="v_per_G_batch"}
+  %reshape.7 = c128[31235]{0} reshape(%Arg_3.4), sharding={replicated}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=365}
+  %broadcast.78 = c128[1,1800,31235]{2,1,0} broadcast(%reshape.7), dimensions={2}, sharding={devices=[1,2,1,4]<=[8] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=365}
+  %multiply.79 = c128[1,1800,31235]{2,1,0} multiply(%copy.6, %broadcast.78), sharding={devices=[1,2,1,4]<=[8] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=365}
+  %copy.5 = c128[1,1800,31235]{2,1,0} copy(%multiply.79), sharding={devices=[1,2,1,4]<=[8] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=364}
+  %real.81 = f64[1,1800,31235]{2,1,0} real(%copy.5), sharding={devices=[1,2,1,4]<=[8] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=368}
+  %imag.82 = f64[1,1800,31235]{2,1,0} imag(%copy.5), sharding={devices=[1,2,1,4]<=[8] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=368}
+  %negate.83 = f64[1,1800,31235]{2,1,0} negate(%imag.82), sharding={devices=[1,2,1,4]<=[8] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=368}
+  %complex.84 = c128[1,1800,31235]{2,1,0} complex(%real.81, %negate.83), sharding={devices=[1,2,1,4]<=[8] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=368}
+  %reshape.8 = c128[1800,31235]{1,0} reshape(%complex.84), sharding={devices=[2,1,4]<=[8] last_tile_dim_replicate}
+  %copy.4 = c128[1,1800,31235]{2,1,0} copy(%copy.7), sharding={devices=[1,4,1,2]<=[2,4]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=357}
+  %reshape.9 = c128[1800,31235]{1,0} reshape(%copy.4), sharding={devices=[4,1,2]<=[2,4]T(1,0) last_tile_dim_replicate}
+  %dot = c128[1800,1800]{1,0} dot(%reshape.8, %reshape.9), lhs_contracting_dims={1}, rhs_contracting_dims={1}, sharding={devices=[2,4]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=367}
+  %reshape.10 = c128[1,1800,1800]{2,1,0} reshape(%dot), sharding={devices=[1,2,4]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/qmG,qnG->qmn/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=367}
+  %copy.3 = c128[1,1800,1800]{2,1,0} copy(%reshape.10), sharding={devices=[1,2,4]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=370}
+  %Arg_5.6 = s32[] parameter(5), metadata={op_name="q_lo_dyn"}
+  %constant.22 = s32[] constant(0)
+  %compare.87 = pred[] compare(%Arg_5.6, %constant.22), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=372}
+  %constant.24 = s32[] constant(36)
+  %add.88 = s32[] add(%Arg_5.6, %constant.24), metadata={op_name="jit(_kernel)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=372}
+  %select.89 = s32[] select(%compare.87, %add.88, %Arg_5.6), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=372}
+  %constant.6 = s32[] constant(0), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=372}
+  %dynamic-update-slice.96 = c128[36,1800,1800]{2,1,0} dynamic-update-slice(%Arg_0.1, %copy.3, %select.89, %constant.6, %constant.6), sharding={devices=[1,2,4]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/dynamic_update_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=372}
+  %copy.2 = c128[36,1800,1800]{2,1,0} copy(%dynamic-update-slice.96), sharding={devices=[1,2,4]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=374}
+  %Arg_1.2 = c128[36,1800]{1,0} parameter(1), sharding={devices=[1,2,4]<=[8] last_tile_dim_replicate}, metadata={op_name="g0_acc"}
+  %slice.34 = c128[1,1800,1]{2,1,0} slice(%copy.8), slice={[0:1], [0:1800], [0:1]}, sharding={devices=[1,8,1]<=[8]}, metadata={op_name="jit(_kernel)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=330}
+  %reshape.35 = c128[1,1800]{1,0} reshape(%slice.34), sharding={devices=[1,2,4]<=[8] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=330}
+  %copy.1 = c128[1,1800]{1,0} copy(%reshape.35), sharding={devices=[1,2,4]<=[8] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=377}
+  %constant.23 = s32[] constant(0)
+  %compare.99 = pred[] compare(%Arg_5.6, %constant.23), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=378}
+  %constant.25 = s32[] constant(36)
+  %add.100 = s32[] add(%Arg_5.6, %constant.25), metadata={op_name="jit(_kernel)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=378}
+  %select.101 = s32[] select(%compare.99, %add.100, %Arg_5.6), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=378}
+  %constant.7 = s32[] constant(0), metadata={op_name="jit(_kernel)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=378}
+  %dynamic-update-slice.105 = c128[36,1800]{1,0} dynamic-update-slice(%Arg_1.2, %copy.1, %select.101, %constant.7), sharding={devices=[1,2,4]<=[8] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/dynamic_update_slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=378}
+  %copy = c128[36,1800]{1,0} copy(%dynamic-update-slice.105), sharding={devices=[1,2,4]<=[8] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=380}
+  ROOT %tuple.109 = (c128[36,1800,1800]{2,1,0}, c128[36,1800]{1,0}) tuple(%copy.2, %copy), sharding={{devices=[1,2,4]<=[8]}, {devices=[1,2,4]<=[8] last_tile_dim_replicate}}
+}
+

@@ -1,0 +1,34 @@
+HloModule jit__identity_fn, is_scheduled=true, entry_computation_layout={(c128[20,2,2,64]{3,2,1,0})->c128[20,4,4,64]{3,2,1,0}}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="fc10a2dca3937764fdf9bf49b29075e7"}
+
+%fused_transpose (param_0.1: c128[20,4,4,64]) -> c128[20,4,256] {
+  %param_0.1 = c128[20,4,4,64]{3,2,0,1} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.54.1 = c128[4,20,256]{2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.54.1"}
+  ROOT %transpose.10.1 = c128[20,4,256]{2,1,0} transpose(%bitcast.54.1), dimensions={1,0,2}, metadata={scheduling_name="transpose.10.1"}
+}
+
+%fused_transpose.1 (param_0.3: c128[20,2,4,64]) -> c128[2,20,4,64] {
+  %param_0.3 = c128[20,2,4,64]{3,1,0,2} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.47.1 = c128[4,20,2,64]{3,2,1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.47.1"}
+  ROOT %transpose.9.1 = c128[2,20,4,64]{3,2,1,0} transpose(%bitcast.47.1), dimensions={2,1,0,3}, metadata={scheduling_name="transpose.9.1"}
+}
+
+%fused_transpose.2 (param_0.5: c128[20,2,2,64]) -> c128[2,40,64] {
+  %param_0.5 = c128[20,2,2,64]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.5"}
+  %bitcast.40.1 = c128[40,2,64]{2,1,0} bitcast(%param_0.5), metadata={scheduling_name="bitcast.40.1"}
+  ROOT %transpose.8.1 = c128[2,40,64]{2,1,0} transpose(%bitcast.40.1), dimensions={1,0,2}, metadata={op_name="x" scheduling_name="transpose.8.1"}
+}
+
+ENTRY %main.4_spmd (param.1: c128[20,2,2,64]) -> c128[20,4,4,64] {
+  %param.1 = c128[20,2,2,64]{3,2,1,0} parameter(0), sharding={devices=[1,2,2,1]<=[4]}, metadata={op_name="x" scheduling_name="param.1"}
+  %loop_transpose_fusion.2 = c128[2,40,64]{2,1,0} fusion(%param.1), kind=kLoop, calls=%fused_transpose.2, metadata={op_name="x" scheduling_name="loop_transpose_fusion.2"}
+  %bitcast.44.0 = c128[20,2,2,64]{3,1,0,2} bitcast(%loop_transpose_fusion.2), metadata={scheduling_name="bitcast.44.0"}
+  %all-gather-start = (c128[20,2,2,64]{3,1,0,2}, c128[20,2,4,64]{3,1,0,2}) all-gather-start(%bitcast.44.0), channel_id=1, replica_groups=[2,2]<=[4], dimensions={2}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done = c128[20,2,4,64]{3,1,0,2} all-gather-done(%all-gather-start), metadata={scheduling_name="all-gather-done"}
+  %loop_transpose_fusion.1 = c128[2,20,4,64]{3,2,1,0} fusion(%all-gather-done), kind=kLoop, calls=%fused_transpose.1, metadata={scheduling_name="loop_transpose_fusion.1"}
+  %bitcast.51.0 = c128[20,2,4,64]{3,2,0,1} bitcast(%loop_transpose_fusion.1), metadata={scheduling_name="bitcast.51.0"}
+  %all-gather-start.1 = (c128[20,2,4,64]{3,2,0,1}, c128[20,4,4,64]{3,2,0,1}) all-gather-start(%bitcast.51.0), channel_id=2, replica_groups=[2,2]<=[2,2]T(1,0), dimensions={1}, use_global_device_ids=true, metadata={scheduling_name="all-gather-start.1"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done.1 = c128[20,4,4,64]{3,2,0,1} all-gather-done(%all-gather-start.1), metadata={scheduling_name="all-gather-done.1"}
+  %loop_transpose_fusion = c128[20,4,256]{2,1,0} fusion(%all-gather-done.1), kind=kLoop, calls=%fused_transpose, metadata={scheduling_name="loop_transpose_fusion"}
+  ROOT %bitcast.35.0 = c128[20,4,4,64]{3,2,1,0} bitcast(%loop_transpose_fusion), metadata={scheduling_name="bitcast.35.0"}
+}
+

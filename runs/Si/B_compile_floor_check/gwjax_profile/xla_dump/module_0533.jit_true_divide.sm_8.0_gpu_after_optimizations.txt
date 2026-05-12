@@ -1,0 +1,16 @@
+HloModule jit_true_divide, is_scheduled=true, entry_computation_layout={(f64[64,52,8]{2,1,0}, c128[1,64,52,8]{3,2,1,0})->c128[1,64,52,8]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="6ca1ef44e0f178ba17b7ac7de45e34e4"}
+
+%fused_divide (param_0.4: c128[1,64,52,8], param_1.2: f64[64,52,8]) -> c128[1,64,52,8] {
+  %param_1.2 = f64[64,52,8]{2,1,0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %bitcast.21.3 = f64[1,64,52,8]{3,2,1,0} bitcast(%param_1.2), metadata={scheduling_name="bitcast.21.3"}
+  %convert.6.3 = c128[1,64,52,8]{3,2,1,0} convert(%bitcast.21.3), metadata={op_name="jit(true_divide)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/chi_from_dipole.py" source_line=55 scheduling_name="convert.6.3"}
+  %param_0.4 = c128[1,64,52,8]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.4"}
+  ROOT %divide.2.1 = c128[1,64,52,8]{3,2,1,0} divide(%convert.6.3, %param_0.4), metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/chi_from_dipole.py" source_line=55 scheduling_name="divide.2.1"}
+}
+
+ENTRY %main.6 (Arg_0.1.0: f64[64,52,8], Arg_1.2.0: c128[1,64,52,8]) -> c128[1,64,52,8] {
+  %Arg_1.2.0 = c128[1,64,52,8]{3,2,1,0} parameter(1), metadata={op_name="x2" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[64,52,8]{2,1,0} parameter(0), metadata={op_name="x1" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_divide_fusion = c128[1,64,52,8]{3,2,1,0} fusion(%Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_divide, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/chi_from_dipole.py" source_line=55 scheduling_name="loop_divide_fusion"}
+}
+

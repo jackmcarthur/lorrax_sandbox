@@ -1,0 +1,15 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(s64[640]{0}, s64[])->s64[640]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}
+
+%fused_computation (param_0: s64[640], param_1.1: s64[]) -> s64[640] {
+  %param_0 = s64[640]{0} parameter(0)
+  %param_1.1 = s64[] parameter(1)
+  %broadcast.0 = s64[640]{0} broadcast(%param_1.1), dimensions={}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=690}
+  ROOT %multiply.0 = s64[640]{0} multiply(%param_0, %broadcast.0), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=690}
+}
+
+ENTRY %main.5 (Arg_0.1: s64[640], Arg_1.2: s64[]) -> s64[640] {
+  %Arg_0.1 = s64[640]{0} parameter(0), metadata={op_name="x"}
+  %Arg_1.2 = s64[] parameter(1), metadata={op_name="y"}
+  ROOT %broadcast_multiply_fusion = s64[640]{0} fusion(%Arg_0.1, %Arg_1.2), kind=kLoop, calls=%fused_computation, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_A/src/common/load_wfns.py" source_line=690}
+}
+

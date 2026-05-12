@@ -1,0 +1,55 @@
+BufferAssignment:
+allocation 0: size 53084160, output shape is |c128[9,4,2,24,24,80]|, maybe-live-out:
+ value: <57 input_transpose_fusion @0> (size=53084160,offset=0): c128[9,4,2,24,24,80]{5,4,3,2,1,0}
+allocation 1: size 2261376, parameter 0, shape |f64[4,2,9,1963,2]| at ShapeIndex {}:
+ value: <56 param.1.0 @0> (size=2261376,offset=0): f64[4,2,9,1963,2]{4,3,2,1,0}
+allocation 2: size 1658880, parameter 1, shape |s32[9,24,24,80]| at ShapeIndex {}:
+ value: <54 param.2 @0> (size=1658880,offset=0): s32[9,24,24,80]{3,2,1,0}
+allocation 3: size 414720, preallocated-temp:
+ value: <55 loop_and_fusion @0> (size=414720,offset=0): pred[9,24,24,80]{3,2,1,0}
+
+Total bytes used: 57419136 (54.76MiB)
+
+Used values:
+<54 param.2 @0>
+ positions:
+  param.2
+ uses:
+  loop_and_fusion, operand 0
+  input_transpose_fusion, operand 1
+ from instruction: %param.2 = s32[9,24,24,80]{3,2,1,0} parameter(1), sharding={replicated}, metadata={op_name="g_index" scheduling_name="param.2"}
+<55 loop_and_fusion @0>
+ positions:
+  loop_and_fusion
+ uses:
+  input_transpose_fusion, operand 0
+ from instruction: %loop_and_fusion = pred[9,24,24,80]{3,2,1,0} fusion(%param.2), kind=kLoop, calls=%fused_and, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/gvec_fft_box.py" source_line=120 scheduling_name="loop_and_fusion"}
+<56 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  input_transpose_fusion, operand 2
+ from instruction: %param.1.0 = f64[4,2,9,1963,2]{4,3,2,1,0} parameter(0), sharding={devices=[8,1,1,1,1]<=[8]}, metadata={op_name="cnk_slab" scheduling_name="param.1.0"}
+<57 input_transpose_fusion @0>
+ positions:
+  input_transpose_fusion
+ uses:
+ from instruction: %input_transpose_fusion = c128[9,4,2,24,24,80]{5,4,3,2,1,0} fusion(%loop_and_fusion, %param.2, %param.1.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_per_rank)/jit(main)/jit(shmap_body)/jit(_take)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/gvec_fft_box.py" source_line=120 scheduling_name="input_transpose_fusion"}
+
+
+HloLiveRange (max 4):
+  InstructionSequence:
+    0:param.2
+    1:param.1.0
+    2:loop_and_fusion
+    3:input_transpose_fusion
+  BufferLiveRange:
+    param.2{}:0-4
+    loop_and_fusion{}:2-3
+    param.1.0{}:0-4
+    input_transpose_fusion{}:3-4
+  Live ranges at 3 (peak):
+    param.2: 1658880 bytes
+    loop_and_fusion: 414720 bytes
+    param.1.0: 2261376 bytes
+    input_transpose_fusion: 53084160 bytes

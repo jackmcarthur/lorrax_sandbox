@@ -1,0 +1,45 @@
+HloModule jit_sort, is_scheduled=true, entry_computation_layout={(f64[60]{0})->f64[60]{0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="d5dfa113cf20afeb1917589d1e5fef86"}
+
+%region_0.2.clone (Arg_0.0: f64[], Arg_1.0: f64[], p.1.lhs.clone: s32[], p.1.rhs.clone: s32[]) -> pred[] {
+  %constant_8 = s64[] constant(9223372036854775807)
+  %constant_7 = s64[] constant(0)
+  %constant_4 = f64[] constant(0)
+  %constant_3 = f64[] constant(nan)
+  %p.1.rhs.clone = s32[] parameter(3), metadata={scheduling_name="p.1.rhs.clone"}
+  %p.1.lhs.clone = s32[] parameter(2), metadata={scheduling_name="p.1.lhs.clone"}
+  %Arg_1.0 = f64[] parameter(1), metadata={op_name="jit(sort)/jit(main)/sort" scheduling_name="Arg_1.0"}
+  %Arg_0.0 = f64[] parameter(0), metadata={op_name="jit(sort)/jit(main)/sort" scheduling_name="Arg_0.0"}
+  %compare.53 = pred[] compare(%p.1.lhs.clone, %p.1.rhs.clone), direction=LT, metadata={scheduling_name="compare.53"}
+  %compare.48 = pred[] compare(%Arg_1.0, %constant_4), direction=EQ, metadata={op_name="jit(sort)/jit(main)/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="compare.48"}
+  %select.36 = f64[] select(%compare.48, %constant_4, %Arg_1.0), metadata={op_name="jit(sort)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="select.36"}
+  %compare.47 = pred[] compare(%Arg_1.0, %Arg_1.0), direction=NE, metadata={op_name="jit(sort)/jit(main)/ne" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="compare.47"}
+  %select.37 = f64[] select(%compare.47, %constant_3, %select.36), metadata={op_name="jit(sort)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="select.37"}
+  %bitcast-convert.11 = s64[] bitcast-convert(%select.37), metadata={scheduling_name="bitcast-convert.11"}
+  %compare.49 = pred[] compare(%bitcast-convert.11, %constant_7), direction=LT, metadata={scheduling_name="compare.49"}
+  %xor.11 = s64[] xor(%constant_8, %bitcast-convert.11), metadata={scheduling_name="xor.11"}
+  %select.38 = s64[] select(%compare.49, %xor.11, %bitcast-convert.11), metadata={scheduling_name="select.38"}
+  %compare.45 = pred[] compare(%Arg_0.0, %constant_4), direction=EQ, metadata={op_name="jit(sort)/jit(main)/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="compare.45"}
+  %select.33 = f64[] select(%compare.45, %constant_4, %Arg_0.0), metadata={op_name="jit(sort)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="select.33"}
+  %compare.44 = pred[] compare(%Arg_0.0, %Arg_0.0), direction=NE, metadata={op_name="jit(sort)/jit(main)/ne" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="compare.44"}
+  %select.34 = f64[] select(%compare.44, %constant_3, %select.33), metadata={op_name="jit(sort)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="select.34"}
+  %bitcast-convert.10 = s64[] bitcast-convert(%select.34), metadata={scheduling_name="bitcast-convert.10"}
+  %compare.46 = pred[] compare(%bitcast-convert.10, %constant_7), direction=LT, metadata={scheduling_name="compare.46"}
+  %xor.10 = s64[] xor(%constant_8, %bitcast-convert.10), metadata={scheduling_name="xor.10"}
+  %select.35 = s64[] select(%compare.46, %xor.10, %bitcast-convert.10), metadata={scheduling_name="select.35"}
+  %compare.50 = pred[] compare(%select.35, %select.38), direction=LT, metadata={op_name="jit(sort)/jit(main)/lt_to" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="compare.50"}
+  %compare.51 = pred[] compare(%select.38, %select.35), direction=LT, metadata={op_name="jit(sort)/jit(main)/lt_to" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="compare.51"}
+  %compare.52 = pred[] compare(%compare.50, %compare.51), direction=EQ, metadata={scheduling_name="compare.52"}
+  ROOT %select.39 = pred[] select(%compare.52, %compare.53, %compare.50), metadata={scheduling_name="select.39"}
+}
+
+%wrapped_iota_computation () -> s32[60] {
+  ROOT %iota.3.1 = s32[60]{0} iota(), iota_dimension=0, metadata={scheduling_name="iota.3.1"}
+}
+
+ENTRY %main.17 (Arg_0.1.0: f64[60]) -> f64[60] {
+  %Arg_0.1.0 = f64[60]{0} parameter(0), metadata={op_name="a" scheduling_name="Arg_0.1.0"}
+  %wrapped_iota = s32[60]{0} fusion(), kind=kLoop, calls=%wrapped_iota_computation, metadata={scheduling_name="wrapped_iota"}
+  %sort.0.0 = (f64[60]{0}, s32[60]{0}) sort(%Arg_0.1.0, %wrapped_iota), dimensions={0}, is_stable=true, to_apply=%region_0.2.clone, metadata={op_name="jit(sort)/jit(main)/sort" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="sort.0.0"}
+  ROOT %get-tuple-element.1 = f64[60]{0} get-tuple-element(%sort.0.0), index=0, metadata={op_name="jit(sort)/jit(main)/sort" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=585 scheduling_name="get-tuple-element.1"}
+}
+

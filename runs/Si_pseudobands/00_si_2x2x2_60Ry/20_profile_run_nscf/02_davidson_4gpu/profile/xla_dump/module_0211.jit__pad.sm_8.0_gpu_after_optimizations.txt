@@ -1,0 +1,15 @@
+HloModule jit__pad, is_scheduled=true, entry_computation_layout={(s32[2109]{0}, s64[])->s32[2120]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="7a6815537bf6b3dd11e66e96431500e0"}
+
+%fused_pad (param_0: s32[2109], param_1.1: s64[]) -> s32[2120] {
+  %param_0 = s32[2109]{0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.1 = s64[] parameter(1), metadata={scheduling_name="param_1.1"}
+  %convert.2.1 = s32[] convert(%param_1.1), metadata={op_name="jit(_pad)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=560 scheduling_name="convert.2.1"}
+  ROOT %pad.2.1 = s32[2120]{0} pad(%param_0, %convert.2.1), padding=0_11, metadata={op_name="jit(_pad)/jit(main)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=560 scheduling_name="pad.2.1"}
+}
+
+ENTRY %main.5 (Arg_0.1.0: s32[2109], Arg_1.2.0: s64[]) -> s32[2120] {
+  %Arg_1.2.0 = s64[] parameter(1), metadata={op_name="constant_values" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = s32[2109]{0} parameter(0), metadata={op_name="array" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_pad_fusion = s32[2120]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_pad, metadata={op_name="jit(_pad)/jit(main)/pad" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_operators.py" source_line=560 scheduling_name="loop_pad_fusion"}
+}
+

@@ -1,0 +1,17 @@
+HloModule jit__einsum, is_scheduled=true, entry_computation_layout={(c128[9,26,2,1963]{3,2,1,0}, c128[9,26,2,1963]{3,2,1,0})->c128[9,26,26]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="2693c25c0a7ea0492395be37377eb7a3"}
+
+%fused_transpose (param_0.1: c128[9,26,2,1963]) -> c128[9,3926,26] {
+  %param_0.1 = c128[9,26,2,1963]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.38.1 = c128[9,26,3926]{2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.38.1"}
+  ROOT %transpose.5.1 = c128[9,3926,26]{2,1,0} transpose(%bitcast.38.1), dimensions={0,2,1}, metadata={op_name="operands[0]" scheduling_name="transpose.5.1"}
+}
+
+ENTRY %main.4 (Arg_0.1.0: c128[9,26,2,1963], Arg_1.2.0: c128[9,26,2,1963]) -> c128[9,26,26] {
+  %Arg_1.2.0 = c128[9,26,2,1963]{3,2,1,0} parameter(1), metadata={op_name="operands[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[9,26,2,1963]{3,2,1,0} parameter(0), metadata={op_name="operands[0]" scheduling_name="Arg_0.1.0"}
+  %bitcast.35.0 = c128[9,26,3926]{2,1,0} bitcast(%Arg_1.2.0), metadata={scheduling_name="bitcast.35.0"}
+  %input_transpose_fusion = c128[9,3926,26]{2,1,0} fusion(%Arg_0.1.0), kind=kInput, calls=%fused_transpose, metadata={op_name="operands[0]" scheduling_name="input_transpose_fusion"}
+  %custom-call.1.0 = (c128[9,26,26]{2,1,0}, s8[4194304]{0}) custom-call(%bitcast.35.0, %input_transpose_fusion), custom_call_target="__cublas$gemm", metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=330 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"102076","rhs_stride":"102076","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  ROOT %get-tuple-element.1 = c128[9,26,26]{2,1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=330 scheduling_name="get-tuple-element.1"}
+}
+

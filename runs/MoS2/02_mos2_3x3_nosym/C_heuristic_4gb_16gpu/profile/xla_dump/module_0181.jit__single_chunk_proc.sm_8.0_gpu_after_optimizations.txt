@@ -1,0 +1,50 @@
+HloModule jit__single_chunk_proc, is_scheduled=true, entry_computation_layout={(c128[4,640,46080]{2,1,0}, c128[4,17252]{1,0}, c128[4,1,24,24,80]{4,3,2,1,0})->(c128[4,640,640]{2,1,0}, c128[4,640]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="7b9f4adf81e250f865409a7be314c049"}
+
+%fused_slice (param_0.1: c128[4,640,24,24,80]) -> c128[4,640,1] {
+  %param_0.1 = c128[4,640,24,24,80]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.137.1 = c128[4,640,46080]{2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.137.1"}
+  ROOT %slice.3.1 = c128[4,640,1]{2,1,0} slice(%bitcast.137.1), slice={[0:4], [0:640], [0:1]}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=431 scheduling_name="slice.3.1"}
+}
+
+%fused_multiply (param_0.11: c128[4,640,46080], param_1.7: c128[4,1,24,24,80]) -> c128[4,640,24,24,80] {
+  %param_0.11 = c128[4,640,46080]{2,1,0} parameter(0), metadata={scheduling_name="param_0.11"}
+  %bitcast.106.1 = c128[4,640,24,24,80]{4,3,2,1,0} bitcast(%param_0.11), metadata={scheduling_name="bitcast.106.1"}
+  %param_1.7 = c128[4,1,24,24,80]{4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1.7"}
+  %bitcast.110.3 = c128[4,24,24,80]{3,2,1,0} bitcast(%param_1.7), metadata={scheduling_name="bitcast.110.3"}
+  %broadcast.18.3 = c128[4,640,24,24,80]{4,3,2,1,0} broadcast(%bitcast.110.3), dimensions={0,2,3,4}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=429 scheduling_name="broadcast.18.3"}
+  ROOT %multiply.4.1 = c128[4,640,24,24,80]{4,3,2,1,0} multiply(%bitcast.106.1, %broadcast.18.3), metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=429 scheduling_name="multiply.4.1"}
+}
+
+%fused_complex_multiply (param_0.17: c128[4,17252], param_1.19: s64[17252,1], param_2.4: c128[4,640,24,24,80]) -> (c128[4,640,17252], c128[4,640,17252]) {
+  %param_2.4 = c128[4,640,24,24,80]{4,3,2,1,0} parameter(2), metadata={scheduling_name="param_2.4"}
+  %bitcast.117.3.clone.1 = c128[46080,4,640]{0,2,1} bitcast(%param_2.4), metadata={scheduling_name="bitcast.117.3.clone.1"}
+  %param_1.19 = s64[17252,1]{1,0} parameter(1), metadata={scheduling_name="param_1.19"}
+  %gather.1.3.clone.1 = c128[17252,1,4,640]{0,3,2,1} gather(%bitcast.117.3.clone.1, %param_1.19), offset_dims={1,2,3}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,4,640}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(jit(_take))/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=434 scheduling_name="gather.1.3.clone.1"}
+  %bitcast.121.1.clone.1 = c128[4,640,17252]{2,1,0} bitcast(%gather.1.3.clone.1), metadata={scheduling_name="bitcast.121.1.clone.1"}
+  %param_0.17 = c128[4,17252]{1,0} parameter(0), metadata={scheduling_name="param_0.17"}
+  %broadcast.19.1.clone.1 = c128[4,640,17252]{2,1,0} broadcast(%param_0.17), dimensions={0,2}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=434 scheduling_name="broadcast.19.1.clone.1"}
+  %multiply.5.1.clone.1 = c128[4,640,17252]{2,1,0} multiply(%bitcast.121.1.clone.1, %broadcast.19.1.clone.1), metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=434 scheduling_name="multiply.5.1.clone.1"}
+  %real.2.1 = f64[4,640,17252]{2,1,0} real(%multiply.5.1.clone.1), metadata={op_name="jit(_single_chunk_proc)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="real.2.1"}
+  %imag.2.1 = f64[4,640,17252]{2,1,0} imag(%multiply.5.1.clone.1), metadata={op_name="jit(_single_chunk_proc)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="imag.2.1"}
+  %negate.2.1 = f64[4,640,17252]{2,1,0} negate(%imag.2.1), metadata={op_name="jit(_single_chunk_proc)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="negate.2.1"}
+  %complex.2.1 = c128[4,640,17252]{2,1,0} complex(%real.2.1, %negate.2.1), metadata={op_name="jit(_single_chunk_proc)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="complex.2.1"}
+  ROOT %tuple = (c128[4,640,17252]{2,1,0}, c128[4,640,17252]{2,1,0}) tuple(%complex.2.1, %multiply.5.1.clone.1), metadata={scheduling_name="tuple"}
+}
+
+ENTRY %main.67 (Arg_0.1.0: c128[4,640,46080], Arg_1.2.0: c128[4,17252], Arg_2.3.0: c128[4,1,24,24,80]) -> (c128[4,640,640], c128[4,640]) {
+  %constant_13_0 = s64[17252,1]{1,0} constant({...}), metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(jit(_take))/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=434}
+  %Arg_2.3.0 = c128[4,1,24,24,80]{4,3,2,1,0} parameter(2), metadata={op_name="phase_q" scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = c128[4,17252]{1,0} parameter(1), metadata={op_name="sqrt_v_q" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[4,640,46080]{2,1,0} parameter(0), metadata={op_name="zeta_q" scheduling_name="Arg_0.1.0"}
+  %loop_multiply_fusion = c128[4,640,24,24,80]{4,3,2,1,0} fusion(%Arg_0.1.0, %Arg_2.3.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_single_chunk_proc)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=429 scheduling_name="loop_multiply_fusion"}
+  %fft.1.0 = c128[4,640,24,24,80]{4,3,2,1,0} fft(%loop_multiply_fusion), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(jit(fft))/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=428 scheduling_name="fft.1.0"}
+  %loop_slice_fusion = c128[4,640,1]{2,1,0} fusion(%fft.1.0), kind=kLoop, calls=%fused_slice, metadata={op_name="jit(_single_chunk_proc)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=431 scheduling_name="loop_slice_fusion"}
+  %loop_complex_multiply_fusion = (c128[4,640,17252]{2,1,0}, c128[4,640,17252]{2,1,0}) fusion(%Arg_1.2.0, %constant_13_0, %fft.1.0), kind=kLoop, calls=%fused_complex_multiply, metadata={op_name="jit(_single_chunk_proc)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="loop_complex_multiply_fusion"}
+  %get-tuple-element.3 = c128[4,640,17252]{2,1,0} get-tuple-element(%loop_complex_multiply_fusion), index=1, metadata={op_name="jit(_single_chunk_proc)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="get-tuple-element.3"}
+  %get-tuple-element.2 = c128[4,640,17252]{2,1,0} get-tuple-element(%loop_complex_multiply_fusion), index=0, metadata={op_name="jit(_single_chunk_proc)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="get-tuple-element.2"}
+  %custom-call.1.0 = (c128[4,640,640]{2,1,0}, s8[4194304]{0}) custom-call(%get-tuple-element.2, %get-tuple-element.3), custom_call_target="__cublas$gemm", metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(mG,nG->mn)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["2"],"rhs_contracting_dimensions":["2"],"lhs_batch_dimensions":["0"],"rhs_batch_dimensions":["0"]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"11041280","rhs_stride":"11041280","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.1 = c128[4,640,640]{2,1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(_single_chunk_proc)/jit(main)/vmap(mG,nG->mn)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=444 scheduling_name="get-tuple-element.1"}
+  %bitcast.141.0 = c128[4,640]{1,0} bitcast(%loop_slice_fusion), metadata={scheduling_name="bitcast.141.0"}
+  ROOT %tuple.66.0 = (c128[4,640,640]{2,1,0}, c128[4,640]{1,0}) tuple(%get-tuple-element.1, %bitcast.141.0), metadata={scheduling_name="tuple.66.0"}
+}
+

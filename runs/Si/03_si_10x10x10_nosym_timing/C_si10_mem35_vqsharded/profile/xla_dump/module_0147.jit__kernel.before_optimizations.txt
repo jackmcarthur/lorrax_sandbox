@@ -1,0 +1,274 @@
+HloModule jit__kernel, entry_computation_layout={(c128[1000,60,2,24,24,24]{5,4,3,2,1,0}, c128[1000,480,60,2]{3,2,1,0}, c128[1000,480,60,2]{3,2,1,0}, c128[1000,480,480]{2,1,0}, f64[60]{0}, /*index=5*/f64[60]{0}, s32[])->c128[1000,480,1596]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,true,true,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%shmap_body.28 (Arg_0.29: c128[1000,15,2,13824], Arg_1.30: s32[1]) -> c128[1000,15,2,1596] {
+  %Arg_0.29 = c128[1000,15,2,13824]{3,2,1,0} parameter(0), metadata={op_name="[None, (\'x\', \'y\'), None, None]"}
+  %constant.32 = s32[] constant(0)
+  %Arg_1.30 = s32[1]{0} parameter(1), metadata={op_name="[None]"}
+  %reshape.33 = s32[] reshape(%Arg_1.30), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/jit(shmap_body)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=376}
+  %compare.34 = pred[] compare(%reshape.33, %constant.32), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/jit(shmap_body)/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=375}
+  %constant.31 = s32[] constant(13824)
+  %add.35 = s32[] add(%reshape.33, %constant.31), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/jit(shmap_body)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=375}
+  %select.36 = s32[] select(%compare.34, %add.35, %reshape.33), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/jit(shmap_body)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=375}
+  ROOT %dynamic-slice.37 = c128[1000,15,2,1596]{3,2,1,0} dynamic-slice(%Arg_0.29, %constant.32, %constant.32, %constant.32, %select.36), dynamic_slice_sizes={1000,15,2,1596}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/jit(shmap_body)/dynamic_slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=375}
+}
+
+%_fft_and_rslice.38 (Arg_0.39: f64[1000,3], Arg_1.40: f64[1,24,1,1], Arg_2.41: f64[1,1,24,1], Arg_3.42: f64[1,1,1,24], Arg_4.43: c128[1000,60,2,24,24,24], Arg_5.44: s32[]) -> c128[1000,60,2,1596] {
+  %Arg_4.43 = c128[1000,60,2,24,24,24]{5,4,3,2,1,0} parameter(4), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.54 = c128[1000,60,2,24,24,24]{5,4,3,2,1,0} custom-call(%Arg_4.43), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=159}, backend_config="140444764713952"
+  %custom-call.55 = c128[1000,60,2,24,24,24]{5,4,3,2,1,0} custom-call(%custom-call.54), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=159}, backend_config="140445768213584"
+  %custom-call.56 = c128[1000,60,2,24,24,24]{5,4,3,2,1,0} custom-call(%custom-call.55), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=159}, backend_config="140445768217040"
+  %Arg_0.39 = f64[1000,3]{1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %slice.57 = f64[1000,1]{1,0} slice(%Arg_0.39), slice={[0:1000], [0:1]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %reshape.58 = f64[1000,1,1,1]{3,2,1,0} reshape(%slice.57), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %broadcast.59 = f64[1000,1,1,1]{3,2,1,0} broadcast(%reshape.58), dimensions={0,1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %reshape.60 = f64[1000,1,1]{2,1,0} reshape(%broadcast.59), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %broadcast.61 = f64[1000,24,1,1]{3,2,1,0} broadcast(%reshape.60), dimensions={0,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %Arg_1.40 = f64[1,24,1,1]{3,2,1,0} parameter(1), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %broadcast.62 = f64[1,24,1,1]{3,2,1,0} broadcast(%Arg_1.40), dimensions={0,1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %reshape.63 = f64[24,1,1]{2,1,0} reshape(%broadcast.62), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %broadcast.64 = f64[1000,24,1,1]{3,2,1,0} broadcast(%reshape.63), dimensions={1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %multiply.65 = f64[1000,24,1,1]{3,2,1,0} multiply(%broadcast.61, %broadcast.64), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %broadcast.75 = f64[1000,24,1,1]{3,2,1,0} broadcast(%multiply.65), dimensions={0,1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %reshape.76 = f64[1000,24,1]{2,1,0} reshape(%broadcast.75), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %broadcast.77 = f64[1000,24,24,1]{3,2,1,0} broadcast(%reshape.76), dimensions={0,1,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %slice.66 = f64[1000,1]{1,0} slice(%Arg_0.39), slice={[0:1000], [1:2]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=362}
+  %reshape.67 = f64[1000,1,1,1]{3,2,1,0} reshape(%slice.66), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=362}
+  %broadcast.68 = f64[1000,1,1,1]{3,2,1,0} broadcast(%reshape.67), dimensions={0,1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=362}
+  %reshape.69 = f64[1000,1,1]{2,1,0} reshape(%broadcast.68), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=362}
+  %broadcast.70 = f64[1000,1,24,1]{3,2,1,0} broadcast(%reshape.69), dimensions={0,1,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=362}
+  %Arg_2.41 = f64[1,1,24,1]{3,2,1,0} parameter(2), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %broadcast.71 = f64[1,1,24,1]{3,2,1,0} broadcast(%Arg_2.41), dimensions={0,1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=362}
+  %reshape.72 = f64[1,24,1]{2,1,0} reshape(%broadcast.71), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=362}
+  %broadcast.73 = f64[1000,1,24,1]{3,2,1,0} broadcast(%reshape.72), dimensions={1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=362}
+  %multiply.74 = f64[1000,1,24,1]{3,2,1,0} multiply(%broadcast.70, %broadcast.73), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=362}
+  %broadcast.78 = f64[1000,1,24,1]{3,2,1,0} broadcast(%multiply.74), dimensions={0,1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %reshape.79 = f64[1000,24,1]{2,1,0} reshape(%broadcast.78), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %broadcast.80 = f64[1000,24,24,1]{3,2,1,0} broadcast(%reshape.79), dimensions={0,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %add.81 = f64[1000,24,24,1]{3,2,1,0} add(%broadcast.77, %broadcast.80), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %broadcast.91 = f64[1000,24,24,1]{3,2,1,0} broadcast(%add.81), dimensions={0,1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %reshape.92 = f64[1000,24,24]{2,1,0} reshape(%broadcast.91), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %broadcast.93 = f64[1000,24,24,24]{3,2,1,0} broadcast(%reshape.92), dimensions={0,1,2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %slice.82 = f64[1000,1]{1,0} slice(%Arg_0.39), slice={[0:1000], [2:3]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/gather" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=363}
+  %reshape.83 = f64[1000,1,1,1]{3,2,1,0} reshape(%slice.82), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=363}
+  %broadcast.84 = f64[1000,1,1,1]{3,2,1,0} broadcast(%reshape.83), dimensions={0,1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=363}
+  %reshape.85 = f64[1000,1,1]{2,1,0} reshape(%broadcast.84), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=363}
+  %broadcast.86 = f64[1000,1,1,24]{3,2,1,0} broadcast(%reshape.85), dimensions={0,1,2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=363}
+  %Arg_3.42 = f64[1,1,1,24]{3,2,1,0} parameter(3), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %broadcast.87 = f64[1,1,1,24]{3,2,1,0} broadcast(%Arg_3.42), dimensions={0,1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=363}
+  %reshape.88 = f64[1,1,24]{2,1,0} reshape(%broadcast.87), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=363}
+  %broadcast.89 = f64[1000,1,1,24]{3,2,1,0} broadcast(%reshape.88), dimensions={1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=363}
+  %multiply.90 = f64[1000,1,1,24]{3,2,1,0} multiply(%broadcast.86, %broadcast.89), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=363}
+  %broadcast.94 = f64[1000,1,1,24]{3,2,1,0} broadcast(%multiply.90), dimensions={0,1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %reshape.95 = f64[1000,24]{1,0} reshape(%broadcast.94), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %broadcast.96 = f64[1000,24,24,24]{3,2,1,0} broadcast(%reshape.95), dimensions={0,3}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %add.97 = f64[1000,24,24,24]{3,2,1,0} add(%broadcast.93, %broadcast.96), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=361}
+  %convert.98 = c128[1000,24,24,24]{3,2,1,0} convert(%add.97), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=360}
+  %constant.46 = c128[] constant((0, 6.2831853071795862))
+  %broadcast.47 = c128[1000,24,24,24]{3,2,1,0} broadcast(%constant.46), dimensions={}
+  %multiply.99 = c128[1000,24,24,24]{3,2,1,0} multiply(%convert.98, %broadcast.47), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=360}
+  %real.100 = f64[1000,24,24,24]{3,2,1,0} real(%multiply.99), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %exponential.101 = f64[1000,24,24,24]{3,2,1,0} exponential(%real.100), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %constant.52 = f64[] constant(inf)
+  %broadcast.53 = f64[1000,24,24,24]{3,2,1,0} broadcast(%constant.52), dimensions={}
+  %compare.102 = pred[1000,24,24,24]{3,2,1,0} compare(%exponential.101, %broadcast.53), direction=EQ, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %constant.50 = f64[] constant(0.5)
+  %broadcast.51 = f64[1000,24,24,24]{3,2,1,0} broadcast(%constant.50), dimensions={}
+  %multiply.103 = f64[1000,24,24,24]{3,2,1,0} multiply(%real.100, %broadcast.51), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %exponential.104 = f64[1000,24,24,24]{3,2,1,0} exponential(%multiply.103), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %imag.105 = f64[1000,24,24,24]{3,2,1,0} imag(%multiply.99), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %cosine.106 = f64[1000,24,24,24]{3,2,1,0} cosine(%imag.105), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %multiply.107 = f64[1000,24,24,24]{3,2,1,0} multiply(%exponential.104, %cosine.106), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %multiply.108 = f64[1000,24,24,24]{3,2,1,0} multiply(%multiply.107, %exponential.104), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %multiply.109 = f64[1000,24,24,24]{3,2,1,0} multiply(%exponential.101, %cosine.106), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %select.110 = f64[1000,24,24,24]{3,2,1,0} select(%compare.102, %multiply.108, %multiply.109), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %constant.48 = f64[] constant(0)
+  %broadcast.49 = f64[1000,24,24,24]{3,2,1,0} broadcast(%constant.48), dimensions={}
+  %compare.111 = pred[1000,24,24,24]{3,2,1,0} compare(%imag.105, %broadcast.49), direction=EQ, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %sine.112 = f64[1000,24,24,24]{3,2,1,0} sine(%imag.105), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %multiply.113 = f64[1000,24,24,24]{3,2,1,0} multiply(%exponential.104, %sine.112), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %multiply.114 = f64[1000,24,24,24]{3,2,1,0} multiply(%multiply.113, %exponential.104), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %multiply.115 = f64[1000,24,24,24]{3,2,1,0} multiply(%exponential.101, %sine.112), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %select.116 = f64[1000,24,24,24]{3,2,1,0} select(%compare.102, %multiply.114, %multiply.115), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %select.117 = f64[1000,24,24,24]{3,2,1,0} select(%compare.111, %broadcast.49, %select.116), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %complex.118 = c128[1000,24,24,24]{3,2,1,0} complex(%select.110, %select.117), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/exp" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=359}
+  %reshape.119 = c128[1000,1,1,24,24,24]{5,4,3,2,1,0} reshape(%complex.118), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=366}
+  %broadcast.120 = c128[1000,1,1,24,24,24]{5,4,3,2,1,0} broadcast(%reshape.119), dimensions={0,1,2,3,4,5}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=366}
+  %reshape.121 = c128[1000,24,24,24]{3,2,1,0} reshape(%broadcast.120), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=366}
+  %broadcast.122 = c128[1000,60,2,24,24,24]{5,4,3,2,1,0} broadcast(%reshape.121), dimensions={0,3,4,5}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=366}
+  %multiply.123 = c128[1000,60,2,24,24,24]{5,4,3,2,1,0} multiply(%custom-call.56, %broadcast.122), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=366}
+  %constant.45 = f64[] constant(117.57550765359255)
+  %convert.124 = c128[] convert(%constant.45), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=367}
+  %broadcast.125 = c128[1000,60,2,24,24,24]{5,4,3,2,1,0} broadcast(%convert.124), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=367}
+  %multiply.126 = c128[1000,60,2,24,24,24]{5,4,3,2,1,0} multiply(%multiply.123, %broadcast.125), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=367}
+  %reshape.127 = c128[1000,60,2,13824]{3,2,1,0} reshape(%multiply.126), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=371}
+  %custom-call.129 = c128[1000,60,2,13824]{3,2,1,0} custom-call(%reshape.127), custom_call_target="Sharding", sharding={devices=[1,4,1,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=377}
+  %custom-call.130 = c128[1000,15,2,13824]{3,2,1,0} custom-call(%custom-call.129), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=377}
+  %Arg_5.44 = s32[] parameter(5), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %reshape.128 = s32[1]{0} reshape(%Arg_5.44), metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=380}
+  %custom-call.131 = s32[1]{0} custom-call(%reshape.128), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=377}
+  %custom-call.132 = s32[1]{0} custom-call(%custom-call.131), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=377}
+  %call.133 = c128[1000,15,2,1596]{3,2,1,0} call(%custom-call.130, %custom-call.132), to_apply=%shmap_body.28
+  %custom-call.134 = c128[1000,15,2,1596]{3,2,1,0} custom-call(%call.133), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=377}
+  ROOT %custom-call.135 = c128[1000,60,2,1596]{3,2,1,0} custom-call(%custom-call.134), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,4,1,1]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_fft_and_rslice)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=377}
+}
+
+%_reshard_rchunk.137 (Arg_0.138: c128[1000,60,2,1596]) -> c128[1000,60,2,1596] {
+  %Arg_0.138 = c128[1000,60,2,1596]{3,2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.139 = c128[1000,60,2,1596]{3,2,1,0} custom-call(%Arg_0.138), custom_call_target="Sharding", sharding={devices=[1,2,1,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_rchunk)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=412}
+  ROOT %custom-call.140 = c128[1000,60,2,1596]{3,2,1,0} custom-call(%custom-call.139), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=416}
+}
+
+%_accum.148 (Arg_0.149: c128[1000,480,1596], Arg_1.150: c128[1000,480,60,2], Arg_2.151: c128[1000,60,2,1596]) -> c128[1000,480,1596] {
+  %Arg_0.149 = c128[1000,480,1596]{2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.152 = c128[1000,480,1596]{2,1,0} custom-call(%Arg_0.149), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=176}
+  %Arg_1.150 = c128[1000,480,60,2]{3,2,1,0} parameter(1), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.153 = c128[1000,480,60,2]{3,2,1,0} custom-call(%Arg_1.150), custom_call_target="Sharding", sharding={devices=[1,2,1,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=176}
+  %Arg_2.151 = c128[1000,60,2,1596]{3,2,1,0} parameter(2), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.154 = c128[1000,60,2,1596]{3,2,1,0} custom-call(%Arg_2.151), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=176}
+  %dot.155 = c128[1000,480,1596]{2,1,0} dot(%custom-call.153, %custom-call.154), lhs_batch_dims={0}, lhs_contracting_dims={2,3}, rhs_batch_dims={0}, rhs_contracting_dims={1,2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_accum)/kmns,knsv->kmv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=173}
+  %add.156 = c128[1000,480,1596]{2,1,0} add(%custom-call.152, %dot.155), metadata={op_name="jit(_kernel)/jit(main)/jit(_accum)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=173}
+  ROOT %custom-call.157 = c128[1000,480,1596]{2,1,0} custom-call(%add.156), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=176}
+}
+
+%_accum.165 (Arg_0.166: c128[1000,480,1596], Arg_1.167: c128[1000,480,60,2], Arg_2.168: c128[1000,60,2,1596]) -> c128[1000,480,1596] {
+  %Arg_0.166 = c128[1000,480,1596]{2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.169 = c128[1000,480,1596]{2,1,0} custom-call(%Arg_0.166), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=176}
+  %Arg_1.167 = c128[1000,480,60,2]{3,2,1,0} parameter(1), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.170 = c128[1000,480,60,2]{3,2,1,0} custom-call(%Arg_1.167), custom_call_target="Sharding", sharding={devices=[1,2,1,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=176}
+  %Arg_2.168 = c128[1000,60,2,1596]{3,2,1,0} parameter(2), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.171 = c128[1000,60,2,1596]{3,2,1,0} custom-call(%Arg_2.168), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=176}
+  %dot.172 = c128[1000,480,1596]{2,1,0} dot(%custom-call.170, %custom-call.171), lhs_batch_dims={0}, lhs_contracting_dims={2,3}, rhs_batch_dims={0}, rhs_contracting_dims={1,2}, metadata={op_name="jit(_kernel)/jit(main)/jit(_accum)/kmns,knsv->kmv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=173}
+  %add.173 = c128[1000,480,1596]{2,1,0} add(%custom-call.169, %dot.172), metadata={op_name="jit(_kernel)/jit(main)/jit(_accum)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=173}
+  ROOT %custom-call.174 = c128[1000,480,1596]{2,1,0} custom-call(%add.173), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=176}
+}
+
+%_left_ifft_conj.176 (Arg_0.177: c128[1000,480,1596]) -> c128[1000,480,1596] {
+  %Arg_0.177 = c128[1000,480,1596]{2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.178 = c128[1000,480,1596]{2,1,0} custom-call(%Arg_0.177), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=379}
+  %reshape.179 = c128[10,10,10,480,1596]{4,3,2,1,0} reshape(%custom-call.178), metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=296}
+  %custom-call.180 = c128[10,10,10,480,1596]{4,3,2,1,0} custom-call(%reshape.179), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=295}
+  %custom-call.181 = c128[10,10,10,480,1596]{4,3,2,1,0} custom-call(%custom-call.180), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=159}, backend_config="140445230205888"
+  %custom-call.182 = c128[10,10,10,480,1596]{4,3,2,1,0} custom-call(%custom-call.181), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=159}, backend_config="140445230218752"
+  %custom-call.183 = c128[10,10,10,480,1596]{4,3,2,1,0} custom-call(%custom-call.182), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=159}, backend_config="140445230216688"
+  %reshape.184 = c128[1000,480,1596]{2,1,0} reshape(%custom-call.183), metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=297}
+  %real.185 = f64[1000,480,1596]{2,1,0} real(%reshape.184), metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=368}
+  %imag.186 = f64[1000,480,1596]{2,1,0} imag(%reshape.184), metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=368}
+  %negate.187 = f64[1000,480,1596]{2,1,0} negate(%imag.186), metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=368}
+  %complex.188 = c128[1000,480,1596]{2,1,0} complex(%real.185, %negate.187), metadata={op_name="jit(_kernel)/jit(main)/jit(_left_ifft_conj)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=368}
+  ROOT %custom-call.189 = c128[1000,480,1596]{2,1,0} custom-call(%complex.188), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=379}
+}
+
+%_right_ifft_mul_fft.191 (Arg_0.192: c128[1000,480,1596], Arg_1.193: c128[1000,480,1596]) -> c128[1000,480,1596] {
+  %Arg_1.193 = c128[1000,480,1596]{2,1,0} parameter(1), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.195 = c128[1000,480,1596]{2,1,0} custom-call(%Arg_1.193), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=380}
+  %Arg_0.192 = c128[1000,480,1596]{2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.194 = c128[1000,480,1596]{2,1,0} custom-call(%Arg_0.192), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=380}
+  %reshape.196 = c128[10,10,10,480,1596]{4,3,2,1,0} reshape(%custom-call.194), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=296}
+  %custom-call.197 = c128[10,10,10,480,1596]{4,3,2,1,0} custom-call(%reshape.196), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=295}
+  %custom-call.198 = c128[10,10,10,480,1596]{4,3,2,1,0} custom-call(%custom-call.197), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=159}, backend_config="140445230216304"
+  %custom-call.199 = c128[10,10,10,480,1596]{4,3,2,1,0} custom-call(%custom-call.198), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=159}, backend_config="140445230212704"
+  %custom-call.200 = c128[10,10,10,480,1596]{4,3,2,1,0} custom-call(%custom-call.199), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=159}, backend_config="140445230204016"
+  %reshape.201 = c128[1000,480,1596]{2,1,0} reshape(%custom-call.200), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=297}
+  %multiply.202 = c128[1000,480,1596]{2,1,0} multiply(%custom-call.195, %reshape.201), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=375}
+  %reshape.203 = c128[10,10,10,480,1596]{4,3,2,1,0} reshape(%multiply.202), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=296}
+  %custom-call.204 = c128[10,10,10,480,1596]{4,3,2,1,0} custom-call(%reshape.203), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=295}
+  %custom-call.205 = c128[10,10,10,480,1596]{4,3,2,1,0} custom-call(%custom-call.204), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=159}, backend_config="140445230212800"
+  %custom-call.206 = c128[10,10,10,480,1596]{4,3,2,1,0} custom-call(%custom-call.205), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=159}, backend_config="140445230207904"
+  %custom-call.207 = c128[10,10,10,480,1596]{4,3,2,1,0} custom-call(%custom-call.206), custom_call_target="CustomSPMDPartitioning", api_version=API_VERSION_STATUS_RETURNING, metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=159}, backend_config="140445230211312"
+  %reshape.208 = c128[1000,480,1596]{2,1,0} reshape(%custom-call.207), metadata={op_name="jit(_kernel)/jit(main)/jit(_right_ifft_mul_fft)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=297}
+  ROOT %custom-call.209 = c128[1000,480,1596]{2,1,0} custom-call(%reshape.208), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/pjit" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=380}
+}
+
+%_reshard_z.212 (Arg_0.213: c128[1000,480,1596]) -> c128[1000,480,1596] {
+  %Arg_0.213 = c128[1000,480,1596]{2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  ROOT %custom-call.214 = c128[1000,480,1596]{2,1,0} custom-call(%Arg_0.213), custom_call_target="Sharding", sharding={devices=[1,1,4]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_reshard_z)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=580}
+}
+
+%_solve_triangular.216 (Arg_0.217: c128[1000,480,480], Arg_1.218: c128[1000,480,399]) -> c128[1000,480,399] {
+  %Arg_0.217 = c128[1000,480,480]{2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/pjit"}
+  %Arg_1.218 = c128[1000,480,399]{2,1,0} parameter(1), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/pjit"}
+  ROOT %triangular-solve.219 = c128[1000,480,399]{2,1,0} triangular-solve(%Arg_0.217, %Arg_1.218), left_side=true, lower=true, transpose_a=NO_TRANSPOSE, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(_solve_triangular))/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=526}
+}
+
+%_solve_triangular_1.220 (Arg_0.221: c128[1000,480,480], Arg_1.222: c128[1000,480,399]) -> c128[1000,480,399] {
+  %Arg_0.221 = c128[1000,480,480]{2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/pjit"}
+  %Arg_1.222 = c128[1000,480,399]{2,1,0} parameter(1), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/pjit"}
+  ROOT %triangular-solve.223 = c128[1000,480,399]{2,1,0} triangular-solve(%Arg_0.221, %Arg_1.222), left_side=true, transpose_a=NO_TRANSPOSE, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/vmap(jit(_solve_triangular))/triangular_solve" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=527}
+}
+
+%shmap_body_0.224 (Arg_0.225: c128[1000,480,480], Arg_1.226: c128[1000,480,399]) -> c128[1000,480,399] {
+  %Arg_0.225 = c128[1000,480,480]{2,1,0} parameter(0), metadata={op_name="[None, None, None]"}
+  %real.228 = f64[1000,480,480]{2,1,0} real(%Arg_0.225), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=527}
+  %imag.229 = f64[1000,480,480]{2,1,0} imag(%Arg_0.225), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=527}
+  %negate.230 = f64[1000,480,480]{2,1,0} negate(%imag.229), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=527}
+  %complex.231 = c128[1000,480,480]{2,1,0} complex(%real.228, %negate.230), metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=527}
+  %transpose.232 = c128[1000,480,480]{1,2,0} transpose(%complex.231), dimensions={0,2,1}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/jit(shmap_body)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=527}
+  %Arg_1.226 = c128[1000,480,399]{2,1,0} parameter(1), metadata={op_name="[None, None, (\'x\', \'y\')]"}
+  %call.227 = c128[1000,480,399]{2,1,0} call(%Arg_0.225, %Arg_1.226), to_apply=%_solve_triangular.216
+  ROOT %call.233 = c128[1000,480,399]{2,1,0} call(%transpose.232, %call.227), to_apply=%_solve_triangular_1.220
+}
+
+%_solve_all_at_once.234 (Arg_0.235: c128[1000,480,480], Arg_1.236: c128[1000,480,1596]) -> c128[1000,480,1596] {
+  %Arg_0.235 = c128[1000,480,480]{2,1,0} parameter(0), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.237 = c128[1000,480,480]{2,1,0} custom-call(%Arg_0.235), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=541}
+  %custom-call.238 = c128[1000,480,480]{2,1,0} custom-call(%custom-call.237), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=542}
+  %custom-call.239 = c128[1000,480,480]{2,1,0} custom-call(%custom-call.238), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=542}
+  %Arg_1.236 = c128[1000,480,1596]{2,1,0} parameter(1), metadata={op_name="jit(_kernel)/jit(main)/pjit"}
+  %custom-call.240 = c128[1000,480,1596]{2,1,0} custom-call(%Arg_1.236), custom_call_target="Sharding", sharding={devices=[1,1,4]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=542}
+  %custom-call.241 = c128[1000,480,399]{2,1,0} custom-call(%custom-call.240), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=542}
+  %call.242 = c128[1000,480,399]{2,1,0} call(%custom-call.239, %custom-call.241), to_apply=%shmap_body_0.224
+  %custom-call.243 = c128[1000,480,399]{2,1,0} custom-call(%call.242), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=542}
+  ROOT %custom-call.244 = c128[1000,480,1596]{2,1,0} custom-call(%custom-call.243), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,1,4]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/jit(_solve_all_at_once)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=542}
+}
+
+ENTRY %main.246 (Arg_0.1: c128[1000,60,2,24,24,24], Arg_1.2: c128[1000,480,60,2], Arg_2.3: c128[1000,480,60,2], Arg_3.4: c128[1000,480,480], Arg_4.5: f64[60], Arg_5.6: f64[60], Arg_6.7: s32[]) -> c128[1000,480,1596] {
+  %Arg_3.4 = c128[1000,480,480]{2,1,0} parameter(3), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="L_q"}
+  %constant.15 = c128[] constant((0, 0))
+  %broadcast.16 = c128[1000,480,1596]{2,1,0} broadcast(%constant.15), dimensions={}
+  %custom-call.18 = c128[1000,480,1596]{2,1,0} custom-call(%broadcast.16), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=725}
+  %Arg_2.3 = c128[1000,480,60,2]{3,2,1,0} parameter(2), sharding={devices=[1,2,1,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="psi_r_rmuT_X_fit"}
+  %constant.14 = f64[1000,3]{1,0} constant({...})
+  %iota.19 = f64[24]{0} iota(), iota_dimension=0, metadata={op_name="jit(_kernel)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=342}
+  %reshape.20 = f64[1,24,1,1]{3,2,1,0} reshape(%iota.19), metadata={op_name="jit(_kernel)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=342}
+  %constant.12 = f64[] constant(24)
+  %broadcast.13 = f64[1,24,1,1]{3,2,1,0} broadcast(%constant.12), dimensions={}
+  %divide.21 = f64[1,24,1,1]{3,2,1,0} divide(%reshape.20, %broadcast.13), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=342}
+  %iota.22 = f64[24]{0} iota(), iota_dimension=0, metadata={op_name="jit(_kernel)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=343}
+  %reshape.23 = f64[1,1,24,1]{3,2,1,0} reshape(%iota.22), metadata={op_name="jit(_kernel)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=343}
+  %constant.10 = f64[] constant(24)
+  %broadcast.11 = f64[1,1,24,1]{3,2,1,0} broadcast(%constant.10), dimensions={}
+  %divide.24 = f64[1,1,24,1]{3,2,1,0} divide(%reshape.23, %broadcast.11), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=343}
+  %iota.25 = f64[24]{0} iota(), iota_dimension=0, metadata={op_name="jit(_kernel)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=344}
+  %reshape.26 = f64[1,1,1,24]{3,2,1,0} reshape(%iota.25), metadata={op_name="jit(_kernel)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=344}
+  %constant.8 = f64[] constant(24)
+  %broadcast.9 = f64[1,1,1,24]{3,2,1,0} broadcast(%constant.8), dimensions={}
+  %divide.27 = f64[1,1,1,24]{3,2,1,0} divide(%reshape.26, %broadcast.9), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/load_wfns.py" source_line=344}
+  %Arg_0.1 = c128[1000,60,2,24,24,24]{5,4,3,2,1,0} parameter(0), sharding={devices=[1,4,1,1,1,1]<=[4]}, metadata={op_name="psi_bc_G_tuple[0]"}
+  %Arg_6.7 = s32[] parameter(6), metadata={op_name="r_start_dyn"}
+  %call.136 = c128[1000,60,2,1596]{3,2,1,0} call(%constant.14, %divide.21, %divide.24, %divide.27, %Arg_0.1, /*index=5*/%Arg_6.7), to_apply=%_fft_and_rslice.38
+  %call.141 = c128[1000,60,2,1596]{3,2,1,0} call(%call.136), to_apply=%_reshard_rchunk.137
+  %Arg_5.6 = f64[60]{0} parameter(5), metadata={op_name="norms_r"}
+  %reshape.159 = f64[1,60,1,1]{3,2,1,0} reshape(%Arg_5.6), metadata={op_name="jit(_kernel)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=756}
+  %convert.160 = c128[1,60,1,1]{3,2,1,0} convert(%reshape.159), metadata={op_name="jit(_kernel)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=756}
+  %broadcast.161 = c128[1,60,1,1]{3,2,1,0} broadcast(%convert.160), dimensions={0,1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=756}
+  %reshape.162 = c128[60]{0} reshape(%broadcast.161), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=756}
+  %broadcast.163 = c128[1000,60,2,1596]{3,2,1,0} broadcast(%reshape.162), dimensions={1}, metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=756}
+  %divide.164 = c128[1000,60,2,1596]{3,2,1,0} divide(%call.141, %broadcast.163), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=756}
+  %call.175 = c128[1000,480,1596]{2,1,0} call(%custom-call.18, %Arg_2.3, %divide.164), to_apply=%_accum.165
+  %custom-call.17 = c128[1000,480,1596]{2,1,0} custom-call(%broadcast.16), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=725}
+  %Arg_1.2 = c128[1000,480,60,2]{3,2,1,0} parameter(1), sharding={devices=[1,2,1,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="psi_l_rmuT_X_fit"}
+  %Arg_4.5 = f64[60]{0} parameter(4), metadata={op_name="norms_l"}
+  %reshape.142 = f64[1,60,1,1]{3,2,1,0} reshape(%Arg_4.5), metadata={op_name="jit(_kernel)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=756}
+  %convert.143 = c128[1,60,1,1]{3,2,1,0} convert(%reshape.142), metadata={op_name="jit(_kernel)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=756}
+  %broadcast.144 = c128[1,60,1,1]{3,2,1,0} broadcast(%convert.143), dimensions={0,1,2,3}, metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=756}
+  %reshape.145 = c128[60]{0} reshape(%broadcast.144), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=756}
+  %broadcast.146 = c128[1000,60,2,1596]{3,2,1,0} broadcast(%reshape.145), dimensions={1}, metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=756}
+  %divide.147 = c128[1000,60,2,1596]{3,2,1,0} divide(%call.141, %broadcast.146), metadata={op_name="jit(_kernel)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=756}
+  %call.158 = c128[1000,480,1596]{2,1,0} call(%custom-call.17, %Arg_1.2, %divide.147), to_apply=%_accum.148
+  %call.190 = c128[1000,480,1596]{2,1,0} call(%call.158), to_apply=%_left_ifft_conj.176
+  %call.210 = c128[1000,480,1596]{2,1,0} call(%call.175, %call.190), to_apply=%_right_ifft_mul_fft.191
+  %custom-call.211 = c128[1000,480,1596]{2,1,0} custom-call(%call.210), custom_call_target="Sharding", sharding={devices=[1,1,4]<=[4]}, metadata={op_name="jit(_kernel)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/isdf_fitting.py" source_line=776}
+  %call.215 = c128[1000,480,1596]{2,1,0} call(%custom-call.211), to_apply=%_reshard_z.212
+  ROOT %call.245 = c128[1000,480,1596]{2,1,0} call(%Arg_3.4, %call.215), to_apply=%_solve_all_at_once.234
+}
+

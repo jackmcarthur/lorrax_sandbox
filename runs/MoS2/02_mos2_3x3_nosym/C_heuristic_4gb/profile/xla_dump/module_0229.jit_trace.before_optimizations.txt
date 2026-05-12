@@ -1,0 +1,29 @@
+HloModule jit_trace, entry_computation_layout={(c128[640,640]{1,0})->c128[]}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%_where.10 (Arg_0.11: pred[640,640], Arg_1.12: c128[640,640], Arg_2.13: c128[640,640]) -> c128[640,640] {
+  %Arg_0.11 = pred[640,640]{1,0} parameter(0), metadata={op_name="jit(trace)/jit(main)/pjit"}
+  %Arg_1.12 = c128[640,640]{1,0} parameter(1), metadata={op_name="jit(trace)/jit(main)/pjit"}
+  %Arg_2.13 = c128[640,640]{1,0} parameter(2), metadata={op_name="jit(trace)/jit(main)/pjit"}
+  ROOT %select.14 = c128[640,640]{1,0} select(%Arg_0.11, %Arg_1.12, %Arg_2.13), metadata={op_name="jit(trace)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_init.py" source_line=540}
+}
+
+%region_0.16 (Arg_0.17: c128[], Arg_1.18: c128[]) -> c128[] {
+  %Arg_0.17 = c128[] parameter(0), metadata={op_name="jit(trace)/jit(main)/reduce_sum"}
+  %Arg_1.18 = c128[] parameter(1), metadata={op_name="jit(trace)/jit(main)/reduce_sum"}
+  ROOT %add.19 = c128[] add(%Arg_0.17, %Arg_1.18), metadata={op_name="jit(trace)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_init.py" source_line=540}
+}
+
+ENTRY %main.21 (Arg_0.1: c128[640,640]) -> c128[] {
+  %iota.5 = s64[640]{0} iota(), iota_dimension=0, metadata={op_name="jit(trace)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_init.py" source_line=540}
+  %broadcast.6 = s64[640,640]{1,0} broadcast(%iota.5), dimensions={0}, metadata={op_name="jit(trace)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_init.py" source_line=540}
+  %iota.7 = s64[640]{0} iota(), iota_dimension=0, metadata={op_name="jit(trace)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_init.py" source_line=540}
+  %broadcast.8 = s64[640,640]{1,0} broadcast(%iota.7), dimensions={1}, metadata={op_name="jit(trace)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_init.py" source_line=540}
+  %compare.9 = pred[640,640]{1,0} compare(%broadcast.6, %broadcast.8), direction=EQ, metadata={op_name="jit(trace)/jit(main)/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_init.py" source_line=540}
+  %Arg_0.1 = c128[640,640]{1,0} parameter(0), sharding={devices=[2,2]<=[4]}, metadata={op_name="a"}
+  %constant.2 = c128[] constant((0, 0))
+  %broadcast.3 = c128[640,640]{1,0} broadcast(%constant.2), dimensions={}
+  %call.15 = c128[640,640]{1,0} call(%compare.9, %Arg_0.1, %broadcast.3), to_apply=%_where.10
+  %constant.4 = c128[] constant((0, 0))
+  ROOT %reduce.20 = c128[] reduce(%call.15, %constant.4), dimensions={0,1}, to_apply=%region_0.16, metadata={op_name="jit(trace)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/gw_init.py" source_line=540}
+}
+

@@ -1,0 +1,37 @@
+HloModule jit__where, is_scheduled=true, entry_computation_layout={(pred[1,2,2,1,1]{4,3,2,1,0}, c128[1000,1,1,240,240]{4,3,2,1,0}, f64[])->c128[1000,1,1,240,240]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="1132173df018db4939d9ee8064e9f031"}
+
+%fused_dynamic_slice (param_0.2: pred[1,2,2,1,1], param_1.4: s32[4], param_2.9: u32[], param_3.5: s32[4]) -> pred[1,1,1,1,1] {
+  %param_0.2 = pred[1,2,2,1,1]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %constant_7 = s32[] constant(0), metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/cholesky_2d.py" source_line=68}
+  %param_3.5 = s32[4]{0} parameter(3), metadata={scheduling_name="param_3.5"}
+  %param_2.9 = u32[] parameter(2), metadata={scheduling_name="param_2.9"}
+  %dynamic-slice.9.1 = s32[1]{0} dynamic-slice(%param_3.5, %param_2.9), dynamic_slice_sizes={1}, metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/cholesky_2d.py" source_line=68 scheduling_name="dynamic-slice.9.1"}
+  %bitcast.73.1 = s32[] bitcast(%dynamic-slice.9.1), metadata={scheduling_name="bitcast.73.1"}
+  %param_1.4 = s32[4]{0} parameter(1), metadata={scheduling_name="param_1.4"}
+  %dynamic-slice.10.1 = s32[1]{0} dynamic-slice(%param_1.4, %param_2.9), dynamic_slice_sizes={1}, metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/cholesky_2d.py" source_line=68 scheduling_name="dynamic-slice.10.1"}
+  %bitcast.79.1 = s32[] bitcast(%dynamic-slice.10.1), metadata={scheduling_name="bitcast.79.1"}
+  ROOT %dynamic-slice.11.1 = pred[1,1,1,1,1]{4,3,2,1,0} dynamic-slice(%param_0.2, %constant_7, %bitcast.73.1, %bitcast.79.1, %constant_7, /*index=5*/%constant_7), dynamic_slice_sizes={1,1,1,1,1}, metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/cholesky_2d.py" source_line=68 scheduling_name="dynamic-slice.11.1"}
+}
+
+%fused_select (param_0.5: c128[1000,1,1,240,240], param_1.3: pred[1,1,1,1,1], param_2.6: f64[]) -> c128[1000,1,1,240,240] {
+  %param_1.3 = pred[1,1,1,1,1]{4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1.3"}
+  %bitcast.81.3 = pred[] bitcast(%param_1.3), metadata={scheduling_name="bitcast.81.3"}
+  %broadcast.10.3 = pred[1000,1,1,240,240]{4,3,2,1,0} broadcast(%bitcast.81.3), dimensions={}, metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/cholesky_2d.py" source_line=68 scheduling_name="broadcast.10.3"}
+  %param_0.5 = c128[1000,1,1,240,240]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.5"}
+  %param_2.6 = f64[] parameter(2), metadata={scheduling_name="param_2.6"}
+  %convert.3.1 = c128[] convert(%param_2.6), metadata={op_name="jit(_where)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/cholesky_2d.py" source_line=68 scheduling_name="convert.3.1"}
+  %broadcast.11.1 = c128[1000,1,1,240,240]{4,3,2,1,0} broadcast(%convert.3.1), dimensions={}, metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/cholesky_2d.py" source_line=68 scheduling_name="broadcast.11.1"}
+  ROOT %select.3.1 = c128[1000,1,1,240,240]{4,3,2,1,0} select(%broadcast.10.3, %param_0.5, %broadcast.11.1), metadata={op_name="jit(_where)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/cholesky_2d.py" source_line=68 scheduling_name="select.3.1"}
+}
+
+ENTRY %main.10_spmd (param.3: pred[1,2,2,1,1], param.1.0: c128[1000,1,1,240,240], param.2.0: f64[]) -> c128[1000,1,1,240,240] {
+  %param.2.0 = f64[] parameter(2), sharding={replicated}, metadata={op_name="y" scheduling_name="param.2.0"}
+  %param.1.0 = c128[1000,1,1,240,240]{4,3,2,1,0} parameter(1), sharding={devices=[1,2,2,1,1]<=[4]}, metadata={op_name="x" scheduling_name="param.1.0"}
+  %constant_2_0 = s32[4]{0} constant({0, 1, 0, 1}), metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/cholesky_2d.py" source_line=68}
+  %constant_1_0 = s32[4]{0} constant({0, 0, 1, 1}), metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/cholesky_2d.py" source_line=68}
+  %param.3 = pred[1,2,2,1,1]{4,3,2,1,0} parameter(0), sharding={replicated}, metadata={op_name="condition" scheduling_name="param.3"}
+  %partition-id.1 = u32[] partition-id(), metadata={scheduling_name="partition-id.1"}
+  %loop_dynamic_slice_fusion = pred[1,1,1,1,1]{4,3,2,1,0} fusion(%param.3, %constant_2_0, %partition-id.1, %constant_1_0), kind=kLoop, calls=%fused_dynamic_slice, metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/cholesky_2d.py" source_line=68 scheduling_name="loop_dynamic_slice_fusion"}
+  ROOT %loop_select_fusion = c128[1000,1,1,240,240]{4,3,2,1,0} fusion(%param.1.0, %loop_dynamic_slice_fusion, %param.2.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_where)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/cholesky_2d.py" source_line=68 scheduling_name="loop_select_fusion"}
+}
+

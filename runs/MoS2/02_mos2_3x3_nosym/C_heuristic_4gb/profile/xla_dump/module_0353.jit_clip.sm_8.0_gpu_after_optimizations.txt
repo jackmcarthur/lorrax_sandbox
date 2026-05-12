@@ -1,0 +1,17 @@
+HloModule jit_clip, is_scheduled=true, entry_computation_layout={(s64[], s64[], s64[])->s64[]}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="293cbb20e55eb5e614daa4be61c0d2e2"}
+
+%fused_minimum (param_0: s64[], param_1.1: s64[], param_2: s64[]) -> s64[] {
+  %param_0 = s64[] parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.1 = s64[] parameter(1), metadata={scheduling_name="param_1.1"}
+  %param_2 = s64[] parameter(2), metadata={scheduling_name="param_2"}
+  %maximum.2.1 = s64[] maximum(%param_1.1, %param_2), metadata={op_name="jit(clip)/jit(main)/max" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/chi_from_dipole.py" source_line=38 scheduling_name="maximum.2.1"}
+  ROOT %minimum.2.1 = s64[] minimum(%param_0, %maximum.2.1), metadata={op_name="jit(clip)/jit(main)/min" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/chi_from_dipole.py" source_line=38 scheduling_name="minimum.2.1"}
+}
+
+ENTRY %main.6 (Arg_0.1.0: s64[], Arg_1.2.0: s64[], Arg_2.3.0: s64[]) -> s64[] {
+  %Arg_2.3.0 = s64[] parameter(2), metadata={op_name="max" scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = s64[] parameter(1), metadata={op_name="min" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = s64[] parameter(0), metadata={op_name="arr" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_minimum_fusion = s64[] fusion(%Arg_2.3.0, %Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_minimum, metadata={op_name="jit(clip)/jit(main)/min" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/chi_from_dipole.py" source_line=38 scheduling_name="loop_minimum_fusion"}
+}
+

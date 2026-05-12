@@ -1,0 +1,49 @@
+HloModule jit_eigh, is_scheduled=true, entry_computation_layout={(f64[200,200]{1,0})->(f64[200]{0}, f64[200,200]{1,0})}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="9d5bb50edc1acf2ff889003bb5e18c29"}
+
+%fused_transpose (param_0.15: f64[200,200]) -> f64[200,200] {
+  %param_0.15 = f64[200,200]{1,0} parameter(0), metadata={scheduling_name="param_0.15"}
+  %transpose.6.3 = f64[200,200]{1,0} transpose(%param_0.15), dimensions={1,0}, metadata={op_name="jit(eigh)/jit(main)/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="transpose.6.3"}
+  %add.2.3 = f64[200,200]{1,0} add(%param_0.15, %transpose.6.3), metadata={op_name="jit(eigh)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="add.2.3"}
+  %constant_9 = f64[] constant(0.5)
+  %broadcast.16.3 = f64[200,200]{1,0} broadcast(%constant_9), dimensions={}, metadata={scheduling_name="broadcast.16.3"}
+  %multiply.3.3 = f64[200,200]{1,0} multiply(%add.2.3, %broadcast.16.3), metadata={op_name="jit(eigh)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="multiply.3.3"}
+  ROOT %transpose.7.1 = f64[200,200]{1,0} transpose(%multiply.3.3), dimensions={1,0}, metadata={op_name="jit(eigh)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="transpose.7.1"}
+}
+
+%fused_transpose.1 (param_0.14: f64[200,200], param_1.16: s32[]) -> f64[200,200] {
+  %param_1.16 = s32[] parameter(1), metadata={scheduling_name="param_1.16"}
+  %constant_8_2 = s32[] constant(0)
+  %compare.2.1 = pred[] compare(%param_1.16, %constant_8_2), direction=EQ, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="compare.2.1"}
+  %broadcast.21.1 = pred[200,200]{1,0} broadcast(%compare.2.1), dimensions={}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="broadcast.21.1"}
+  %param_0.14 = f64[200,200]{0,1} parameter(0), metadata={scheduling_name="param_0.14"}
+  %bitcast.100.3 = f64[200,200]{1,0} bitcast(%param_0.14), metadata={scheduling_name="bitcast.100.3"}
+  %constant_2_1 = f64[] constant(nan)
+  %broadcast.22.3 = f64[200,200]{1,0} broadcast(%constant_2_1), dimensions={}, metadata={scheduling_name="broadcast.22.3"}
+  %select.5.3 = f64[200,200]{1,0} select(%broadcast.21.1, %bitcast.100.3, %broadcast.22.3), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="select.5.3"}
+  ROOT %transpose.8.1 = f64[200,200]{1,0} transpose(%select.5.3), dimensions={1,0}, metadata={scheduling_name="transpose.8.1"}
+}
+
+%fused_select (param_0.13: f64[200], param_1.17: s32[]) -> f64[200] {
+  %param_1.17 = s32[] parameter(1), metadata={scheduling_name="param_1.17"}
+  %constant_8_1 = s32[] constant(0)
+  %compare.2.2 = pred[] compare(%param_1.17, %constant_8_1), direction=EQ, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="compare.2.2"}
+  %broadcast.17.1 = pred[200]{0} broadcast(%compare.2.2), dimensions={}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="broadcast.17.1"}
+  %param_0.13 = f64[200]{0} parameter(0), metadata={scheduling_name="param_0.13"}
+  %constant_2_2 = f64[] constant(nan)
+  %broadcast.19.1 = f64[200]{0} broadcast(%constant_2_2), dimensions={}, metadata={scheduling_name="broadcast.19.1"}
+  ROOT %select.4.1 = f64[200]{0} select(%broadcast.17.1, %param_0.13, %broadcast.19.1), metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="select.4.1"}
+}
+
+ENTRY %main.28 (Arg_0.1.0: f64[200,200]) -> (f64[200], f64[200,200]) {
+  %Arg_0.1.0 = f64[200,200]{1,0} parameter(0), metadata={op_name="a" scheduling_name="Arg_0.1.0"}
+  %input_transpose_fusion = f64[200,200]{1,0} fusion(%Arg_0.1.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(eigh)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="input_transpose_fusion"}
+  %bitcast.84.0 = f64[200,200]{0,1} bitcast(%input_transpose_fusion), metadata={scheduling_name="bitcast.84.0"}
+  %custom-call.12.0 = (f64[200,200]{0,1}, f64[200]{0}, s32[]) custom-call(%bitcast.84.0), custom_call_target="cusolver_syevd_ffi", operand_layout_constraints={f64[200,200]{0,1}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="custom-call.12.0"}, backend_config={algorithm = 0 : ui8, lower = true}
+  %get-tuple-element.15.0 = s32[] get-tuple-element(%custom-call.12.0), index=2, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="get-tuple-element.15.0"}
+  %get-tuple-element.13.0 = f64[200,200]{0,1} get-tuple-element(%custom-call.12.0), index=0, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="get-tuple-element.13.0"}
+  %get-tuple-element.14.0 = f64[200]{0} get-tuple-element(%custom-call.12.0), index=1, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="get-tuple-element.14.0"}
+  %loop_select_fusion = f64[200]{0} fusion(%get-tuple-element.14.0, %get-tuple-element.15.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(eigh)/jit(main)/eigh" source_file="/global/u2/j/jackm/software/lorrax_A/src/solvers/lanczos.py" source_line=292 scheduling_name="loop_select_fusion"}
+  %input_transpose_fusion.1 = f64[200,200]{1,0} fusion(%get-tuple-element.13.0, %get-tuple-element.15.0), kind=kInput, calls=%fused_transpose.1, metadata={scheduling_name="input_transpose_fusion.1"}
+  ROOT %tuple.1 = (f64[200]{0}, f64[200,200]{1,0}) tuple(%loop_select_fusion, %input_transpose_fusion.1), metadata={scheduling_name="tuple.1"}
+}
+

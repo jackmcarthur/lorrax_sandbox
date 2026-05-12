@@ -1,0 +1,72 @@
+BufferAssignment:
+allocation 0: size 1390080, output shape is |f64[181,960]|, maybe-live-out:
+ value: <20 custom-call.1{1} @0> (size=1390080,offset=0): f64[181,960]{1,0}
+allocation 1: size 1390080, parameter 0, shape |f64[181,960]| at ShapeIndex {}:
+ value: <16 param.1 @0> (size=1390080,offset=0): f64[181,960]{1,0}
+allocation 2: size 5561472, preallocated-temp:
+ value: <17 loop_select_fusion @0> (size=1390080,offset=2781312): u64[181,960]{1,0}
+ value: <18 custom-call.1{} @0> (size=24,offset=0): (u64[181,960]{1,0}, f64[181,960]{1,0}, u8[2781144]{0})
+ value: <19 custom-call.1{0} @0> (size=1390080,offset=4171392): u64[181,960]{1,0}
+ value: <21 custom-call.1{2} @0> (size=2781144,offset=128): u8[2781144]{0}
+
+Total bytes used: 8341632 (7.96MiB)
+
+Used values:
+<16 param.1 @0>
+ positions:
+  param.1
+ uses:
+  custom-call.1, operand 1
+  loop_select_fusion, operand 0
+ from instruction: %param.1 = f64[181,960]{1,0} parameter(0), sharding={replicated}, metadata={op_name="a" scheduling_name="param.1"}
+<17 loop_select_fusion @0>
+ positions:
+  loop_select_fusion
+ uses:
+  custom-call.1, operand 0
+ from instruction: %loop_select_fusion = u64[181,960]{1,0} fusion(%param.1), kind=kLoop, calls=%fused_select, sharding={replicated}, metadata={op_name="a" scheduling_name="loop_select_fusion"}
+<18 custom-call.1{} @0>
+ positions:
+  custom-call.1 {}
+ uses:
+  get-tuple-element.1, operand 0 {}
+ from instruction: %custom-call.1 = (u64[181,960]{1,0}, f64[181,960]{1,0}, u8[2781144]{0}) custom-call(%loop_select_fusion, %param.1), custom_call_target="__cub$DeviceRadixSort", metadata={op_name="jit(sort)/jit(main)/sort" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=648 scheduling_name="custom-call.1"}, backend_config={"descending":false}
+<19 custom-call.1{0} @0>
+ positions:
+  custom-call.1 {0}
+ uses:
+ from instruction: %custom-call.1 = (u64[181,960]{1,0}, f64[181,960]{1,0}, u8[2781144]{0}) custom-call(%loop_select_fusion, %param.1), custom_call_target="__cub$DeviceRadixSort", metadata={op_name="jit(sort)/jit(main)/sort" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=648 scheduling_name="custom-call.1"}, backend_config={"descending":false}
+<20 custom-call.1{1} @0>
+ positions:
+  custom-call.1 {1}
+  get-tuple-element.1
+ uses:
+  get-tuple-element.1, operand 0 {1}
+ from instruction: %custom-call.1 = (u64[181,960]{1,0}, f64[181,960]{1,0}, u8[2781144]{0}) custom-call(%loop_select_fusion, %param.1), custom_call_target="__cub$DeviceRadixSort", metadata={op_name="jit(sort)/jit(main)/sort" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=648 scheduling_name="custom-call.1"}, backend_config={"descending":false}
+<21 custom-call.1{2} @0>
+ positions:
+  custom-call.1 {2}
+ uses:
+ from instruction: %custom-call.1 = (u64[181,960]{1,0}, f64[181,960]{1,0}, u8[2781144]{0}) custom-call(%loop_select_fusion, %param.1), custom_call_target="__cub$DeviceRadixSort", metadata={op_name="jit(sort)/jit(main)/sort" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=648 scheduling_name="custom-call.1"}, backend_config={"descending":false}
+
+
+HloLiveRange (max 4):
+  InstructionSequence:
+    0:param.1
+    1:loop_select_fusion
+    2:custom-call.1
+    3:get-tuple-element.1
+  BufferLiveRange:
+    param.1{}:0-4
+    loop_select_fusion{}:1-2
+    custom-call.1{}:2-3
+    custom-call.1{0}:2-2
+    custom-call.1{1}:2-4
+    custom-call.1{2}:2-2
+  Live ranges at 2 (peak):
+    param.1: 1390080 bytes
+    loop_select_fusion: 1390080 bytes
+    custom-call.1: 24 bytes
+    custom-call.1: 24 bytes
+    custom-call.1: 24 bytes
+    custom-call.1: 24 bytes

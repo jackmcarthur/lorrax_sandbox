@@ -1,0 +1,37 @@
+run_id: si_4x4x4_bse_2026-04-07
+system: Si
+pipeline: qe_bgw_lorrax
+platform: perlmutter
+
+variant_of: si_4x4x4_g0w0_2026-04-05
+reuse_from_parent:
+  - qe/nscf/WFN.h5
+  - 01_bgw_gn_ppm/eps0mat.h5
+  - 01_bgw_gn_ppm/epsmat.h5
+  - 01_bgw_gn_ppm/eqp1.dat
+overrides:
+  purpose: BSE kernel+absorption with 4v4c, compare to LORRAX Lanczos
+
+system_params:
+  formula: Si
+  prefix: silicon
+  dimensionality: 3
+  n_val: 4
+  n_cond: 4
+  kgrid: [4, 4, 4]
+
+bse:
+  n_val: 4
+  n_cond: 4
+  use_momentum: true
+  skip_interpolation: true
+  eqp_co_corrections: true
+  screened_coulomb_cutoff: 25.0
+
+steps:
+  qe:                  { state: reused, note: "from 00_si_4x4x4_60band" }
+  00_bgw_bse:          { state: complete, note: "kernel + absorption (EQP), Apr 7" }
+  00_lorrax_bse:       { state: complete, note: "Lanczos eigenvalues (LORRAX vcoul), Apr 7" }
+  01_bgw_eps_vcoul:    { state: complete, note: "agent-A Apr 23: epsilon + write_vcoul — vcoul file for LORRAX" }
+  01_bgw_bse_vcoul:    { state: complete, note: "agent-A Apr 23: kernel + absorption DFT/EQP + write_vcoul (reproduces Apr 7 eigenvalues)" }
+  01_lorrax_bse_vcoul: { state: complete, note: "agent-A Apr 23: BGW-vcoul + fixed W0/q0 code; BSE recovers 2.474/3.054 eV (+0.12 eV vs BGW); fixed gw_jax.py + read_bgw_vcoul.py" }

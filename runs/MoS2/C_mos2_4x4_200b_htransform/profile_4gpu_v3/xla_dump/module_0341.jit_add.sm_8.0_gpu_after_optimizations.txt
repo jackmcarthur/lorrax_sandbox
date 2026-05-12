@@ -1,0 +1,25 @@
+HloModule jit_add, is_scheduled=true, entry_computation_layout={(c128[1,480,960]{2,1,0}, c128[1,960,480]{2,1,0})->c128[1,480,960]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="44ef57a2f81581575bc6e3d2b0b920ce"}
+
+%fused_add (param_0: c128[1,480,960], param_1.3: c128[1,2,480,480]) -> c128[1,480,960] {
+  %param_0 = c128[1,480,960]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.3 = c128[1,2,480,480]{3,2,0,1} parameter(1), metadata={scheduling_name="param_1.3"}
+  %bitcast.49.3 = c128[2,480,480]{2,1,0} bitcast(%param_1.3), metadata={scheduling_name="bitcast.49.3"}
+  %transpose.4.3 = c128[480,2,480]{2,1,0} transpose(%bitcast.49.3), dimensions={1,0,2}, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=623 scheduling_name="transpose.4.3"}
+  %bitcast.52.1 = c128[1,480,960]{2,1,0} bitcast(%transpose.4.3), metadata={scheduling_name="bitcast.52.1"}
+  ROOT %add.4.1 = c128[1,480,960]{2,1,0} add(%param_0, %bitcast.52.1), metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=623 scheduling_name="add.4.1"}
+}
+
+%async_computation (param_0.4: c128[1,2,480,480]) -> c128[1,2,480,480] {
+  %param_0.4 = c128[1,2,480,480]{3,2,0,1} parameter(0), metadata={scheduling_name="param_0.4"}
+  ROOT %all-to-all.2 = c128[1,2,480,480]{3,2,0,1} all-to-all(%param_0.4), channel_id=1, replica_groups={{0,2},{1,3}}, dimensions={1}, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=623 scheduling_name="all-to-all.2"}
+}
+
+ENTRY %main.4_spmd (param.2: c128[1,480,960], param.1.0: c128[1,960,480]) -> c128[1,480,960] {
+  %param.1.0 = c128[1,960,480]{2,1,0} parameter(1), sharding={devices=[1,1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="y" scheduling_name="param.1.0"}
+  %param.2 = c128[1,480,960]{2,1,0} parameter(0), sharding={devices=[1,2,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="x" scheduling_name="param.2"}
+  %bitcast.46.0 = c128[1,2,480,480]{3,2,0,1} bitcast(%param.1.0), metadata={scheduling_name="bitcast.46.0"}
+  %all-to-all-start = ((c128[1,2,480,480]{3,2,0,1}), c128[1,2,480,480]{3,2,0,1}) async-start(%bitcast.46.0), calls=%async_computation, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=623 scheduling_name="all-to-all-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-to-all-done = c128[1,2,480,480]{3,2,0,1} async-done(%all-to-all-start), metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=623 scheduling_name="all-to-all-done"}
+  ROOT %loop_add_fusion = c128[1,480,960]{2,1,0} fusion(%param.2, %all-to-all-done), kind=kLoop, calls=%fused_add, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=623 scheduling_name="loop_add_fusion"}
+}
+

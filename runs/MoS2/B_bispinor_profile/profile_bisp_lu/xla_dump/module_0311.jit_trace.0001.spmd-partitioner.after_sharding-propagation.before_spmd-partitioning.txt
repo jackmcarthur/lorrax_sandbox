@@ -1,0 +1,20 @@
+HloModule jit_trace, entry_computation_layout={(c128[640,640]{1,0})->c128[]}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%region_0.16 (Arg_0.17: c128[], Arg_1.18: c128[]) -> c128[] {
+  %Arg_0.17 = c128[] parameter(0), metadata={op_name="jit(trace)/jit(main)/reduce_sum"}
+  %Arg_1.18 = c128[] parameter(1), metadata={op_name="jit(trace)/jit(main)/reduce_sum"}
+  ROOT %add.19 = c128[] add(%Arg_0.17, %Arg_1.18), metadata={op_name="jit(trace)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_init.py" source_line=803}
+}
+
+ENTRY %main.21 (Arg_0.1: c128[640,640]) -> c128[] {
+  %iota = s64[640,640]{1,0} iota(), iota_dimension=0, sharding={devices=[2,2]<=[4]}, metadata={op_name="jit(trace)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_init.py" source_line=803}
+  %iota.1 = s64[640,640]{1,0} iota(), iota_dimension=1, sharding={devices=[2,2]<=[4]}, metadata={op_name="jit(trace)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_init.py" source_line=803}
+  %compare.9 = pred[640,640]{1,0} compare(%iota, %iota.1), direction=EQ, sharding={devices=[2,2]<=[4]}, metadata={op_name="jit(trace)/jit(main)/eq" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_init.py" source_line=803}
+  %Arg_0.1 = c128[640,640]{1,0} parameter(0), sharding={devices=[2,2]<=[4]}, metadata={op_name="a"}
+  %constant.2 = c128[] constant((0, 0)), sharding={replicated}
+  %broadcast.3 = c128[640,640]{1,0} broadcast(%constant.2), dimensions={}, sharding={devices=[2,2]<=[4]}
+  %select.0 = c128[640,640]{1,0} select(%compare.9, %Arg_0.1, %broadcast.3), sharding={devices=[2,2]<=[4]}, metadata={op_name="jit(trace)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_init.py" source_line=803}
+  %constant.4 = c128[] constant((0, 0))
+  ROOT %reduce.20 = c128[] reduce(%select.0, %constant.4), dimensions={0,1}, to_apply=%region_0.16, sharding={replicated}, metadata={op_name="jit(trace)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_init.py" source_line=803}
+}
+

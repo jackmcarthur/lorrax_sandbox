@@ -1,0 +1,19 @@
+HloModule jit__expand_band_diagonal_to_kij_jit, is_scheduled=true, entry_computation_layout={(c128[80]{0})->c128[9,80,80]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="ad09c1e9a5db506ebf28e9c6cf979b77"}
+
+%fused_broadcast (param_0.6: c128[80]) -> c128[9,80,80] {
+  %iota.8.3 = s64[80,80]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(_expand_band_diagonal_to_kij_jit)/jit(main)/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/head_correction.py" source_line=579 scheduling_name="iota.8.3"}
+  %iota.9.3 = s64[80,80]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(_expand_band_diagonal_to_kij_jit)/jit(main)/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/head_correction.py" source_line=579 scheduling_name="iota.9.3"}
+  %compare.2.3 = pred[80,80]{1,0} compare(%iota.8.3, %iota.9.3), direction=EQ, metadata={op_name="jit(_expand_band_diagonal_to_kij_jit)/jit(main)/eq" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/head_correction.py" source_line=579 scheduling_name="compare.2.3"}
+  %param_0.6 = c128[80]{0} parameter(0), metadata={scheduling_name="param_0.6"}
+  %broadcast.17.3 = c128[80,80]{1,0} broadcast(%param_0.6), dimensions={0}, metadata={op_name="jit(_expand_band_diagonal_to_kij_jit)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/head_correction.py" source_line=580 scheduling_name="broadcast.17.3"}
+  %constant_4 = c128[] constant((0, 0))
+  %broadcast.18.3 = c128[80,80]{1,0} broadcast(%constant_4), dimensions={}, metadata={scheduling_name="broadcast.18.3"}
+  %select.3.3 = c128[80,80]{1,0} select(%compare.2.3, %broadcast.17.3, %broadcast.18.3), metadata={op_name="jit(_expand_band_diagonal_to_kij_jit)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/head_correction.py" source_line=580 scheduling_name="select.3.3"}
+  ROOT %broadcast.19.1 = c128[9,80,80]{2,1,0} broadcast(%select.3.3), dimensions={1,2}, metadata={op_name="jit(_expand_band_diagonal_to_kij_jit)/jit(main)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/head_correction.py" source_line=581 scheduling_name="broadcast.19.1"}
+}
+
+ENTRY %main.17 (Arg_0.1.0: c128[80]) -> c128[9,80,80] {
+  %Arg_0.1.0 = c128[80]{0} parameter(0), metadata={op_name="diag" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_broadcast_fusion = c128[9,80,80]{2,1,0} fusion(%Arg_0.1.0), kind=kLoop, calls=%fused_broadcast, metadata={op_name="jit(_expand_band_diagonal_to_kij_jit)/jit(main)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/head_correction.py" source_line=581 scheduling_name="loop_broadcast_fusion"}
+}
+

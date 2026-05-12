@@ -1,0 +1,28 @@
+run_id: C_bse_davidson_profile_2026-04-29
+system: Si
+pipeline: lorrax_only
+platform: perlmutter
+variant_of: si_4x4x4_bse_2026-04-07
+
+overrides:
+  purpose: "Agent C Davidson eigenvector-route BSE absorption comparison; p-only dipole, BGW EQP, Gaussian broadening postprocess."
+  parent_lorrax_dir: "runs/Si/04_si_4x4x4_bse/C_lorrax_bse_bgweqp"
+  bgw_reference_dir: "runs/Si/04_si_4x4x4_bse/00_bgw_bse_8x8"
+
+system_params:
+  formula: Si
+  dimensionality: 3
+  kgrid: [4, 4, 4]
+
+bse:
+  n_val: 8
+  n_cond: 8
+  n_occ: 8
+  solver: davidson
+  dipole: p_only
+  broadening: gaussian
+
+steps:
+  setup: { state: complete, note: "Symlinked WFN.h5 / dipole_p_only.h5 / cohsex_bse.in / centroids_frac_480.txt / tmp/ from parent C_lorrax_bse_bgweqp." }
+  davidson_absorption: { state: complete, note: "Converged 100 eigvals in 18 iter / 209 s on 4xA100 after CGS2 re-orth fix to solvers/davidson.py (commit aba3e80, branch agent-C/davidson-reorth)." }
+  compare: { state: complete, note: "BGW vs LORRAX Davidson: eigvals match within 3 meV; Σ|d|² over 100 ratio 1.10; peak ε₂ ratios 0.91 (σ=0.05) and 1.06 (σ=0.15); peak ω 60-100 meV LOWER in LORRAX. See REPORT.md." }

@@ -1,0 +1,18 @@
+HloModule jit__diag, is_scheduled=true, entry_computation_layout={(c128[672]{0})->c128[672,672]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="155e3110fe74c93947a594bd3ec0911f"}
+
+%fused_select (param_0.3: c128[672]) -> c128[672,672] {
+  %iota.8.3 = s64[672,672]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(_diag)/jit(main)/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=537 scheduling_name="iota.8.3"}
+  %iota.9.3 = s64[672,672]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(_diag)/jit(main)/iota" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=537 scheduling_name="iota.9.3"}
+  %compare.2.3 = pred[672,672]{1,0} compare(%iota.8.3, %iota.9.3), direction=EQ, metadata={op_name="jit(_diag)/jit(main)/eq" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=537 scheduling_name="compare.2.3"}
+  %param_0.3 = c128[672]{0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %broadcast.10.1 = c128[672,672]{1,0} broadcast(%param_0.3), dimensions={1}, metadata={op_name="jit(_diag)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=537 scheduling_name="broadcast.10.1"}
+  %constant_2_1 = c128[] constant((0, 0))
+  %broadcast.11.1 = c128[672,672]{1,0} broadcast(%constant_2_1), dimensions={}, metadata={op_name="jit(_diag)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=537 scheduling_name="broadcast.11.1"}
+  ROOT %select.3.1 = c128[672,672]{1,0} select(%compare.2.3, %broadcast.10.1, %broadcast.11.1), metadata={op_name="jit(_diag)/jit(main)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=537 scheduling_name="select.3.1"}
+}
+
+ENTRY %main.17 (Arg_0.1.0: c128[672]) -> c128[672,672] {
+  %Arg_0.1.0 = c128[672]{0} parameter(0), metadata={op_name="v" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_select_fusion = c128[672,672]{1,0} fusion(%Arg_0.1.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_diag)/jit(main)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py" source_line=537 scheduling_name="loop_select_fusion"}
+}
+

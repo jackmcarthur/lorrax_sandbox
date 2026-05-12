@@ -1,0 +1,15 @@
+HloModule jit__reshard, entry_computation_layout={(c128[9,32,2,640]{3,2,1,0})->(c128[9,32,2,640]{3,2,1,0}, c128[9,640,32,2]{3,2,1,0})}, allow_spmd_sharding_propagation_to_output={true,true}, num_partitions=4
+
+ENTRY %main.11 (Arg_0.1: c128[9,32,2,640]) -> (c128[9,32,2,640], c128[9,640,32,2]) {
+  %Arg_0.1 = c128[9,32,2,640]{3,2,1,0} parameter(0), sharding={devices=[1,4,1,1]<=[4]}, metadata={op_name="psi_rmu_band"}
+  %custom-call.2 = c128[9,32,2,640]{3,2,1,0} custom-call(%Arg_0.1), custom_call_target="Sharding", sharding={devices=[1,2,1,1,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_reshard)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=705}
+  %custom-call.3 = c128[9,32,2,640]{3,2,1,0} custom-call(%custom-call.2), custom_call_target="Sharding", sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_reshard)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=706}
+  %transpose.4 = c128[9,640,32,2]{1,3,2,0} transpose(%custom-call.3), dimensions={0,3,1,2}, metadata={op_name="jit(_reshard)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=708}
+  %real.5 = f64[9,640,32,2]{1,3,2,0} real(%transpose.4), metadata={op_name="jit(_reshard)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=708}
+  %imag.6 = f64[9,640,32,2]{1,3,2,0} imag(%transpose.4), metadata={op_name="jit(_reshard)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=708}
+  %negate.7 = f64[9,640,32,2]{1,3,2,0} negate(%imag.6), metadata={op_name="jit(_reshard)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=708}
+  %complex.8 = c128[9,640,32,2]{1,3,2,0} complex(%real.5, %negate.7), metadata={op_name="jit(_reshard)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=708}
+  %custom-call.9 = c128[9,640,32,2]{3,2,1,0} custom-call(%complex.8), custom_call_target="Sharding", sharding={devices=[1,2,1,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_reshard)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=709}
+  ROOT %tuple.10 = (c128[9,32,2,640]{3,2,1,0}, c128[9,640,32,2]{3,2,1,0}) tuple(%custom-call.3, %custom-call.9)
+}
+

@@ -1,0 +1,15 @@
+HloModule jit_true_divide, is_scheduled=true, entry_computation_layout={(f64[], f64[960]{0})->f64[960]{0}}, allow_spmd_sharding_propagation_to_parameters={true,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="5a3beed318eee0aff92fc67a3b2e6e07"}
+
+%fused_divide (param_0.1: f64[960], param_1.1: f64[]) -> f64[960] {
+  %param_1.1 = f64[] parameter(1), metadata={scheduling_name="param_1.1"}
+  %broadcast.4.1 = f64[960]{0} broadcast(%param_1.1), dimensions={}, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=117 scheduling_name="broadcast.4.1"}
+  %param_0.1 = f64[960]{0} parameter(0), metadata={scheduling_name="param_0.1"}
+  ROOT %divide.3.1 = f64[960]{0} divide(%broadcast.4.1, %param_0.1), metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=117 scheduling_name="divide.3.1"}
+}
+
+ENTRY %main.5_spmd (param.2: f64[], param.1.0: f64[960]) -> f64[960] {
+  %param.2 = f64[] parameter(0), sharding={replicated}, metadata={op_name="x1" scheduling_name="param.2"}
+  %param.1.0 = f64[960]{0} parameter(1), sharding={replicated}, metadata={op_name="x2" scheduling_name="param.1.0"}
+  ROOT %loop_divide_fusion = f64[960]{0} fusion(%param.1.0, %param.2), kind=kLoop, calls=%fused_divide, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=117 scheduling_name="loop_divide_fusion"}
+}
+

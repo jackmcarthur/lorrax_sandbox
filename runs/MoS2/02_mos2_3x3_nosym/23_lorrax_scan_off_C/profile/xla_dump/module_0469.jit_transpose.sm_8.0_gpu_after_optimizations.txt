@@ -1,0 +1,14 @@
+HloModule jit_transpose, is_scheduled=true, entry_computation_layout={(c128[3,1,640,640,3]{4,3,2,1,0})->c128[3,3,1,640,640]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="1fa594777bd55477157bf47d616d10c6"}
+
+%fused_transpose (param_0.1: c128[3,1,640,640,3]) -> c128[3,3,409600] {
+  %param_0.1 = c128[3,1,640,640,3]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.11.1 = c128[3,409600,3]{2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.11.1"}
+  ROOT %transpose.5.1 = c128[3,3,409600]{2,1,0} transpose(%bitcast.11.1), dimensions={0,2,1}, metadata={op_name="args[0]" scheduling_name="transpose.5.1"}
+}
+
+ENTRY %main.3_spmd (param.1: c128[3,1,640,640,3]) -> c128[3,3,1,640,640] {
+  %param.1 = c128[3,1,640,640,3]{4,3,2,1,0} parameter(0), sharding={replicated}, metadata={op_name="args[0]" scheduling_name="param.1"}
+  %loop_transpose_fusion = c128[3,3,409600]{2,1,0} fusion(%param.1), kind=kLoop, calls=%fused_transpose, metadata={op_name="args[0]" scheduling_name="loop_transpose_fusion"}
+  ROOT %bitcast.8.0 = c128[3,3,1,640,640]{4,3,2,1,0} bitcast(%loop_transpose_fusion), metadata={op_name="args[0]" scheduling_name="bitcast.8.0"}
+}
+

@@ -1,0 +1,100 @@
+BufferAssignment:
+allocation 0: size 814080, output shape is |c128[12,2,2120]|, maybe-live-out:
+ value: <59 loop_abs_fusion @0> (size=407040,offset=0): f64[12,2,2120]{2,1,0}
+ value: <61 loop_divide_fusion @0> (size=814080,offset=0): c128[12,2,2120]{2,1,0}
+allocation 1: size 814080, parameter 0, shape |c128[12,2,2120]| at ShapeIndex {}:
+ value: <56 Arg_0.1.0 @0> (size=814080,offset=0): c128[12,2,2120]{2,1,0}
+allocation 2: size 16960, constant:
+ value: <58 constant_1_0 @0> (size=16960,offset=0): f64[2120]{0}
+allocation 3: size 96, parameter 1, shape |f64[12]| at ShapeIndex {}:
+ value: <57 Arg_1.2.0 @0> (size=96,offset=0): f64[12]{0}
+allocation 4: size 8, thread-local:
+ value: <2 add.2 @0> (size=8,offset=0): f64[]
+allocation 5: size 8, thread-local:
+ value: <0 Arg_0.46 @0> (size=8,offset=0): f64[]
+allocation 6: size 8, thread-local:
+ value: <1 Arg_1.47 @0> (size=8,offset=0): f64[]
+allocation 7: size 96, preallocated-temp:
+ value: <60 input_reduce_fusion @0> (size=96,offset=0): f64[12]{0}
+
+Total bytes used: 1645336 (1.57MiB)
+
+Used values:
+<0 Arg_0.46 @0>
+ positions:
+  Arg_0.46
+ uses:
+  add.2, operand 0
+ from instruction: %Arg_0.46 = f64[] parameter(0), metadata={op_name="jit(precond_fn)/jit(main)/reduce_sum" scheduling_name="Arg_0.46"}
+<1 Arg_1.47 @0>
+ positions:
+  Arg_1.47
+ uses:
+  add.2, operand 1
+ from instruction: %Arg_1.47 = f64[] parameter(1), metadata={op_name="jit(precond_fn)/jit(main)/reduce_sum" scheduling_name="Arg_1.47"}
+<2 add.2 @0>
+ positions:
+  add.2
+ uses:
+ from instruction: %add.2 = f64[] add(%Arg_0.46, %Arg_1.47), metadata={op_name="jit(precond_fn)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=33 scheduling_name="add.2"}
+<56 Arg_0.1.0 @0>
+ positions:
+  Arg_0.1.0
+ uses:
+  loop_abs_fusion, operand 0
+  loop_divide_fusion, operand 0
+ from instruction: %Arg_0.1.0 = c128[12,2,2120]{2,1,0} parameter(0), metadata={op_name="R" scheduling_name="Arg_0.1.0"}
+<57 Arg_1.2.0 @0>
+ positions:
+  Arg_1.2.0
+ uses:
+  loop_divide_fusion, operand 1
+  loop_abs_fusion, operand 1
+ from instruction: %Arg_1.2.0 = f64[12]{0} parameter(1), metadata={op_name="eigenvalues" scheduling_name="Arg_1.2.0"}
+<58 constant_1_0 @0>
+ positions:
+  constant_1_0
+ uses:
+  loop_divide_fusion, operand 2
+  loop_abs_fusion, operand 2
+ from instruction: %constant_1_0 = f64[2120]{0} constant({...}), metadata={op_name="jit(precond_fn)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=29}
+<59 loop_abs_fusion @0>
+ positions:
+  loop_abs_fusion
+ uses:
+  input_reduce_fusion, operand 0
+ from instruction: %loop_abs_fusion = f64[12,2,2120]{2,1,0} fusion(%Arg_0.1.0, %Arg_1.2.0, %constant_1_0), kind=kLoop, calls=%fused_abs, metadata={op_name="jit(precond_fn)/jit(main)/abs" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=33 scheduling_name="loop_abs_fusion"}
+<60 input_reduce_fusion @0>
+ positions:
+  input_reduce_fusion
+ uses:
+  loop_divide_fusion, operand 3
+ from instruction: %input_reduce_fusion = f64[12]{0} fusion(%loop_abs_fusion), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(precond_fn)/jit(main)/sqrt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=33 scheduling_name="input_reduce_fusion"}
+<61 loop_divide_fusion @0>
+ positions:
+  loop_divide_fusion
+ uses:
+ from instruction: %loop_divide_fusion = c128[12,2,2120]{2,1,0} fusion(%Arg_0.1.0, %Arg_1.2.0, %constant_1_0, %input_reduce_fusion), kind=kLoop, calls=%fused_divide, metadata={op_name="jit(precond_fn)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=34 scheduling_name="loop_divide_fusion"}
+
+
+HloLiveRange (max 6):
+  InstructionSequence:
+    0:constant_1_0
+    1:Arg_1.2.0
+    2:Arg_0.1.0
+    3:loop_abs_fusion
+    4:input_reduce_fusion
+    5:loop_divide_fusion
+  BufferLiveRange:
+    Arg_0.1.0{}:0-6
+    Arg_1.2.0{}:0-6
+    constant_1_0{}:0-5
+    loop_abs_fusion{}:3-4
+    input_reduce_fusion{}:4-5
+    loop_divide_fusion{}:5-6
+  Live ranges at 5 (peak):
+    Arg_0.1.0: 814080 bytes
+    Arg_1.2.0: 96 bytes
+    constant_1_0: 16960 bytes
+    input_reduce_fusion: 96 bytes
+    loop_divide_fusion: 814080 bytes

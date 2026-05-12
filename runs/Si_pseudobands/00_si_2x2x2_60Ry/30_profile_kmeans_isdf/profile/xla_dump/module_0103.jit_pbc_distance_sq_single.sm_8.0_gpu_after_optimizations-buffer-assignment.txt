@@ -1,0 +1,116 @@
+BufferAssignment:
+allocation 0: size 559872, parameter 0, shape |f32[46656,3]| at ShapeIndex {}:
+ value: <14 Arg_0.1.0 @0> (size=559872,offset=0): f32[46656,3]{1,0}
+allocation 1: size 186624, output shape is |f32[46656]|, maybe-live-out:
+ value: <21 loop_reduce_fusion @0> (size=186624,offset=0): f32[46656]{0}
+allocation 2: size 36, parameter 2, shape |f32[3,3]| at ShapeIndex {}:
+ value: <17 Arg_2.3.0 @0> (size=36,offset=0): f32[3,3]{1,0}
+allocation 3: size 4, thread-local:
+ value: <2 add.3 @0> (size=4,offset=0): f32[]
+allocation 4: size 12, parameter 1, shape |f32[3]| at ShapeIndex {}:
+ value: <15 Arg_1.2.0 @0> (size=12,offset=0): f32[3]{0}
+allocation 5: size 4, thread-local:
+ value: <1 scalar_rhs @0> (size=4,offset=0): f32[]
+allocation 6: size 4, thread-local:
+ value: <0 scalar_lhs @0> (size=4,offset=0): f32[]
+allocation 7: size 1679760, preallocated-temp:
+ value: <16 loop_subtract_fusion @0> (size=559872,offset=0): f32[46656,3]{1,0}
+ value: <18 custom-call.1.0{} @0> (size=16,offset=1679744): (f32[46656,3]{1,0}, s8[559908]{0})
+ value: <19 custom-call.1.0{0} @0> (size=559872,offset=559872): f32[46656,3]{1,0}
+ value: <20 custom-call.1.0{1} @0> (size=559908,offset=1119744): s8[559908]{0}
+
+Total bytes used: 2426316 (2.31MiB)
+
+Used values:
+<0 scalar_lhs @0>
+ positions:
+  scalar_lhs
+ uses:
+  add.3, operand 0
+ from instruction: %scalar_lhs = f32[] parameter(0), metadata={scheduling_name="scalar_lhs"}
+<1 scalar_rhs @0>
+ positions:
+  scalar_rhs
+ uses:
+  add.3, operand 1
+ from instruction: %scalar_rhs = f32[] parameter(1), metadata={scheduling_name="scalar_rhs"}
+<2 add.3 @0>
+ positions:
+  add.3
+ uses:
+ from instruction: %add.3 = f32[] add(%scalar_lhs, %scalar_rhs), metadata={scheduling_name="add.3"}
+<14 Arg_0.1.0 @0>
+ positions:
+  Arg_0.1.0
+ uses:
+  loop_subtract_fusion, operand 0
+ from instruction: %Arg_0.1.0 = f32[46656,3]{1,0} parameter(0), metadata={op_name="positions_frac" scheduling_name="Arg_0.1.0"}
+<15 Arg_1.2.0 @0>
+ positions:
+  Arg_1.2.0
+ uses:
+  loop_subtract_fusion, operand 1
+ from instruction: %Arg_1.2.0 = f32[3]{0} parameter(1), metadata={op_name="centroid_frac" scheduling_name="Arg_1.2.0"}
+<16 loop_subtract_fusion @0>
+ positions:
+  loop_subtract_fusion
+ uses:
+  loop_reduce_fusion, operand 0
+  custom-call.1.0, operand 0
+ from instruction: %loop_subtract_fusion = f32[46656,3]{1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_subtract, metadata={op_name="jit(pbc_distance_sq_single)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=158 scheduling_name="loop_subtract_fusion"}
+<17 Arg_2.3.0 @0>
+ positions:
+  Arg_2.3.0
+ uses:
+  custom-call.1.0, operand 1
+ from instruction: %Arg_2.3.0 = f32[3,3]{1,0} parameter(2), metadata={op_name="metric_tensor" scheduling_name="Arg_2.3.0"}
+<18 custom-call.1.0{} @0>
+ positions:
+  custom-call.1.0 {}
+ uses:
+  get-tuple-element.1, operand 0 {}
+ from instruction: %custom-call.1.0 = (f32[46656,3]{1,0}, s8[559908]{0}) custom-call(%loop_subtract_fusion, %Arg_2.3.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(pbc_distance_sq_single)/jit(main)/pi,ij,pj->p/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=161 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"139968","rhs_stride":"9","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<19 custom-call.1.0{0} @0>
+ positions:
+  custom-call.1.0 {0}
+  get-tuple-element.1
+ uses:
+  loop_reduce_fusion, operand 1
+ from instruction: %custom-call.1.0 = (f32[46656,3]{1,0}, s8[559908]{0}) custom-call(%loop_subtract_fusion, %Arg_2.3.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(pbc_distance_sq_single)/jit(main)/pi,ij,pj->p/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=161 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"139968","rhs_stride":"9","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<20 custom-call.1.0{1} @0>
+ positions:
+  custom-call.1.0 {1}
+ uses:
+ from instruction: %custom-call.1.0 = (f32[46656,3]{1,0}, s8[559908]{0}) custom-call(%loop_subtract_fusion, %Arg_2.3.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(pbc_distance_sq_single)/jit(main)/pi,ij,pj->p/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=161 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"139968","rhs_stride":"9","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+<21 loop_reduce_fusion @0>
+ positions:
+  loop_reduce_fusion
+ uses:
+ from instruction: %loop_reduce_fusion = f32[46656]{0} fusion(%loop_subtract_fusion, %get-tuple-element.1), kind=kLoop, calls=%fused_reduce, metadata={op_name="jit(pbc_distance_sq_single)/jit(main)/pi,ij,pj->p/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=161 scheduling_name="loop_reduce_fusion"}
+
+
+HloLiveRange (max 7):
+  InstructionSequence:
+    0:Arg_2.3.0
+    1:Arg_1.2.0
+    2:Arg_0.1.0
+    3:loop_subtract_fusion
+    4:custom-call.1.0
+    5:get-tuple-element.1
+    6:loop_reduce_fusion
+  BufferLiveRange:
+    Arg_0.1.0{}:0-7
+    Arg_1.2.0{}:0-7
+    loop_subtract_fusion{}:3-6
+    Arg_2.3.0{}:0-7
+    custom-call.1.0{}:4-5
+    custom-call.1.0{0}:4-6
+    custom-call.1.0{1}:4-4
+    loop_reduce_fusion{}:6-7
+  Live ranges at 6 (peak):
+    Arg_0.1.0: 559872 bytes
+    Arg_1.2.0: 12 bytes
+    loop_subtract_fusion: 559872 bytes
+    Arg_2.3.0: 36 bytes
+    custom-call.1.0: 16 bytes
+    loop_reduce_fusion: 186624 bytes

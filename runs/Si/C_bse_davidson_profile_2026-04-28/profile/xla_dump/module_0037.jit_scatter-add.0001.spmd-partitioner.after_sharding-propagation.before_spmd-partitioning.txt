@@ -1,0 +1,85 @@
+HloModule jit_scatter-add, entry_computation_layout={(c128[480,480,4,4,4]{4,3,2,1,0}, s32[3]{0}, c128[480,480]{1,0})->c128[480,480,4,4,4]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%and.reduce_sub_computation (lhs: pred[], rhs: pred[]) -> pred[] {
+  %lhs = pred[] parameter(0)
+  %rhs = pred[] parameter(1)
+  ROOT %and = pred[] and(%lhs, %rhs)
+}
+
+%and.reduce_sub_computation.1 (lhs.1: pred[], rhs.1: pred[]) -> pred[] {
+  %lhs.1 = pred[] parameter(0)
+  %rhs.1 = pred[] parameter(1)
+  ROOT %and.2 = pred[] and(%lhs.1, %rhs.1)
+}
+
+ENTRY %main.19 (Arg_0.1: c128[480,480,4,4,4], Arg_1.2: s32[3], Arg_2.3: c128[480,480]) -> c128[480,480,4,4,4] {
+  %Arg_0.1 = c128[480,480,4,4,4]{4,3,2,1,0} parameter(0), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="args[0]"}
+  %real.4 = f64[480,480,4,4,4]{4,3,2,1,0} real(%Arg_0.1), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=627}
+  %constant.33 = s32[] constant(0), sharding={replicated}
+  %broadcast.20 = s32[5]{0} broadcast(%constant.33), dimensions={}, sharding={replicated}
+  %constant.34 = s32[1]{0} constant({0}), sharding={replicated}
+  %Arg_1.2 = s32[3]{0} parameter(1), metadata={op_name="args[1]"}
+  %concatenate.2 = s32[5]{0} concatenate(%constant.34, %constant.34, %Arg_1.2), dimensions={0}, sharding={replicated}
+  %compare.6 = pred[5]{0} compare(%broadcast.20, %concatenate.2), direction=LE, sharding={replicated}
+  %constant.36 = s32[5]{0} constant({0, 0, 3, 3, 3}), sharding={replicated}
+  %compare.7 = pred[5]{0} compare(%constant.36, %concatenate.2), direction=GE, sharding={replicated}
+  %and.4 = pred[5]{0} and(%compare.6, %compare.7), sharding={replicated}
+  %constant.37 = pred[] constant(true)
+  %reduce.2 = pred[] reduce(%and.4, %constant.37), dimensions={0}, to_apply=%and.reduce_sub_computation, sharding={replicated}
+  %broadcast.22 = pred[480,480,1,1,1]{4,3,2,1,0} broadcast(%reduce.2), dimensions={}, sharding={devices=[2,2,1,1,1]<=[4]}
+  %constant.50 = s32[] constant(0)
+  %slice.43 = s32[1]{0} slice(%Arg_1.2), slice={[0:1]}
+  %reshape.45 = s32[] reshape(%slice.43)
+  %slice.44 = s32[1]{0} slice(%Arg_1.2), slice={[1:2]}
+  %reshape.46 = s32[] reshape(%slice.44)
+  %slice.45 = s32[1]{0} slice(%Arg_1.2), slice={[2:3]}
+  %reshape.47 = s32[] reshape(%slice.45)
+  %dynamic-slice.7 = f64[480,480,1,1,1]{4,3,2,1,0} dynamic-slice(%real.4, %constant.50, %constant.50, %reshape.45, %reshape.46, /*index=5*/%reshape.47), dynamic_slice_sizes={480,480,1,1,1}, sharding={devices=[2,2,1,1,1]<=[4]}
+  %Arg_2.3 = c128[480,480]{1,0} parameter(2), sharding={devices=[2,2]<=[4]}, metadata={op_name="args[2]"}
+  %real.5 = f64[480,480]{1,0} real(%Arg_2.3), sharding={devices=[2,2]<=[4]}, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=627}
+  %reshape.52 = f64[480,480,1,1,1]{4,3,2,1,0} reshape(%real.5), sharding={devices=[2,2,1,1,1]<=[4]}
+  %add.4 = f64[480,480,1,1,1]{4,3,2,1,0} add(%dynamic-slice.7, %reshape.52), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=627}
+  %select.2 = f64[480,480,1,1,1]{4,3,2,1,0} select(%broadcast.22, %add.4, %dynamic-slice.7), sharding={devices=[2,2,1,1,1]<=[4]}
+  %constant.51 = s32[] constant(0)
+  %slice.51 = s32[1]{0} slice(%Arg_1.2), slice={[0:1]}
+  %reshape.55 = s32[] reshape(%slice.51)
+  %slice.52 = s32[1]{0} slice(%Arg_1.2), slice={[1:2]}
+  %reshape.56 = s32[] reshape(%slice.52)
+  %slice.53 = s32[1]{0} slice(%Arg_1.2), slice={[2:3]}
+  %reshape.57 = s32[] reshape(%slice.53)
+  %dynamic-update-slice.2 = f64[480,480,4,4,4]{4,3,2,1,0} dynamic-update-slice(%real.4, %select.2, %constant.51, %constant.51, %reshape.55, /*index=5*/%reshape.56, %reshape.57), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=627}
+  %imag.11 = f64[480,480,4,4,4]{4,3,2,1,0} imag(%Arg_0.1), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=627}
+  %constant.44 = s32[] constant(0), sharding={replicated}
+  %broadcast.27 = s32[5]{0} broadcast(%constant.44), dimensions={}, sharding={replicated}
+  %constant.45 = s32[1]{0} constant({0}), sharding={replicated}
+  %concatenate.3 = s32[5]{0} concatenate(%constant.45, %constant.45, %Arg_1.2), dimensions={0}, sharding={replicated}
+  %compare.8 = pred[5]{0} compare(%broadcast.27, %concatenate.3), direction=LE, sharding={replicated}
+  %constant.47 = s32[5]{0} constant({0, 0, 3, 3, 3}), sharding={replicated}
+  %compare.9 = pred[5]{0} compare(%constant.47, %concatenate.3), direction=GE, sharding={replicated}
+  %and.5 = pred[5]{0} and(%compare.8, %compare.9), sharding={replicated}
+  %constant.48 = pred[] constant(true)
+  %reduce.3 = pred[] reduce(%and.5, %constant.48), dimensions={0}, to_apply=%and.reduce_sub_computation.1, sharding={replicated}
+  %broadcast.29 = pred[480,480,1,1,1]{4,3,2,1,0} broadcast(%reduce.3), dimensions={}, sharding={devices=[2,2,1,1,1]<=[4]}
+  %constant.52 = s32[] constant(0)
+  %slice.61 = s32[1]{0} slice(%Arg_1.2), slice={[0:1]}
+  %reshape.63 = s32[] reshape(%slice.61)
+  %slice.62 = s32[1]{0} slice(%Arg_1.2), slice={[1:2]}
+  %reshape.64 = s32[] reshape(%slice.62)
+  %slice.63 = s32[1]{0} slice(%Arg_1.2), slice={[2:3]}
+  %reshape.65 = s32[] reshape(%slice.63)
+  %dynamic-slice.10 = f64[480,480,1,1,1]{4,3,2,1,0} dynamic-slice(%imag.11, %constant.52, %constant.52, %reshape.63, %reshape.64, /*index=5*/%reshape.65), dynamic_slice_sizes={480,480,1,1,1}, sharding={devices=[2,2,1,1,1]<=[4]}
+  %imag.12 = f64[480,480]{1,0} imag(%Arg_2.3), sharding={devices=[2,2]<=[4]}, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=627}
+  %reshape.70 = f64[480,480,1,1,1]{4,3,2,1,0} reshape(%imag.12), sharding={devices=[2,2,1,1,1]<=[4]}
+  %add.5 = f64[480,480,1,1,1]{4,3,2,1,0} add(%dynamic-slice.10, %reshape.70), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=627}
+  %select.3 = f64[480,480,1,1,1]{4,3,2,1,0} select(%broadcast.29, %add.5, %dynamic-slice.10), sharding={devices=[2,2,1,1,1]<=[4]}
+  %constant.53 = s32[] constant(0)
+  %slice.69 = s32[1]{0} slice(%Arg_1.2), slice={[0:1]}
+  %reshape.73 = s32[] reshape(%slice.69)
+  %slice.70 = s32[1]{0} slice(%Arg_1.2), slice={[1:2]}
+  %reshape.74 = s32[] reshape(%slice.70)
+  %slice.71 = s32[1]{0} slice(%Arg_1.2), slice={[2:3]}
+  %reshape.75 = s32[] reshape(%slice.71)
+  %dynamic-update-slice.3 = f64[480,480,4,4,4]{4,3,2,1,0} dynamic-update-slice(%imag.11, %select.3, %constant.53, %constant.53, %reshape.73, /*index=5*/%reshape.74, %reshape.75), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=627}
+  ROOT %complex.18 = c128[480,480,4,4,4]{4,3,2,1,0} complex(%dynamic-update-slice.2, %dynamic-update-slice.3), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="jit(scatter-add)/jit(main)/scatter-add" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=627}
+}
+

@@ -1,0 +1,25 @@
+HloModule jit_matmul, is_scheduled=true, entry_computation_layout={(f64[1,3]{1,0}, f64[3,16]{1,0})->f64[1,16]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="22d9121e2b604f157d90d551663139c6"}
+
+%scalar_add_computation (scalar_lhs: f64[], scalar_rhs: f64[]) -> f64[] {
+  %scalar_rhs = f64[] parameter(1), metadata={scheduling_name="scalar_rhs"}
+  %scalar_lhs = f64[] parameter(0), metadata={scheduling_name="scalar_lhs"}
+  ROOT %add.3 = f64[] add(%scalar_lhs, %scalar_rhs), metadata={scheduling_name="add.3"}
+}
+
+%fused_reduce (param_0.8: f64[3,16], param_1.7: f64[1,3]) -> f64[16] {
+  %param_1.7 = f64[1,3]{1,0} parameter(1), metadata={scheduling_name="param_1.7"}
+  %bitcast.43.5 = f64[3]{0} bitcast(%param_1.7), metadata={scheduling_name="bitcast.43.5"}
+  %broadcast.4.5 = f64[3,16]{1,0} broadcast(%bitcast.43.5), dimensions={0}, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=613 scheduling_name="broadcast.4.5"}
+  %param_0.8 = f64[3,16]{1,0} parameter(0), metadata={scheduling_name="param_0.8"}
+  %multiply.4.3 = f64[3,16]{1,0} multiply(%broadcast.4.5, %param_0.8), metadata={scheduling_name="multiply.4.3"}
+  %constant_4 = f64[] constant(0)
+  ROOT %reduce.3 = f64[16]{0} reduce(%multiply.4.3, %constant_4), dimensions={0}, to_apply=%scalar_add_computation, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=613 scheduling_name="reduce.3"}
+}
+
+ENTRY %main.4 (Arg_0.1.0: f64[1,3], Arg_1.2.0: f64[3,16]) -> f64[1,16] {
+  %Arg_1.2.0 = f64[3,16]{1,0} parameter(1), metadata={op_name="b" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[1,3]{1,0} parameter(0), metadata={op_name="a" scheduling_name="Arg_0.1.0"}
+  %loop_reduce_fusion = f64[16]{0} fusion(%Arg_1.2.0, %Arg_0.1.0), kind=kLoop, calls=%fused_reduce, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=613 scheduling_name="loop_reduce_fusion"}
+  ROOT %bitcast.1.0 = f64[1,16]{1,0} bitcast(%loop_reduce_fusion), metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=613 scheduling_name="bitcast.1.0"}
+}
+

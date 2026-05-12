@@ -1,0 +1,21 @@
+HloModule jit__psum, is_scheduled=true, entry_computation_layout={(u32[1]{0})->u64[]}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="601d7f18d08422110bc280e923f6c940"}
+
+%fused_convert (param_0.1: u32[1]) -> u64[] {
+  %param_0.1 = u32[1]{0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.30.1 = u32[] bitcast(%param_0.1), metadata={scheduling_name="bitcast.30.1"}
+  ROOT %convert.7.1 = u64[] convert(%bitcast.30.1), metadata={op_name="jit(_psum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/_slab_io_ffi.py" source_line=415 scheduling_name="convert.7.1"}
+}
+
+%region_0.4.clone (Arg_0.0: u64[], Arg_1.0: u64[]) -> u64[] {
+  %Arg_1.0 = u64[] parameter(1), metadata={op_name="jit(_psum)/jit(main)/reduce_sum" scheduling_name="Arg_1.0"}
+  %Arg_0.0 = u64[] parameter(0), metadata={op_name="jit(_psum)/jit(main)/reduce_sum" scheduling_name="Arg_0.0"}
+  ROOT %add.3 = u64[] add(%Arg_0.0, %Arg_1.0), metadata={op_name="jit(_psum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/_slab_io_ffi.py" source_line=415 scheduling_name="add.3"}
+}
+
+ENTRY %main.9_spmd (param.1: u32[1]) -> u64[] {
+  %param.1 = u32[1]{0} parameter(0), sharding={devices=[4]<=[4]}, metadata={op_name="x" scheduling_name="param.1"}
+  %loop_convert_fusion = u64[] fusion(%param.1), kind=kLoop, calls=%fused_convert, metadata={op_name="jit(_psum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/_slab_io_ffi.py" source_line=415 scheduling_name="loop_convert_fusion"}
+  %all-reduce-start = u64[] all-reduce-start(%loop_convert_fusion), channel_id=1, replica_groups=[1,4]<=[4], use_global_device_ids=true, to_apply=%region_0.4.clone, metadata={op_name="jit(_psum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/_slab_io_ffi.py" source_line=415 scheduling_name="all-reduce-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  ROOT %all-reduce-done = u64[] all-reduce-done(%all-reduce-start), metadata={op_name="jit(_psum)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/file_io/_slab_io_ffi.py" source_line=415 scheduling_name="all-reduce-done"}
+}
+

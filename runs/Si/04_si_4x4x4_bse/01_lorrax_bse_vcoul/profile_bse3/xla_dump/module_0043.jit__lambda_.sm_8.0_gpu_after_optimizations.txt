@@ -1,0 +1,15 @@
+HloModule jit__lambda_, is_scheduled=true, entry_computation_layout={(c128[480,480,4,4,4]{4,3,2,1,0})->c128[480,480,4,4,4]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="1a504b5744bff1e37e9c0c2d52b0261b"}
+
+%fused_multiply (param_0: c128[480,480,4,4,4]) -> c128[480,480,4,4,4] {
+  %param_0 = c128[480,480,4,4,4]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %constant_110_1 = c128[] constant((8, 0)), metadata={op_name="jit(<lambda>)/jit(main)/sqrt" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52}
+  %broadcast.2.1 = c128[480,480,4,4,4]{4,3,2,1,0} broadcast(%constant_110_1), dimensions={}, metadata={op_name="jit(<lambda>)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52 scheduling_name="broadcast.2.1"}
+  ROOT %multiply.10.1 = c128[480,480,4,4,4]{4,3,2,1,0} multiply(%param_0, %broadcast.2.1), metadata={op_name="jit(<lambda>)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52 scheduling_name="multiply.10.1"}
+}
+
+ENTRY %main.116 (Arg_0.1.0: c128[480,480,4,4,4]) -> c128[480,480,4,4,4] {
+  %Arg_0.1.0 = c128[480,480,4,4,4]{4,3,2,1,0} parameter(0), metadata={op_name="W" scheduling_name="Arg_0.1.0"}
+  %fft.0.0 = c128[480,480,4,4,4]{4,3,2,1,0} fft(%Arg_0.1.0), fft_type=IFFT, fft_length={4,4,4}, metadata={op_name="jit(<lambda>)/jit(main)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52 scheduling_name="fft.0.0"}
+  ROOT %loop_multiply_fusion = c128[480,480,4,4,4]{4,3,2,1,0} fusion(%fft.0.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(<lambda>)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/bse/bse_lanczos.py" source_line=52 scheduling_name="loop_multiply_fusion"}
+}
+

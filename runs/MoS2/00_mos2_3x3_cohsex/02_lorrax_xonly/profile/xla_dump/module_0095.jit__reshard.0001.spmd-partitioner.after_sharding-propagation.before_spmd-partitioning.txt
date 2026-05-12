@@ -1,0 +1,15 @@
+HloModule jit__reshard, entry_computation_layout={(c128[9,32,2,640]{3,2,1,0})->(c128[9,32,2,640]{3,2,1,0}, c128[9,640,32,2]{3,2,1,0})}, allow_spmd_sharding_propagation_to_output={true,true}, num_partitions=4
+
+ENTRY %main.11 (Arg_0.1: c128[9,32,2,640]) -> (c128[9,32,2,640], c128[9,640,32,2]) {
+  %Arg_0.1 = c128[9,32,2,640]{3,2,1,0} parameter(0), sharding={devices=[1,4,1,1]<=[4]}, metadata={op_name="psi_rmu_band"}
+  %copy.2 = c128[9,32,2,640]{3,2,1,0} copy(%Arg_0.1), sharding={devices=[1,2,1,1,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_reshard)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=705}
+  %copy.1 = c128[9,32,2,640]{3,2,1,0} copy(%copy.2), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_reshard)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=706}
+  %real.0 = f64[9,32,2,640]{3,2,1,0} real(%copy.1), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_reshard)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=708}
+  %imag.0 = f64[9,32,2,640]{3,2,1,0} imag(%copy.1), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_reshard)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=708}
+  %negate.0 = f64[9,32,2,640]{3,2,1,0} negate(%imag.0), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_reshard)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=708}
+  %complex.0 = c128[9,32,2,640]{3,2,1,0} complex(%real.0, %negate.0), sharding={devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, metadata={op_name="jit(_reshard)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=708}
+  %transpose.12 = c128[9,640,32,2]{1,3,2,0} transpose(%complex.0), dimensions={0,3,1,2}, sharding={devices=[1,2,1,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_reshard)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=708}
+  %copy = c128[9,640,32,2]{3,2,1,0} copy(%transpose.12), sharding={devices=[1,2,1,1,2]<=[4] last_tile_dim_replicate}, metadata={op_name="jit(_reshard)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/load_wfns.py" source_line=709}
+  ROOT %tuple.10 = (c128[9,32,2,640]{3,2,1,0}, c128[9,640,32,2]{3,2,1,0}) tuple(%copy.1, %copy), sharding={{devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate}, {devices=[1,2,1,1,2]<=[4] last_tile_dim_replicate}}
+}
+

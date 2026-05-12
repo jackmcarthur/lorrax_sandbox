@@ -1,0 +1,87 @@
+BufferAssignment:
+allocation 0: size 14745600, output shape is |c128[9,1,1,320,320]|, maybe-live-out:
+ value: <20 loop_select_fusion @0> (size=14745600,offset=0): c128[9,1,1,320,320]{4,3,2,1,0}
+allocation 1: size 14745600, parameter 1, shape |c128[9,1,1,320,320]| at ShapeIndex {}:
+ value: <14 param.1.0 @0> (size=14745600,offset=0): c128[9,1,1,320,320]{4,3,2,1,0}
+allocation 2: size 16, constant:
+ value: <17 constant_2_0 @0> (size=16,offset=0): s32[4]{0}
+allocation 3: size 16, constant:
+ value: <19 constant_1_0 @0> (size=16,offset=0): s32[4]{0}
+allocation 4: size 8, parameter 2, shape |f64[]| at ShapeIndex {}:
+ value: <15 param.2.0 @0> (size=8,offset=0): f64[]
+allocation 5: size 4, parameter 0, shape |pred[1,2,2,1,1]| at ShapeIndex {}:
+ value: <16 param.3 @0> (size=4,offset=0): pred[1,2,2,1,1]{4,3,2,1,0}
+allocation 6: size 4, preallocated-temp:
+ value: <18 partition-id.1 @0> (size=4,offset=0): u32[]
+
+Total bytes used: 29491248 (28.12MiB)
+
+Used values:
+<14 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  loop_select_fusion, operand 0
+ from instruction: %param.1.0 = c128[9,1,1,320,320]{4,3,2,1,0} parameter(1), sharding={devices=[1,2,2,1,1]<=[4]}, metadata={op_name="x" scheduling_name="param.1.0"}
+<15 param.2.0 @0>
+ positions:
+  param.2.0
+ uses:
+  loop_select_fusion, operand 1
+ from instruction: %param.2.0 = f64[] parameter(2), sharding={replicated}, metadata={op_name="y" scheduling_name="param.2.0"}
+<16 param.3 @0>
+ positions:
+  param.3
+ uses:
+  loop_select_fusion, operand 2
+ from instruction: %param.3 = pred[1,2,2,1,1]{4,3,2,1,0} parameter(0), sharding={replicated}, metadata={op_name="condition" scheduling_name="param.3"}
+<17 constant_2_0 @0>
+ positions:
+  constant_2_0
+ uses:
+  loop_select_fusion, operand 3
+ from instruction: %constant_2_0 = s32[4]{0} constant({0, 1, 0, 1}), metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/cholesky_2d.py" source_line=68}
+<18 partition-id.1 @0>
+ positions:
+  partition-id.1
+ uses:
+  loop_select_fusion, operand 4
+ from instruction: %partition-id.1 = u32[] partition-id(), metadata={scheduling_name="partition-id.1"}
+<19 constant_1_0 @0>
+ positions:
+  constant_1_0
+ uses:
+  loop_select_fusion, operand 5
+ from instruction: %constant_1_0 = s32[4]{0} constant({0, 0, 1, 1}), metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/cholesky_2d.py" source_line=68}
+<20 loop_select_fusion @0>
+ positions:
+  loop_select_fusion
+ uses:
+ from instruction: %loop_select_fusion = c128[9,1,1,320,320]{4,3,2,1,0} fusion(%param.1.0, %param.2.0, %param.3, %constant_2_0, %partition-id.1, /*index=5*/%constant_1_0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_where)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/common/cholesky_2d.py" source_line=68 scheduling_name="loop_select_fusion"}
+
+
+HloLiveRange (max 7):
+  InstructionSequence:
+    0:param.2.0
+    1:param.1.0
+    2:constant_2_0
+    3:constant_1_0
+    4:param.3
+    5:partition-id.1
+    6:loop_select_fusion
+  BufferLiveRange:
+    param.1.0{}:0-7
+    param.2.0{}:0-7
+    param.3{}:0-7
+    constant_2_0{}:2-6
+    partition-id.1{}:5-6
+    constant_1_0{}:3-6
+    loop_select_fusion{}:6-7
+  Live ranges at 6 (peak):
+    param.1.0: 14745600 bytes
+    param.2.0: 8 bytes
+    param.3: 4 bytes
+    constant_2_0: 16 bytes
+    partition-id.1: 4 bytes
+    constant_1_0: 16 bytes
+    loop_select_fusion: 14745600 bytes

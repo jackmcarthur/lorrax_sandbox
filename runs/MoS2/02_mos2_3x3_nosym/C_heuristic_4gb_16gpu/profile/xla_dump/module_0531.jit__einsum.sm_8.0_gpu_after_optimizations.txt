@@ -1,0 +1,22 @@
+HloModule jit__einsum, is_scheduled=true, entry_computation_layout={(f64[262144,3]{1,0}, f64[262144,3]{1,0})->f64[262144]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="af0c3a68eee46c62828777ad609997fe"}
+
+%scalar_add_computation (scalar_lhs: f64[], scalar_rhs: f64[]) -> f64[] {
+  %scalar_rhs = f64[] parameter(1), metadata={scheduling_name="scalar_rhs"}
+  %scalar_lhs = f64[] parameter(0), metadata={scheduling_name="scalar_lhs"}
+  ROOT %add.3 = f64[] add(%scalar_lhs, %scalar_rhs), metadata={scheduling_name="add.3"}
+}
+
+%fused_reduce (param_0.2: f64[262144,3], param_1.2: f64[262144,3]) -> f64[262144] {
+  %param_0.2 = f64[262144,3]{1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %param_1.2 = f64[262144,3]{1,0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %multiply.3.1 = f64[262144,3]{1,0} multiply(%param_0.2, %param_1.2), metadata={scheduling_name="multiply.3.1"}
+  %constant_2 = f64[] constant(0)
+  ROOT %reduce.2 = f64[262144]{0} reduce(%multiply.3.1, %constant_2), dimensions={1}, to_apply=%scalar_add_computation, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/vcoul.py" source_line=301 scheduling_name="reduce.2"}
+}
+
+ENTRY %main.4 (Arg_0.1.0: f64[262144,3], Arg_1.2.0: f64[262144,3]) -> f64[262144] {
+  %Arg_1.2.0 = f64[262144,3]{1,0} parameter(1), metadata={op_name="operands[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[262144,3]{1,0} parameter(0), metadata={op_name="operands[0]" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_reduce_fusion = f64[262144]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_reduce, metadata={op_name="jit(_einsum)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/vcoul.py" source_line=301 scheduling_name="loop_reduce_fusion"}
+}
+

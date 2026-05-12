@@ -1,0 +1,14 @@
+HloModule jit_transpose, is_scheduled=true, entry_computation_layout={(c128[9,80,4,160]{3,2,1,0})->c128[9,4,160,80]{3,2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16, frontend_attributes={fingerprint_before_lhs="ed4bbba0afa741048c44f5b12ee6520d"}
+
+%fused_transpose (param_0.1: c128[9,80,4,160]) -> c128[9,640,80] {
+  %param_0.1 = c128[9,80,4,160]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.11.1 = c128[9,80,640]{2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.11.1"}
+  ROOT %transpose.5.1 = c128[9,640,80]{2,1,0} transpose(%bitcast.11.1), dimensions={0,2,1}, metadata={op_name="args[0]" scheduling_name="transpose.5.1"}
+}
+
+ENTRY %main.3_spmd (param.1: c128[9,80,4,160]) -> c128[9,4,160,80] {
+  %param.1 = c128[9,80,4,160]{3,2,1,0} parameter(0), sharding={devices=[1,1,1,4,4]<=[4,4]T(1,0) last_tile_dim_replicate}, metadata={op_name="args[0]" scheduling_name="param.1"}
+  %input_transpose_fusion = c128[9,640,80]{2,1,0} fusion(%param.1), kind=kInput, calls=%fused_transpose, metadata={op_name="args[0]" scheduling_name="input_transpose_fusion"}
+  ROOT %bitcast.8.0 = c128[9,4,160,80]{3,2,1,0} bitcast(%input_transpose_fusion), metadata={op_name="args[0]" scheduling_name="bitcast.8.0"}
+}
+

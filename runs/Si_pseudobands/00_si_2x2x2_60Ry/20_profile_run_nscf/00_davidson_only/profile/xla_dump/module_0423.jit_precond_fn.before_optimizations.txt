@@ -1,0 +1,68 @@
+HloModule jit_precond_fn, entry_computation_layout={(c128[12,2,2120]{2,1,0}, f64[12]{0})->c128[12,2,2120]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}
+
+%_where.24 (Arg_0.25: pred[12,1,2120], Arg_1.26: f64[12,1,2120], Arg_2.27: f64[12,1,2120]) -> f64[12,1,2120] {
+  %Arg_0.25 = pred[12,1,2120]{2,1,0} parameter(0), metadata={op_name="jit(precond_fn)/jit(main)/pjit"}
+  %Arg_1.26 = f64[12,1,2120]{2,1,0} parameter(1), metadata={op_name="jit(precond_fn)/jit(main)/pjit"}
+  %Arg_2.27 = f64[12,1,2120]{2,1,0} parameter(2), metadata={op_name="jit(precond_fn)/jit(main)/pjit"}
+  ROOT %select.28 = f64[12,1,2120]{2,1,0} select(%Arg_0.25, %Arg_1.26, %Arg_2.27), metadata={op_name="jit(precond_fn)/jit(main)/jit(_where)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=30}
+}
+
+%_where_0.31 (Arg_0.32: pred[12,1,2120], Arg_1.33: f64[], Arg_2.34: f64[12,1,2120]) -> f64[12,1,2120] {
+  %Arg_0.32 = pred[12,1,2120]{2,1,0} parameter(0), metadata={op_name="jit(precond_fn)/jit(main)/pjit"}
+  %Arg_1.33 = f64[] parameter(1), metadata={op_name="jit(precond_fn)/jit(main)/pjit"}
+  %broadcast.35 = f64[12,1,2120]{2,1,0} broadcast(%Arg_1.33), dimensions={}, metadata={op_name="jit(precond_fn)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=31}
+  %Arg_2.34 = f64[12,1,2120]{2,1,0} parameter(2), metadata={op_name="jit(precond_fn)/jit(main)/pjit"}
+  ROOT %select.36 = f64[12,1,2120]{2,1,0} select(%Arg_0.32, %broadcast.35, %Arg_2.34), metadata={op_name="jit(precond_fn)/jit(main)/jit(_where)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=31}
+}
+
+%region_0.45 (Arg_0.46: f64[], Arg_1.47: f64[]) -> f64[] {
+  %Arg_0.46 = f64[] parameter(0), metadata={op_name="jit(precond_fn)/jit(main)/reduce_sum"}
+  %Arg_1.47 = f64[] parameter(1), metadata={op_name="jit(precond_fn)/jit(main)/reduce_sum"}
+  ROOT %add.48 = f64[] add(%Arg_0.46, %Arg_1.47), metadata={op_name="jit(precond_fn)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=33}
+}
+
+ENTRY %main.58 (Arg_0.1: c128[12,2,2120], Arg_1.2: f64[12]) -> c128[12,2,2120] {
+  %Arg_0.1 = c128[12,2,2120]{2,1,0} parameter(0), metadata={op_name="R"}
+  %constant.11 = f64[1,1,2120]{2,1,0} constant({...})
+  %broadcast.13 = f64[1,1,2120]{2,1,0} broadcast(%constant.11), dimensions={0,1,2}, metadata={op_name="jit(precond_fn)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=29}
+  %reshape.14 = f64[1,2120]{1,0} reshape(%broadcast.13), metadata={op_name="jit(precond_fn)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=29}
+  %broadcast.15 = f64[12,1,2120]{2,1,0} broadcast(%reshape.14), dimensions={1,2}, metadata={op_name="jit(precond_fn)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=29}
+  %Arg_1.2 = f64[12]{0} parameter(1), metadata={op_name="eigenvalues"}
+  %reshape.12 = f64[12,1,1]{2,1,0} reshape(%Arg_1.2), metadata={op_name="jit(precond_fn)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=29}
+  %broadcast.16 = f64[12,1,1]{2,1,0} broadcast(%reshape.12), dimensions={0,1,2}, metadata={op_name="jit(precond_fn)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=29}
+  %reshape.17 = f64[12,1]{1,0} reshape(%broadcast.16), metadata={op_name="jit(precond_fn)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=29}
+  %broadcast.18 = f64[12,1,2120]{2,1,0} broadcast(%reshape.17), dimensions={0,1}, metadata={op_name="jit(precond_fn)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=29}
+  %subtract.19 = f64[12,1,2120]{2,1,0} subtract(%broadcast.15, %broadcast.18), metadata={op_name="jit(precond_fn)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=29}
+  %abs.20 = f64[12,1,2120]{2,1,0} abs(%subtract.19), metadata={op_name="jit(precond_fn)/jit(main)/abs" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=30}
+  %constant.7 = f64[] constant(0.01)
+  %broadcast.8 = f64[12,1,2120]{2,1,0} broadcast(%constant.7), dimensions={}
+  %compare.21 = pred[12,1,2120]{2,1,0} compare(%abs.20, %broadcast.8), direction=LT, metadata={op_name="jit(precond_fn)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=30}
+  %sign.22 = f64[12,1,2120]{2,1,0} sign(%subtract.19), metadata={op_name="jit(precond_fn)/jit(main)/sign" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=30}
+  %multiply.23 = f64[12,1,2120]{2,1,0} multiply(%sign.22, %broadcast.8), metadata={op_name="jit(precond_fn)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=30}
+  %call.29 = f64[12,1,2120]{2,1,0} call(%compare.21, %multiply.23, %subtract.19), to_apply=%_where.24
+  %constant.5 = f64[] constant(0)
+  %broadcast.6 = f64[12,1,2120]{2,1,0} broadcast(%constant.5), dimensions={}
+  %compare.30 = pred[12,1,2120]{2,1,0} compare(%call.29, %broadcast.6), direction=EQ, metadata={op_name="jit(precond_fn)/jit(main)/eq" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=31}
+  %constant.10 = f64[] constant(0.01)
+  %call.37 = f64[12,1,2120]{2,1,0} call(%compare.30, %constant.10, %call.29), to_apply=%_where_0.31
+  %convert.38 = c128[12,1,2120]{2,1,0} convert(%call.37), metadata={op_name="jit(precond_fn)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=32}
+  %broadcast.39 = c128[12,1,2120]{2,1,0} broadcast(%convert.38), dimensions={0,1,2}, metadata={op_name="jit(precond_fn)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=32}
+  %reshape.40 = c128[12,2120]{1,0} reshape(%broadcast.39), metadata={op_name="jit(precond_fn)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=32}
+  %broadcast.41 = c128[12,2,2120]{2,1,0} broadcast(%reshape.40), dimensions={0,2}, metadata={op_name="jit(precond_fn)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=32}
+  %divide.42 = c128[12,2,2120]{2,1,0} divide(%Arg_0.1, %broadcast.41), metadata={op_name="jit(precond_fn)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=32}
+  %abs.43 = f64[12,2,2120]{2,1,0} abs(%divide.42), metadata={op_name="jit(precond_fn)/jit(main)/abs" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=33}
+  %multiply.44 = f64[12,2,2120]{2,1,0} multiply(%abs.43, %abs.43), metadata={op_name="jit(precond_fn)/jit(main)/integer_pow" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=33}
+  %constant.9 = f64[] constant(0)
+  %reduce.49 = f64[12]{0} reduce(%multiply.44, %constant.9), dimensions={1,2}, to_apply=%region_0.45, metadata={op_name="jit(precond_fn)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=33}
+  %sqrt.50 = f64[12]{0} sqrt(%reduce.49), metadata={op_name="jit(precond_fn)/jit(main)/sqrt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=33}
+  %constant.3 = f64[] constant(1e-30)
+  %broadcast.4 = f64[12]{0} broadcast(%constant.3), dimensions={}
+  %maximum.51 = f64[12]{0} maximum(%sqrt.50, %broadcast.4), metadata={op_name="jit(precond_fn)/jit(main)/max" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=34}
+  %reshape.52 = f64[12,1,1]{2,1,0} reshape(%maximum.51), metadata={op_name="jit(precond_fn)/jit(main)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=34}
+  %convert.53 = c128[12,1,1]{2,1,0} convert(%reshape.52), metadata={op_name="jit(precond_fn)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=34}
+  %broadcast.54 = c128[12,1,1]{2,1,0} broadcast(%convert.53), dimensions={0,1,2}, metadata={op_name="jit(precond_fn)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=34}
+  %reshape.55 = c128[12]{0} reshape(%broadcast.54), metadata={op_name="jit(precond_fn)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=34}
+  %broadcast.56 = c128[12,2,2120]{2,1,0} broadcast(%reshape.55), dimensions={0}, metadata={op_name="jit(precond_fn)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=34}
+  ROOT %divide.57 = c128[12,2,2120]{2,1,0} divide(%divide.42, %broadcast.56), metadata={op_name="jit(precond_fn)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/dft_precond.py" source_line=34}
+}
+

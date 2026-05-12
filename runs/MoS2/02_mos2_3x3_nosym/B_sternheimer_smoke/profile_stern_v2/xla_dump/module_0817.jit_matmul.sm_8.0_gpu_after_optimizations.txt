@@ -1,0 +1,34 @@
+HloModule jit_matmul, is_scheduled=true, entry_computation_layout={(f64[9,1963,3]{2,1,0}, f64[3,102]{1,0}, f64[3,9,1963,3]{3,2,1,0})->(f64[9,1963,102]{2,1,0}, f64[3,9,1963,102]{3,2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="fff208a3478e7e6b7fff941c0541bcd7"}
+
+%fused_concatenate (param_0.1: f64[3,9,1963,3], param_1.2: f64[9,1963,3]) -> f64[70668,3] {
+  %param_1.2 = f64[9,1963,3]{2,1,0} parameter(1), metadata={scheduling_name="param_1.2"}
+  %bitcast.60.1 = f64[17667,3]{1,0} bitcast(%param_1.2), metadata={scheduling_name="bitcast.60.1"}
+  %param_0.1 = f64[3,9,1963,3]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.64.1 = f64[53001,3]{1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.64.1"}
+  ROOT %concatenate.3.1 = f64[70668,3]{1,0} concatenate(%bitcast.60.1, %bitcast.64.1), dimensions={0}, metadata={scheduling_name="concatenate.3.1"}
+}
+
+%wrapped_slice_computation (param_0.2: f64[70668,102]) -> f64[17667,102] {
+  %param_0.2 = f64[70668,102]{1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  ROOT %slice.6.1 = f64[17667,102]{1,0} slice(%param_0.2), slice={[0:17667], [0:102]}, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=373 scheduling_name="slice.6.1"}
+}
+
+%wrapped_slice_computation.1 (param_0.3: f64[70668,102]) -> f64[53001,102] {
+  %param_0.3 = f64[70668,102]{1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  ROOT %slice.7.1 = f64[53001,102]{1,0} slice(%param_0.3), slice={[17667:70668], [0:102]}, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=373 scheduling_name="slice.7.1"}
+}
+
+ENTRY %main.7 (Arg_0.1.0: f64[9,1963,3], Arg_1.2.0: f64[3,102], Arg_2.3.0: f64[3,9,1963,3]) -> (f64[9,1963,102], f64[3,9,1963,102]) {
+  %Arg_2.3.0 = f64[3,9,1963,3]{3,2,1,0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = f64[3,102]{1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[9,1963,3]{2,1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %input_concatenate_fusion = f64[70668,3]{1,0} fusion(%Arg_2.3.0, %Arg_0.1.0), kind=kInput, calls=%fused_concatenate, metadata={scheduling_name="input_concatenate_fusion"}
+  %custom-call.1.0 = (f64[70668,102]{1,0}, s8[1698480]{0}) custom-call(%input_concatenate_fusion, %Arg_1.2.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=373 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"212004","rhs_stride":"306","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.1 = f64[70668,102]{1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=373 scheduling_name="get-tuple-element.1"}
+  %wrapped_slice = f64[17667,102]{1,0} fusion(%get-tuple-element.1), kind=kLoop, calls=%wrapped_slice_computation, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=373 scheduling_name="wrapped_slice"}
+  %wrapped_slice.1 = f64[53001,102]{1,0} fusion(%get-tuple-element.1), kind=kLoop, calls=%wrapped_slice_computation.1, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/vnl_ops.py" source_line=373 scheduling_name="wrapped_slice.1"}
+  %bitcast.78.0 = f64[3,9,1963,102]{3,2,1,0} bitcast(%wrapped_slice.1), metadata={scheduling_name="bitcast.78.0"}
+  %bitcast.73.0 = f64[9,1963,102]{2,1,0} bitcast(%wrapped_slice), metadata={scheduling_name="bitcast.73.0"}
+  ROOT %tuple.6.0 = (f64[9,1963,102]{2,1,0}, f64[3,9,1963,102]{3,2,1,0}) tuple(%bitcast.73.0, %bitcast.78.0), metadata={scheduling_name="tuple.6.0"}
+}
+

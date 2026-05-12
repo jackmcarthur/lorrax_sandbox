@@ -1,0 +1,22 @@
+HloModule jit_kernel, is_scheduled=true, entry_computation_layout={(f32[8,16]{1,0}, f32[8,16]{1,0})->f32[8]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="4dab1f664c77b5db03955c184ce2afc9"}
+
+%region_0.6 (Arg_0.7: f32[], Arg_1.8: f32[]) -> f32[] {
+  %Arg_1.8 = f32[] parameter(1), metadata={op_name="jit(kernel)/jit(main)/reduce_sum" scheduling_name="Arg_1.8"}
+  %Arg_0.7 = f32[] parameter(0), metadata={op_name="jit(kernel)/jit(main)/reduce_sum" scheduling_name="Arg_0.7"}
+  ROOT %add.2 = f32[] add(%Arg_0.7, %Arg_1.8), metadata={op_name="jit(kernel)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/tmp/pf_smoke_driver.py" source_line=10 scheduling_name="add.2"}
+}
+
+%fused_reduce (param_0: f32[8,8]) -> f32[8] {
+  %param_0 = f32[8,8]{1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %constant_3_1 = f32[] constant(0)
+  ROOT %reduce.10.1 = f32[8]{0} reduce(%param_0, %constant_3_1), dimensions={1}, to_apply=%region_0.6, metadata={op_name="jit(kernel)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/tmp/pf_smoke_driver.py" source_line=10 scheduling_name="reduce.10.1"}
+}
+
+ENTRY %main.11 (Arg_0.1.0: f32[8,16], Arg_1.2.0: f32[8,16]) -> f32[8] {
+  %Arg_1.2.0 = f32[8,16]{1,0} parameter(1), metadata={op_name="y" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f32[8,16]{1,0} parameter(0), metadata={op_name="x" scheduling_name="Arg_0.1.0"}
+  %custom-call.1.0 = (f32[8,8]{1,0}, s8[1024]{0}) custom-call(%Arg_0.1.0, %Arg_1.2.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(kernel)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/tmp/pf_smoke_driver.py" source_line=10 scheduling_name="custom-call.1.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"128","rhs_stride":"128","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.1 = f32[8,8]{1,0} get-tuple-element(%custom-call.1.0), index=0, metadata={op_name="jit(kernel)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/tmp/pf_smoke_driver.py" source_line=10 scheduling_name="get-tuple-element.1"}
+  ROOT %input_reduce_fusion = f32[8]{0} fusion(%get-tuple-element.1), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(kernel)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/tmp/pf_smoke_driver.py" source_line=10 scheduling_name="input_reduce_fusion"}
+}
+

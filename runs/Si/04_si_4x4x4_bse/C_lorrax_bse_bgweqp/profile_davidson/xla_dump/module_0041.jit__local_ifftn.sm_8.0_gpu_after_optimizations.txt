@@ -1,0 +1,15 @@
+HloModule jit__local_ifftn, is_scheduled=true, entry_computation_layout={(c128[240,240,4,4,4]{4,3,2,1,0})->c128[240,240,4,4,4]{4,3,2,1,0}}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="cc0fa0f3406be68dc195eeaddf91364e"}
+
+%fused_multiply (param_0: c128[240,240,4,4,4]) -> c128[240,240,4,4,4] {
+  %param_0 = c128[240,240,4,4,4]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %constant_170_1 = c128[] constant((8, 0)), metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325}
+  %broadcast.6.1 = c128[240,240,4,4,4]{4,3,2,1,0} broadcast(%constant_170_1), dimensions={}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325 scheduling_name="broadcast.6.1"}
+  ROOT %multiply.58.1 = c128[240,240,4,4,4]{4,3,2,1,0} multiply(%param_0, %broadcast.6.1), metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325 scheduling_name="multiply.58.1"}
+}
+
+ENTRY %main.128_spmd (param.1: c128[240,240,4,4,4]) -> c128[240,240,4,4,4] {
+  %param.1 = c128[240,240,4,4,4]{4,3,2,1,0} parameter(0), sharding={devices=[2,2,1,1,1]<=[4]}, metadata={op_name="x_local" scheduling_name="param.1"}
+  %fft.2.0 = c128[240,240,4,4,4]{4,3,2,1,0} fft(%param.1), fft_type=IFFT, fft_length={4,4,4}, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325 scheduling_name="fft.2.0"}
+  ROOT %loop_multiply_fusion = c128[240,240,4,4,4]{4,3,2,1,0} fusion(%fft.2.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_local_ifftn)/jit(main)/jit(shmap_body)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/common/fft_helpers.py" source_line=325 scheduling_name="loop_multiply_fusion"}
+}
+

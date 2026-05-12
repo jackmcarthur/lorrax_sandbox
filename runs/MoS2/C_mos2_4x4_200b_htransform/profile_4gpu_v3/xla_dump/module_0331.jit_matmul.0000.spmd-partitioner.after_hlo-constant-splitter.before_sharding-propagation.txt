@@ -1,0 +1,19 @@
+HloModule jit_matmul, entry_computation_layout={(c128[1,16]{1,0}, c128[16,921600]{1,0})->c128[1,921600]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%scalar_add_computation (scalar_lhs: c128[], scalar_rhs: c128[]) -> c128[] {
+  %scalar_lhs = c128[] parameter(0)
+  %scalar_rhs = c128[] parameter(1)
+  ROOT %add = c128[] add(%scalar_lhs, %scalar_rhs)
+}
+
+ENTRY %main.4 (Arg_0.1: c128[1,16], Arg_1.2: c128[16,921600]) -> c128[1,921600] {
+  %Arg_0.1 = c128[1,16]{1,0} parameter(0), metadata={op_name="a"}
+  %reshape = c128[16]{0} reshape(%Arg_0.1)
+  %broadcast.1 = c128[16,921600]{1,0} broadcast(%reshape), dimensions={0}, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=622}
+  %Arg_1.2 = c128[16,921600]{1,0} parameter(1), sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}, metadata={op_name="b"}
+  %multiply.1 = c128[16,921600]{1,0} multiply(%broadcast.1, %Arg_1.2)
+  %constant = c128[] constant((0, 0))
+  %reduce = c128[921600]{0} reduce(%multiply.1, %constant), dimensions={0}, to_apply=%scalar_add_computation, metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=622}
+  ROOT %reshape.1 = c128[1,921600]{1,0} reshape(%reduce), metadata={op_name="jit(matmul)/jit(main)/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=622}
+}
+

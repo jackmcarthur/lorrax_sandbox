@@ -1,0 +1,14 @@
+HloModule jit_true_divide, is_scheduled=true, entry_computation_layout={(c128[9,320,320]{2,1,0}, c128[9,320,320]{2,1,0})->c128[9,320,320]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="63f11ce42ad9c7ea40769ac15cdc2eb2"}
+
+%wrapped_divide_computation (param_0: c128[9,320,320], param_1: c128[9,320,320]) -> c128[9,320,320] {
+  %param_0 = c128[9,320,320]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1 = c128[9,320,320]{2,1,0} parameter(1), metadata={scheduling_name="param_1"}
+  ROOT %divide.4.1 = c128[9,320,320]{2,1,0} divide(%param_0, %param_1), metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/minimax_screening.py" source_line=367 scheduling_name="divide.4.1"}
+}
+
+ENTRY %main.4_spmd (param.2: c128[9,320,320], param.1.0: c128[9,320,320]) -> c128[9,320,320] {
+  %param.1.0 = c128[9,320,320]{2,1,0} parameter(1), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="x2" scheduling_name="param.1.0"}
+  %param.2 = c128[9,320,320]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="x1" scheduling_name="param.2"}
+  ROOT %wrapped_divide = c128[9,320,320]{2,1,0} fusion(%param.2, %param.1.0), kind=kLoop, calls=%wrapped_divide_computation, metadata={op_name="jit(true_divide)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/minimax_screening.py" source_line=367 scheduling_name="wrapped_divide"}
+}
+

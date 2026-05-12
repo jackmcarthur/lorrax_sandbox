@@ -1,0 +1,13 @@
+HloModule jit_broadcast_in_dim, is_scheduled=true, entry_computation_layout={(c128[1,1,1,6,6,1,900,450]{7,6,5,4,3,2,1,0})->c128[1,4,4,6,6,1,900,450]{7,6,5,4,3,2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=8, frontend_attributes={fingerprint_before_lhs="ed919ccb326fac1ef28c6576e268350c"}
+
+%fused_broadcast (param_0.1: c128[1,1,1,6,6,1,900,450]) -> c128[1,4,4,6,6,1,900,450] {
+  %param_0.1 = c128[1,1,1,6,6,1,900,450]{7,6,5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.15.1 = c128[6,6,900,450]{3,2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.15.1"}
+  ROOT %broadcast.6.1 = c128[1,4,4,6,6,1,900,450]{7,6,5,4,3,2,1,0} broadcast(%bitcast.15.1), dimensions={3,4,6,7}, metadata={op_name="jit(broadcast_in_dim)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_init.py" source_line=786 scheduling_name="broadcast.6.1"}
+}
+
+ENTRY %main.5_spmd (param.1: c128[1,1,1,6,6,1,900,450]) -> c128[1,4,4,6,6,1,900,450] {
+  %param.1 = c128[1,1,1,6,6,1,900,450]{7,6,5,4,3,2,1,0} parameter(0), sharding={devices=[1,1,1,1,1,1,2,4]<=[8]}, metadata={op_name="args[0]" scheduling_name="param.1"}
+  ROOT %loop_broadcast_fusion = c128[1,4,4,6,6,1,900,450]{7,6,5,4,3,2,1,0} fusion(%param.1), kind=kLoop, calls=%fused_broadcast, metadata={op_name="jit(broadcast_in_dim)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/gw_init.py" source_line=786 scheduling_name="loop_broadcast_fusion"}
+}
+

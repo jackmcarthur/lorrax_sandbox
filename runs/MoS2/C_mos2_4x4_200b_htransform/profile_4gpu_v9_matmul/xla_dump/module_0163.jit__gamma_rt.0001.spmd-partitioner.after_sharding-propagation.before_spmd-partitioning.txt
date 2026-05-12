@@ -1,0 +1,25 @@
+HloModule jit__gamma_rt, entry_computation_layout={(c128[16,960,960]{2,1,0})->c128[960,960]{1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%scalar_add_computation.1 (scalar_lhs.1: c128[], scalar_rhs.1: c128[]) -> c128[] {
+  %scalar_lhs.1 = c128[] parameter(0)
+  %scalar_rhs.1 = c128[] parameter(1)
+  ROOT %add.1 = c128[] add(%scalar_lhs.1, %scalar_rhs.1)
+}
+
+ENTRY %main.47 (Arg_0.1: c128[16,960,960]) -> c128[960,960] {
+  %Arg_0.1 = c128[16,960,960]{2,1,0} parameter(0), sharding={replicated}, metadata={op_name="fH_R_rep"}
+  %constant.1 = c128[] constant((0, 0))
+  %reduce.1 = c128[960,960]{1,0} reduce(%Arg_0.1, %constant.1), dimensions={0}, to_apply=%scalar_add_computation.1, sharding={replicated}, metadata={op_name="jit(_gamma_rt)/jit(main)/bk,kij->bij/dot_general" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=673}
+  %constant.2 = c128[] constant((0.5, 0)), sharding={replicated}
+  %broadcast.6 = c128[960,960]{1,0} broadcast(%constant.2), dimensions={}, sharding={replicated}
+  %multiply.0 = c128[960,960]{1,0} multiply(%reduce.1, %broadcast.6), sharding={replicated}, metadata={op_name="jit(_gamma_rt)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=673}
+  %reshape.8 = c128[1,960,960]{2,1,0} reshape(%multiply.0), sharding={replicated}, metadata={op_name="jit(_gamma_rt)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=673}
+  %real.0 = f64[1,960,960]{2,1,0} real(%reshape.8), sharding={replicated}, metadata={op_name="jit(_gamma_rt)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=674}
+  %imag.0 = f64[1,960,960]{2,1,0} imag(%reshape.8), sharding={replicated}, metadata={op_name="jit(_gamma_rt)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=674}
+  %negate.0 = f64[1,960,960]{2,1,0} negate(%imag.0), sharding={replicated}, metadata={op_name="jit(_gamma_rt)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=674}
+  %complex.0 = c128[1,960,960]{2,1,0} complex(%real.0, %negate.0), sharding={replicated}, metadata={op_name="jit(_gamma_rt)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=674}
+  %transpose.14 = c128[1,960,960]{1,2,0} transpose(%complex.0), dimensions={0,2,1}, sharding={replicated}, metadata={op_name="jit(_gamma_rt)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=674}
+  %add.45 = c128[1,960,960]{2,1,0} add(%reshape.8, %transpose.14), sharding={replicated}, metadata={op_name="jit(_gamma_rt)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=674}
+  ROOT %reshape.46 = c128[960,960]{1,0} reshape(%add.45), sharding={replicated}, metadata={op_name="jit(_gamma_rt)/jit(main)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=674}
+}
+

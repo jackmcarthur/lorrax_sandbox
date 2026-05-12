@@ -1,0 +1,15 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(c128[], c128[240,240]{1,0})->c128[240,240]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="043ccb16cbd6c66444a1b9ad6da18558"}
+
+%fused_multiply (param_0.1: c128[240,240], param_1.1: c128[]) -> c128[240,240] {
+  %param_1.1 = c128[] parameter(1), metadata={scheduling_name="param_1.1"}
+  %broadcast.4.1 = c128[240,240]{1,0} broadcast(%param_1.1), dimensions={}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=652 scheduling_name="broadcast.4.1"}
+  %param_0.1 = c128[240,240]{1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  ROOT %multiply.3.1 = c128[240,240]{1,0} multiply(%broadcast.4.1, %param_0.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=652 scheduling_name="multiply.3.1"}
+}
+
+ENTRY %main.5_spmd (param.2: c128[], param.1.0: c128[240,240]) -> c128[240,240] {
+  %param.2 = c128[] parameter(0), sharding={replicated}, metadata={op_name="x" scheduling_name="param.2"}
+  %param.1.0 = c128[240,240]{1,0} parameter(1), sharding={devices=[2,2]<=[4]}, metadata={op_name="y" scheduling_name="param.1.0"}
+  ROOT %loop_multiply_fusion = c128[240,240]{1,0} fusion(%param.1.0, %param.2), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/head_correction.py" source_line=652 scheduling_name="loop_multiply_fusion"}
+}
+

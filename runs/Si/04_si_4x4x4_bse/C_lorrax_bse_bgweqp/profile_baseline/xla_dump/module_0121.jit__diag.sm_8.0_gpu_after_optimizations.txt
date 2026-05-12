@@ -1,0 +1,23 @@
+HloModule jit__diag, is_scheduled=true, entry_computation_layout={(f64[199]{0})->f64[200,200]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="15a1f70ccfbd6b1b2e99a5aab403f8de"}
+
+%fused_select (param_0.8: f64[199]) -> f64[200,200] {
+  %iota.5.3 = s64[200]{0} iota(), iota_dimension=0, metadata={op_name="jit(_diag)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=290 scheduling_name="iota.5.3"}
+  %constant_4_1 = s64[] constant(-1)
+  %broadcast.17.3 = s64[200]{0} broadcast(%constant_4_1), dimensions={}, metadata={scheduling_name="broadcast.17.3"}
+  %add.3.3 = s64[200]{0} add(%iota.5.3, %broadcast.17.3), metadata={op_name="jit(_diag)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=290 scheduling_name="add.3.3"}
+  %broadcast.20.3 = s64[200,200]{1,0} broadcast(%add.3.3), dimensions={0}, metadata={op_name="jit(_diag)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=290 scheduling_name="broadcast.20.3"}
+  %iota.6.3 = s64[200,200]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(_diag)/jit(main)/iota" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=290 scheduling_name="iota.6.3"}
+  %compare.2.3 = pred[200,200]{1,0} compare(%broadcast.20.3, %iota.6.3), direction=EQ, metadata={op_name="jit(_diag)/jit(main)/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=290 scheduling_name="compare.2.3"}
+  %param_0.8 = f64[199]{0} parameter(0), metadata={scheduling_name="param_0.8"}
+  %constant_2_1 = f64[] constant(0)
+  %pad.2.1 = f64[200]{0} pad(%param_0.8, %constant_2_1), padding=0_1, metadata={op_name="jit(_diag)/jit(main)/pad" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=290 scheduling_name="pad.2.1"}
+  %broadcast.21.1 = f64[200,200]{1,0} broadcast(%pad.2.1), dimensions={1}, metadata={op_name="jit(_diag)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=288 scheduling_name="broadcast.21.1"}
+  %broadcast.22.1 = f64[200,200]{1,0} broadcast(%constant_2_1), dimensions={}, metadata={op_name="jit(_diag)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=288 scheduling_name="broadcast.22.1"}
+  ROOT %select.3.1 = f64[200,200]{1,0} select(%compare.2.3, %broadcast.21.1, %broadcast.22.1), metadata={op_name="jit(_diag)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=288 scheduling_name="select.3.1"}
+}
+
+ENTRY %main.22 (Arg_0.1.0: f64[199]) -> f64[200,200] {
+  %Arg_0.1.0 = f64[199]{0} parameter(0), metadata={op_name="v" scheduling_name="Arg_0.1.0"}
+  ROOT %loop_select_fusion = f64[200,200]{1,0} fusion(%Arg_0.1.0), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_diag)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/solvers/lanczos.py" source_line=288 scheduling_name="loop_select_fusion"}
+}
+

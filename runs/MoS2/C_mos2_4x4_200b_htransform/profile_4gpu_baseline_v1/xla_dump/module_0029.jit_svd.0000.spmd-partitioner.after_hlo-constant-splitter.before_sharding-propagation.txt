@@ -1,0 +1,32 @@
+HloModule jit_svd, entry_computation_layout={(c128[960,960]{1,0})->(c128[960,960]{1,0}, f64[960]{0}, c128[960,960]{1,0})}, allow_spmd_sharding_propagation_to_output={true,true,true}, num_partitions=4
+
+ENTRY %main.35 (Arg_0.1: c128[960,960]) -> (c128[960,960], f64[960], c128[960,960]) {
+  %constant.2 = c128[] constant((nan, nan))
+  %Arg_0.1 = c128[960,960]{1,0} parameter(0), sharding={replicated}, metadata={op_name="a"}
+  %custom-call.7 = (c128[960,960]{0,1}, f64[960]{0}, c128[960,960]{0,1}, c128[960,960]{0,1}, s32[]) custom-call(%Arg_0.1), custom_call_target="cusolver_gesvdj_ffi", operand_layout_constraints={c128[960,960]{0,1}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}, backend_config={compute_uv = true, full_matrices = false}
+  %get-tuple-element.12 = s32[] get-tuple-element(%custom-call.7), index=4, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %constant.6 = s32[] constant(0)
+  %compare.18 = pred[] compare(%get-tuple-element.12, %constant.6), direction=EQ, metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %broadcast.27 = pred[960,960]{1,0} broadcast(%compare.18), dimensions={}, metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %get-tuple-element.10 = c128[960,960]{0,1} get-tuple-element(%custom-call.7), index=2, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %constant.0 = c128[] constant((nan, nan))
+  %broadcast.3 = c128[960,960]{1,0} broadcast(%constant.0), dimensions={}
+  %select.28 = c128[960,960]{1,0} select(%broadcast.27, %get-tuple-element.10, %broadcast.3), metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %broadcast.22 = pred[960]{0} broadcast(%compare.18), dimensions={}, metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %get-tuple-element.9 = f64[960]{0} get-tuple-element(%custom-call.7), index=1, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %constant.4 = f64[] constant(nan)
+  %broadcast.5 = f64[960]{0} broadcast(%constant.4), dimensions={}
+  %select.23 = f64[960]{0} select(%broadcast.22, %get-tuple-element.9, %broadcast.5), metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %broadcast.6 = pred[960,960]{0,1} broadcast(%compare.18), dimensions={}, metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %get-tuple-element.11 = c128[960,960]{0,1} get-tuple-element(%custom-call.7), index=3, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %real.0 = f64[960,960]{0,1} real(%get-tuple-element.11), metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %imag.0 = f64[960,960]{0,1} imag(%get-tuple-element.11), metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %negate.0 = f64[960,960]{0,1} negate(%imag.0), metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %complex.0 = c128[960,960]{0,1} complex(%real.0, %negate.0), metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %constant.1 = c128[] constant((nan, nan))
+  %broadcast.4 = c128[960,960]{0,1} broadcast(%constant.1), dimensions={}
+  %select.0 = c128[960,960]{0,1} select(%broadcast.6, %complex.0, %broadcast.4), metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  %transpose.18 = c128[960,960]{1,0} transpose(%select.0), dimensions={1,0}, metadata={op_name="jit(svd)/jit(main)/svd" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=158}
+  ROOT %tuple.34 = (c128[960,960]{1,0}, f64[960]{0}, c128[960,960]{1,0}) tuple(%select.28, %select.23, %transpose.18)
+}
+

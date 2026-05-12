@@ -1,0 +1,184 @@
+HloModule jit__ifft_contract_fft, entry_computation_layout={(c128[9,4,4,672,672]{4,3,2,1,0}, c128[9,4,4,672,672]{4,3,2,1,0}, s32[4]{0}, c128[4]{0}, s32[4]{0}, /*index=5*/c128[4]{0})->c128[9,672,672]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false,false,false,false}, num_partitions=16
+
+%fft.15 (Arg_0.16: c128[4,4,168,168,3,3,1]) -> c128[4,4,168,168,3,3,1] {
+  %Arg_0.16 = c128[4,4,168,168,3,3,1]{6,5,4,3,2,1,0} parameter(0), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/pjit"}
+  ROOT %fft.17 = c128[4,4,168,168,3,3,1]{6,5,4,3,2,1,0} fft(%Arg_0.16), fft_type=IFFT, fft_length={3,3,1}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325}
+}
+
+%region_0.18 (Arg_0.19: c128[], Arg_1.20: c128[]) -> c128[] {
+  %Arg_0.19 = c128[] parameter(0), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/reduce_prod"}
+  %Arg_1.20 = c128[] parameter(1), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/reduce_prod"}
+  ROOT %multiply.21 = c128[] multiply(%Arg_0.19, %Arg_1.20), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325}
+}
+
+%shmap_body.22 (Arg_0.23: c128[3], Arg_1.24: c128[3,3,1,4,4,168,168]) -> c128[3,3,1,4,4,168,168] {
+  %Arg_1.24 = c128[3,3,1,4,4,168,168]{6,5,4,3,2,1,0} parameter(1), metadata={op_name="[None, None, None, None, None, (\'x\',), (\'y\',)]"}
+  %transpose.26 = c128[4,4,168,168,3,3,1]{3,2,1,0,6,5,4} transpose(%Arg_1.24), dimensions={3,4,5,6,0,1,2}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325}
+  %call.27 = c128[4,4,168,168,3,3,1]{6,5,4,3,2,1,0} call(%transpose.26), to_apply=%fft.15
+  %Arg_0.23 = c128[3]{0} parameter(0), metadata={op_name="[None]"}
+  %constant.25 = c128[] constant((1, 0))
+  %reduce.28 = c128[] reduce(%Arg_0.23, %constant.25), dimensions={0}, to_apply=%region_0.18, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325}
+  %broadcast.29 = c128[4,4,168,168,3,3,1]{6,5,4,3,2,1,0} broadcast(%reduce.28), dimensions={}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325}
+  %multiply.30 = c128[4,4,168,168,3,3,1]{6,5,4,3,2,1,0} multiply(%call.27, %broadcast.29), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325}
+  ROOT %transpose.31 = c128[3,3,1,4,4,168,168]{2,1,0,6,5,4,3} transpose(%multiply.30), dimensions={4,5,6,0,1,2,3}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=325}
+}
+
+%_where.36 (Arg_0.37: pred[4], Arg_1.38: s32[4], Arg_2.39: s32[4]) -> s32[4] {
+  %Arg_0.37 = pred[4]{0} parameter(0), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/pjit"}
+  %Arg_1.38 = s32[4]{0} parameter(1), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/pjit"}
+  %Arg_2.39 = s32[4]{0} parameter(2), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/pjit"}
+  ROOT %select.40 = s32[4]{0} select(%Arg_0.37, %Arg_1.38, %Arg_2.39), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+}
+
+%region_1.41 (Arg_0.42: pred[], Arg_1.43: pred[]) -> pred[] {
+  %Arg_0.42 = pred[] parameter(0), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/reduce_and"}
+  %Arg_1.43 = pred[] parameter(1), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/reduce_and"}
+  ROOT %and.44 = pred[] and(%Arg_0.42, %Arg_1.43), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/reduce_and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+}
+
+%_take.45 (Arg_0.46: c128[9,4,4,672,672], Arg_1.47: s32[4]) -> c128[9,4,4,672,672] {
+  %Arg_1.47 = s32[4]{0} parameter(1), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/pjit"}
+  %constant.57 = s32[] constant(0)
+  %broadcast.58 = s32[4]{0} broadcast(%constant.57), dimensions={}
+  %compare.59 = pred[4]{0} compare(%Arg_1.47, %broadcast.58), direction=LT, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %constant.54 = s32[] constant(4)
+  %broadcast.55 = s32[4]{0} broadcast(%constant.54), dimensions={}
+  %add.60 = s32[4]{0} add(%Arg_1.47, %broadcast.55), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %call.61 = s32[4]{0} call(%compare.59, %add.60, %Arg_1.47), to_apply=%_where.36
+  %reshape.62 = s32[4,1]{1,0} reshape(%call.61), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %convert.63 = s64[4,1]{1,0} convert(%reshape.62), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %constant.52 = s64[] constant(0)
+  %broadcast.53 = s64[4,1]{1,0} broadcast(%constant.52), dimensions={}
+  %compare.64 = pred[4,1]{1,0} compare(%convert.63, %broadcast.53), direction=GE, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/ge" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %constant.50 = s64[] constant(3)
+  %broadcast.51 = s64[4,1]{1,0} broadcast(%constant.50), dimensions={}
+  %compare.65 = pred[4,1]{1,0} compare(%convert.63, %broadcast.51), direction=LE, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/le" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %and.66 = pred[4,1]{1,0} and(%compare.64, %compare.65), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %constant.56 = pred[] constant(true)
+  %reduce.67 = pred[4]{0} reduce(%and.66, %constant.56), dimensions={1}, to_apply=%region_1.41, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/reduce_and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %broadcast.69 = pred[9,4,4,672,672]{4,3,2,1,0} broadcast(%reduce.67), dimensions={1}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %Arg_0.46 = c128[9,4,4,672,672]{4,3,2,1,0} parameter(0), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/pjit"}
+  %gather.68 = c128[9,4,4,672,672]{4,3,2,1,0} gather(%Arg_0.46, %convert.63), offset_dims={0,2,3,4}, collapsed_slice_dims={1}, start_index_map={1}, index_vector_dim=1, slice_sizes={9,1,4,672,672}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %constant.48 = c128[] constant((nan, 0))
+  %broadcast.49 = c128[9,4,4,672,672]{4,3,2,1,0} broadcast(%constant.48), dimensions={}
+  ROOT %select.70 = c128[9,4,4,672,672]{4,3,2,1,0} select(%broadcast.69, %gather.68, %broadcast.49), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+}
+
+%_where.77 (Arg_0.78: pred[4], Arg_1.79: s32[4], Arg_2.80: s32[4]) -> s32[4] {
+  %Arg_0.78 = pred[4]{0} parameter(0), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/pjit"}
+  %Arg_1.79 = s32[4]{0} parameter(1), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/pjit"}
+  %Arg_2.80 = s32[4]{0} parameter(2), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/pjit"}
+  ROOT %select.81 = s32[4]{0} select(%Arg_0.78, %Arg_1.79, %Arg_2.80), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+}
+
+%region_2.82 (Arg_0.83: pred[], Arg_1.84: pred[]) -> pred[] {
+  %Arg_0.83 = pred[] parameter(0), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/reduce_and"}
+  %Arg_1.84 = pred[] parameter(1), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/reduce_and"}
+  ROOT %and.85 = pred[] and(%Arg_0.83, %Arg_1.84), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/reduce_and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+}
+
+%_take_0.86 (Arg_0.87: c128[9,4,4,672,672], Arg_1.88: s32[4]) -> c128[9,4,4,672,672] {
+  %Arg_1.88 = s32[4]{0} parameter(1), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/pjit"}
+  %constant.98 = s32[] constant(0)
+  %broadcast.99 = s32[4]{0} broadcast(%constant.98), dimensions={}
+  %compare.100 = pred[4]{0} compare(%Arg_1.88, %broadcast.99), direction=LT, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/lt" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %constant.95 = s32[] constant(4)
+  %broadcast.96 = s32[4]{0} broadcast(%constant.95), dimensions={}
+  %add.101 = s32[4]{0} add(%Arg_1.88, %broadcast.96), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/add" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %call.102 = s32[4]{0} call(%compare.100, %add.101, %Arg_1.88), to_apply=%_where.77
+  %reshape.103 = s32[4,1]{1,0} reshape(%call.102), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %convert.104 = s64[4,1]{1,0} convert(%reshape.103), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/convert_element_type" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %constant.93 = s64[] constant(0)
+  %broadcast.94 = s64[4,1]{1,0} broadcast(%constant.93), dimensions={}
+  %compare.105 = pred[4,1]{1,0} compare(%convert.104, %broadcast.94), direction=GE, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/ge" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %constant.91 = s64[] constant(3)
+  %broadcast.92 = s64[4,1]{1,0} broadcast(%constant.91), dimensions={}
+  %compare.106 = pred[4,1]{1,0} compare(%convert.104, %broadcast.92), direction=LE, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/le" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %and.107 = pred[4,1]{1,0} and(%compare.105, %compare.106), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %constant.97 = pred[] constant(true)
+  %reduce.108 = pred[4]{0} reduce(%and.107, %constant.97), dimensions={1}, to_apply=%region_2.82, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/reduce_and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %broadcast.110 = pred[9,4,4,672,672]{4,3,2,1,0} broadcast(%reduce.108), dimensions={2}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/broadcast_in_dim" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %Arg_0.87 = c128[9,4,4,672,672]{4,3,2,1,0} parameter(0), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/pjit"}
+  %gather.109 = c128[9,4,4,672,672]{4,3,2,1,0} gather(%Arg_0.87, %convert.104), offset_dims={0,1,3,4}, collapsed_slice_dims={2}, start_index_map={2}, index_vector_dim=1, slice_sizes={9,4,1,672,672}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/gather" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+  %constant.89 = c128[] constant((nan, 0))
+  %broadcast.90 = c128[9,4,4,672,672]{4,3,2,1,0} broadcast(%constant.89), dimensions={}
+  ROOT %select.111 = c128[9,4,4,672,672]{4,3,2,1,0} select(%broadcast.110, %gather.109, %broadcast.90), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(_take)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=122}
+}
+
+%region_3.119 (Arg_0.120: c128[], Arg_1.121: c128[]) -> c128[] {
+  %Arg_0.120 = c128[] parameter(0), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reduce_sum"}
+  %Arg_1.121 = c128[] parameter(1), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reduce_sum"}
+  ROOT %add.122 = c128[] add(%Arg_0.120, %Arg_1.121), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reduce_sum" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=164}
+}
+
+%fft_2.130 (Arg_0.131: c128[168,168,3,3,1]) -> c128[168,168,3,3,1] {
+  %Arg_0.131 = c128[168,168,3,3,1]{4,3,2,1,0} parameter(0), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/pjit"}
+  ROOT %fft.132 = c128[168,168,3,3,1]{4,3,2,1,0} fft(%Arg_0.131), fft_type=FFT, fft_length={3,3,1}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343}
+}
+
+%region_4.133 (Arg_0.134: c128[], Arg_1.135: c128[]) -> c128[] {
+  %Arg_0.134 = c128[] parameter(0), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/reduce_prod"}
+  %Arg_1.135 = c128[] parameter(1), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/reduce_prod"}
+  ROOT %multiply.136 = c128[] multiply(%Arg_0.134, %Arg_1.135), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343}
+}
+
+%shmap_body_1.137 (Arg_0.138: c128[3], Arg_1.139: c128[3,3,1,168,168]) -> c128[3,3,1,168,168] {
+  %Arg_1.139 = c128[3,3,1,168,168]{4,3,2,1,0} parameter(1), metadata={op_name="[None, None, None, (\'x\',), (\'y\',)]"}
+  %transpose.141 = c128[168,168,3,3,1]{1,0,4,3,2} transpose(%Arg_1.139), dimensions={3,4,0,1,2}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343}
+  %call.142 = c128[168,168,3,3,1]{4,3,2,1,0} call(%transpose.141), to_apply=%fft_2.130
+  %constant.140 = c128[] constant((1, 0))
+  %Arg_0.138 = c128[3]{0} parameter(0), metadata={op_name="[None]"}
+  %reduce.143 = c128[] reduce(%Arg_0.138, %constant.140), dimensions={0}, to_apply=%region_4.133, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/reduce_prod" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343}
+  %divide.144 = c128[] divide(%constant.140, %reduce.143), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343}
+  %broadcast.145 = c128[168,168,3,3,1]{4,3,2,1,0} broadcast(%divide.144), dimensions={}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343}
+  %multiply.146 = c128[168,168,3,3,1]{4,3,2,1,0} multiply(%call.142, %broadcast.145), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343}
+  ROOT %transpose.147 = c128[3,3,1,168,168]{2,1,0,4,3} transpose(%multiply.146), dimensions={2,3,4,0,1}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/jit(shmap_body)/transpose" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=343}
+}
+
+ENTRY %main.154 (Arg_0.1: c128[9,4,4,672,672], Arg_1.2: c128[9,4,4,672,672], Arg_2.3: s32[4], Arg_3.4: c128[4], Arg_4.5: s32[4], Arg_5.6: c128[4]) -> c128[9,672,672] {
+  %constant.8 = c128[3]{0} constant({(3, 0), (3, 0), (1, 0)})
+  %custom-call.126 = c128[3]{0} custom-call(%constant.8), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %custom-call.127 = c128[3]{0} custom-call(%custom-call.126), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %Arg_1.2 = c128[9,4,4,672,672]{4,3,2,1,0} parameter(1), sharding={devices=[1,1,1,4,4]<=[16]}, metadata={op_name="P_l_Rt_conj"}
+  %custom-call.11 = c128[3]{0} custom-call(%constant.8), custom_call_target="Sharding", sharding={replicated}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %custom-call.12 = c128[3]{0} custom-call(%custom-call.11), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %Arg_0.1 = c128[9,4,4,672,672]{4,3,2,1,0} parameter(0), sharding={devices=[1,1,1,4,4]<=[16]}, metadata={op_name="P_r"}
+  %reshape.9 = c128[3,3,1,4,4,672,672]{6,5,4,3,2,1,0} reshape(%Arg_0.1), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=403}
+  %custom-call.10 = c128[3,3,1,4,4,672,672]{6,5,4,3,2,1,0} custom-call(%reshape.9), custom_call_target="Sharding", sharding={devices=[1,1,1,1,1,4,4]<=[16]}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=402}
+  %custom-call.13 = c128[3,3,1,4,4,672,672]{6,5,4,3,2,1,0} custom-call(%custom-call.10), custom_call_target="Sharding", sharding={devices=[1,1,1,1,1,4,4]<=[16]}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %custom-call.14 = c128[3,3,1,4,4,168,168]{6,5,4,3,2,1,0} custom-call(%custom-call.13), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %call.32 = c128[3,3,1,4,4,168,168]{2,1,0,6,5,4,3} call(%custom-call.12, %custom-call.14), to_apply=%shmap_body.22
+  %custom-call.33 = c128[3,3,1,4,4,168,168]{6,5,4,3,2,1,0} custom-call(%call.32), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %custom-call.34 = c128[3,3,1,4,4,672,672]{6,5,4,3,2,1,0} custom-call(%custom-call.33), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,1,1,1,1,4,4]<=[16]}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %reshape.35 = c128[9,4,4,672,672]{4,3,2,1,0} reshape(%custom-call.34), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %Arg_2.3 = s32[4]{0} parameter(2), sharding={replicated}, metadata={op_name="perm_L_"}
+  %call.71 = c128[9,4,4,672,672]{4,3,2,1,0} call(%reshape.35, %Arg_2.3), to_apply=%_take.45
+  %Arg_3.4 = c128[4]{0} parameter(3), sharding={replicated}, metadata={op_name="phase_L_"}
+  %reshape.72 = c128[1,4,1,1,1]{4,3,2,1,0} reshape(%Arg_3.4), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125}
+  %broadcast.73 = c128[1,4,1,1,1]{4,3,2,1,0} broadcast(%reshape.72), dimensions={0,1,2,3,4}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125}
+  %reshape.74 = c128[4]{0} reshape(%broadcast.73), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125}
+  %broadcast.75 = c128[9,4,4,672,672]{4,3,2,1,0} broadcast(%reshape.74), dimensions={1}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125}
+  %multiply.76 = c128[9,4,4,672,672]{4,3,2,1,0} multiply(%call.71, %broadcast.75), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125}
+  %Arg_4.5 = s32[4]{0} parameter(4), sharding={replicated}, metadata={op_name="perm_R_"}
+  %call.112 = c128[9,4,4,672,672]{4,3,2,1,0} call(%multiply.76, %Arg_4.5), to_apply=%_take_0.86
+  %Arg_5.6 = c128[4]{0} parameter(5), sharding={replicated}, metadata={op_name="phase_R_"}
+  %reshape.113 = c128[1,1,4,1,1]{4,3,2,1,0} reshape(%Arg_5.6), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125}
+  %broadcast.114 = c128[1,1,4,1,1]{4,3,2,1,0} broadcast(%reshape.113), dimensions={0,1,2,3,4}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125}
+  %reshape.115 = c128[4]{0} reshape(%broadcast.114), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125}
+  %broadcast.116 = c128[9,4,4,672,672]{4,3,2,1,0} broadcast(%reshape.115), dimensions={2}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125}
+  %multiply.117 = c128[9,4,4,672,672]{4,3,2,1,0} multiply(%call.112, %broadcast.116), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=125}
+  %multiply.118 = c128[9,4,4,672,672]{4,3,2,1,0} multiply(%Arg_1.2, %multiply.117), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=164}
+  %constant.7 = c128[] constant((0, 0))
+  %reduce.123 = c128[9,672,672]{2,1,0} reduce(%multiply.118, %constant.7), dimensions={1,2}, to_apply=%region_3.119, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reduce_sum" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=164}
+  %reshape.124 = c128[3,3,1,672,672]{4,3,2,1,0} reshape(%reduce.123), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=403}
+  %custom-call.125 = c128[3,3,1,672,672]{4,3,2,1,0} custom-call(%reshape.124), custom_call_target="Sharding", sharding={devices=[1,1,1,4,4]<=[16]}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/sharding_constraint" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=402}
+  %custom-call.128 = c128[3,3,1,672,672]{4,3,2,1,0} custom-call(%custom-call.125), custom_call_target="Sharding", sharding={devices=[1,1,1,4,4]<=[16]}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %custom-call.129 = c128[3,3,1,168,168]{4,3,2,1,0} custom-call(%custom-call.128), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %call.148 = c128[3,3,1,168,168]{2,1,0,4,3} call(%custom-call.127, %custom-call.129), to_apply=%shmap_body_1.137
+  %custom-call.149 = c128[3,3,1,168,168]{4,3,2,1,0} custom-call(%call.148), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %custom-call.150 = c128[3,3,1,672,672]{4,3,2,1,0} custom-call(%custom-call.149), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,1,1,4,4]<=[16]}, metadata={op_name="jit(_ifft_contract_fft)/jit(main)/shard_map" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %reshape.151 = c128[9,672,672]{2,1,0} reshape(%custom-call.150), metadata={op_name="jit(_ifft_contract_fft)/jit(main)/reshape" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/fft_helpers.py" source_line=404}
+  %tuple.152 = (c128[9,672,672]{2,1,0}) tuple(%reshape.151)
+  ROOT %get-tuple-element.153 = c128[9,672,672]{2,1,0} get-tuple-element(%tuple.152), index=0, sharding={devices=[1,4,4]<=[16]}
+}
+

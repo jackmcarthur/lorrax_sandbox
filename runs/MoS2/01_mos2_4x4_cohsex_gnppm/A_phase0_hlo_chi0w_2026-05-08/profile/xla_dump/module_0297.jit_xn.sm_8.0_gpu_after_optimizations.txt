@@ -1,0 +1,12 @@
+HloModule jit_xn, is_scheduled=true, entry_computation_layout={(c128[16,2,160,80]{3,2,1,0})->c128[16,2,160,26]{3,2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=16, frontend_attributes={fingerprint_before_lhs="0fe196778656aa698ce191e47176be48"}
+
+%wrapped_slice_computation (param_0: c128[16,2,160,80]) -> c128[16,2,160,26] {
+  %param_0 = c128[16,2,160,80]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  ROOT %slice.4.1 = c128[16,2,160,26]{3,2,1,0} slice(%param_0), slice={[0:16], [0:2], [0:160], [0:26]}, metadata={op_name="jit(xn)/jit(main)/slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/wavefunction_bundle.py" source_line=150 scheduling_name="slice.4.1"}
+}
+
+ENTRY %main.3_spmd (param.1: c128[16,2,160,80]) -> c128[16,2,160,26] {
+  %param.1 = c128[16,2,160,80]{3,2,1,0} parameter(0), sharding={devices=[1,1,4,1,4]<=[16] last_tile_dim_replicate}, metadata={op_name="self.psi_xn" scheduling_name="param.1"}
+  ROOT %wrapped_slice = c128[16,2,160,26]{3,2,1,0} fusion(%param.1), kind=kLoop, calls=%wrapped_slice_computation, metadata={op_name="jit(xn)/jit(main)/slice" source_file="/global/u2/j/jackm/software/lorrax_A/src/gw/wavefunction_bundle.py" source_line=150 scheduling_name="wrapped_slice"}
+}
+

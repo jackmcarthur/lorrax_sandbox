@@ -1,0 +1,24 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(c128[4,60,960]{2,1,0}, f64[16,60,1]{2,1,0})->c128[4,60,960]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="ca56e867164bfa947acf8981a0f54927"}
+
+%fused_multiply (param_0.2: c128[4,60,960], param_1.4: f64[16,60,1], param_2.3: u32[]) -> c128[4,60,960] {
+  %param_0.2 = c128[4,60,960]{2,1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %param_1.4 = f64[16,60,1]{2,1,0} parameter(1), metadata={scheduling_name="param_1.4"}
+  %param_2.3 = u32[] parameter(2), metadata={scheduling_name="param_2.3"}
+  %convert.10.1 = s32[] convert(%param_2.3), metadata={op_name="jit(multiply)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=568 scheduling_name="convert.10.1"}
+  %constant_3_1 = s32[] constant(4), metadata={op_name="jit(multiply)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=568}
+  %multiply.8.1 = s32[] multiply(%convert.10.1, %constant_3_1), metadata={op_name="jit(multiply)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=568 scheduling_name="multiply.8.1"}
+  %constant_1_1 = s32[] constant(0), metadata={op_name="jit(multiply)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=568}
+  %dynamic-slice.4.1 = f64[4,60,1]{2,1,0} dynamic-slice(%param_1.4, %multiply.8.1, %constant_1_1, %constant_1_1), dynamic_slice_sizes={4,60,1}, metadata={op_name="jit(multiply)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=568 scheduling_name="dynamic-slice.4.1"}
+  %bitcast.46.3 = f64[4,60]{1,0} bitcast(%dynamic-slice.4.1), metadata={scheduling_name="bitcast.46.3"}
+  %convert.11.3 = c128[4,60]{1,0} convert(%bitcast.46.3), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=568 scheduling_name="convert.11.3"}
+  %broadcast.5.1 = c128[4,60,960]{2,1,0} broadcast(%convert.11.3), dimensions={0,1}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=568 scheduling_name="broadcast.5.1"}
+  ROOT %multiply.9.1 = c128[4,60,960]{2,1,0} multiply(%param_0.2, %broadcast.5.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=568 scheduling_name="multiply.9.1"}
+}
+
+ENTRY %main.8_spmd (param.2: c128[4,60,960], param.1.0: f64[16,60,1]) -> c128[4,60,960] {
+  %param.1.0 = f64[16,60,1]{2,1,0} parameter(1), sharding={replicated}, metadata={op_name="y" scheduling_name="param.1.0"}
+  %param.2 = c128[4,60,960]{2,1,0} parameter(0), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="x" scheduling_name="param.2"}
+  %partition-id.1 = u32[] partition-id(), metadata={op_name="jit(multiply)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=568 scheduling_name="partition-id.1"}
+  ROOT %loop_multiply_fusion = c128[4,60,960]{2,1,0} fusion(%param.2, %param.1.0, %partition-id.1), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=568 scheduling_name="loop_multiply_fusion"}
+}
+

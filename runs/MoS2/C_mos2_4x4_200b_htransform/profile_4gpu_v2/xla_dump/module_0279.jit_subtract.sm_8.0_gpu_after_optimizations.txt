@@ -1,0 +1,14 @@
+HloModule jit_subtract, is_scheduled=true, entry_computation_layout={(f64[60]{0}, f64[60]{0})->f64[60]{0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="2f74bb9b3a4f3c468e2c9b5e7ab1146e"}
+
+%wrapped_subtract_computation (param_0: f64[60], param_1: f64[60]) -> f64[60] {
+  %param_0 = f64[60]{0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1 = f64[60]{0} parameter(1), metadata={scheduling_name="param_1"}
+  ROOT %subtract.4.1 = f64[60]{0} subtract(%param_0, %param_1), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=573 scheduling_name="subtract.4.1"}
+}
+
+ENTRY %main.4_spmd (param.2: f64[60], param.1.0: f64[60]) -> f64[60] {
+  %param.1.0 = f64[60]{0} parameter(1), sharding={replicated}, metadata={op_name="y" scheduling_name="param.1.0"}
+  %param.2 = f64[60]{0} parameter(0), sharding={replicated}, metadata={op_name="x" scheduling_name="param.2"}
+  ROOT %wrapped_subtract = f64[60]{0} fusion(%param.2, %param.1.0), kind=kLoop, calls=%wrapped_subtract_computation, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=573 scheduling_name="wrapped_subtract"}
+}
+

@@ -1,0 +1,28 @@
+HloModule jit_fft_and_weight, entry_computation_layout={(c128[136,46080]{1,0}, c128[24,24,80]{2,1,0}, c128[1,24,24,80]{3,2,1,0})->(c128[136,46080]{1,0}, c128[136]{0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}
+
+%fft.9 (Arg_0.10: c128[136,24,24,80]) -> c128[136,24,24,80] {
+  %Arg_0.10 = c128[136,24,24,80]{3,2,1,0} parameter(0), metadata={op_name="jit(fft_and_weight)/jit(main)/pjit"}
+  ROOT %fft.11 = c128[136,24,24,80]{3,2,1,0} fft(%Arg_0.10), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(fft_and_weight)/jit(main)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=394}
+}
+
+ENTRY %main.22 (Arg_0.1: c128[136,46080], Arg_1.2: c128[24,24,80], Arg_2.3: c128[1,24,24,80]) -> (c128[136,46080], c128[136]) {
+  %Arg_0.1 = c128[136,46080]{1,0} parameter(0), metadata={op_name="zeta_r"}
+  %reshape.4 = c128[136,24,24,80]{3,2,1,0} reshape(%Arg_0.1), metadata={op_name="jit(fft_and_weight)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=392}
+  %Arg_2.3 = c128[1,24,24,80]{3,2,1,0} parameter(2), metadata={op_name="phase"}
+  %broadcast.5 = c128[1,24,24,80]{3,2,1,0} broadcast(%Arg_2.3), dimensions={0,1,2,3}, metadata={op_name="jit(fft_and_weight)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=393}
+  %reshape.6 = c128[24,24,80]{2,1,0} reshape(%broadcast.5), metadata={op_name="jit(fft_and_weight)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=393}
+  %broadcast.7 = c128[136,24,24,80]{3,2,1,0} broadcast(%reshape.6), dimensions={1,2,3}, metadata={op_name="jit(fft_and_weight)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=393}
+  %multiply.8 = c128[136,24,24,80]{3,2,1,0} multiply(%reshape.4, %broadcast.7), metadata={op_name="jit(fft_and_weight)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=393}
+  %call.12 = c128[136,24,24,80]{3,2,1,0} call(%multiply.8), to_apply=%fft.9
+  %Arg_1.2 = c128[24,24,80]{2,1,0} parameter(1), metadata={op_name="sqrt_v"}
+  %reshape.15 = c128[1,24,24,80]{3,2,1,0} reshape(%Arg_1.2), metadata={op_name="jit(fft_and_weight)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=396}
+  %broadcast.16 = c128[1,24,24,80]{3,2,1,0} broadcast(%reshape.15), dimensions={0,1,2,3}, metadata={op_name="jit(fft_and_weight)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=396}
+  %reshape.17 = c128[24,24,80]{2,1,0} reshape(%broadcast.16), metadata={op_name="jit(fft_and_weight)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=396}
+  %broadcast.18 = c128[136,24,24,80]{3,2,1,0} broadcast(%reshape.17), dimensions={1,2,3}, metadata={op_name="jit(fft_and_weight)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=396}
+  %multiply.19 = c128[136,24,24,80]{3,2,1,0} multiply(%call.12, %broadcast.18), metadata={op_name="jit(fft_and_weight)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=396}
+  %reshape.20 = c128[136,46080]{1,0} reshape(%multiply.19), metadata={op_name="jit(fft_and_weight)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=397}
+  %slice.13 = c128[136,1,1,1]{3,2,1,0} slice(%call.12), slice={[0:136], [0:1], [0:1], [0:1]}, metadata={op_name="jit(fft_and_weight)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=395}
+  %reshape.14 = c128[136]{0} reshape(%slice.13), metadata={op_name="jit(fft_and_weight)/jit(main)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_C/src/gw/compute_vcoul.py" source_line=395}
+  ROOT %tuple.21 = (c128[136,46080]{1,0}, c128[136]{0}) tuple(%reshape.20, %reshape.14)
+}
+

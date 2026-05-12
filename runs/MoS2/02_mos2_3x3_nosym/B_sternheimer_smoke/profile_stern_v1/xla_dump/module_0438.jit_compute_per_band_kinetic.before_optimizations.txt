@@ -1,0 +1,18 @@
+HloModule jit_compute_per_band_kinetic, entry_computation_layout={(c128[26,2,1947]{2,1,0}, f64[1947]{0})->f64[26]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}
+
+%region_0.6 (Arg_0.7: f64[], Arg_1.8: f64[]) -> f64[] {
+  %Arg_0.7 = f64[] parameter(0), metadata={op_name="jit(compute_per_band_kinetic)/jit(main)/reduce_sum"}
+  %Arg_1.8 = f64[] parameter(1), metadata={op_name="jit(compute_per_band_kinetic)/jit(main)/reduce_sum"}
+  ROOT %add.9 = f64[] add(%Arg_0.7, %Arg_1.8), metadata={op_name="jit(compute_per_band_kinetic)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=75}
+}
+
+ENTRY %main.12 (Arg_0.1: c128[26,2,1947], Arg_1.2: f64[1947]) -> f64[26] {
+  %Arg_0.1 = c128[26,2,1947]{2,1,0} parameter(0), metadata={op_name="U_val"}
+  %abs.4 = f64[26,2,1947]{2,1,0} abs(%Arg_0.1), metadata={op_name="jit(compute_per_band_kinetic)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=75}
+  %multiply.5 = f64[26,2,1947]{2,1,0} multiply(%abs.4, %abs.4), metadata={op_name="jit(compute_per_band_kinetic)/jit(main)/integer_pow" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=75}
+  %constant.3 = f64[] constant(0)
+  %reduce.10 = f64[26,1947]{1,0} reduce(%multiply.5, %constant.3), dimensions={1}, to_apply=%region_0.6, metadata={op_name="jit(compute_per_band_kinetic)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=75}
+  %Arg_1.2 = f64[1947]{0} parameter(1), metadata={op_name="T_diag"}
+  ROOT %dot.11 = f64[26]{0} dot(%reduce.10, %Arg_1.2), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(compute_per_band_kinetic)/jit(main)/nG,G->n/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/sternheimer_precond.py" source_line=76}
+}
+

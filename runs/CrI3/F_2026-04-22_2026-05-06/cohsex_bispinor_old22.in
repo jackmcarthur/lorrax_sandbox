@@ -1,0 +1,35 @@
+[cohsex]
+wfn_file = WFN.h5
+nval = 70
+ncond = 80
+nband = 150
+sys_dim = 2
+bispinor = true
+
+centroids_file = centroids_frac_1500.txt
+
+# Single user-facing memory knob.  After the Z_q reshard fix
+# (isdf_fitting.py: two-step via P(None,None,'y') stage), the chunker's
+# native prediction is honest at this budget.  Bc-loop unrolling cost
+# is still implicit (Python loop in the jit body) but stays within
+# headroom on this system.
+memory_per_device_gb = 45.0
+
+restart = false
+
+# Use auto chunker for diagnostic: my earlier band_chunk_size=4 override
+# (commit 15a914f) is suspect; let chunker pick to rule it out.
+band_chunk_size = 4
+r_chunk_size = 70000
+max_r_chunks = -1
+
+# Bare-X (Σ_X = -GV, no screening): exercises the bispinor zeta + V_q
+# pipeline end-to-end without needing dipole.h5 / eps0mat.h5.  The σ
+# stage forwards V_blocks[(0,0)] and produces a charge-channel-only Σ.
+x_only = true
+do_screened = false
+screening_method = cohsex
+
+# Bypass head_resolver eps0mat / dipole requirement for x_only.
+vhead = 0.0
+whead_0freq = 0.0

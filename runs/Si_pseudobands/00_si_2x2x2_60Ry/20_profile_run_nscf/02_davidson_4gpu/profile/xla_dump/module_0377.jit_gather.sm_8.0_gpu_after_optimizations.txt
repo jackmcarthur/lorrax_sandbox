@@ -1,0 +1,15 @@
+HloModule jit_gather, is_scheduled=true, entry_computation_layout={(f64[3,5,2100]{2,1,0}, s32[68,2]{1,0})->f64[68,2100]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="8e123c3705c31a5451144d7915ec5d0f"}
+
+%wrapped_gather_computation (param_0: f64[3,5,2100], param_1: s32[68,2]) -> f64[68,1,1,2100] {
+  %param_0 = f64[3,5,2100]{2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1 = s32[68,2]{1,0} parameter(1), metadata={scheduling_name="param_1"}
+  ROOT %gather.2 = f64[68,1,1,2100]{3,0,2,1} gather(%param_0, %param_1), offset_dims={1,2,3}, collapsed_slice_dims={}, start_index_map={0,1}, index_vector_dim=1, slice_sizes={1,1,2100}, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=325 scheduling_name="gather.2"}
+}
+
+ENTRY %main.4 (Arg_0.1.0: f64[3,5,2100], Arg_1.2.0: s32[68,2]) -> f64[68,2100] {
+  %Arg_1.2.0 = s32[68,2]{1,0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[3,5,2100]{2,1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  %wrapped_gather = f64[68,1,1,2100]{3,0,2,1} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%wrapped_gather_computation, metadata={op_name="jit(gather)/jit(main)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=325 scheduling_name="wrapped_gather"}
+  ROOT %bitcast.22 = f64[68,2100]{1,0} bitcast(%wrapped_gather), metadata={op_name="jit(gather)/jit(main)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=325 scheduling_name="bitcast.22"}
+}
+

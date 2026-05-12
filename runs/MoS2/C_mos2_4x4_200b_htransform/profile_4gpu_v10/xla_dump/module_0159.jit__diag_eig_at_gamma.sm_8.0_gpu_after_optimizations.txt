@@ -1,0 +1,113 @@
+HloModule jit__diag_eig_at_gamma, is_scheduled=true, entry_computation_layout={(c128[960,960]{1,0}, f64[60]{0})->(f64[960]{0}, f64[60]{0}, f64[])}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true,true,true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="a654e7c29c05cecdd8a629b2d9d1e64e"}
+
+%fused_transpose (param_0.10: c128[960,960]) -> c128[960,960] {
+  %param_0.10 = c128[960,960]{1,0} parameter(0), metadata={scheduling_name="param_0.10"}
+  %real.7.1 = f64[960,960]{1,0} real(%param_0.10), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/real" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="real.7.1"}
+  %imag.7.1 = f64[960,960]{1,0} imag(%param_0.10), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/imag" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="imag.7.1"}
+  %negate.7.1 = f64[960,960]{1,0} negate(%imag.7.1), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/neg" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="negate.7.1"}
+  %complex.7.1 = c128[960,960]{1,0} complex(%real.7.1, %negate.7.1), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="complex.7.1"}
+  %transpose.22.1 = c128[960,960]{1,0} transpose(%complex.7.1), dimensions={1,0}, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/complex" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="transpose.22.1"}
+  %add.5.1 = c128[960,960]{1,0} add(%param_0.10, %transpose.22.1), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="add.5.1"}
+  %constant_23_1 = c128[] constant((0.5, 0))
+  %broadcast.37.1 = c128[960,960]{1,0} broadcast(%constant_23_1), dimensions={}, metadata={scheduling_name="broadcast.37.1"}
+  %multiply.4.1 = c128[960,960]{1,0} multiply(%add.5.1, %broadcast.37.1), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="multiply.4.1"}
+  ROOT %transpose.23.1 = c128[960,960]{1,0} transpose(%multiply.4.1), dimensions={1,0}, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="transpose.23.1"}
+}
+
+%fused_select (param_0.9: f64[960], param_1.12: s32[]) -> f64[960] {
+  %param_1.12 = s32[] parameter(1), metadata={scheduling_name="param_1.12"}
+  %constant_24_1 = s32[] constant(0)
+  %compare.84.1 = pred[] compare(%param_1.12, %constant_24_1), direction=EQ, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="compare.84.1"}
+  %broadcast.38.1 = pred[960]{0} broadcast(%compare.84.1), dimensions={}, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="broadcast.38.1"}
+  %param_0.9 = f64[960]{0} parameter(0), metadata={scheduling_name="param_0.9"}
+  %constant_25_1 = f64[] constant(nan)
+  %broadcast.39.1 = f64[960]{0} broadcast(%constant_25_1), dimensions={}, metadata={scheduling_name="broadcast.39.1"}
+  ROOT %select.65.1 = f64[960]{0} select(%broadcast.38.1, %param_0.9, %broadcast.39.1), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="select.65.1"}
+}
+
+%wrapped_iota_computation () -> s32[960] {
+  ROOT %iota.6.1 = s32[960]{0} iota(), iota_dimension=0, metadata={scheduling_name="iota.6.1"}
+}
+
+%region_0.32.clone (Arg_0.0: f64[], Arg_1.0: f64[], p.1.lhs.clone: s32[], p.1.rhs.clone: s32[]) -> pred[] {
+  %constant_38 = s64[] constant(9223372036854775807)
+  %constant_37 = s64[] constant(0)
+  %constant_34 = f64[] constant(0)
+  %constant_33 = f64[] constant(nan)
+  %p.1.rhs.clone = s32[] parameter(3), metadata={scheduling_name="p.1.rhs.clone"}
+  %p.1.lhs.clone = s32[] parameter(2), metadata={scheduling_name="p.1.lhs.clone"}
+  %compare.83 = pred[] compare(%p.1.lhs.clone, %p.1.rhs.clone), direction=LT, metadata={scheduling_name="compare.83"}
+  %Arg_1.0 = f64[] parameter(1), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/sort" scheduling_name="Arg_1.0"}
+  %compare.78 = pred[] compare(%Arg_1.0, %constant_34), direction=EQ, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="compare.78"}
+  %select.59 = f64[] select(%compare.78, %constant_34, %Arg_1.0), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="select.59"}
+  %compare.77 = pred[] compare(%Arg_1.0, %Arg_1.0), direction=NE, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/ne" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="compare.77"}
+  %select.61 = f64[] select(%compare.77, %constant_33, %select.59), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="select.61"}
+  %bitcast-convert.17 = s64[] bitcast-convert(%select.61), metadata={scheduling_name="bitcast-convert.17"}
+  %compare.79 = pred[] compare(%bitcast-convert.17, %constant_37), direction=LT, metadata={scheduling_name="compare.79"}
+  %xor.17 = s64[] xor(%constant_38, %bitcast-convert.17), metadata={scheduling_name="xor.17"}
+  %select.63 = s64[] select(%compare.79, %xor.17, %bitcast-convert.17), metadata={scheduling_name="select.63"}
+  %Arg_0.0 = f64[] parameter(0), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/sort" scheduling_name="Arg_0.0"}
+  %compare.75 = pred[] compare(%Arg_0.0, %constant_34), direction=EQ, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/eq" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="compare.75"}
+  %select.54 = f64[] select(%compare.75, %constant_34, %Arg_0.0), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="select.54"}
+  %compare.74 = pred[] compare(%Arg_0.0, %Arg_0.0), direction=NE, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/ne" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="compare.74"}
+  %select.55 = f64[] select(%compare.74, %constant_33, %select.54), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="select.55"}
+  %bitcast-convert.16 = s64[] bitcast-convert(%select.55), metadata={scheduling_name="bitcast-convert.16"}
+  %compare.76 = pred[] compare(%bitcast-convert.16, %constant_37), direction=LT, metadata={scheduling_name="compare.76"}
+  %xor.16 = s64[] xor(%constant_38, %bitcast-convert.16), metadata={scheduling_name="xor.16"}
+  %select.57 = s64[] select(%compare.76, %xor.16, %bitcast-convert.16), metadata={scheduling_name="select.57"}
+  %compare.80 = pred[] compare(%select.57, %select.63), direction=LT, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/lt_to" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="compare.80"}
+  %compare.81 = pred[] compare(%select.63, %select.57), direction=LT, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/lt_to" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="compare.81"}
+  %compare.82 = pred[] compare(%compare.80, %compare.81), direction=EQ, metadata={scheduling_name="compare.82"}
+  ROOT %select.64 = pred[] select(%compare.82, %compare.83, %compare.80), metadata={scheduling_name="select.64"}
+}
+
+%wrapped_iota_computation.1 () -> s32[60] {
+  ROOT %iota.7.1 = s32[60]{0} iota(), iota_dimension=0, metadata={scheduling_name="iota.7.1"}
+}
+
+%region_2.71 (Arg_0.72: f64[], Arg_1.73: f64[]) -> f64[] {
+  %Arg_1.73 = f64[] parameter(1), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/reduce_max" scheduling_name="Arg_1.73"}
+  %Arg_0.72 = f64[] parameter(0), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/reduce_max" scheduling_name="Arg_0.72"}
+  ROOT %maximum.2 = f64[] maximum(%Arg_0.72, %Arg_1.73), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=606 scheduling_name="maximum.2"}
+}
+
+%fused_reduce (param_0.11: f64[60], param_1.13: f64[960]) -> f64[] {
+  %param_1.13 = f64[960]{0} parameter(1), metadata={scheduling_name="param_1.13"}
+  %slice.3.3 = f64[60]{0} slice(%param_1.13), slice={[0:60]}, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=606 scheduling_name="slice.3.3"}
+  %param_0.11 = f64[60]{0} parameter(0), metadata={scheduling_name="param_0.11"}
+  %subtract.3.3 = f64[60]{0} subtract(%slice.3.3, %param_0.11), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=606 scheduling_name="subtract.3.3"}
+  %abs.3.1 = f64[60]{0} abs(%subtract.3.3), metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=606 scheduling_name="abs.3.1"}
+  %constant_26_1 = f64[] constant(-inf)
+  ROOT %reduce.2 = f64[] reduce(%abs.3.1, %constant_26_1), dimensions={0}, to_apply=%region_2.71, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=606 scheduling_name="reduce.2"}
+}
+
+%command_buffer (p: f64[960], p.1: s32[], p.2: f64[60]) -> (f64[960], f64[60], f64[]) {
+  %p = f64[960]{0} parameter(0)
+  %p.1 = s32[] parameter(1)
+  %p.2 = f64[60]{0} parameter(2)
+  %loop_select_fusion = f64[960]{0} fusion(%p, %p.1), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="loop_select_fusion"}
+  %wrapped_iota = s32[960]{0} fusion(), kind=kLoop, calls=%wrapped_iota_computation, metadata={scheduling_name="wrapped_iota"}
+  %sort.4.0 = (f64[960]{0}, s32[960]{0}) sort(%loop_select_fusion, %wrapped_iota), dimensions={0}, is_stable=true, to_apply=%region_0.32.clone, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/sort" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="sort.4.0"}
+  %get-tuple-element.8.0 = f64[960]{0} get-tuple-element(%sort.4.0), index=0, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/sort" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="get-tuple-element.8.0"}
+  %wrapped_iota.1 = s32[60]{0} fusion(), kind=kLoop, calls=%wrapped_iota_computation.1, metadata={scheduling_name="wrapped_iota.1"}
+  %sort.5.0 = (f64[60]{0}, s32[60]{0}) sort(%p.2, %wrapped_iota.1), dimensions={0}, is_stable=true, to_apply=%region_0.32.clone, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/sort" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=605 scheduling_name="sort.5.0"}
+  %get-tuple-element.9.0 = f64[60]{0} get-tuple-element(%sort.5.0), index=0, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(sort)/sort" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=605 scheduling_name="get-tuple-element.9.0"}
+  %input_reduce_fusion = f64[] fusion(%get-tuple-element.9.0, %get-tuple-element.8.0), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/reduce_max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=606 scheduling_name="input_reduce_fusion"}
+  ROOT %tuple.2 = (f64[960]{0}, f64[60]{0}, f64[]) tuple(%get-tuple-element.8.0, %get-tuple-element.9.0, %input_reduce_fusion)
+}
+
+ENTRY %main.77_spmd (param.2: c128[960,960], param.1.0: f64[60]) -> (f64[960], f64[60], f64[]) {
+  %param.2 = c128[960,960]{1,0} parameter(0), sharding={replicated}, metadata={op_name="fH_k0_rep" scheduling_name="param.2"}
+  %param.1.0 = f64[60]{0} parameter(1), sharding={replicated}, metadata={op_name="f_eps_col0" scheduling_name="param.1.0"}
+  %input_transpose_fusion = c128[960,960]{1,0} fusion(%param.2), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="input_transpose_fusion"}
+  %bitcast.283.0 = c128[960,960]{0,1} bitcast(%input_transpose_fusion), metadata={scheduling_name="bitcast.283.0"}
+  %custom-call.2.0 = (c128[960,960]{0,1}, f64[960]{0}, s32[]) custom-call(%bitcast.283.0), custom_call_target="cusolver_syevd_ffi", operand_layout_constraints={c128[960,960]{0,1}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="custom-call.2.0"}, backend_config={algorithm = 0 : ui8, lower = true}
+  %get-tuple-element.6.0 = s32[] get-tuple-element(%custom-call.2.0), index=2, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="get-tuple-element.6.0"}
+  %get-tuple-element.7.0 = f64[960]{0} get-tuple-element(%custom-call.2.0), index=1, frontend_attributes={num_batch_dims="0"}, metadata={op_name="jit(_diag_eig_at_gamma)/jit(main)/jit(eigvalsh)/jit(eigh)/eigh" source_file="/global/homes/j/jackm/software/lorrax_C/src/bandstructure/htransform.py" source_line=604 scheduling_name="get-tuple-element.7.0"}
+  %call = (f64[960]{0}, f64[60]{0}, f64[]) call(%get-tuple-element.7.0, %get-tuple-element.6.0, %param.1.0), to_apply=%command_buffer
+  %get-tuple-element.10 = f64[960]{0} get-tuple-element(%call), index=0
+  %get-tuple-element.11 = f64[60]{0} get-tuple-element(%call), index=1
+  %get-tuple-element.12 = f64[] get-tuple-element(%call), index=2
+  ROOT %tuple.1 = (f64[960]{0}, f64[60]{0}, f64[]) tuple(%get-tuple-element.10, %get-tuple-element.11, %get-tuple-element.12), metadata={scheduling_name="tuple.1"}
+}
+

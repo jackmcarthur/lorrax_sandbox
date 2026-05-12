@@ -1,0 +1,30 @@
+HloModule jit_floor_divide, entry_computation_layout={(s64[4]{0}, s64[])->s64[4]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}
+
+%_where.18 (Arg_0.19: pred[4], Arg_1.20: s64[4], Arg_2.21: s64[4]) -> s64[4] {
+  %Arg_0.19 = pred[4]{0} parameter(0), metadata={op_name="jit(floor_divide)/jit(main)/pjit"}
+  %Arg_1.20 = s64[4]{0} parameter(1), metadata={op_name="jit(floor_divide)/jit(main)/pjit"}
+  %Arg_2.21 = s64[4]{0} parameter(2), metadata={op_name="jit(floor_divide)/jit(main)/pjit"}
+  ROOT %select.22 = s64[4]{0} select(%Arg_0.19, %Arg_1.20, %Arg_2.21), metadata={op_name="jit(floor_divide)/jit(main)/jit(_where)/select_n" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=46}
+}
+
+ENTRY %main.24 (Arg_0.1: s64[4], Arg_1.2: s64[]) -> s64[4] {
+  %Arg_0.1 = s64[4]{0} parameter(0), metadata={op_name="x1"}
+  %sign.9 = s64[4]{0} sign(%Arg_0.1), metadata={op_name="jit(floor_divide)/jit(main)/sign" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=46}
+  %Arg_1.2 = s64[] parameter(1), metadata={op_name="x2"}
+  %sign.10 = s64[] sign(%Arg_1.2), metadata={op_name="jit(floor_divide)/jit(main)/sign" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=46}
+  %broadcast.11 = s64[4]{0} broadcast(%sign.10), dimensions={}, metadata={op_name="jit(floor_divide)/jit(main)/ne" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=46}
+  %compare.12 = pred[4]{0} compare(%sign.9, %broadcast.11), direction=NE, metadata={op_name="jit(floor_divide)/jit(main)/ne" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=46}
+  %broadcast.13 = s64[4]{0} broadcast(%Arg_1.2), dimensions={}, metadata={op_name="jit(floor_divide)/jit(main)/rem" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=46}
+  %remainder.14 = s64[4]{0} remainder(%Arg_0.1, %broadcast.13), metadata={op_name="jit(floor_divide)/jit(main)/rem" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=46}
+  %constant.5 = s64[] constant(0)
+  %broadcast.6 = s64[4]{0} broadcast(%constant.5), dimensions={}
+  %compare.15 = pred[4]{0} compare(%remainder.14, %broadcast.6), direction=NE, metadata={op_name="jit(floor_divide)/jit(main)/ne" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=46}
+  %and.16 = pred[4]{0} and(%compare.12, %compare.15), metadata={op_name="jit(floor_divide)/jit(main)/and" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=46}
+  %broadcast.7 = s64[4]{0} broadcast(%Arg_1.2), dimensions={}, metadata={op_name="jit(floor_divide)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=46}
+  %divide.8 = s64[4]{0} divide(%Arg_0.1, %broadcast.7), metadata={op_name="jit(floor_divide)/jit(main)/div" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=46}
+  %constant.3 = s64[] constant(1)
+  %broadcast.4 = s64[4]{0} broadcast(%constant.3), dimensions={}
+  %subtract.17 = s64[4]{0} subtract(%divide.8, %broadcast.4), metadata={op_name="jit(floor_divide)/jit(main)/sub" source_file="/global/u2/j/jackm/software/lorrax_A/src/common/gamma_matrices.py" source_line=46}
+  ROOT %call.23 = s64[4]{0} call(%and.16, %subtract.17, %divide.8), to_apply=%_where.18
+}
+

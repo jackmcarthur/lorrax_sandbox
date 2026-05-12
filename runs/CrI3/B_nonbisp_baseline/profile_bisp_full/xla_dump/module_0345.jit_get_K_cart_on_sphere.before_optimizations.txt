@@ -1,0 +1,73 @@
+HloModule jit_get_K_cart_on_sphere, entry_computation_layout={(f64[1,3]{1,0})->f64[1,31235,3]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true}, allow_spmd_sharding_propagation_to_output={true}
+
+%_where.27 (Arg_0.28: pred[31235], Arg_1.29: s32[31235], Arg_2.30: s32[31235]) -> s32[31235] {
+  %Arg_0.28 = pred[31235]{0} parameter(0), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/pjit"}
+  %Arg_1.29 = s32[31235]{0} parameter(1), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/pjit"}
+  %Arg_2.30 = s32[31235]{0} parameter(2), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/pjit"}
+  ROOT %select.31 = s32[31235]{0} select(%Arg_0.28, %Arg_1.29, %Arg_2.30), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_tile.py" source_line=332}
+}
+
+%region_0.32 (Arg_0.33: pred[], Arg_1.34: pred[]) -> pred[] {
+  %Arg_0.33 = pred[] parameter(0), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/reduce_and"}
+  %Arg_1.34 = pred[] parameter(1), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/reduce_and"}
+  ROOT %and.35 = pred[] and(%Arg_0.33, %Arg_1.34), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/reduce_and" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+}
+
+%_take.36 (Arg_0.37: f64[1,1125000,3], Arg_1.38: s32[31235]) -> f64[1,31235,3] {
+  %Arg_1.38 = s32[31235]{0} parameter(1), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/pjit"}
+  %constant.48 = s32[] constant(0)
+  %broadcast.49 = s32[31235]{0} broadcast(%constant.48), dimensions={}, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+  %compare.50 = pred[31235]{0} compare(%Arg_1.38, %broadcast.49), direction=LT, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+  %constant.45 = s32[] constant(1125000)
+  %broadcast.46 = s32[31235]{0} broadcast(%constant.45), dimensions={}
+  %add.51 = s32[31235]{0} add(%Arg_1.38, %broadcast.46), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+  %call.52 = s32[31235]{0} call(%compare.50, %add.51, %Arg_1.38), to_apply=%_where.27
+  %reshape.53 = s32[31235,1]{1,0} reshape(%call.52), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+  %convert.54 = s64[31235,1]{1,0} convert(%reshape.53), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+  %constant.43 = s64[] constant(0)
+  %broadcast.44 = s64[31235,1]{1,0} broadcast(%constant.43), dimensions={}
+  %compare.55 = pred[31235,1]{1,0} compare(%convert.54, %broadcast.44), direction=GE, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/ge" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+  %constant.41 = s64[] constant(1124999)
+  %broadcast.42 = s64[31235,1]{1,0} broadcast(%constant.41), dimensions={}
+  %compare.56 = pred[31235,1]{1,0} compare(%convert.54, %broadcast.42), direction=LE, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/le" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+  %and.57 = pred[31235,1]{1,0} and(%compare.55, %compare.56), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+  %constant.47 = pred[] constant(true)
+  %reduce.58 = pred[31235]{0} reduce(%and.57, %constant.47), dimensions={1}, to_apply=%region_0.32, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/reduce_and" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+  %broadcast.60 = pred[1,31235,3]{2,1,0} broadcast(%reduce.58), dimensions={1}, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+  %Arg_0.37 = f64[1,1125000,3]{2,1,0} parameter(0), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/pjit"}
+  %gather.59 = f64[1,31235,3]{2,1,0} gather(%Arg_0.37, %convert.54), offset_dims={0,2}, collapsed_slice_dims={1}, start_index_map={1}, index_vector_dim=1, slice_sizes={1,1,3}, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+  %constant.39 = f64[] constant(nan)
+  %broadcast.40 = f64[1,31235,3]{2,1,0} broadcast(%constant.39), dimensions={}
+  ROOT %select.61 = f64[1,31235,3]{2,1,0} select(%broadcast.60, %gather.59, %broadcast.40), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/jit(_take)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=579}
+}
+
+ENTRY %main.63 (Arg_0.1: f64[1,3]) -> f64[1,31235,3] {
+  %Arg_0.1 = f64[1,3]{1,0} parameter(0), metadata={op_name="qvec_wrapped"}
+  %slice.7 = f64[1,1]{1,0} slice(%Arg_0.1), slice={[0:1], [0:1]}, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=571}
+  %reshape.8 = f64[1]{0} reshape(%slice.7), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=571}
+  %constant.4 = f64[1]{0} constant({6})
+  %divide.9 = f64[1]{0} divide(%reshape.8, %constant.4), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=571}
+  %reshape.16 = f64[1,1]{1,0} reshape(%divide.9), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=570}
+  %slice.10 = f64[1,1]{1,0} slice(%Arg_0.1), slice={[0:1], [1:2]}, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=572}
+  %reshape.11 = f64[1]{0} reshape(%slice.10), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=572}
+  %divide.12 = f64[1]{0} divide(%reshape.11, %constant.4), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=572}
+  %reshape.17 = f64[1,1]{1,0} reshape(%divide.12), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=570}
+  %slice.13 = f64[1,1]{1,0} slice(%Arg_0.1), slice={[0:1], [2:3]}, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/slice" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=573}
+  %reshape.14 = f64[1]{0} reshape(%slice.13), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/squeeze" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=573}
+  %constant.3 = f64[1]{0} constant({1})
+  %divide.15 = f64[1]{0} divide(%reshape.14, %constant.3), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=573}
+  %reshape.18 = f64[1,1]{1,0} reshape(%divide.15), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=570}
+  %concatenate.19 = f64[1,3]{1,0} concatenate(%reshape.16, %reshape.17, %reshape.18), dimensions={1}, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/concatenate" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=570}
+  %constant.5 = f64[3,3]{1,0} constant({ { 0.48418792433959568, 0.27954604950465767, -0 }, { 0, 0.55909209900931534, 0 }, { 0, -0, 0.18471769313555575 } })
+  %dot.20 = f64[1,3]{1,0} dot(%concatenate.19, %constant.5), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/a,ab->b/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=575}
+  %reshape.21 = f64[1,1,1,1,3]{4,3,2,1,0} reshape(%dot.20), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=576}
+  %broadcast.22 = f64[1,1,1,1,3]{4,3,2,1,0} broadcast(%reshape.21), dimensions={0,1,2,3,4}, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=576}
+  %reshape.23 = f64[1,3]{1,0} reshape(%broadcast.22), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=576}
+  %broadcast.24 = f64[1,75,75,200,3]{4,3,2,1,0} broadcast(%reshape.23), dimensions={0,4}, metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=576}
+  %constant.2 = f64[1,75,75,200,3]{4,3,2,1,0} constant({...})
+  %add.25 = f64[1,75,75,200,3]{4,3,2,1,0} add(%broadcast.24, %constant.2), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=576}
+  %reshape.26 = f64[1,1125000,3]{2,1,0} reshape(%add.25), metadata={op_name="jit(get_K_cart_on_sphere)/jit(main)/reshape" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/coulomb_kernel.py" source_line=577}
+  %constant.6 = s32[31235]{0} constant({...})
+  ROOT %call.62 = f64[1,31235,3]{2,1,0} call(%reshape.26, %constant.6), to_apply=%_take.36
+}
+

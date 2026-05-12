@@ -1,0 +1,107 @@
+BufferAssignment:
+allocation 0: size 254803968, parameter 0, shape |c128[64,9,2,24,24,24]| at ShapeIndex {}:
+ value: <62 param.2 @0> (size=254803968,offset=0): c128[64,9,2,24,24,24]{5,4,3,2,1,0}
+allocation 1: size 9437184, output shape is |c128[64,9,2,512]|, maybe-live-out:
+ value: <70 loop_dynamic_slice_fusion @0> (size=9437184,offset=0): c128[64,9,2,512]{3,2,1,0}
+allocation 2: size 512, constant:
+ value: <65 constant_26_0 @0> (size=512,offset=0): f64[64]{0}
+allocation 3: size 512, constant:
+ value: <66 constant_24_0 @0> (size=512,offset=0): f64[64]{0}
+allocation 4: size 512, constant:
+ value: <69 constant_28_0 @0> (size=512,offset=0): f64[64]{0}
+allocation 5: size 192, constant:
+ value: <64 constant_25_0 @0> (size=192,offset=0): f64[24]{0}
+allocation 6: size 8, parameter 1, shape |s64[]| at ShapeIndex {}:
+ value: <68 param.1.0 @0> (size=8,offset=0): s64[]
+allocation 7: size 255098880, preallocated-temp:
+ value: <63 fft.2.0 @0> (size=254803968,offset=0): c128[64,9,2,24,24,24]{5,4,3,2,1,0}
+ value: <67 loop_add_fusion @0> (size=294912,offset=254803968): f64[1,64,24,24]{3,2,1,0}
+
+Total bytes used: 519341768 (495.28MiB)
+
+Used values:
+<62 param.2 @0>
+ positions:
+  param.2
+ uses:
+  fft.2.0, operand 0
+ from instruction: %param.2 = c128[64,9,2,24,24,24]{5,4,3,2,1,0} parameter(0), sharding={devices=[1,4,1,1,1,1]<=[4]}, metadata={op_name="psi_G" scheduling_name="param.2"}
+<63 fft.2.0 @0>
+ positions:
+  fft.2.0
+ uses:
+  loop_dynamic_slice_fusion, operand 0
+ from instruction: %fft.2.0 = c128[64,9,2,24,24,24]{5,4,3,2,1,0} fft(%param.2), fft_type=IFFT, fft_length={24,24,24}, metadata={op_name="jit(_fft_and_rslice)/jit(main)/jit(shmap_body)/jit(fft)/fft" source_file="/global/u2/j/jackm/software/lorrax/src/common/fft_helpers.py" source_line=86 scheduling_name="fft.2.0"}
+<64 constant_25_0 @0>
+ positions:
+  constant_25_0
+ uses:
+  loop_dynamic_slice_fusion, operand 3
+  loop_add_fusion, operand 0
+ from instruction: %constant_25_0 = f64[24]{0} constant({...}), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324}
+<65 constant_26_0 @0>
+ positions:
+  constant_26_0
+ uses:
+  loop_add_fusion, operand 1
+ from instruction: %constant_26_0 = f64[64]{0} constant({...}), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=325}
+<66 constant_24_0 @0>
+ positions:
+  constant_24_0
+ uses:
+  loop_add_fusion, operand 2
+ from instruction: %constant_24_0 = f64[64]{0} constant({...}), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324}
+<67 loop_add_fusion @0>
+ positions:
+  loop_add_fusion
+ uses:
+  loop_dynamic_slice_fusion, operand 1
+ from instruction: %loop_add_fusion = f64[1,64,24,24]{3,2,1,0} fusion(%constant_25_0, %constant_26_0, %constant_24_0), kind=kLoop, calls=%fused_add, metadata={op_name="jit(_fft_and_rslice)/jit(main)/add" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=324 scheduling_name="loop_add_fusion"}
+<68 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  loop_dynamic_slice_fusion, operand 2
+ from instruction: %param.1.0 = s64[] parameter(1), sharding={replicated}, metadata={op_name="r_start_dyn" scheduling_name="param.1.0"}
+<69 constant_28_0 @0>
+ positions:
+  constant_28_0
+ uses:
+  loop_dynamic_slice_fusion, operand 4
+ from instruction: %constant_28_0 = f64[64]{0} constant({...}), metadata={op_name="jit(_fft_and_rslice)/jit(main)/mul" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=326}
+<70 loop_dynamic_slice_fusion @0>
+ positions:
+  loop_dynamic_slice_fusion
+ uses:
+ from instruction: %loop_dynamic_slice_fusion = c128[64,9,2,512]{3,2,1,0} fusion(%fft.2.0, %loop_add_fusion, %param.1.0, %constant_25_0, %constant_28_0), kind=kLoop, calls=%fused_dynamic_slice, metadata={op_name="jit(_fft_and_rslice)/jit(main)/jit(shmap_body)/dynamic_slice" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=338 scheduling_name="loop_dynamic_slice_fusion"}
+
+
+HloLiveRange (max 9):
+  InstructionSequence:
+    0:param.1.0
+    1:constant_25_0
+    2:constant_28_0
+    3:constant_26_0
+    4:constant_24_0
+    5:param.2
+    6:loop_add_fusion
+    7:fft.2.0
+    8:loop_dynamic_slice_fusion
+  BufferLiveRange:
+    param.2{}:0-9
+    fft.2.0{}:7-8
+    constant_25_0{}:1-8
+    constant_26_0{}:3-6
+    constant_24_0{}:4-6
+    loop_add_fusion{}:6-8
+    param.1.0{}:0-9
+    constant_28_0{}:2-8
+    loop_dynamic_slice_fusion{}:8-9
+  Live ranges at 8 (peak):
+    param.2: 254803968 bytes
+    fft.2.0: 254803968 bytes
+    constant_25_0: 192 bytes
+    loop_add_fusion: 294912 bytes
+    param.1.0: 8 bytes
+    constant_28_0: 512 bytes
+    loop_dynamic_slice_fusion: 9437184 bytes

@@ -1,0 +1,131 @@
+HloModule jit_scatter, is_scheduled=true, entry_computation_layout={(c128[9,26,2,24,24,80]{5,4,3,2,1,0}, s32[9,1963,3]{2,1,0}, c128[9,26,2,1963]{3,2,1,0})->c128[9,26,2,24,24,80]{5,4,3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="d7cf904763ee643a98f92bd1a4bdc8c1"}
+
+%fused_dynamic_slice (param_0.1: c128[9,26,2,24,24,80], param_1.36: s32[17667,4], param_2.40: s32[]) -> c128[1,26,2,1,1,1] {
+  %param_0.1 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %param_1.36 = s32[17667,4]{1,0} parameter(1), metadata={scheduling_name="param_1.36"}
+  %param_2.40 = s32[] parameter(2), metadata={scheduling_name="param_2.40"}
+  %constant_10_1 = s32[] constant(0)
+  %dynamic-slice.12.11 = s32[1,4]{1,0} dynamic-slice(%param_1.36, %param_2.40, %constant_10_1), dynamic_slice_sizes={1,4}, metadata={scheduling_name="dynamic-slice.12.11"}
+  %slice.33.7 = s32[1,1]{1,0} slice(%dynamic-slice.12.11), slice={[0:1], [0:1]}, metadata={scheduling_name="slice.33.7"}
+  %bitcast.302.1 = s32[] bitcast(%slice.33.7), metadata={scheduling_name="bitcast.302.1"}
+  %bitcast.274.18 = s32[4]{0} bitcast(%dynamic-slice.12.11), metadata={scheduling_name="bitcast.274.18"}
+  %slice.35.5 = s32[1]{0} slice(%bitcast.274.18), slice={[1:2]}, metadata={scheduling_name="slice.35.5"}
+  %bitcast.309.1 = s32[] bitcast(%slice.35.5), metadata={scheduling_name="bitcast.309.1"}
+  %slice.36.5 = s32[1]{0} slice(%bitcast.274.18), slice={[2:3]}, metadata={scheduling_name="slice.36.5"}
+  %bitcast.314.1 = s32[] bitcast(%slice.36.5), metadata={scheduling_name="bitcast.314.1"}
+  %slice.37.5 = s32[1]{0} slice(%bitcast.274.18), slice={[3:4]}, metadata={scheduling_name="slice.37.5"}
+  %bitcast.319.1 = s32[] bitcast(%slice.37.5), metadata={scheduling_name="bitcast.319.1"}
+  ROOT %dynamic-slice.14.1 = c128[1,26,2,1,1,1]{5,4,3,2,1,0} dynamic-slice(%param_0.1, %bitcast.302.1, %constant_10_1, %constant_10_1, %bitcast.309.1, /*index=5*/%bitcast.314.1, %bitcast.319.1), dynamic_slice_sizes={1,26,2,1,1,1}, metadata={scheduling_name="dynamic-slice.14.1"}
+}
+
+%and.reduce_sub_computation (lhs: pred[], rhs: pred[]) -> pred[] {
+  %rhs = pred[] parameter(1), metadata={scheduling_name="rhs"}
+  %lhs = pred[] parameter(0), metadata={scheduling_name="lhs"}
+  ROOT %and.6 = pred[] and(%lhs, %rhs), metadata={scheduling_name="and.6"}
+}
+
+%fused_dynamic_update_slice (param_0.2: c128[9,26,2,24,24,80], param_1.37: c128[1,26,2,1,1,1], param_2.41: c128[17667,26,2], param_3.18: s32[], param_4.24: s32[17667,4], param_5.24: s32[6]) -> c128[9,26,2,24,24,80] {
+  %param_0.2 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %constant_10_2 = s32[] constant(0)
+  %broadcast.18.5 = s32[6]{0} broadcast(%constant_10_2), dimensions={}, metadata={scheduling_name="broadcast.18.5"}
+  %param_4.24 = s32[17667,4]{1,0} parameter(4), metadata={scheduling_name="param_4.24"}
+  %param_3.18 = s32[] parameter(3), metadata={scheduling_name="param_3.18"}
+  %dynamic-slice.12.31 = s32[1,4]{1,0} dynamic-slice(%param_4.24, %param_3.18, %constant_10_2), dynamic_slice_sizes={1,4}, metadata={scheduling_name="dynamic-slice.12.31"}
+  %slice.33.11 = s32[1,1]{1,0} slice(%dynamic-slice.12.31), slice={[0:1], [0:1]}, metadata={scheduling_name="slice.33.11"}
+  %bitcast.269.5 = s32[1]{0} bitcast(%slice.33.11), metadata={scheduling_name="bitcast.269.5"}
+  %constant_8_1 = s32[1]{0} constant({0})
+  %bitcast.274.22 = s32[4]{0} bitcast(%dynamic-slice.12.31), metadata={scheduling_name="bitcast.274.22"}
+  %slice.34.7 = s32[3]{0} slice(%bitcast.274.22), slice={[1:4]}, metadata={scheduling_name="slice.34.7"}
+  %concatenate.7.5 = s32[6]{0} concatenate(%bitcast.269.5, %constant_8_1, %constant_8_1, %slice.34.7), dimensions={0}, metadata={scheduling_name="concatenate.7.5"}
+  %compare.10.5 = pred[6]{0} compare(%broadcast.18.5, %concatenate.7.5), direction=LE, metadata={scheduling_name="compare.10.5"}
+  %param_5.24 = s32[6]{0} parameter(5), metadata={scheduling_name="param_5.24"}
+  %compare.11.3 = pred[6]{0} compare(%param_5.24, %concatenate.7.5), direction=GE, metadata={scheduling_name="compare.11.3"}
+  %and.7.3 = pred[6]{0} and(%compare.10.5, %compare.11.3), metadata={scheduling_name="and.7.3"}
+  %constant_12_1 = pred[] constant(true)
+  %reduce.2 = pred[] reduce(%and.7.3, %constant_12_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.2"}
+  %broadcast.19.1 = pred[1,26,2,1,1,1]{5,4,3,2,1,0} broadcast(%reduce.2), dimensions={}, metadata={scheduling_name="broadcast.19.1"}
+  %param_2.41 = c128[17667,26,2]{2,1,0} parameter(2), metadata={scheduling_name="param_2.41"}
+  %dynamic-slice.13.1 = c128[1,26,2]{2,1,0} dynamic-slice(%param_2.41, %param_3.18, %constant_10_2, %constant_10_2), dynamic_slice_sizes={1,26,2}, metadata={scheduling_name="dynamic-slice.13.1"}
+  %bitcast.295.3 = c128[1,26,2,1,1,1]{5,4,3,2,1,0} bitcast(%dynamic-slice.13.1), metadata={scheduling_name="bitcast.295.3"}
+  %param_1.37 = c128[1,26,2,1,1,1]{5,4,3,2,1,0} parameter(1), metadata={scheduling_name="param_1.37"}
+  %select.3.3 = c128[1,26,2,1,1,1]{5,4,3,2,1,0} select(%broadcast.19.1, %bitcast.295.3, %param_1.37), metadata={scheduling_name="select.3.3"}
+  %bitcast.302.2 = s32[] bitcast(%slice.33.11), metadata={scheduling_name="bitcast.302.2"}
+  %slice.35.3 = s32[1]{0} slice(%bitcast.274.22), slice={[1:2]}, metadata={scheduling_name="slice.35.3"}
+  %bitcast.309.2 = s32[] bitcast(%slice.35.3), metadata={scheduling_name="bitcast.309.2"}
+  %slice.36.3 = s32[1]{0} slice(%bitcast.274.22), slice={[2:3]}, metadata={scheduling_name="slice.36.3"}
+  %bitcast.314.2 = s32[] bitcast(%slice.36.3), metadata={scheduling_name="bitcast.314.2"}
+  %slice.37.3 = s32[1]{0} slice(%bitcast.274.22), slice={[3:4]}, metadata={scheduling_name="slice.37.3"}
+  %bitcast.319.2 = s32[] bitcast(%slice.37.3), metadata={scheduling_name="bitcast.319.2"}
+  ROOT %dynamic-update-slice.4.1 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} dynamic-update-slice(%param_0.2, %select.3.3, %bitcast.302.2, %constant_10_2, %constant_10_2, /*index=5*/%bitcast.309.2, %bitcast.314.2, %bitcast.319.2), metadata={scheduling_name="dynamic-update-slice.4.1"}
+}
+
+%fused_add (param_0.39: s32[]) -> s32[] {
+  %param_0.39 = s32[] parameter(0), metadata={scheduling_name="param_0.39"}
+  %constant_6_1 = s32[] constant(1)
+  ROOT %add.3.1 = s32[] add(%param_0.39, %constant_6_1), metadata={scheduling_name="add.3.1"}
+}
+
+%while_body (param.1.0: (s32[], c128[9,26,2,24,24,80], s32[17667,4], c128[17667,26,2])) -> (s32[], c128[9,26,2,24,24,80], s32[17667,4], c128[17667,26,2]) {
+  %param.1.0 = (s32[], c128[9,26,2,24,24,80]{5,4,3,2,1,0}, s32[17667,4]{1,0}, c128[17667,26,2]{2,1,0}) parameter(0), metadata={scheduling_name="param.1.0"}
+  %constant_11_0 = s32[6]{0} constant({8, 0, 0, 23, 23, 79})
+  %get-tuple-element.13 = s32[] get-tuple-element(%param.1.0), index=0, metadata={scheduling_name="get-tuple-element.13"}
+  %get-tuple-element.19 = s32[17667,4]{1,0} get-tuple-element(%param.1.0), index=2, metadata={scheduling_name="get-tuple-element.19"}
+  %get-tuple-element.14 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} get-tuple-element(%param.1.0), index=1, metadata={scheduling_name="get-tuple-element.14"}
+  %get-tuple-element.20 = c128[17667,26,2]{2,1,0} get-tuple-element(%param.1.0), index=3, metadata={scheduling_name="get-tuple-element.20"}
+  %loop_dynamic_slice_fusion = c128[1,26,2,1,1,1]{5,4,3,2,1,0} fusion(%get-tuple-element.14, %get-tuple-element.19, %get-tuple-element.13), kind=kLoop, calls=%fused_dynamic_slice, metadata={scheduling_name="loop_dynamic_slice_fusion"}
+  %loop_dynamic_update_slice_fusion = c128[9,26,2,24,24,80]{5,4,3,2,1,0} fusion(%get-tuple-element.14, %loop_dynamic_slice_fusion, %get-tuple-element.20, %get-tuple-element.13, %get-tuple-element.19, /*index=5*/%constant_11_0), kind=kLoop, calls=%fused_dynamic_update_slice, control-predecessors={%loop_dynamic_slice_fusion}, metadata={scheduling_name="loop_dynamic_update_slice_fusion"}
+  %loop_add_fusion = s32[] fusion(%get-tuple-element.13), kind=kLoop, calls=%fused_add, control-predecessors={%loop_dynamic_update_slice_fusion, %loop_dynamic_slice_fusion}, metadata={scheduling_name="loop_add_fusion"}
+  ROOT %tuple.5 = (s32[], c128[9,26,2,24,24,80]{5,4,3,2,1,0}, s32[17667,4]{1,0}, c128[17667,26,2]{2,1,0}) tuple(%loop_add_fusion, %loop_dynamic_update_slice_fusion, %get-tuple-element.19, %get-tuple-element.20), metadata={scheduling_name="tuple.5"}
+}
+
+%fused_compare (param_0: s32[]) -> pred[] {
+  %param_0 = s32[] parameter(0), metadata={scheduling_name="param_0"}
+  %constant_1_1 = s32[] constant(17667)
+  ROOT %compare.9.1 = pred[] compare(%param_0, %constant_1_1), direction=LT, metadata={scheduling_name="compare.9.1"}
+}
+
+%while_cond (param.0.0: (s32[], c128[9,26,2,24,24,80], s32[17667,4], c128[17667,26,2])) -> pred[] {
+  %param.0.0 = (s32[], c128[9,26,2,24,24,80]{5,4,3,2,1,0}, s32[17667,4]{1,0}, c128[17667,26,2]{2,1,0}) parameter(0), metadata={scheduling_name="param.0.0"}
+  %get-tuple-element.8 = s32[] get-tuple-element(%param.0.0), index=0, metadata={scheduling_name="get-tuple-element.8"}
+  ROOT %loop_compare_fusion = pred[] fusion(%get-tuple-element.8), kind=kLoop, calls=%fused_compare, metadata={scheduling_name="loop_compare_fusion"}
+}
+
+%fused_transpose (param_0.41: c128[9,26,2,1963]) -> c128[9,1963,52] {
+  %param_0.41 = c128[9,26,2,1963]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.41"}
+  %bitcast.334.1 = c128[9,52,1963]{2,1,0} bitcast(%param_0.41), metadata={scheduling_name="bitcast.334.1"}
+  ROOT %transpose.4.1 = c128[9,1963,52]{2,1,0} transpose(%bitcast.334.1), dimensions={0,2,1}, metadata={op_name="args[2]" scheduling_name="transpose.4.1"}
+}
+
+%copy_horizontally_fused_computation (param_0_0: s32[], param_1_0: s32[9,1963,3]) -> (s32[1], s32[70668]) {
+  %param_0_0 = s32[] parameter(0), metadata={scheduling_name="param_0_0"}
+  %copy.11 = s32[] copy(%param_0_0), metadata={scheduling_name="copy.11"}
+  %reshape.29 = s32[1]{0} reshape(%copy.11), metadata={scheduling_name="reshape.29"}
+  %iota.3.2 = s32[9,1963,1]{2,1,0} iota(), iota_dimension=0, metadata={scheduling_name="iota.3.2"}
+  %param_1_0 = s32[9,1963,3]{2,1,0} parameter(1), metadata={scheduling_name="param_1_0"}
+  %concatenate.8.2 = s32[9,1963,4]{2,1,0} concatenate(%iota.3.2, %param_1_0), dimensions={2}, metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=181 scheduling_name="concatenate.8.2"}
+  %reshape.30 = s32[70668]{0} reshape(%concatenate.8.2), metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=181 scheduling_name="reshape.30"}
+  %concatenate.9 = s32[70669]{0} concatenate(%reshape.29, %reshape.30), dimensions={0}, metadata={scheduling_name="concatenate.9"}
+  %slice.38 = s32[1]{0} slice(%concatenate.9), slice={[0:1]}, metadata={scheduling_name="slice.38"}
+  %slice.39 = s32[70668]{0} slice(%concatenate.9), slice={[1:70669]}, metadata={scheduling_name="slice.39"}
+  ROOT %tuple.6 = (s32[1]{0}, s32[70668]{0}) tuple(%slice.38, %slice.39), metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=181 scheduling_name="tuple.6"}
+}
+
+ENTRY %main.8 (Arg_0.1.0: c128[9,26,2,24,24,80], Arg_1.2.0: s32[9,1963,3], Arg_2.3.0: c128[9,26,2,1963]) -> c128[9,26,2,24,24,80] {
+  %constant_13_0 = s32[] constant(0)
+  %Arg_2.3.0 = c128[9,26,2,1963]{3,2,1,0} parameter(2), metadata={op_name="args[2]" scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = s32[9,1963,3]{2,1,0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  %copy.12 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} copy(%Arg_0.1.0)
+  %copy_fusion = (s32[1]{0}, s32[70668]{0}) fusion(%constant_13_0, %Arg_1.2.0), kind=kInput, calls=%copy_horizontally_fused_computation, metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=181 scheduling_name="copy_fusion"}
+  %get-tuple-element.21 = s32[1]{0} get-tuple-element(%copy_fusion), index=0, metadata={scheduling_name="get-tuple-element.21"}
+  %bitcast.361 = s32[] bitcast(%get-tuple-element.21), metadata={scheduling_name="bitcast.361"}
+  %get-tuple-element.22 = s32[70668]{0} get-tuple-element(%copy_fusion), index=1, metadata={scheduling_name="get-tuple-element.22"}
+  %bitcast.362 = s32[9,1963,4]{2,1,0} bitcast(%get-tuple-element.22), metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=181 scheduling_name="bitcast.362"}
+  %bitcast.331.0 = s32[17667,4]{1,0} bitcast(%bitcast.362), metadata={scheduling_name="bitcast.331.0"}
+  %input_transpose_fusion = c128[9,1963,52]{2,1,0} fusion(%Arg_2.3.0), kind=kInput, calls=%fused_transpose, metadata={op_name="args[2]" scheduling_name="input_transpose_fusion"}
+  %bitcast.338.0 = c128[17667,26,2]{2,1,0} bitcast(%input_transpose_fusion), metadata={scheduling_name="bitcast.338.0"}
+  %tuple.3 = (s32[], c128[9,26,2,24,24,80]{5,4,3,2,1,0}, s32[17667,4]{1,0}, c128[17667,26,2]{2,1,0}) tuple(%bitcast.361, %copy.12, %bitcast.331.0, %bitcast.338.0), metadata={scheduling_name="tuple.3"}
+  %while.1 = (s32[], c128[9,26,2,24,24,80]{5,4,3,2,1,0}, s32[17667,4]{1,0}, c128[17667,26,2]{2,1,0}) while(%tuple.3), condition=%while_cond, body=%while_body, metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=181 scheduling_name="while.1"}, backend_config={"known_trip_count":{"n":"17667"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  ROOT %get-tuple-element.5.0 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} get-tuple-element(%while.1), index=1, metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=181 scheduling_name="get-tuple-element.5.0"}
+}
+

@@ -1,0 +1,78 @@
+HloModule jit__table_interp, is_scheduled=true, entry_computation_layout={(f64[2100]{0}, f64[], f64[10,4000]{1,0})->f64[10,2100]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="329ade29f084ad5944a1c1ba007b3dbd"}
+
+%fused_add (param_0.25: f64[10,4000], param_1.35: f64[2100], param_2.36: f64[2100], param_3.26: f64[]) -> f64[1,10,2100] {
+  %constant_10_2 = f64[] constant(1)
+  %broadcast.48.4 = f64[2100]{0} broadcast(%constant_10_2), dimensions={}, metadata={scheduling_name="broadcast.48.4"}
+  %param_1.35 = f64[2100]{0} parameter(1), metadata={scheduling_name="param_1.35"}
+  %subtract.5.3 = f64[2100]{0} subtract(%broadcast.48.4, %param_1.35), metadata={op_name="jit(_table_interp)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="subtract.5.3"}
+  %broadcast.56.1 = f64[1,10,2100]{2,1,0} broadcast(%subtract.5.3), dimensions={2}, metadata={op_name="jit(_table_interp)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="broadcast.56.1"}
+  %param_0.25 = f64[10,4000]{1,0} parameter(0), metadata={scheduling_name="param_0.25"}
+  %bitcast.235.6 = f64[4000,10]{0,1} bitcast(%param_0.25), metadata={scheduling_name="bitcast.235.6"}
+  %constant_8_1 = s32[] constant(0)
+  %broadcast.50.4 = s32[2100]{0} broadcast(%constant_8_1), dimensions={}, metadata={op_name="jit(_table_interp)/jit(main)/jit(clip)/max" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=254 scheduling_name="broadcast.50.4"}
+  %param_2.36 = f64[2100]{0} parameter(2), metadata={scheduling_name="param_2.36"}
+  %param_3.26 = f64[] parameter(3), metadata={scheduling_name="param_3.26"}
+  %broadcast.51.8 = f64[2100]{0} broadcast(%param_3.26), dimensions={}, metadata={op_name="jit(_table_interp)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=253 scheduling_name="broadcast.51.8"}
+  %divide.4.7 = f64[2100]{0} divide(%param_2.36, %broadcast.51.8), metadata={op_name="jit(_table_interp)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=253 scheduling_name="divide.4.7"}
+  %floor.2.5 = f64[2100]{0} floor(%divide.4.7), metadata={op_name="jit(_table_interp)/jit(main)/floor" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=253 scheduling_name="floor.2.5"}
+  %convert.6.5 = s32[2100]{0} convert(%floor.2.5), metadata={op_name="jit(_table_interp)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=253 scheduling_name="convert.6.5"}
+  %constant_23 = s32[] constant(3998), metadata={op_name="jit(_table_interp)/jit(main)/jit(clip)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=254}
+  %broadcast.52.3 = s32[2100]{0} broadcast(%constant_23), dimensions={}, metadata={op_name="jit(_table_interp)/jit(main)/jit(clip)/min" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=254 scheduling_name="broadcast.52.3"}
+  %clamp.6.3 = s32[2100]{0} clamp(%broadcast.50.4, %convert.6.5, %broadcast.52.3), metadata={op_name="jit(_table_interp)/jit(main)/jit(clip)/min" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=254 scheduling_name="clamp.6.3"}
+  %compare.4.1 = pred[2100]{0} compare(%clamp.6.3, %broadcast.50.4), direction=LT, metadata={op_name="jit(_table_interp)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="compare.4.1"}
+  %constant_6_1 = s32[] constant(4000)
+  %broadcast.58.1 = s32[2100]{0} broadcast(%constant_6_1), dimensions={}, metadata={scheduling_name="broadcast.58.1"}
+  %add.12.3 = s32[2100]{0} add(%clamp.6.3, %broadcast.58.1), metadata={op_name="jit(_table_interp)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="add.12.3"}
+  %select.4.3 = s32[2100]{0} select(%compare.4.1, %add.12.3, %clamp.6.3), metadata={op_name="jit(_table_interp)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="select.4.3"}
+  %bitcast.225.5 = s32[2100,1]{1,0} bitcast(%select.4.3), metadata={scheduling_name="bitcast.225.5"}
+  %gather.7 = f64[2100,1,10]{0,2,1} gather(%bitcast.235.6, %bitcast.225.5), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,10}, metadata={op_name="jit(_table_interp)/jit(main)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="gather.7"}
+  %bitcast.228.3 = f64[1,10,2100]{2,1,0} bitcast(%gather.7), metadata={scheduling_name="bitcast.228.3"}
+  %multiply.11.3 = f64[1,10,2100]{2,1,0} multiply(%broadcast.56.1, %bitcast.228.3), metadata={op_name="jit(_table_interp)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="multiply.11.3"}
+  %broadcast.59.1 = f64[1,10,2100]{2,1,0} broadcast(%param_1.35), dimensions={2}, metadata={op_name="jit(_table_interp)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="broadcast.59.1"}
+  %constant_4_1 = s32[] constant(1)
+  %broadcast.60.1 = s32[2100]{0} broadcast(%constant_4_1), dimensions={}, metadata={scheduling_name="broadcast.60.1"}
+  %add.13.1 = s32[2100]{0} add(%clamp.6.3, %broadcast.60.1), metadata={op_name="jit(_table_interp)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="add.13.1"}
+  %compare.5.1 = pred[2100]{0} compare(%add.13.1, %broadcast.50.4), direction=LT, metadata={op_name="jit(_table_interp)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="compare.5.1"}
+  %constant_2_1 = s32[] constant(4001)
+  %broadcast.62.1 = s32[2100]{0} broadcast(%constant_2_1), dimensions={}, metadata={op_name="jit(_table_interp)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="broadcast.62.1"}
+  %add.14.1 = s32[2100]{0} add(%clamp.6.3, %broadcast.62.1), metadata={op_name="jit(_table_interp)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="add.14.1"}
+  %select.5.1 = s32[2100]{0} select(%compare.5.1, %add.14.1, %add.13.1), metadata={op_name="jit(_table_interp)/jit(main)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="select.5.1"}
+  %bitcast.252.5 = s32[2100,1]{1,0} bitcast(%select.5.1), metadata={scheduling_name="bitcast.252.5"}
+  %gather.1.5 = f64[2100,1,10]{0,2,1} gather(%bitcast.235.6, %bitcast.252.5), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,10}, metadata={op_name="jit(_table_interp)/jit(main)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="gather.1.5"}
+  %bitcast.255.3 = f64[1,10,2100]{2,1,0} bitcast(%gather.1.5), metadata={scheduling_name="bitcast.255.3"}
+  %multiply.12.3 = f64[1,10,2100]{2,1,0} multiply(%broadcast.59.1, %bitcast.255.3), metadata={op_name="jit(_table_interp)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="multiply.12.3"}
+  ROOT %add.15.1 = f64[1,10,2100]{2,1,0} add(%multiply.11.3, %multiply.12.3), metadata={op_name="jit(_table_interp)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="add.15.1"}
+}
+
+%fused_clamp (param_0.21: f64[2100], param_1.43: f64[]) -> f64[2100] {
+  %constant_13_1 = f64[] constant(0)
+  %broadcast.49.1 = f64[2100]{0} broadcast(%constant_13_1), dimensions={}, metadata={op_name="jit(_table_interp)/jit(main)/jit(clip)/max" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=256 scheduling_name="broadcast.49.1"}
+  %param_0.21 = f64[2100]{0} parameter(0), metadata={scheduling_name="param_0.21"}
+  %constant_8_2 = s32[] constant(0)
+  %broadcast.50.6 = s32[2100]{0} broadcast(%constant_8_2), dimensions={}, metadata={op_name="jit(_table_interp)/jit(main)/jit(clip)/max" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=254 scheduling_name="broadcast.50.6"}
+  %param_1.43 = f64[] parameter(1), metadata={scheduling_name="param_1.43"}
+  %broadcast.51.10 = f64[2100]{0} broadcast(%param_1.43), dimensions={}, metadata={op_name="jit(_table_interp)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=253 scheduling_name="broadcast.51.10"}
+  %divide.4.9 = f64[2100]{0} divide(%param_0.21, %broadcast.51.10), metadata={op_name="jit(_table_interp)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=253 scheduling_name="divide.4.9"}
+  %floor.2.7 = f64[2100]{0} floor(%divide.4.9), metadata={op_name="jit(_table_interp)/jit(main)/floor" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=253 scheduling_name="floor.2.7"}
+  %convert.6.7 = s32[2100]{0} convert(%floor.2.7), metadata={op_name="jit(_table_interp)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=253 scheduling_name="convert.6.7"}
+  %constant_22 = s32[] constant(3998), metadata={op_name="jit(_table_interp)/jit(main)/jit(clip)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=254}
+  %broadcast.52.5 = s32[2100]{0} broadcast(%constant_22), dimensions={}, metadata={op_name="jit(_table_interp)/jit(main)/jit(clip)/min" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=254 scheduling_name="broadcast.52.5"}
+  %clamp.6.5 = s32[2100]{0} clamp(%broadcast.50.6, %convert.6.7, %broadcast.52.5), metadata={op_name="jit(_table_interp)/jit(main)/jit(clip)/min" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=254 scheduling_name="clamp.6.5"}
+  %convert.7.1 = f64[2100]{0} convert(%clamp.6.5), metadata={op_name="jit(_table_interp)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=255 scheduling_name="convert.7.1"}
+  %multiply.10.1 = f64[2100]{0} multiply(%convert.7.1, %broadcast.51.10), metadata={op_name="jit(_table_interp)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=255 scheduling_name="multiply.10.1"}
+  %subtract.4.1 = f64[2100]{0} subtract(%param_0.21, %multiply.10.1), metadata={op_name="jit(_table_interp)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=255 scheduling_name="subtract.4.1"}
+  %divide.5.1 = f64[2100]{0} divide(%subtract.4.1, %broadcast.51.10), metadata={op_name="jit(_table_interp)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=255 scheduling_name="divide.5.1"}
+  %constant_10_1 = f64[] constant(1)
+  %broadcast.48.2 = f64[2100]{0} broadcast(%constant_10_1), dimensions={}, metadata={scheduling_name="broadcast.48.2"}
+  ROOT %clamp.7.1 = f64[2100]{0} clamp(%broadcast.49.1, %divide.5.1, %broadcast.48.2), metadata={op_name="jit(_table_interp)/jit(main)/jit(clip)/min" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=256 scheduling_name="clamp.7.1"}
+}
+
+ENTRY %main.69 (Arg_0.1.0: f64[2100], Arg_1.2.0: f64[], Arg_2.3.0: f64[10,4000]) -> f64[10,2100] {
+  %Arg_1.2.0 = f64[] parameter(1), metadata={op_name="dq" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[2100]{0} parameter(0), metadata={op_name="q" scheduling_name="Arg_0.1.0"}
+  %Arg_2.3.0 = f64[10,4000]{1,0} parameter(2), metadata={op_name="table" scheduling_name="Arg_2.3.0"}
+  %loop_clamp_fusion = f64[2100]{0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_clamp, metadata={op_name="jit(_table_interp)/jit(main)/jit(clip)/min" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=256 scheduling_name="loop_clamp_fusion"}
+  %loop_add_fusion = f64[1,10,2100]{2,1,0} fusion(%Arg_2.3.0, %loop_clamp_fusion, %Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_add, metadata={op_name="jit(_table_interp)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="loop_add_fusion"}
+  ROOT %bitcast.80.0 = f64[10,2100]{1,0} bitcast(%loop_add_fusion), metadata={op_name="jit(_table_interp)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/psp/vnl_ops.py" source_line=257 scheduling_name="bitcast.80.0"}
+}
+

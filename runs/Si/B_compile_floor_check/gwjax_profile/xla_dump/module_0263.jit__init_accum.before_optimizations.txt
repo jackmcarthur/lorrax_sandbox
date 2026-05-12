@@ -1,0 +1,12 @@
+HloModule jit__init_accum, entry_computation_layout={()->(c128[64,480,480]{2,1,0}, c128[64,480]{1,0})}, allow_spmd_sharding_propagation_to_output={false,false}, num_partitions=4
+
+ENTRY %main.8 () -> (c128[64,480,480], c128[64,480]) {
+  %constant.1 = c128[] constant((0, 0))
+  %broadcast.2 = c128[64,480,480]{2,1,0} broadcast(%constant.1), dimensions={}, metadata={op_name="jit(_init_accum)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/compute_vcoul.py" source_line=1785}
+  %reshape.5 = c128[64,480,480]{2,1,0} reshape(%broadcast.2), sharding={devices=[1,2,2]<=[4]}
+  %constant.3 = c128[] constant((0, 0))
+  %broadcast.4 = c128[64,480]{1,0} broadcast(%constant.3), dimensions={}, metadata={op_name="jit(_init_accum)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/compute_vcoul.py" source_line=1786}
+  %reshape.6 = c128[64,480]{1,0} reshape(%broadcast.4), sharding={devices=[1,2,2]<=[4] last_tile_dim_replicate}
+  ROOT %tuple.7 = (c128[64,480,480]{2,1,0}, c128[64,480]{1,0}) tuple(%reshape.5, %reshape.6), sharding={{devices=[1,2,2]<=[4]}, {devices=[1,2,2]<=[4] last_tile_dim_replicate}}
+}
+

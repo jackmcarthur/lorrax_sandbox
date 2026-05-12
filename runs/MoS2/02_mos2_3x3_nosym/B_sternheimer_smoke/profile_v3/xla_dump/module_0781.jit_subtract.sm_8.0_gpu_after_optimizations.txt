@@ -1,0 +1,20 @@
+HloModule jit_subtract, is_scheduled=true, entry_computation_layout={(c128[9,26,2,1963]{3,2,1,0}, c128[9,26,2,1963]{3,2,1,0}, c128[9,3,26,2,1963]{4,3,2,1,0})->(c128[9,26,2,1963]{3,2,1,0}, c128[9,3,26,2,1963]{4,3,2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="6d37bbb2d5928f43040447b95d325c6d"}
+
+%wrapped_subtract_computation (param_0: c128[9,26,2,1963], param_1: c128[9,26,2,1963]) -> c128[9,26,2,1963] {
+  %param_0 = c128[9,26,2,1963]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1 = c128[9,26,2,1963]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1"}
+  ROOT %subtract.2.1 = c128[9,26,2,1963]{3,2,1,0} subtract(%param_0, %param_1), metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=107 scheduling_name="subtract.2.1"}
+}
+
+ENTRY %main.6 (Arg_0.1.0: c128[9,26,2,1963], Arg_1.2.0: c128[9,26,2,1963], Arg_2.3.0: c128[9,3,26,2,1963]) -> (c128[9,26,2,1963], c128[9,3,26,2,1963]) {
+  %Arg_2.3.0 = c128[9,3,26,2,1963]{4,3,2,1,0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = c128[9,26,2,1963]{3,2,1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[9,26,2,1963]{3,2,1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %wrapped_subtract = c128[9,26,2,1963]{3,2,1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%wrapped_subtract_computation, metadata={op_name="jit(subtract)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/solvers/projectors.py" source_line=107 scheduling_name="wrapped_subtract"}
+  %tuple = (c128[9,26,2,1963]{3,2,1,0}, c128[9,3,26,2,1963]{4,3,2,1,0}) tuple(%wrapped_subtract, %Arg_2.3.0), metadata={scheduling_name="tuple"}
+  %get-tuple-element.2 = c128[9,26,2,1963]{3,2,1,0} get-tuple-element(%tuple), index=0
+  %get-tuple-element.3 = c128[9,3,26,2,1963]{4,3,2,1,0} get-tuple-element(%tuple), index=1
+  %copy.1 = c128[9,3,26,2,1963]{4,3,2,1,0} copy(%get-tuple-element.3)
+  ROOT %tuple.1 = (c128[9,26,2,1963]{3,2,1,0}, c128[9,3,26,2,1963]{4,3,2,1,0}) tuple(%get-tuple-element.2, %copy.1)
+}
+

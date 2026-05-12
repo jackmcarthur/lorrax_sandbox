@@ -1,0 +1,355 @@
+HloModule jit_apply_H_k, entry_computation_layout={(c128[9,26,2,24,24,80]{5,4,3,2,1,0}, f64[9,1963]{1,0}, f64[24,24,80]{2,1,0}, s32[9,1963]{1,0}, s32[9,1963]{1,0}, /*index=5*/s32[9,1963]{1,0}, c128[9,102,1963]{2,1,0}, c128[2,2,102,102]{3,2,1,0}, pred[9,1963]{1,0}, f64[1963,9,3]{2,1,0}, /*index=10*/c128[9,3,102,1963]{3,2,1,0})->(c128[9,26,2,1963]{3,2,1,0}, c128[9,3,26,2,1963]{4,3,2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true,true,true,true,true,true,true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}
+
+%fft_0.64 (Arg_0.65: c128[9,26,2,24,24,80]) -> c128[9,26,2,24,24,80] {
+  %Arg_0.65 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} parameter(0), metadata={op_name="jit(apply_H_k)/jit(main)/jit(fft)/pjit"}
+  ROOT %fft.66 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} fft(%Arg_0.65), fft_type=IFFT, fft_length={24,24,80}, metadata={op_name="jit(apply_H_k)/jit(main)/jit(fft)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/scf_potential.py" source_line=153}
+}
+
+%fft.67 (Arg_0.68: c128[9,26,2,24,24,80]) -> c128[9,26,2,24,24,80] {
+  %Arg_0.68 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} parameter(0), metadata={op_name="jit(apply_H_k)/jit(main)/pjit"}
+  ROOT %call.69 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} call(%Arg_0.68), to_apply=%fft_0.64
+}
+
+%region_0.71 (Arg_0.72: c128[], Arg_1.73: c128[]) -> c128[] {
+  %Arg_0.72 = c128[] parameter(0), metadata={op_name="jit(apply_H_k)/jit(main)/reduce_prod"}
+  %Arg_1.73 = c128[] parameter(1), metadata={op_name="jit(apply_H_k)/jit(main)/reduce_prod"}
+  ROOT %multiply.74 = c128[] multiply(%Arg_0.72, %Arg_1.73), metadata={op_name="jit(apply_H_k)/jit(main)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+}
+
+%fft_2.177 (Arg_0.178: c128[9,26,2,24,24,80]) -> c128[9,26,2,24,24,80] {
+  %Arg_0.178 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} parameter(0), metadata={op_name="jit(apply_H_k)/jit(main)/jit(fft)/pjit"}
+  ROOT %fft.179 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} fft(%Arg_0.178), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(apply_H_k)/jit(main)/jit(fft)/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=114}
+}
+
+%fft_1.180 (Arg_0.181: c128[9,26,2,24,24,80]) -> c128[9,26,2,24,24,80] {
+  %Arg_0.181 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} parameter(0), metadata={op_name="jit(apply_H_k)/jit(main)/pjit"}
+  ROOT %call.182 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} call(%Arg_0.181), to_apply=%fft_2.177
+}
+
+%region_1.184 (Arg_0.185: c128[], Arg_1.186: c128[]) -> c128[] {
+  %Arg_0.185 = c128[] parameter(0), metadata={op_name="jit(apply_H_k)/jit(main)/reduce_prod"}
+  %Arg_1.186 = c128[] parameter(1), metadata={op_name="jit(apply_H_k)/jit(main)/reduce_prod"}
+  ROOT %multiply.187 = c128[] multiply(%Arg_0.185, %Arg_1.186), metadata={op_name="jit(apply_H_k)/jit(main)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+}
+
+ENTRY %main.339 (Arg_0.1: c128[9,26,2,24,24,80], Arg_1.2: f64[9,1963], Arg_2.3: f64[24,24,80], Arg_3.4: s32[9,1963], Arg_4.5: s32[9,1963], Arg_5.6: s32[9,1963], Arg_6.7: c128[9,102,1963], Arg_7.8: c128[2,2,102,102], Arg_8.9: pred[9,1963], Arg_9.10: f64[1963,9,3], Arg_10.11: c128[9,3,102,1963]) -> (c128[9,26,2,1963], c128[9,3,26,2,1963]) {
+  %Arg_1.2 = f64[9,1963]{1,0} parameter(1)
+  %reshape.47 = f64[9,1,1,1963]{3,2,1,0} reshape(%Arg_1.2), metadata={op_name="jit(apply_H_k)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %convert.50 = c128[9,1,1,1963]{3,2,1,0} convert(%reshape.47), metadata={op_name="jit(apply_H_k)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %broadcast.52 = c128[9,1,1,1963]{3,2,1,0} broadcast(%convert.50), dimensions={0,1,2,3}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %reshape.53 = c128[9,1963]{1,0} reshape(%broadcast.52), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %broadcast.54 = c128[9,26,2,1963]{3,2,1,0} broadcast(%reshape.53), dimensions={0,3}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %Arg_0.1 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} parameter(0)
+  %Arg_3.4 = s32[9,1963]{1,0} parameter(3)
+  %constant.16 = s32[] constant(0)
+  %broadcast.17 = s32[9,1963]{1,0} broadcast(%constant.16), dimensions={}
+  %compare.29 = pred[9,1963]{1,0} compare(%Arg_3.4, %broadcast.17), direction=LT, metadata={op_name="jit(apply_H_k)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %constant.14 = s32[] constant(24)
+  %broadcast.15 = s32[9,1963]{1,0} broadcast(%constant.14), dimensions={}
+  %add.30 = s32[9,1963]{1,0} add(%Arg_3.4, %broadcast.15), metadata={op_name="jit(apply_H_k)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %select.31 = s32[9,1963]{1,0} select(%compare.29, %add.30, %Arg_3.4), metadata={op_name="jit(apply_H_k)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %reshape.38 = s32[9,1963,1]{2,1,0} reshape(%select.31), metadata={op_name="jit(apply_H_k)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %Arg_4.5 = s32[9,1963]{1,0} parameter(4)
+  %compare.32 = pred[9,1963]{1,0} compare(%Arg_4.5, %broadcast.17), direction=LT, metadata={op_name="jit(apply_H_k)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %add.33 = s32[9,1963]{1,0} add(%Arg_4.5, %broadcast.15), metadata={op_name="jit(apply_H_k)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %select.34 = s32[9,1963]{1,0} select(%compare.32, %add.33, %Arg_4.5), metadata={op_name="jit(apply_H_k)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %reshape.39 = s32[9,1963,1]{2,1,0} reshape(%select.34), metadata={op_name="jit(apply_H_k)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %Arg_5.6 = s32[9,1963]{1,0} parameter(5)
+  %compare.35 = pred[9,1963]{1,0} compare(%Arg_5.6, %broadcast.17), direction=LT, metadata={op_name="jit(apply_H_k)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %constant.12 = s32[] constant(80)
+  %broadcast.13 = s32[9,1963]{1,0} broadcast(%constant.12), dimensions={}
+  %add.36 = s32[9,1963]{1,0} add(%Arg_5.6, %broadcast.13), metadata={op_name="jit(apply_H_k)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %select.37 = s32[9,1963]{1,0} select(%compare.35, %add.36, %Arg_5.6), metadata={op_name="jit(apply_H_k)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %reshape.40 = s32[9,1963,1]{2,1,0} reshape(%select.37), metadata={op_name="jit(apply_H_k)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %concatenate.41 = s32[9,1963,3]{2,1,0} concatenate(%reshape.38, %reshape.39, %reshape.40), dimensions={2}, metadata={op_name="jit(apply_H_k)/jit(main)/concatenate" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %gather.42 = c128[9,26,2,1963]{3,2,1,0} gather(%Arg_0.1, %concatenate.41), offset_dims={1,2}, collapsed_slice_dims={3,4,5}, start_index_map={3,4,5}, operand_batching_dims={0}, start_indices_batching_dims={0}, index_vector_dim=2, slice_sizes={1,26,2,1,1,1}, metadata={op_name="jit(apply_H_k)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %Arg_8.9 = pred[9,1963]{1,0} parameter(8)
+  %reshape.27 = pred[9,1,1,1963]{3,2,1,0} reshape(%Arg_8.9), metadata={op_name="jit(apply_H_k)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=610}
+  %convert.28 = c128[9,1,1,1963]{3,2,1,0} convert(%reshape.27), metadata={op_name="jit(apply_H_k)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=610}
+  %broadcast.43 = c128[9,1,1,1963]{3,2,1,0} broadcast(%convert.28), dimensions={0,1,2,3}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %reshape.44 = c128[9,1963]{1,0} reshape(%broadcast.43), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %broadcast.45 = c128[9,26,2,1963]{3,2,1,0} broadcast(%reshape.44), dimensions={0,3}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %multiply.46 = c128[9,26,2,1963]{3,2,1,0} multiply(%gather.42, %broadcast.45), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=611}
+  %multiply.55 = c128[9,26,2,1963]{3,2,1,0} multiply(%broadcast.54, %multiply.46), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %call.70 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} call(%Arg_0.1), to_apply=%fft.67
+  %constant.26 = c128[3]{0} constant({(24, 0), (24, 0), (80, 0)})
+  %constant.25 = c128[] constant((1, 0))
+  %reduce.75 = c128[] reduce(%constant.26, %constant.25), dimensions={0}, to_apply=%region_0.71, metadata={op_name="jit(apply_H_k)/jit(main)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %real.76 = f64[] real(%reduce.75), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %constant.24 = f64[] constant(0)
+  %compare.77 = pred[] compare(%real.76, %constant.24), direction=GE, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %abs.78 = f64[] abs(%real.76), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %imag.79 = f64[] imag(%reduce.75), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %abs.80 = f64[] abs(%imag.79), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %compare.81 = pred[] compare(%abs.78, %abs.80), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %sqrt.82 = f64[] sqrt(%abs.78), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %constant.23 = f64[] constant(1.5537739740300374)
+  %multiply.83 = f64[] multiply(%sqrt.82, %constant.23), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %constant.22 = f64[] constant(1.4142135623730951)
+  %divide.84 = f64[] divide(%multiply.83, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %maximum.85 = f64[] maximum(%abs.78, %abs.80), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %minimum.86 = f64[] minimum(%abs.78, %abs.80), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %compare.87 = pred[] compare(%maximum.85, %minimum.86), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.88 = f64[] multiply(%maximum.85, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.89 = f64[] divide(%minimum.86, %maximum.85), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.90 = f64[] multiply(%divide.89, %divide.89), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %constant.21 = f64[] constant(1)
+  %add.91 = f64[] add(%multiply.90, %constant.21), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %sqrt.92 = f64[] sqrt(%add.91), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %compare.93 = pred[] compare(%sqrt.92, %constant.21), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %compare.94 = pred[] compare(%multiply.90, %constant.24), direction=GT, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %and.95 = pred[] and(%compare.93, %compare.94), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.96 = f64[] multiply(%maximum.85, %multiply.90), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %constant.20 = f64[] constant(2)
+  %divide.97 = f64[] divide(%multiply.96, %constant.20), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %add.98 = f64[] add(%maximum.85, %divide.97), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.99 = f64[] multiply(%maximum.85, %sqrt.92), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.100 = f64[] select(%and.95, %add.98, %multiply.99), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.101 = f64[] select(%compare.87, %multiply.88, %select.100), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.102 = f64[] divide(%select.101, %constant.20), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.103 = f64[] divide(%abs.78, %constant.20), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %add.104 = f64[] add(%divide.102, %divide.103), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %sqrt.105 = f64[] sqrt(%add.104), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %compare.106 = pred[] compare(%sqrt.105, %constant.24), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %constant.19 = f64[] constant(inf)
+  %compare.107 = pred[] compare(%sqrt.105, %constant.19), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %or.108 = pred[] or(%compare.106, %compare.107), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %compare.109 = pred[] compare(%abs.78, %abs.80), direction=GT, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %compare.110 = pred[] compare(%abs.78, %abs.80), direction=LT, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.111 = f64[] divide(%abs.78, %abs.80), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.112 = f64[] divide(%abs.80, %abs.78), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.113 = f64[] select(%compare.110, %divide.111, %divide.112), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.114 = f64[] select(%compare.81, %constant.21, %select.113), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %abs.115 = f64[] abs(%select.114), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %maximum.116 = f64[] maximum(%abs.115, %constant.21), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %minimum.117 = f64[] minimum(%abs.115, %constant.21), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %compare.118 = pred[] compare(%maximum.116, %minimum.117), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.119 = f64[] multiply(%maximum.116, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.120 = f64[] divide(%minimum.117, %maximum.116), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.121 = f64[] multiply(%divide.120, %divide.120), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %add.122 = f64[] add(%multiply.121, %constant.21), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %sqrt.123 = f64[] sqrt(%add.122), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %compare.124 = pred[] compare(%sqrt.123, %constant.21), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %compare.125 = pred[] compare(%multiply.121, %constant.24), direction=GT, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %and.126 = pred[] and(%compare.124, %compare.125), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.127 = f64[] multiply(%maximum.116, %multiply.121), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.128 = f64[] divide(%multiply.127, %constant.20), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %add.129 = f64[] add(%maximum.116, %divide.128), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.130 = f64[] multiply(%maximum.116, %sqrt.123), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.131 = f64[] select(%and.126, %add.129, %multiply.130), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.132 = f64[] select(%compare.118, %multiply.119, %select.131), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %add.133 = f64[] add(%select.132, %constant.21), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %sqrt.134 = f64[] sqrt(%add.133), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.135 = f64[] divide(%sqrt.134, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.136 = f64[] multiply(%sqrt.82, %divide.135), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %sqrt.137 = f64[] sqrt(%abs.80), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %add.138 = f64[] add(%select.114, %select.132), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %sqrt.139 = f64[] sqrt(%add.138), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.140 = f64[] divide(%sqrt.139, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.141 = f64[] multiply(%sqrt.137, %divide.140), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.142 = f64[] select(%compare.109, %multiply.136, %multiply.141), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.143 = f64[] select(%or.108, %select.142, %sqrt.105), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.144 = f64[] select(%compare.81, %divide.84, %select.143), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %constant.18 = f64[] constant(2.19736822693562)
+  %divide.145 = f64[] divide(%sqrt.137, %constant.18), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.146 = f64[] divide(%sqrt.82, %sqrt.137), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.147 = f64[] divide(%sqrt.137, %sqrt.82), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.148 = f64[] select(%compare.110, %divide.146, %divide.147), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.149 = f64[] select(%compare.81, %constant.21, %select.148), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.150 = f64[] multiply(%sqrt.137, %select.149), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.151 = f64[] multiply(%sqrt.134, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.152 = f64[] divide(%multiply.150, %multiply.151), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.153 = f64[] multiply(%sqrt.139, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.154 = f64[] divide(%sqrt.137, %multiply.153), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.155 = f64[] select(%compare.109, %divide.152, %divide.154), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.156 = f64[] multiply(%sqrt.105, %constant.20), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %divide.157 = f64[] divide(%abs.80, %multiply.156), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.158 = f64[] select(%or.108, %select.155, %divide.157), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.159 = f64[] select(%compare.81, %divide.145, %select.158), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.160 = f64[] select(%compare.77, %select.144, %select.159), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %compare.161 = pred[] compare(%real.76, %constant.24), direction=LT, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %compare.162 = pred[] compare(%imag.79, %constant.24), direction=LT, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %negate.163 = f64[] negate(%select.144), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.164 = f64[] select(%compare.162, %negate.163, %select.144), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %negate.165 = f64[] negate(%select.159), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.166 = f64[] select(%compare.162, %negate.165, %select.159), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %select.167 = f64[] select(%compare.161, %select.164, %select.166), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %complex.168 = c128[] complex(%select.160, %select.167), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %broadcast.169 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} broadcast(%complex.168), dimensions={}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %multiply.170 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} multiply(%call.70, %broadcast.169), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=617}
+  %Arg_2.3 = f64[24,24,80]{2,1,0} parameter(2)
+  %convert.171 = c128[24,24,80]{2,1,0} convert(%Arg_2.3), metadata={op_name="jit(apply_H_k)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619}
+  %reshape.172 = c128[1,1,1,24,24,80]{5,4,3,2,1,0} reshape(%convert.171), metadata={op_name="jit(apply_H_k)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619}
+  %broadcast.173 = c128[1,1,1,24,24,80]{5,4,3,2,1,0} broadcast(%reshape.172), dimensions={0,1,2,3,4,5}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619}
+  %reshape.174 = c128[24,24,80]{2,1,0} reshape(%broadcast.173), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619}
+  %broadcast.175 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} broadcast(%reshape.174), dimensions={3,4,5}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619}
+  %multiply.176 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} multiply(%multiply.170, %broadcast.175), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=619}
+  %call.183 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} call(%multiply.176), to_apply=%fft_1.180
+  %reduce.188 = c128[] reduce(%constant.26, %constant.25), dimensions={0}, to_apply=%region_1.184, metadata={op_name="jit(apply_H_k)/jit(main)/reduce_prod" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %real.189 = f64[] real(%reduce.188), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.190 = pred[] compare(%real.189, %constant.24), direction=GE, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %abs.191 = f64[] abs(%real.189), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %imag.192 = f64[] imag(%reduce.188), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %abs.193 = f64[] abs(%imag.192), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.194 = pred[] compare(%abs.191, %abs.193), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %sqrt.195 = f64[] sqrt(%abs.191), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.196 = f64[] multiply(%sqrt.195, %constant.23), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.197 = f64[] divide(%multiply.196, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %maximum.198 = f64[] maximum(%abs.191, %abs.193), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %minimum.199 = f64[] minimum(%abs.191, %abs.193), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.200 = pred[] compare(%maximum.198, %minimum.199), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.201 = f64[] multiply(%maximum.198, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.202 = f64[] divide(%minimum.199, %maximum.198), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.203 = f64[] multiply(%divide.202, %divide.202), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %add.204 = f64[] add(%multiply.203, %constant.21), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %sqrt.205 = f64[] sqrt(%add.204), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.206 = pred[] compare(%sqrt.205, %constant.21), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.207 = pred[] compare(%multiply.203, %constant.24), direction=GT, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %and.208 = pred[] and(%compare.206, %compare.207), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.209 = f64[] multiply(%maximum.198, %multiply.203), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.210 = f64[] divide(%multiply.209, %constant.20), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %add.211 = f64[] add(%maximum.198, %divide.210), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.212 = f64[] multiply(%maximum.198, %sqrt.205), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.213 = f64[] select(%and.208, %add.211, %multiply.212), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.214 = f64[] select(%compare.200, %multiply.201, %select.213), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.215 = f64[] divide(%select.214, %constant.20), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.216 = f64[] divide(%abs.191, %constant.20), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %add.217 = f64[] add(%divide.215, %divide.216), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %sqrt.218 = f64[] sqrt(%add.217), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.219 = pred[] compare(%sqrt.218, %constant.24), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.220 = pred[] compare(%sqrt.218, %constant.19), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %or.221 = pred[] or(%compare.219, %compare.220), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.222 = pred[] compare(%abs.191, %abs.193), direction=GT, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.223 = pred[] compare(%abs.191, %abs.193), direction=LT, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.224 = f64[] divide(%abs.191, %abs.193), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.225 = f64[] divide(%abs.193, %abs.191), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.226 = f64[] select(%compare.223, %divide.224, %divide.225), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.227 = f64[] select(%compare.194, %constant.21, %select.226), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %abs.228 = f64[] abs(%select.227), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %maximum.229 = f64[] maximum(%abs.228, %constant.21), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %minimum.230 = f64[] minimum(%abs.228, %constant.21), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.231 = pred[] compare(%maximum.229, %minimum.230), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.232 = f64[] multiply(%maximum.229, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.233 = f64[] divide(%minimum.230, %maximum.229), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.234 = f64[] multiply(%divide.233, %divide.233), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %add.235 = f64[] add(%multiply.234, %constant.21), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %sqrt.236 = f64[] sqrt(%add.235), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.237 = pred[] compare(%sqrt.236, %constant.21), direction=EQ, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.238 = pred[] compare(%multiply.234, %constant.24), direction=GT, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %and.239 = pred[] and(%compare.237, %compare.238), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.240 = f64[] multiply(%maximum.229, %multiply.234), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.241 = f64[] divide(%multiply.240, %constant.20), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %add.242 = f64[] add(%maximum.229, %divide.241), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.243 = f64[] multiply(%maximum.229, %sqrt.236), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.244 = f64[] select(%and.239, %add.242, %multiply.243), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.245 = f64[] select(%compare.231, %multiply.232, %select.244), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %add.246 = f64[] add(%select.245, %constant.21), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %sqrt.247 = f64[] sqrt(%add.246), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.248 = f64[] divide(%sqrt.247, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.249 = f64[] multiply(%sqrt.195, %divide.248), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %sqrt.250 = f64[] sqrt(%abs.193), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %add.251 = f64[] add(%select.227, %select.245), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %sqrt.252 = f64[] sqrt(%add.251), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.253 = f64[] divide(%sqrt.252, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.254 = f64[] multiply(%sqrt.250, %divide.253), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.255 = f64[] select(%compare.222, %multiply.249, %multiply.254), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.256 = f64[] select(%or.221, %select.255, %sqrt.218), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.257 = f64[] select(%compare.194, %divide.197, %select.256), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.258 = f64[] divide(%sqrt.250, %constant.18), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.259 = f64[] divide(%sqrt.195, %sqrt.250), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.260 = f64[] divide(%sqrt.250, %sqrt.195), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.261 = f64[] select(%compare.223, %divide.259, %divide.260), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.262 = f64[] select(%compare.194, %constant.21, %select.261), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.263 = f64[] multiply(%sqrt.250, %select.262), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.264 = f64[] multiply(%sqrt.247, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.265 = f64[] divide(%multiply.263, %multiply.264), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.266 = f64[] multiply(%sqrt.252, %constant.22), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.267 = f64[] divide(%sqrt.250, %multiply.266), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.268 = f64[] select(%compare.222, %divide.265, %divide.267), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.269 = f64[] multiply(%sqrt.218, %constant.20), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.270 = f64[] divide(%abs.193, %multiply.269), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.271 = f64[] select(%or.221, %select.268, %divide.270), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.272 = f64[] select(%compare.194, %divide.258, %select.271), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.273 = f64[] select(%compare.190, %select.257, %select.272), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.274 = pred[] compare(%real.189, %constant.24), direction=LT, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.275 = pred[] compare(%imag.192, %constant.24), direction=LT, metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %negate.276 = f64[] negate(%select.257), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.277 = f64[] select(%compare.275, %negate.276, %select.257), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %negate.278 = f64[] negate(%select.272), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.279 = f64[] select(%compare.275, %negate.278, %select.272), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.280 = f64[] select(%compare.274, %select.277, %select.279), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %complex.281 = c128[] complex(%select.273, %select.280), metadata={op_name="jit(apply_H_k)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %divide.282 = c128[] divide(%constant.25, %complex.281), metadata={op_name="jit(apply_H_k)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %broadcast.283 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} broadcast(%divide.282), dimensions={}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.284 = c128[9,26,2,24,24,80]{5,4,3,2,1,0} multiply(%call.183, %broadcast.283), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.285 = pred[9,1963]{1,0} compare(%Arg_3.4, %broadcast.17), direction=LT, metadata={op_name="jit(apply_H_k)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %add.286 = s32[9,1963]{1,0} add(%Arg_3.4, %broadcast.15), metadata={op_name="jit(apply_H_k)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.287 = s32[9,1963]{1,0} select(%compare.285, %add.286, %Arg_3.4), metadata={op_name="jit(apply_H_k)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %reshape.294 = s32[9,1963,1]{2,1,0} reshape(%select.287), metadata={op_name="jit(apply_H_k)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.288 = pred[9,1963]{1,0} compare(%Arg_4.5, %broadcast.17), direction=LT, metadata={op_name="jit(apply_H_k)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %add.289 = s32[9,1963]{1,0} add(%Arg_4.5, %broadcast.15), metadata={op_name="jit(apply_H_k)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.290 = s32[9,1963]{1,0} select(%compare.288, %add.289, %Arg_4.5), metadata={op_name="jit(apply_H_k)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %reshape.295 = s32[9,1963,1]{2,1,0} reshape(%select.290), metadata={op_name="jit(apply_H_k)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %compare.291 = pred[9,1963]{1,0} compare(%Arg_5.6, %broadcast.17), direction=LT, metadata={op_name="jit(apply_H_k)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %add.292 = s32[9,1963]{1,0} add(%Arg_5.6, %broadcast.13), metadata={op_name="jit(apply_H_k)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %select.293 = s32[9,1963]{1,0} select(%compare.291, %add.292, %Arg_5.6), metadata={op_name="jit(apply_H_k)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %reshape.296 = s32[9,1963,1]{2,1,0} reshape(%select.293), metadata={op_name="jit(apply_H_k)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %concatenate.297 = s32[9,1963,3]{2,1,0} concatenate(%reshape.294, %reshape.295, %reshape.296), dimensions={2}, metadata={op_name="jit(apply_H_k)/jit(main)/concatenate" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %gather.298 = c128[9,26,2,1963]{3,2,1,0} gather(%multiply.284, %concatenate.297), offset_dims={1,2}, collapsed_slice_dims={3,4,5}, start_index_map={3,4,5}, operand_batching_dims={0}, start_indices_batching_dims={0}, index_vector_dim=2, slice_sizes={1,26,2,1,1,1}, metadata={op_name="jit(apply_H_k)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %broadcast.299 = c128[9,1,1,1963]{3,2,1,0} broadcast(%convert.28), dimensions={0,1,2,3}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %reshape.300 = c128[9,1963]{1,0} reshape(%broadcast.299), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %broadcast.301 = c128[9,26,2,1963]{3,2,1,0} broadcast(%reshape.300), dimensions={0,3}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %multiply.302 = c128[9,26,2,1963]{3,2,1,0} multiply(%gather.298, %broadcast.301), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %add.303 = c128[9,26,2,1963]{3,2,1,0} add(%multiply.55, %multiply.302), metadata={op_name="jit(apply_H_k)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618}
+  %Arg_6.7 = c128[9,102,1963]{2,1,0} parameter(6)
+  %real.304 = f64[9,102,1963]{2,1,0} real(%Arg_6.7), metadata={op_name="jit(apply_H_k)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623}
+  %imag.305 = f64[9,102,1963]{2,1,0} imag(%Arg_6.7), metadata={op_name="jit(apply_H_k)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623}
+  %negate.306 = f64[9,102,1963]{2,1,0} negate(%imag.305), metadata={op_name="jit(apply_H_k)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623}
+  %complex.307 = c128[9,102,1963]{2,1,0} complex(%real.304, %negate.306), metadata={op_name="jit(apply_H_k)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623}
+  %dot.312 = c128[9,26,2,102]{3,2,1,0} dot(%multiply.46, %complex.307), lhs_batch_dims={0}, lhs_contracting_dims={3}, rhs_batch_dims={0}, rhs_contracting_dims={2}, metadata={op_name="jit(apply_H_k)/jit(main)/RG,vsG->Rsv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623}
+  %transpose.314 = c128[9,102,2,26]{1,2,3,0} transpose(%dot.312), dimensions={0,3,2,1}, metadata={op_name="jit(apply_H_k)/jit(main)/RG,vsG->Rsv/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623}
+  %Arg_7.8 = c128[2,2,102,102]{3,2,1,0} parameter(7)
+  %dot.316 = c128[9,26,2,102]{3,2,1,0} dot(%transpose.314, %Arg_7.8), lhs_contracting_dims={1,2}, rhs_contracting_dims={3,1}, metadata={op_name="jit(apply_H_k)/jit(main)/stRQ,Qtv->Rsv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=624}
+  %transpose.318 = c128[9,102,2,26]{1,2,3,0} transpose(%dot.316), dimensions={0,3,2,1}, metadata={op_name="jit(apply_H_k)/jit(main)/stRQ,Qtv->Rsv/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=624}
+  %dot.320 = c128[9,2,26,1963]{3,2,1,0} dot(%transpose.318, %Arg_6.7), lhs_batch_dims={0}, lhs_contracting_dims={1}, rhs_batch_dims={0}, rhs_contracting_dims={1}, metadata={op_name="jit(apply_H_k)/jit(main)/RG,Rsv->vsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %transpose.325 = c128[9,26,2,1963]{3,1,2,0} transpose(%dot.320), dimensions={0,2,1,3}, metadata={op_name="jit(apply_H_k)/jit(main)/RG,Rsv->vsG/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %broadcast.327 = c128[9,1,1,1963]{3,2,1,0} broadcast(%convert.28), dimensions={0,1,2,3}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %reshape.328 = c128[9,1963]{1,0} reshape(%broadcast.327), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %broadcast.329 = c128[9,26,2,1963]{3,2,1,0} broadcast(%reshape.328), dimensions={0,3}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %multiply.330 = c128[9,26,2,1963]{3,1,2,0} multiply(%transpose.325, %broadcast.329), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %add.336 = c128[9,26,2,1963]{3,2,1,0} add(%add.303, %multiply.330), metadata={op_name="jit(apply_H_k)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %Arg_9.10 = f64[1963,9,3]{2,1,0} parameter(9)
+  %transpose.48 = f64[9,3,1963]{1,0,2} transpose(%Arg_9.10), dimensions={1,2,0}, metadata={op_name="jit(apply_H_k)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %reshape.49 = f64[9,3,1,1,1963]{4,3,2,1,0} reshape(%transpose.48), metadata={op_name="jit(apply_H_k)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %convert.51 = c128[9,3,1,1,1963]{4,3,2,1,0} convert(%reshape.49), metadata={op_name="jit(apply_H_k)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %broadcast.57 = c128[9,3,1,1,1963]{4,3,2,1,0} broadcast(%convert.51), dimensions={0,1,2,3,4}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %reshape.58 = c128[9,3,1963]{2,1,0} reshape(%broadcast.57), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %broadcast.59 = c128[9,3,26,2,1963]{4,3,2,1,0} broadcast(%reshape.58), dimensions={0,1,4}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %reshape.56 = c128[9,1,26,2,1963]{4,3,2,1,0} reshape(%multiply.46), metadata={op_name="jit(apply_H_k)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %broadcast.60 = c128[9,1,26,2,1963]{4,3,2,1,0} broadcast(%reshape.56), dimensions={0,1,2,3,4}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %reshape.61 = c128[9,26,2,1963]{3,2,1,0} reshape(%broadcast.60), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %broadcast.62 = c128[9,3,26,2,1963]{4,3,2,1,0} broadcast(%reshape.61), dimensions={0,2,3,4}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %multiply.63 = c128[9,3,26,2,1963]{4,3,2,1,0} multiply(%broadcast.59, %broadcast.62), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=614}
+  %Arg_10.11 = c128[9,3,102,1963]{3,2,1,0} parameter(10)
+  %real.308 = f64[9,3,102,1963]{3,2,1,0} real(%Arg_10.11), metadata={op_name="jit(apply_H_k)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623}
+  %imag.309 = f64[9,3,102,1963]{3,2,1,0} imag(%Arg_10.11), metadata={op_name="jit(apply_H_k)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623}
+  %negate.310 = f64[9,3,102,1963]{3,2,1,0} negate(%imag.309), metadata={op_name="jit(apply_H_k)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623}
+  %complex.311 = c128[9,3,102,1963]{3,2,1,0} complex(%real.308, %negate.310), metadata={op_name="jit(apply_H_k)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623}
+  %dot.313 = c128[9,26,2,3,102]{4,3,2,1,0} dot(%multiply.46, %complex.311), lhs_batch_dims={0}, lhs_contracting_dims={3}, rhs_batch_dims={0}, rhs_contracting_dims={3}, metadata={op_name="jit(apply_H_k)/jit(main)/RG,vsG->Rsv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623}
+  %transpose.315 = c128[9,3,102,2,26]{2,1,3,4,0} transpose(%dot.313), dimensions={0,3,4,2,1}, metadata={op_name="jit(apply_H_k)/jit(main)/RG,vsG->Rsv/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=623}
+  %dot.317 = c128[9,3,26,2,102]{4,3,2,1,0} dot(%transpose.315, %Arg_7.8), lhs_contracting_dims={2,3}, rhs_contracting_dims={3,1}, metadata={op_name="jit(apply_H_k)/jit(main)/stRQ,Qtv->Rsv/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=624}
+  %transpose.319 = c128[9,3,102,2,26]{2,3,4,1,0} transpose(%dot.317), dimensions={0,1,4,3,2}, metadata={op_name="jit(apply_H_k)/jit(main)/stRQ,Qtv->Rsv/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=624}
+  %dot.321 = c128[9,3,2,26,1963]{4,3,2,1,0} dot(%transpose.319, %Arg_6.7), lhs_batch_dims={0}, lhs_contracting_dims={2}, rhs_batch_dims={0}, rhs_contracting_dims={1}, metadata={op_name="jit(apply_H_k)/jit(main)/RG,Rsv->vsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %transpose.323 = c128[9,2,26,3,1963]{4,2,1,3,0} transpose(%dot.321), dimensions={0,2,3,1,4}, metadata={op_name="jit(apply_H_k)/jit(main)/RG,Rsv->vsG/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %dot.322 = c128[9,2,26,3,1963]{4,3,2,1,0} dot(%transpose.318, %Arg_10.11), lhs_batch_dims={0}, lhs_contracting_dims={1}, rhs_batch_dims={0}, rhs_contracting_dims={2}, metadata={op_name="jit(apply_H_k)/jit(main)/RG,Rsv->vsG/dot_general" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %add.324 = c128[9,2,26,3,1963]{4,2,1,3,0} add(%transpose.323, %dot.322), metadata={op_name="jit(apply_H_k)/jit(main)/RG,Rsv->vsG/add_any" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %transpose.326 = c128[9,3,26,2,1963]{4,2,3,1,0} transpose(%add.324), dimensions={0,3,2,1,4}, metadata={op_name="jit(apply_H_k)/jit(main)/RG,Rsv->vsG/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %reshape.331 = c128[9,1,1,1,1963]{4,3,2,1,0} reshape(%convert.28), metadata={op_name="jit(apply_H_k)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %broadcast.332 = c128[9,1,1,1,1963]{4,3,2,1,0} broadcast(%reshape.331), dimensions={0,1,2,3,4}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %reshape.333 = c128[9,1963]{1,0} reshape(%broadcast.332), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %broadcast.334 = c128[9,3,26,2,1963]{4,3,2,1,0} broadcast(%reshape.333), dimensions={0,4}, metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %multiply.335 = c128[9,3,26,2,1963]{4,2,3,1,0} multiply(%transpose.326, %broadcast.334), metadata={op_name="jit(apply_H_k)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  %add.337 = c128[9,3,26,2,1963]{4,3,2,1,0} add(%multiply.63, %multiply.335), metadata={op_name="jit(apply_H_k)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=625}
+  ROOT %tuple.338 = (c128[9,26,2,1963]{3,2,1,0}, c128[9,3,26,2,1963]{4,3,2,1,0}) tuple(%add.336, %add.337)
+}
+

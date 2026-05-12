@@ -1,0 +1,134 @@
+HloModule jit__impl, is_scheduled=true, entry_computation_layout={(c128[20,2,2,64]{3,2,1,0}, f64[20]{0}, f64[64,4]{1,0}, f64[64,4]{1,0})->c128[20,2,2,64]{3,2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,true,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="0e449bd5e15e50bda90dc796dfbff2b0"}
+
+%region_0.48 (Arg_0.49: f64[], Arg_1.50: f64[]) -> f64[] {
+  %Arg_1.50 = f64[] parameter(1), metadata={op_name="jit(_impl)/jit(main)/reduce_sum" scheduling_name="Arg_1.50"}
+  %Arg_0.49 = f64[] parameter(0), metadata={op_name="jit(_impl)/jit(main)/reduce_sum" scheduling_name="Arg_0.49"}
+  ROOT %add.9 = f64[] add(%Arg_0.49, %Arg_1.50), metadata={op_name="jit(_impl)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196 scheduling_name="add.9"}
+}
+
+%fused_reduce (param_0.38: f64[20,2,2,64]) -> f64[20] {
+  %param_0.38 = f64[20,2,2,64]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.38"}
+  %bitcast.271.1 = f64[20,256]{1,0} bitcast(%param_0.38), metadata={scheduling_name="bitcast.271.1"}
+  %constant_14_1 = f64[] constant(0)
+  ROOT %reduce.3 = f64[20]{0} reduce(%bitcast.271.1, %constant_14_1), dimensions={1}, to_apply=%region_0.48, metadata={op_name="jit(_impl)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196 scheduling_name="reduce.3"}
+}
+
+%fused_divide (param_0.4: c128[20,2,2,64], param_1.44: f64[20], param_2.34: f64[64,4], param_3.15: f64[64,4], param_4.20: u32[4], param_5.25: u32[], param_6.20: u32[4], param_7.20: f64[20]) -> c128[20,2,2,64] {
+  %param_0.4 = c128[20,2,2,64]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.4"}
+  %param_3.15 = f64[64,4]{1,0} parameter(3), metadata={scheduling_name="param_3.15"}
+  %constant_1_2 = s32[] constant(0), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %constant_21_1 = u32[1]{0} constant({0}), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %param_6.20 = u32[4]{0} parameter(6), metadata={scheduling_name="param_6.20"}
+  %param_5.25 = u32[] parameter(5), metadata={scheduling_name="param_5.25"}
+  %dynamic-slice.14.1 = u32[1]{0} dynamic-slice(%param_6.20, %param_5.25), dynamic_slice_sizes={1}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="dynamic-slice.14.1"}
+  %constant_22_1 = u32[1]{0} constant({1}), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %clamp.8.2 = u32[1]{0} clamp(%constant_21_1, %dynamic-slice.14.1, %constant_22_1), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="clamp.8.2"}
+  %convert.15.1 = s32[1]{0} convert(%clamp.8.2), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="convert.15.1"}
+  %constant_25_1 = s32[1]{0} constant({2}), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %multiply.16.2 = s32[1]{0} multiply(%convert.15.1, %constant_25_1), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="multiply.16.2"}
+  %bitcast.219.5 = s32[] bitcast(%multiply.16.2), metadata={scheduling_name="bitcast.219.5"}
+  %dynamic-slice.15.5 = f64[64,2]{1,0} dynamic-slice(%param_3.15, %constant_1_2, %bitcast.219.5), dynamic_slice_sizes={64,2}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="dynamic-slice.15.5"}
+  %transpose.6.3 = f64[2,64]{1,0} transpose(%dynamic-slice.15.5), dimensions={1,0}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="transpose.6.3"}
+  %broadcast.48.2 = f64[2,2,64]{2,1,0} broadcast(%transpose.6.3), dimensions={0,2}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="broadcast.48.2"}
+  %param_2.34 = f64[64,4]{1,0} parameter(2), metadata={scheduling_name="param_2.34"}
+  %param_4.20 = u32[4]{0} parameter(4), metadata={scheduling_name="param_4.20"}
+  %dynamic-slice.16.1 = u32[1]{0} dynamic-slice(%param_4.20, %param_5.25), dynamic_slice_sizes={1}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="dynamic-slice.16.1"}
+  %clamp.9.2 = u32[1]{0} clamp(%constant_21_1, %dynamic-slice.16.1, %constant_22_1), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="clamp.9.2"}
+  %convert.16.1 = s32[1]{0} convert(%clamp.9.2), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="convert.16.1"}
+  %multiply.17.2 = s32[1]{0} multiply(%convert.16.1, %constant_25_1), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="multiply.17.2"}
+  %bitcast.241.5 = s32[] bitcast(%multiply.17.2), metadata={scheduling_name="bitcast.241.5"}
+  %dynamic-slice.17.5 = f64[64,2]{1,0} dynamic-slice(%param_2.34, %constant_1_2, %bitcast.241.5), dynamic_slice_sizes={64,2}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="dynamic-slice.17.5"}
+  %transpose.7.3 = f64[2,64]{1,0} transpose(%dynamic-slice.17.5), dimensions={1,0}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="transpose.7.3"}
+  %broadcast.49.2 = f64[2,2,64]{2,1,0} broadcast(%transpose.7.3), dimensions={1,2}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="broadcast.49.2"}
+  %subtract.6.1 = f64[2,2,64]{2,1,0} subtract(%broadcast.48.2, %broadcast.49.2), metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="subtract.6.1"}
+  %broadcast.50.5 = f64[20,2,2,64]{3,2,1,0} broadcast(%subtract.6.1), dimensions={1,2,3}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189 scheduling_name="broadcast.50.5"}
+  %param_1.44 = f64[20]{0} parameter(1), metadata={scheduling_name="param_1.44"}
+  %broadcast.51.5 = f64[20,2,2,64]{3,2,1,0} broadcast(%param_1.44), dimensions={0}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189 scheduling_name="broadcast.51.5"}
+  %subtract.7.5 = f64[20,2,2,64]{3,2,1,0} subtract(%broadcast.50.5, %broadcast.51.5), metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189 scheduling_name="subtract.7.5"}
+  %constant_8_1 = f64[] constant(0.001)
+  %broadcast.52.5 = f64[20,2,2,64]{3,2,1,0} broadcast(%constant_8_1), dimensions={}, metadata={scheduling_name="broadcast.52.5"}
+  %add.11.5 = f64[20,2,2,64]{3,2,1,0} add(%subtract.7.5, %broadcast.52.5), metadata={op_name="jit(_impl)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189 scheduling_name="add.11.5"}
+  %abs.6.5 = f64[20,2,2,64]{3,2,1,0} abs(%add.11.5), metadata={op_name="jit(_impl)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=192 scheduling_name="abs.6.5"}
+  %constant_10_1 = f64[] constant(1e-12)
+  %broadcast.53.7 = f64[20,2,2,64]{3,2,1,0} broadcast(%constant_10_1), dimensions={}, metadata={scheduling_name="broadcast.53.7"}
+  %compare.3.5 = pred[20,2,2,64]{3,2,1,0} compare(%abs.6.5, %broadcast.53.7), direction=LT, metadata={op_name="jit(_impl)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=192 scheduling_name="compare.3.5"}
+  %select.4.1 = f64[20,2,2,64]{3,2,1,0} select(%compare.3.5, %broadcast.53.7, %add.11.5), metadata={op_name="jit(_impl)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=192 scheduling_name="select.4.1"}
+  %convert.17.2 = c128[20,2,2,64]{3,2,1,0} convert(%select.4.1), metadata={op_name="jit(_impl)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=195 scheduling_name="convert.17.2"}
+  %param_7.20 = f64[20]{0} parameter(7), metadata={scheduling_name="param_7.20"}
+  %sqrt.4.5 = f64[20]{0} sqrt(%param_7.20), metadata={op_name="jit(_impl)/jit(main)/sqrt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196 scheduling_name="sqrt.4.5"}
+  %constant_15_1 = f64[] constant(1e-30)
+  %broadcast.55.5 = f64[20]{0} broadcast(%constant_15_1), dimensions={}, metadata={scheduling_name="broadcast.55.5"}
+  %maximum.4.5 = f64[20]{0} maximum(%sqrt.4.5, %broadcast.55.5), metadata={op_name="jit(_impl)/jit(main)/max" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=198 scheduling_name="maximum.4.5"}
+  %convert.18.3 = c128[20]{0} convert(%maximum.4.5), metadata={op_name="jit(_impl)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=198 scheduling_name="convert.18.3"}
+  %broadcast.56.1 = c128[20,2,2,64]{3,2,1,0} broadcast(%convert.18.3), dimensions={0}, metadata={op_name="jit(_impl)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=198 scheduling_name="broadcast.56.1"}
+  %multiply.19.1 = c128[20,2,2,64]{3,2,1,0} multiply(%convert.17.2, %broadcast.56.1), metadata={scheduling_name="multiply.19.1"}
+  ROOT %divide.8.1 = c128[20,2,2,64]{3,2,1,0} divide(%param_0.4, %multiply.19.1), metadata={op_name="jit(_impl)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=198 scheduling_name="divide.8.1"}
+}
+
+%fused_multiply (param_0.9: c128[20,2,2,64], param_1.45: f64[20], param_2.35: f64[64,4], param_3.16: f64[64,4], param_4.21: u32[4], param_5.26: u32[], param_6.21: u32[4]) -> f64[20,2,2,64] {
+  %param_0.9 = c128[20,2,2,64]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.9"}
+  %param_3.16 = f64[64,4]{1,0} parameter(3), metadata={scheduling_name="param_3.16"}
+  %constant_1_1 = s32[] constant(0), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %constant_21_2 = u32[1]{0} constant({0}), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %param_6.21 = u32[4]{0} parameter(6), metadata={scheduling_name="param_6.21"}
+  %param_5.26 = u32[] parameter(5), metadata={scheduling_name="param_5.26"}
+  %dynamic-slice.14.2 = u32[1]{0} dynamic-slice(%param_6.21, %param_5.26), dynamic_slice_sizes={1}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="dynamic-slice.14.2"}
+  %constant_22_2 = u32[1]{0} constant({1}), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %clamp.8.1 = u32[1]{0} clamp(%constant_21_2, %dynamic-slice.14.2, %constant_22_2), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="clamp.8.1"}
+  %convert.15.2 = s32[1]{0} convert(%clamp.8.1), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="convert.15.2"}
+  %constant_25_2 = s32[1]{0} constant({2}), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %multiply.16.1 = s32[1]{0} multiply(%convert.15.2, %constant_25_2), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="multiply.16.1"}
+  %bitcast.219.7 = s32[] bitcast(%multiply.16.1), metadata={scheduling_name="bitcast.219.7"}
+  %dynamic-slice.15.7 = f64[64,2]{1,0} dynamic-slice(%param_3.16, %constant_1_1, %bitcast.219.7), dynamic_slice_sizes={64,2}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="dynamic-slice.15.7"}
+  %transpose.6.5 = f64[2,64]{1,0} transpose(%dynamic-slice.15.7), dimensions={1,0}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="transpose.6.5"}
+  %broadcast.48.1 = f64[2,2,64]{2,1,0} broadcast(%transpose.6.5), dimensions={0,2}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="broadcast.48.1"}
+  %param_2.35 = f64[64,4]{1,0} parameter(2), metadata={scheduling_name="param_2.35"}
+  %param_4.21 = u32[4]{0} parameter(4), metadata={scheduling_name="param_4.21"}
+  %dynamic-slice.16.2 = u32[1]{0} dynamic-slice(%param_4.21, %param_5.26), dynamic_slice_sizes={1}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="dynamic-slice.16.2"}
+  %clamp.9.1 = u32[1]{0} clamp(%constant_21_2, %dynamic-slice.16.2, %constant_22_2), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="clamp.9.1"}
+  %convert.16.2 = s32[1]{0} convert(%clamp.9.1), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="convert.16.2"}
+  %multiply.17.1 = s32[1]{0} multiply(%convert.16.2, %constant_25_2), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="multiply.17.1"}
+  %bitcast.241.7 = s32[] bitcast(%multiply.17.1), metadata={scheduling_name="bitcast.241.7"}
+  %dynamic-slice.17.7 = f64[64,2]{1,0} dynamic-slice(%param_2.35, %constant_1_1, %bitcast.241.7), dynamic_slice_sizes={64,2}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="dynamic-slice.17.7"}
+  %transpose.7.5 = f64[2,64]{1,0} transpose(%dynamic-slice.17.7), dimensions={1,0}, metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="transpose.7.5"}
+  %broadcast.49.1 = f64[2,2,64]{2,1,0} broadcast(%transpose.7.5), dimensions={1,2}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="broadcast.49.1"}
+  %subtract.6.2 = f64[2,2,64]{2,1,0} subtract(%broadcast.48.1, %broadcast.49.1), metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185 scheduling_name="subtract.6.2"}
+  %broadcast.50.3 = f64[20,2,2,64]{3,2,1,0} broadcast(%subtract.6.2), dimensions={1,2,3}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189 scheduling_name="broadcast.50.3"}
+  %param_1.45 = f64[20]{0} parameter(1), metadata={scheduling_name="param_1.45"}
+  %broadcast.51.3 = f64[20,2,2,64]{3,2,1,0} broadcast(%param_1.45), dimensions={0}, metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189 scheduling_name="broadcast.51.3"}
+  %subtract.7.3 = f64[20,2,2,64]{3,2,1,0} subtract(%broadcast.50.3, %broadcast.51.3), metadata={op_name="jit(_impl)/jit(main)/sub" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189 scheduling_name="subtract.7.3"}
+  %constant_8_2 = f64[] constant(0.001)
+  %broadcast.52.3 = f64[20,2,2,64]{3,2,1,0} broadcast(%constant_8_2), dimensions={}, metadata={scheduling_name="broadcast.52.3"}
+  %add.11.3 = f64[20,2,2,64]{3,2,1,0} add(%subtract.7.3, %broadcast.52.3), metadata={op_name="jit(_impl)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=189 scheduling_name="add.11.3"}
+  %abs.6.3 = f64[20,2,2,64]{3,2,1,0} abs(%add.11.3), metadata={op_name="jit(_impl)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=192 scheduling_name="abs.6.3"}
+  %constant_10_2 = f64[] constant(1e-12)
+  %broadcast.53.5 = f64[20,2,2,64]{3,2,1,0} broadcast(%constant_10_2), dimensions={}, metadata={scheduling_name="broadcast.53.5"}
+  %compare.3.3 = pred[20,2,2,64]{3,2,1,0} compare(%abs.6.3, %broadcast.53.5), direction=LT, metadata={op_name="jit(_impl)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=192 scheduling_name="compare.3.3"}
+  %select.4.2 = f64[20,2,2,64]{3,2,1,0} select(%compare.3.3, %broadcast.53.5, %add.11.3), metadata={op_name="jit(_impl)/jit(main)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=192 scheduling_name="select.4.2"}
+  %convert.17.4 = c128[20,2,2,64]{3,2,1,0} convert(%select.4.2), metadata={op_name="jit(_impl)/jit(main)/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=195 scheduling_name="convert.17.4"}
+  %divide.7.3 = c128[20,2,2,64]{3,2,1,0} divide(%param_0.9, %convert.17.4), metadata={op_name="jit(_impl)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=195 scheduling_name="divide.7.3"}
+  %abs.7.1 = f64[20,2,2,64]{3,2,1,0} abs(%divide.7.3), metadata={op_name="jit(_impl)/jit(main)/abs" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196 scheduling_name="abs.7.1"}
+  ROOT %multiply.18.1 = f64[20,2,2,64]{3,2,1,0} multiply(%abs.7.1, %abs.7.1), metadata={op_name="jit(_impl)/jit(main)/integer_pow" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196 scheduling_name="multiply.18.1"}
+}
+
+%region_0.48.clone (Arg_0.0: f64[], Arg_1.0: f64[]) -> f64[] {
+  %Arg_1.0 = f64[] parameter(1), metadata={op_name="jit(_impl)/jit(main)/reduce_sum" scheduling_name="Arg_1.0"}
+  %Arg_0.0 = f64[] parameter(0), metadata={op_name="jit(_impl)/jit(main)/reduce_sum" scheduling_name="Arg_0.0"}
+  ROOT %add.10 = f64[] add(%Arg_0.0, %Arg_1.0), metadata={op_name="jit(_impl)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196 scheduling_name="add.10"}
+}
+
+ENTRY %main.61_spmd (param.4: c128[20,2,2,64], param.3.0: f64[20], param.1.0: f64[64,4], param.2.0: f64[64,4]) -> c128[20,2,2,64] {
+  %param.3.0 = f64[20]{0} parameter(1), sharding={replicated}, metadata={op_name="Lambda" scheduling_name="param.3.0"}
+  %constant_3_0 = u32[4]{0} constant({0, 1, 0, 1}), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %param.2.0 = f64[64,4]{1,0} parameter(3), sharding={replicated}, metadata={op_name="eps_v_in" scheduling_name="param.2.0"}
+  %constant_27 = u32[4]{0} constant({0, 0, 1, 1}), metadata={op_name="jit(_impl)/jit(main)/transpose" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=185}
+  %param.1.0 = f64[64,4]{1,0} parameter(2), sharding={replicated}, metadata={op_name="eps_c_in" scheduling_name="param.1.0"}
+  %param.4 = c128[20,2,2,64]{3,2,1,0} parameter(0), sharding={devices=[1,2,2,1]<=[4]}, metadata={op_name="R" scheduling_name="param.4"}
+  %partition-id.1 = u32[] partition-id(), metadata={scheduling_name="partition-id.1"}
+  %loop_multiply_fusion = f64[20,2,2,64]{3,2,1,0} fusion(%param.4, %param.3.0, %param.2.0, %param.1.0, %constant_3_0, /*index=5*/%partition-id.1, %constant_27), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_impl)/jit(main)/integer_pow" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196 scheduling_name="loop_multiply_fusion"}
+  %input_reduce_fusion = f64[20]{0} fusion(%loop_multiply_fusion), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(_impl)/jit(main)/reduce_sum" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=196 scheduling_name="input_reduce_fusion"}
+  %all-reduce-start = f64[20]{0} all-reduce-start(%input_reduce_fusion), channel_id=3, replica_groups={{0,1,2,3}}, use_global_device_ids=true, to_apply=%region_0.48.clone, metadata={scheduling_name="all-reduce-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-reduce-done = f64[20]{0} all-reduce-done(%all-reduce-start), metadata={scheduling_name="all-reduce-done"}
+  ROOT %loop_divide_fusion = c128[20,2,2,64]{3,2,1,0} fusion(%param.4, %param.3.0, %param.2.0, %param.1.0, %constant_3_0, /*index=5*/%partition-id.1, %constant_27, %all-reduce-done), kind=kLoop, calls=%fused_divide, metadata={op_name="jit(_impl)/jit(main)/div" source_file="/global/homes/j/jackm/software/lorrax_C/src/bse/bse_davidson_helpers.py" source_line=198 scheduling_name="loop_divide_fusion"}
+}
+

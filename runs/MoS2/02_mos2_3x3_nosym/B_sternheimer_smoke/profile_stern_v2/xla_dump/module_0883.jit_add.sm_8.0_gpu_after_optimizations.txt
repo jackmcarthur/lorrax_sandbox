@@ -1,0 +1,25 @@
+HloModule jit_add, is_scheduled=true, entry_computation_layout={(c128[9,26,2,1963]{3,2,1,0}, c128[9,26,2,1963]{3,2,1,0}, c128[3,9,26,2,1963]{4,3,2,1,0}, c128[9,26,2,1963]{3,2,1,0})->(c128[9,26,2,1963]{3,2,1,0}, c128[3,9,26,2,1963]{4,3,2,1,0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true,true}, allow_spmd_sharding_propagation_to_output={true,true}, frontend_attributes={fingerprint_before_lhs="b4431f1e25c16c911e84fe3c889c8fba"}
+
+%fused_add (param_0: c128[3,9,26,2,1963], param_1.1: c128[9,26,2,1963]) -> c128[3,9,26,2,1963] {
+  %param_0 = c128[3,9,26,2,1963]{4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.1 = c128[9,26,2,1963]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1.1"}
+  %broadcast.3.1 = c128[3,9,26,2,1963]{4,3,2,1,0} broadcast(%param_1.1), dimensions={1,2,3,4}, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="broadcast.3.1"}
+  ROOT %add.6.1 = c128[3,9,26,2,1963]{4,3,2,1,0} add(%param_0, %broadcast.3.1), metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="add.6.1"}
+}
+
+%wrapped_add_computation (param_0.1: c128[9,26,2,1963], param_1.2: c128[9,26,2,1963]) -> c128[9,26,2,1963] {
+  %param_0.1 = c128[9,26,2,1963]{3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %param_1.2 = c128[9,26,2,1963]{3,2,1,0} parameter(1), metadata={scheduling_name="param_1.2"}
+  ROOT %add.4.1 = c128[9,26,2,1963]{3,2,1,0} add(%param_0.1, %param_1.2), metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="add.4.1"}
+}
+
+ENTRY %main.12 (Arg_0.1.0: c128[9,26,2,1963], Arg_1.2.0: c128[9,26,2,1963], Arg_2.3.0: c128[3,9,26,2,1963], Arg_3.4.0: c128[9,26,2,1963]) -> (c128[9,26,2,1963], c128[3,9,26,2,1963]) {
+  %Arg_3.4.0 = c128[9,26,2,1963]{3,2,1,0} parameter(3), metadata={scheduling_name="Arg_3.4.0"}
+  %Arg_2.3.0 = c128[3,9,26,2,1963]{4,3,2,1,0} parameter(2), metadata={scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = c128[9,26,2,1963]{3,2,1,0} parameter(1), metadata={scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = c128[9,26,2,1963]{3,2,1,0} parameter(0), metadata={scheduling_name="Arg_0.1.0"}
+  %wrapped_add = c128[9,26,2,1963]{3,2,1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%wrapped_add_computation, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="wrapped_add"}
+  %loop_add_fusion = c128[3,9,26,2,1963]{4,3,2,1,0} fusion(%Arg_2.3.0, %Arg_3.4.0), kind=kLoop, calls=%fused_add, metadata={op_name="jit(add)/jit(main)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/dft_operators.py" source_line=618 scheduling_name="loop_add_fusion"}
+  ROOT %tuple.11.0 = (c128[9,26,2,1963]{3,2,1,0}, c128[3,9,26,2,1963]{4,3,2,1,0}) tuple(%wrapped_add, %loop_add_fusion), metadata={scheduling_name="tuple.11.0"}
+}
+

@@ -1,0 +1,33 @@
+HloModule jit__local_fft, is_scheduled=true, entry_computation_layout={(c128[64,15,2,24,24,24]{5,4,3,2,1,0})->c128[64,15,2,24,24,24]{5,4,3,2,1,0}}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="12ef9c929567b695cb7a4ba807d27a11"}
+
+%fused_transpose (param_0.1: c128[64,15,2,24,24,24]) -> c128[46080,24,24] {
+  %param_0.1 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %bitcast.43.1 = c128[46080,24,24]{2,1,0} bitcast(%param_0.1), metadata={scheduling_name="bitcast.43.1"}
+  ROOT %transpose.16.1 = c128[46080,24,24]{2,1,0} transpose(%bitcast.43.1), dimensions={0,2,1}, metadata={op_name="jit(_local_fft)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=259 scheduling_name="transpose.16.1"}
+}
+
+%fused_transpose.1 (param_0.3: c128[64,15,2,24,24,24]) -> c128[1920,24,24,24] {
+  %param_0.3 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.3"}
+  %bitcast.36.1 = c128[1920,24,24,24]{3,2,1,0} bitcast(%param_0.3), metadata={scheduling_name="bitcast.36.1"}
+  ROOT %transpose.15.1 = c128[1920,24,24,24]{3,2,1,0} transpose(%bitcast.36.1), dimensions={0,3,2,1}, metadata={op_name="jit(_local_fft)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=259 scheduling_name="transpose.15.1"}
+}
+
+%fused_transpose.2 (param_0.5: c128[64,15,2,24,24,24]) -> c128[1920,576,24] {
+  %param_0.5 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} parameter(0), metadata={scheduling_name="param_0.5"}
+  %bitcast.29.1 = c128[1920,24,576]{2,1,0} bitcast(%param_0.5), metadata={scheduling_name="bitcast.29.1"}
+  ROOT %transpose.14.1 = c128[1920,576,24]{2,1,0} transpose(%bitcast.29.1), dimensions={0,2,1}, metadata={op_name="x" scheduling_name="transpose.14.1"}
+}
+
+ENTRY %main.7_spmd (param.1: c128[64,15,2,24,24,24]) -> c128[64,15,2,24,24,24] {
+  %param.1 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} parameter(0), sharding={devices=[1,4,1,1,1,1]<=[4]}, metadata={op_name="x" scheduling_name="param.1"}
+  %input_transpose_fusion.2 = c128[1920,576,24]{2,1,0} fusion(%param.1), kind=kInput, calls=%fused_transpose.2, metadata={op_name="x" scheduling_name="input_transpose_fusion.2"}
+  %bitcast.33.0 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} bitcast(%input_transpose_fusion.2), metadata={scheduling_name="bitcast.33.0"}
+  %fft.0.0 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} fft(%bitcast.33.0), fft_type=FFT, fft_length={24}, metadata={op_name="jit(_local_fft)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=259 scheduling_name="fft.0.0"}
+  %input_transpose_fusion.1 = c128[1920,24,24,24]{3,2,1,0} fusion(%fft.0.0), kind=kInput, calls=%fused_transpose.1, metadata={op_name="jit(_local_fft)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=259 scheduling_name="input_transpose_fusion.1"}
+  %bitcast.40.0 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} bitcast(%input_transpose_fusion.1), metadata={scheduling_name="bitcast.40.0"}
+  %fft.1.0 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} fft(%bitcast.40.0), fft_type=FFT, fft_length={24}, metadata={op_name="jit(_local_fft)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=259 scheduling_name="fft.1.0"}
+  %input_transpose_fusion = c128[46080,24,24]{2,1,0} fusion(%fft.1.0), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_local_fft)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=259 scheduling_name="input_transpose_fusion"}
+  %bitcast.47.0 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} bitcast(%input_transpose_fusion), metadata={scheduling_name="bitcast.47.0"}
+  ROOT %fft.2.0 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} fft(%bitcast.47.0), fft_type=FFT, fft_length={24}, metadata={op_name="jit(_local_fft)/jit(main)/custom_partitioning" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/fft_helpers.py" source_line=259 scheduling_name="fft.2.0"}
+}
+

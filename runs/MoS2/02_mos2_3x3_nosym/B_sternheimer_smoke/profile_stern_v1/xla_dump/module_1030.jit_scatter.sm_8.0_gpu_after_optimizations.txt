@@ -1,0 +1,34 @@
+HloModule jit_scatter, is_scheduled=true, entry_computation_layout={(f64[3]{0}, s32[1]{0}, f64[])->f64[3]{0}}, allow_spmd_sharding_propagation_to_parameters={true,true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="57d881a6602047b55b99394b06381ad7"}
+
+%fused_dynamic_slice (param_0: f64[3], param_1.1: s32[1]) -> f64[1] {
+  %param_0 = f64[3]{0} parameter(0), metadata={scheduling_name="param_0"}
+  %param_1.1 = s32[1]{0} parameter(1), metadata={scheduling_name="param_1.1"}
+  %bitcast.76.1 = s32[] bitcast(%param_1.1), metadata={scheduling_name="bitcast.76.1"}
+  ROOT %dynamic-slice.6.1 = f64[1]{0} dynamic-slice(%param_0, %bitcast.76.1), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.6.1"}
+}
+
+%fused_dynamic_update_slice (param_0.1: f64[3], param_1.6: s32[1], param_2.6: f64[1], param_3.2: f64[]) -> f64[3] {
+  %param_0.1 = f64[3]{0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %constant_21_1 = s32[1]{0} constant({0})
+  %param_1.6 = s32[1]{0} parameter(1), metadata={scheduling_name="param_1.6"}
+  %compare.9.1 = pred[1]{0} compare(%constant_21_1, %param_1.6), direction=LE, metadata={scheduling_name="compare.9.1"}
+  %constant_20_1 = s32[1]{0} constant({2})
+  %compare.10.1 = pred[1]{0} compare(%constant_20_1, %param_1.6), direction=GE, metadata={scheduling_name="compare.10.1"}
+  %and.5.1 = pred[1]{0} and(%compare.9.1, %compare.10.1), metadata={scheduling_name="and.5.1"}
+  %param_3.2 = f64[] parameter(3), metadata={scheduling_name="param_3.2"}
+  %bitcast.69.3 = f64[1]{0} bitcast(%param_3.2), metadata={scheduling_name="bitcast.69.3"}
+  %param_2.6 = f64[1]{0} parameter(2), metadata={scheduling_name="param_2.6"}
+  %select.4.3 = f64[1]{0} select(%and.5.1, %bitcast.69.3, %param_2.6), metadata={scheduling_name="select.4.3"}
+  %bitcast.76.2 = s32[] bitcast(%param_1.6), metadata={scheduling_name="bitcast.76.2"}
+  ROOT %dynamic-update-slice.4.1 = f64[3]{0} dynamic-update-slice(%param_0.1, %select.4.3, %bitcast.76.2), metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=335 scheduling_name="dynamic-update-slice.4.1"}
+}
+
+ENTRY %main.8 (Arg_0.1.0: f64[3], Arg_1.2.0: s32[1], Arg_2.3.0: f64[]) -> f64[3] {
+  %Arg_2.3.0 = f64[] parameter(2), metadata={op_name="args[2]" scheduling_name="Arg_2.3.0"}
+  %Arg_1.2.0 = s32[1]{0} parameter(1), metadata={op_name="args[1]" scheduling_name="Arg_1.2.0"}
+  %Arg_0.1.0 = f64[3]{0} parameter(0), metadata={op_name="args[0]" scheduling_name="Arg_0.1.0"}
+  %copy.2 = f64[3]{0} copy(%Arg_0.1.0)
+  %loop_dynamic_slice_fusion = f64[1]{0} fusion(%copy.2, %Arg_1.2.0), kind=kLoop, calls=%fused_dynamic_slice, metadata={scheduling_name="loop_dynamic_slice_fusion"}
+  ROOT %loop_dynamic_update_slice_fusion = f64[3]{0} fusion(%copy.2, %Arg_1.2.0, %loop_dynamic_slice_fusion, %Arg_2.3.0), kind=kLoop, calls=%fused_dynamic_update_slice, metadata={op_name="jit(scatter)/jit(main)/scatter" source_file="/global/homes/j/jackm/software/lorrax_B/src/psp/run_sternheimer.py" source_line=335 scheduling_name="loop_dynamic_update_slice_fusion"}
+}
+

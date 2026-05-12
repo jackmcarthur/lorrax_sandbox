@@ -1,0 +1,193 @@
+HloModule jit_kmeans_update_step, is_scheduled=true, entry_computation_layout={(f32[46656,3]{1,0}, f32[400,3]{1,0}, f32[46656]{0}, f32[3,3]{1,0})->(f32[400,3]{1,0}, f32[400]{0}, s64[46656]{0})}, allow_spmd_sharding_propagation_to_parameters={true,true,true,true}, allow_spmd_sharding_propagation_to_output={true,true,true}, frontend_attributes={fingerprint_before_lhs="827cfd9063b5cb3b20019d4a56f4af99"}
+
+%wrapped_transpose_computation (param_0.63: f32[46656,3]) -> f32[3,46656] {
+  %param_0.63 = f32[46656,3]{1,0} parameter(0), metadata={scheduling_name="param_0.63"}
+  ROOT %transpose.15.1 = f32[3,46656]{1,0} transpose(%param_0.63), dimensions={1,0}, metadata={op_name="positions_frac" scheduling_name="transpose.15.1"}
+}
+
+%fused_transpose (param_0.19: f32[400,3], param_1.24: f32[3,46656]) -> f32[139968,400] {
+  %param_1.24 = f32[3,46656]{1,0} parameter(1), metadata={scheduling_name="param_1.24"}
+  %broadcast.69.7 = f32[400,3,46656]{2,1,0} broadcast(%param_1.24), dimensions={1,2}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=123 scheduling_name="broadcast.69.7"}
+  %param_0.19 = f32[400,3]{1,0} parameter(0), metadata={scheduling_name="param_0.19"}
+  %broadcast.70.7 = f32[400,3,46656]{2,1,0} broadcast(%param_0.19), dimensions={0,1}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=123 scheduling_name="broadcast.70.7"}
+  %subtract.10.7 = f32[400,3,46656]{2,1,0} subtract(%broadcast.69.7, %broadcast.70.7), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=123 scheduling_name="subtract.10.7"}
+  %round-nearest-even.8.7 = f32[400,3,46656]{2,1,0} round-nearest-even(%subtract.10.7), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/jit(round)/round" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=127 scheduling_name="round-nearest-even.8.7"}
+  %subtract.11.7 = f32[400,3,46656]{2,1,0} subtract(%subtract.10.7, %round-nearest-even.8.7), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=127 scheduling_name="subtract.11.7"}
+  %bitcast.378.1 = f32[400,139968]{1,0} bitcast(%subtract.11.7), metadata={scheduling_name="bitcast.378.1"}
+  ROOT %transpose.16.1 = f32[139968,400]{1,0} transpose(%bitcast.378.1), dimensions={1,0}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=127 scheduling_name="transpose.16.1"}
+}
+
+%region_1.96 (Arg_0.97: f32[], Arg_1.98: f32[]) -> f32[] {
+  %Arg_1.98 = f32[] parameter(1), metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" scheduling_name="Arg_1.98"}
+  %Arg_0.97 = f32[] parameter(0), metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" scheduling_name="Arg_0.97"}
+  ROOT %add.8 = f32[] add(%Arg_0.97, %Arg_1.98), metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=218 scheduling_name="add.8"}
+}
+
+%fused_transpose.1 (param_0.57: f32[3,18662400], param_1.73: f32[400,3], param_2.48: f32[3,46656]) -> f32[46656,400] {
+  %param_2.48 = f32[3,46656]{1,0} parameter(2), metadata={scheduling_name="param_2.48"}
+  %broadcast.69.9 = f32[400,3,46656]{2,1,0} broadcast(%param_2.48), dimensions={1,2}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=123 scheduling_name="broadcast.69.9"}
+  %param_1.73 = f32[400,3]{1,0} parameter(1), metadata={scheduling_name="param_1.73"}
+  %broadcast.70.9 = f32[400,3,46656]{2,1,0} broadcast(%param_1.73), dimensions={0,1}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=123 scheduling_name="broadcast.70.9"}
+  %subtract.10.9 = f32[400,3,46656]{2,1,0} subtract(%broadcast.69.9, %broadcast.70.9), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=123 scheduling_name="subtract.10.9"}
+  %round-nearest-even.8.9 = f32[400,3,46656]{2,1,0} round-nearest-even(%subtract.10.9), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/jit(round)/round" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=127 scheduling_name="round-nearest-even.8.9"}
+  %subtract.11.9 = f32[400,3,46656]{2,1,0} subtract(%subtract.10.9, %round-nearest-even.8.9), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=127 scheduling_name="subtract.11.9"}
+  %param_0.57 = f32[3,18662400]{1,0} parameter(0), metadata={scheduling_name="param_0.57"}
+  %bitcast.385.5 = f32[139968,400]{1,0} bitcast(%param_0.57), metadata={scheduling_name="bitcast.385.5"}
+  %transpose.17.5 = f32[400,139968]{1,0} transpose(%bitcast.385.5), dimensions={1,0}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/pki,ij,pkj->pk/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=131 scheduling_name="transpose.17.5"}
+  %bitcast.388.3 = f32[400,3,46656]{2,1,0} bitcast(%transpose.17.5), metadata={scheduling_name="bitcast.388.3"}
+  %multiply.8.3 = f32[400,3,46656]{2,1,0} multiply(%subtract.11.9, %bitcast.388.3), metadata={scheduling_name="multiply.8.3"}
+  %constant_7_5 = f32[] constant(0)
+  %reduce.4.1 = f32[400,46656]{1,0} reduce(%multiply.8.3, %constant_7_5), dimensions={1}, to_apply=%region_1.96, metadata={scheduling_name="reduce.4.1"}
+  ROOT %transpose.18.1 = f32[46656,400]{1,0} transpose(%reduce.4.1), dimensions={1,0}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/pki,ij,pkj->pk/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=131 scheduling_name="transpose.18.1"}
+}
+
+%region_0.33 (Arg_0.34: f32[], Arg_1.35: s64[], Arg_2.36: f32[], Arg_3.37: s64[]) -> (f32[], s64[]) {
+  %Arg_3.37 = s64[] parameter(3), metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce" scheduling_name="Arg_3.37"}
+  %Arg_2.36 = f32[] parameter(2), metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce" scheduling_name="Arg_2.36"}
+  %Arg_1.35 = s64[] parameter(1), metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce" scheduling_name="Arg_1.35"}
+  %compare.25 = pred[] compare(%Arg_1.35, %Arg_3.37), direction=LT, metadata={op_name="/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="compare.25"}
+  %Arg_0.34 = f32[] parameter(0), metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce" scheduling_name="Arg_0.34"}
+  %compare.23 = pred[] compare(%Arg_0.34, %Arg_0.34), direction=NE, metadata={op_name="/ne" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="compare.23"}
+  %compare.24 = pred[] compare(%Arg_0.34, %Arg_2.36), direction=EQ, metadata={op_name="/eq" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="compare.24"}
+  %and.5 = pred[] and(%compare.24, %compare.25), metadata={op_name="/and" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="and.5"}
+  %compare.22 = pred[] compare(%Arg_0.34, %Arg_2.36), direction=LT, metadata={op_name="/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="compare.22"}
+  %or.4 = pred[] or(%compare.22, %compare.23), metadata={op_name="/or" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="or.4"}
+  %select.13 = f32[] select(%or.4, %Arg_0.34, %Arg_2.36), metadata={op_name="/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="select.13"}
+  %or.5 = pred[] or(%or.4, %and.5), metadata={op_name="/or" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="or.5"}
+  %select.14 = s64[] select(%or.5, %Arg_1.35, %Arg_3.37), metadata={op_name="/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="select.14"}
+  ROOT %tuple.47 = (f32[], s64[]) tuple(%select.13, %select.14), metadata={scheduling_name="tuple.47"}
+}
+
+%fused_reduce.1 (param_0.22: f32[46656,400]) -> (f32[46656], s64[46656]) {
+  %param_0.22 = f32[46656,400]{1,0} parameter(0), metadata={scheduling_name="param_0.22"}
+  %iota.10.1 = s64[46656,400]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(kmeans_update_step)/jit(main)/iota" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="iota.10.1"}
+  %constant_0_1 = f32[] constant(inf)
+  %constant_1_1 = s64[] constant(0)
+  ROOT %reduce.0.1 = (f32[46656]{0}, s64[46656]{0}) reduce(%param_0.22, %iota.10.1, %constant_0_1, %constant_1_1), dimensions={1}, to_apply=%region_0.33, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="reduce.0.1"}
+}
+
+%fused_compare_reduce (param_0.62: f32[46656], param_1.86: s64[46656]) -> (f32[400,216], pred[400,46656]) {
+  %param_1.86 = s64[46656]{0} parameter(1), metadata={scheduling_name="param_1.86"}
+  %broadcast.71.1.clone.1 = s64[400,46656]{1,0} broadcast(%param_1.86), dimensions={1}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(_one_hot)/eq" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=207 scheduling_name="broadcast.71.1.clone.1"}
+  %iota.11.1.clone.1 = s64[400,46656]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(_one_hot)/eq" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=207 scheduling_name="iota.11.1.clone.1"}
+  %compare.26.1.clone.1 = pred[400,46656]{1,0} compare(%broadcast.71.1.clone.1, %iota.11.1.clone.1), direction=EQ, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(_one_hot)/eq" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=207 scheduling_name="compare.26.1.clone.1"}
+  %param_0.62 = f32[46656]{0} parameter(0), metadata={scheduling_name="param_0.62"}
+  %broadcast.72.5 = f32[400,46656]{1,0} broadcast(%param_0.62), dimensions={1}, metadata={op_name="jit(kmeans_update_step)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=214 scheduling_name="broadcast.72.5"}
+  %constant_7_2 = f32[] constant(0)
+  %broadcast.73.5 = f32[400,46656]{1,0} broadcast(%constant_7_2), dimensions={}, metadata={scheduling_name="broadcast.73.5"}
+  %select.15.5 = f32[400,46656]{1,0} select(%compare.26.1.clone.1, %broadcast.72.5, %broadcast.73.5), metadata={op_name="jit(kmeans_update_step)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=214 scheduling_name="select.15.5"}
+  %bitcast.411.1 = f32[400,216,216]{2,1,0} bitcast(%select.15.5), metadata={scheduling_name="bitcast.411.1"}
+  %reduce.8.1 = f32[400,216]{1,0} reduce(%bitcast.411.1, %constant_7_2), dimensions={2}, to_apply=%region_1.96, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=219 scheduling_name="reduce.8.1"}
+  ROOT %tuple.1 = (f32[400,216]{1,0}, pred[400,46656]{1,0}) tuple(%reduce.8.1, %compare.26.1.clone.1), metadata={scheduling_name="tuple.1"}
+}
+
+%fused_reduce.3 (param_0.56: f32[400,216]) -> f32[400] {
+  %param_0.56 = f32[400,216]{1,0} parameter(0), metadata={scheduling_name="param_0.56"}
+  %constant_7_4 = f32[] constant(0)
+  ROOT %reduce.105.1 = f32[400]{0} reduce(%param_0.56, %constant_7_4), dimensions={1}, to_apply=%region_1.96, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=219 scheduling_name="reduce.105.1"}
+}
+
+%fused_reduce (param_0.54: f32[400,3], param_1.69: f32[3,46656], param_2.46: pred[400,46656], param_3.27: f32[46656]) -> f32[400,3,216] {
+  %param_2.46 = pred[400,46656]{1,0} parameter(2), metadata={scheduling_name="param_2.46"}
+  %param_3.27 = f32[46656]{0} parameter(3), metadata={scheduling_name="param_3.27"}
+  %broadcast.72.3 = f32[400,46656]{1,0} broadcast(%param_3.27), dimensions={1}, metadata={op_name="jit(kmeans_update_step)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=214 scheduling_name="broadcast.72.3"}
+  %constant_7_1 = f32[] constant(0)
+  %broadcast.73.3 = f32[400,46656]{1,0} broadcast(%constant_7_1), dimensions={}, metadata={scheduling_name="broadcast.73.3"}
+  %select.15.3 = f32[400,46656]{1,0} select(%param_2.46, %broadcast.72.3, %broadcast.73.3), metadata={op_name="jit(kmeans_update_step)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=214 scheduling_name="select.15.3"}
+  %broadcast.80.1 = f32[400,3,46656]{2,1,0} broadcast(%select.15.3), dimensions={0,2}, metadata={op_name="jit(kmeans_update_step)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=215 scheduling_name="broadcast.80.1"}
+  %param_1.69 = f32[3,46656]{1,0} parameter(1), metadata={scheduling_name="param_1.69"}
+  %broadcast.69.5 = f32[400,3,46656]{2,1,0} broadcast(%param_1.69), dimensions={1,2}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=123 scheduling_name="broadcast.69.5"}
+  %param_0.54 = f32[400,3]{1,0} parameter(0), metadata={scheduling_name="param_0.54"}
+  %broadcast.70.5 = f32[400,3,46656]{2,1,0} broadcast(%param_0.54), dimensions={0,1}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=123 scheduling_name="broadcast.70.5"}
+  %subtract.10.5 = f32[400,3,46656]{2,1,0} subtract(%broadcast.69.5, %broadcast.70.5), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=123 scheduling_name="subtract.10.5"}
+  %round-nearest-even.8.5 = f32[400,3,46656]{2,1,0} round-nearest-even(%subtract.10.5), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/jit(round)/round" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=127 scheduling_name="round-nearest-even.8.5"}
+  %subtract.11.5 = f32[400,3,46656]{2,1,0} subtract(%subtract.10.5, %round-nearest-even.8.5), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=127 scheduling_name="subtract.11.5"}
+  %multiply.9.1 = f32[400,3,46656]{2,1,0} multiply(%broadcast.80.1, %subtract.11.5), metadata={op_name="jit(kmeans_update_step)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=215 scheduling_name="multiply.9.1"}
+  %bitcast.428.1 = f32[400,3,216,216]{3,2,1,0} bitcast(%multiply.9.1), metadata={scheduling_name="bitcast.428.1"}
+  ROOT %reduce.10.1 = f32[400,3,216]{2,1,0} reduce(%bitcast.428.1, %constant_7_1), dimensions={3}, to_apply=%region_1.96, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=218 scheduling_name="reduce.10.1"}
+}
+
+%fused_reduce.4 (param_0.59: f32[400,3,216]) -> f32[400,3] {
+  %param_0.59 = f32[400,3,216]{2,1,0} parameter(0), metadata={scheduling_name="param_0.59"}
+  %constant_7_7 = f32[] constant(0)
+  ROOT %reduce.100.1 = f32[400,3]{1,0} reduce(%param_0.59, %constant_7_7), dimensions={2}, to_apply=%region_1.96, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=218 scheduling_name="reduce.100.1"}
+}
+
+%fused_select_subtract (param_0.61: f32[400,3], param_1.84: f32[400,3], param_2.60: f32[400]) -> (f32[400,3], f32[400,3]) {
+  %param_0.61 = f32[400,3]{1,0} parameter(0), metadata={scheduling_name="param_0.61"}
+  %param_2.60 = f32[400]{0} parameter(2), metadata={scheduling_name="param_2.60"}
+  %constant_7_3_clone_1 = f32[] constant(0)
+  %broadcast.75.3.clone.1 = f32[400]{0} broadcast(%constant_7_3_clone_1), dimensions={}, metadata={scheduling_name="broadcast.75.3.clone.1"}
+  %compare.27.3.clone.1 = pred[400]{0} compare(%param_2.60, %broadcast.75.3.clone.1), direction=GT, metadata={op_name="jit(kmeans_update_step)/jit(main)/gt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=224 scheduling_name="compare.27.3.clone.1"}
+  %broadcast.78.1.clone.1 = pred[400,3]{1,0} broadcast(%compare.27.3.clone.1), dimensions={0}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=223 scheduling_name="broadcast.78.1.clone.1"}
+  %param_1.84 = f32[400,3]{1,0} parameter(1), metadata={scheduling_name="param_1.84"}
+  %constant_5_1_clone_1 = f32[] constant(1e-10)
+  %broadcast.81.5.clone.1 = f32[400]{0} broadcast(%constant_5_1_clone_1), dimensions={}, metadata={scheduling_name="broadcast.81.5.clone.1"}
+  %maximum.3.5.clone.1 = f32[400]{0} maximum(%param_2.60, %broadcast.81.5.clone.1), metadata={op_name="jit(kmeans_update_step)/jit(main)/max" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=225 scheduling_name="maximum.3.5.clone.1"}
+  %broadcast.82.3.clone.1 = f32[400,3]{1,0} broadcast(%maximum.3.5.clone.1), dimensions={0}, metadata={op_name="jit(kmeans_update_step)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=225 scheduling_name="broadcast.82.3.clone.1"}
+  %divide.2.5.clone.1 = f32[400,3]{1,0} divide(%param_1.84, %broadcast.82.3.clone.1), metadata={op_name="jit(kmeans_update_step)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=225 scheduling_name="divide.2.5.clone.1"}
+  %broadcast.83.13.clone.1 = f32[400,3]{1,0} broadcast(%constant_7_3_clone_1), dimensions={}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=223 scheduling_name="broadcast.83.13.clone.1"}
+  %select.16.5.clone.1 = f32[400,3]{1,0} select(%broadcast.78.1.clone.1, %divide.2.5.clone.1, %broadcast.83.13.clone.1), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(_where)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=223 scheduling_name="select.16.5.clone.1"}
+  %add.9.3.clone.1 = f32[400,3]{1,0} add(%param_0.61, %select.16.5.clone.1), metadata={op_name="jit(kmeans_update_step)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=230 scheduling_name="add.9.3.clone.1"}
+  %constant_13_1_clone_1 = f32[] constant(1), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(remainder)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=230}
+  %broadcast.84.4.clone.1 = f32[400,3]{1,0} broadcast(%constant_13_1_clone_1), dimensions={}, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(remainder)/rem" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=230 scheduling_name="broadcast.84.4.clone.1"}
+  %remainder.3.3.clone.1 = f32[400,3]{1,0} remainder(%add.9.3.clone.1, %broadcast.84.4.clone.1), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(remainder)/rem" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=230 scheduling_name="remainder.3.3.clone.1"}
+  %compare.28.5.clone.1 = pred[400,3]{1,0} compare(%remainder.3.3.clone.1, %broadcast.83.13.clone.1), direction=LT, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(remainder)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=230 scheduling_name="compare.28.5.clone.1"}
+  %compare.29.5.clone.1 = pred[400,3]{1,0} compare(%remainder.3.3.clone.1, %broadcast.83.13.clone.1), direction=NE, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(remainder)/ne" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=230 scheduling_name="compare.29.5.clone.1"}
+  %and.6.3.clone.1 = pred[400,3]{1,0} and(%compare.28.5.clone.1, %compare.29.5.clone.1), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(remainder)/and" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=230 scheduling_name="and.6.3.clone.1"}
+  %add.10.1.clone.1 = f32[400,3]{1,0} add(%remainder.3.3.clone.1, %broadcast.84.4.clone.1), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(remainder)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=230 scheduling_name="add.10.1.clone.1"}
+  %select.17.1.clone.1 = f32[400,3]{1,0} select(%and.6.3.clone.1, %add.10.1.clone.1, %remainder.3.3.clone.1), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(remainder)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=230 scheduling_name="select.17.1.clone.1"}
+  %subtract.12.1 = f32[400,3]{1,0} subtract(%select.17.1.clone.1, %param_0.61), metadata={op_name="jit(kmeans_update_step)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=233 scheduling_name="subtract.12.1"}
+  %round-nearest-even.9.1 = f32[400,3]{1,0} round-nearest-even(%subtract.12.1), metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(round)/round" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=234 scheduling_name="round-nearest-even.9.1"}
+  %subtract.13.1 = f32[400,3]{1,0} subtract(%subtract.12.1, %round-nearest-even.9.1), metadata={op_name="jit(kmeans_update_step)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=234 scheduling_name="subtract.13.1"}
+  ROOT %tuple = (f32[400,3]{1,0}, f32[400,3]{1,0}) tuple(%subtract.13.1, %select.17.1.clone.1), metadata={scheduling_name="tuple"}
+}
+
+%fused_reduce.2 (param_0.58: f32[400,3], param_1.74: f32[400,3]) -> f32[400] {
+  %param_0.58 = f32[400,3]{1,0} parameter(0), metadata={scheduling_name="param_0.58"}
+  %param_1.74 = f32[400,3]{1,0} parameter(1), metadata={scheduling_name="param_1.74"}
+  %multiply.10.1 = f32[400,3]{1,0} multiply(%param_0.58, %param_1.74), metadata={scheduling_name="multiply.10.1"}
+  %constant_7_6 = f32[] constant(0)
+  ROOT %reduce.2.1 = f32[400]{0} reduce(%multiply.10.1, %constant_7_6), dimensions={1}, to_apply=%region_1.96, metadata={op_name="jit(kmeans_update_step)/jit(main)/ki,ij,kj->k/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=235 scheduling_name="reduce.2.1"}
+}
+
+%command_buffer (p: f32[46656,3], p.1: f32[400,3], p.2: f32[3,3], p.3: f32[46656]) -> (s64[46656], f32[400,3], f32[400]) {
+  %p = f32[46656,3]{1,0} parameter(0)
+  %p.1 = f32[400,3]{1,0} parameter(1)
+  %p.2 = f32[3,3]{1,0} parameter(2)
+  %p.3 = f32[46656]{0} parameter(3)
+  %wrapped_transpose = f32[3,46656]{1,0} fusion(%p), kind=kLoop, calls=%wrapped_transpose_computation, metadata={op_name="positions_frac" scheduling_name="wrapped_transpose"}
+  %input_transpose_fusion = f32[139968,400]{1,0} fusion(%p.1, %wrapped_transpose), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=127 scheduling_name="input_transpose_fusion"}
+  %bitcast.382.0 = f32[3,18662400]{1,0} bitcast(%input_transpose_fusion), metadata={scheduling_name="bitcast.382.0"}
+  %custom-call.2.0 = (f32[3,18662400]{1,0}, s8[4194304]{0}) custom-call(%p.2, %bitcast.382.0), custom_call_target="__cublas$gemm", metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/pki,ij,pkj->pk/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=131 scheduling_name="custom-call.2.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["0"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"9","rhs_stride":"55987200","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.2.0 = f32[3,18662400]{1,0} get-tuple-element(%custom-call.2.0), index=0, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/pki,ij,pkj->pk/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=131 scheduling_name="get-tuple-element.2.0"}
+  %input_transpose_fusion.1 = f32[46656,400]{1,0} fusion(%get-tuple-element.2.0, %p.1, %wrapped_transpose), kind=kInput, calls=%fused_transpose.1, metadata={op_name="jit(kmeans_update_step)/jit(main)/jit(pbc_distance_sq_batch)/pki,ij,pkj->pk/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=131 scheduling_name="input_transpose_fusion.1"}
+  %input_reduce_fusion.1 = (f32[46656]{0}, s64[46656]{0}) fusion(%input_transpose_fusion.1), kind=kInput, calls=%fused_reduce.1, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="input_reduce_fusion.1"}
+  %get-tuple-element.1.0 = s64[46656]{0} get-tuple-element(%input_reduce_fusion.1), index=1, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=203 scheduling_name="get-tuple-element.1.0"}
+  %input_compare_reduce_fusion = (f32[400,216]{1,0}, pred[400,46656]{1,0}) fusion(%p.3, %get-tuple-element.1.0), kind=kInput, calls=%fused_compare_reduce, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=219 scheduling_name="input_compare_reduce_fusion"}
+  %get-tuple-element.7 = pred[400,46656]{1,0} get-tuple-element(%input_compare_reduce_fusion), index=1, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=219 scheduling_name="get-tuple-element.7"}
+  %get-tuple-element.6 = f32[400,216]{1,0} get-tuple-element(%input_compare_reduce_fusion), index=0, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=219 scheduling_name="get-tuple-element.6"}
+  %input_reduce_fusion.2 = f32[400]{0} fusion(%get-tuple-element.6), kind=kInput, calls=%fused_reduce.3, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=219 scheduling_name="input_reduce_fusion.2"}
+  %input_reduce_fusion = f32[400,3,216]{2,1,0} fusion(%p.1, %wrapped_transpose, %get-tuple-element.7, %p.3), kind=kInput, calls=%fused_reduce, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=218 scheduling_name="input_reduce_fusion"}
+  %input_reduce_fusion.3 = f32[400,3]{1,0} fusion(%input_reduce_fusion), kind=kInput, calls=%fused_reduce.4, metadata={op_name="jit(kmeans_update_step)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=218 scheduling_name="input_reduce_fusion.3"}
+  %loop_select_subtract_fusion = (f32[400,3]{1,0}, f32[400,3]{1,0}) fusion(%p.1, %input_reduce_fusion.3, %input_reduce_fusion.2), kind=kLoop, calls=%fused_select_subtract, metadata={op_name="jit(kmeans_update_step)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=234 scheduling_name="loop_select_subtract_fusion"}
+  %get-tuple-element.4 = f32[400,3]{1,0} get-tuple-element(%loop_select_subtract_fusion), index=0, metadata={op_name="jit(kmeans_update_step)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=234 scheduling_name="get-tuple-element.4"}
+  %get-tuple-element.5 = f32[400,3]{1,0} get-tuple-element(%loop_select_subtract_fusion), index=1, metadata={op_name="jit(kmeans_update_step)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=234 scheduling_name="get-tuple-element.5"}
+  %custom-call.3.0 = (f32[400,3]{1,0}, s8[4836]{0}) custom-call(%get-tuple-element.4, %p.2), custom_call_target="__cublas$gemm", metadata={op_name="jit(kmeans_update_step)/jit(main)/ki,ij,kj->k/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=235 scheduling_name="custom-call.3.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"1200","rhs_stride":"9","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.3.0 = f32[400,3]{1,0} get-tuple-element(%custom-call.3.0), index=0, metadata={op_name="jit(kmeans_update_step)/jit(main)/ki,ij,kj->k/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=235 scheduling_name="get-tuple-element.3.0"}
+  %loop_reduce_fusion = f32[400]{0} fusion(%get-tuple-element.4, %get-tuple-element.3.0), kind=kLoop, calls=%fused_reduce.2, metadata={op_name="jit(kmeans_update_step)/jit(main)/ki,ij,kj->k/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax/src/centroid/kmeans_isdf.py" source_line=235 scheduling_name="loop_reduce_fusion"}
+  ROOT %tuple.2 = (s64[46656]{0}, f32[400,3]{1,0}, f32[400]{0}) tuple(%get-tuple-element.1.0, %get-tuple-element.5, %loop_reduce_fusion)
+}
+
+ENTRY %main.154 (Arg_0.1.0: f32[46656,3], Arg_1.2.0: f32[400,3], Arg_2.3.0: f32[46656], Arg_3.4.0: f32[3,3]) -> (f32[400,3], f32[400], s64[46656]) {
+  %Arg_1.2.0 = f32[400,3]{1,0} parameter(1), metadata={op_name="centroids_frac" scheduling_name="Arg_1.2.0"}
+  %Arg_3.4.0 = f32[3,3]{1,0} parameter(3), metadata={op_name="metric_tensor" scheduling_name="Arg_3.4.0"}
+  %Arg_2.3.0 = f32[46656]{0} parameter(2), metadata={op_name="rho_flat" scheduling_name="Arg_2.3.0"}
+  %Arg_0.1.0 = f32[46656,3]{1,0} parameter(0), metadata={op_name="positions_frac" scheduling_name="Arg_0.1.0"}
+  %call = (s64[46656]{0}, f32[400,3]{1,0}, f32[400]{0}) call(%Arg_0.1.0, %Arg_1.2.0, %Arg_3.4.0, %Arg_2.3.0), to_apply=%command_buffer
+  %get-tuple-element.12 = s64[46656]{0} get-tuple-element(%call), index=0
+  %get-tuple-element.13 = f32[400,3]{1,0} get-tuple-element(%call), index=1
+  %get-tuple-element.14 = f32[400]{0} get-tuple-element(%call), index=2
+  ROOT %tuple.153.0 = (f32[400,3]{1,0}, f32[400]{0}, s64[46656]{0}) tuple(%get-tuple-element.13, %get-tuple-element.14, %get-tuple-element.12), metadata={scheduling_name="tuple.153.0"}
+}
+
