@@ -1,5 +1,70 @@
 # Changelog
 
+## 2026-05-11: per-q G-chunked V_q kernel + ζ-cutoff separate from V_q cutoff [agent]
+
+Branch `agent/zeta-ibz-header` on `lorrax_D`.
+
+### Two cutoffs, separate plumbing
+
+`cfg.head.zeta_cutoff` is now an independent knob from
+`cfg.head.bare_coulomb_cutoff`.  Both default to `ecutwfc` and cap at
+`ecutrho`; `bare_coulomb > zeta` is a hard error (V_q would need ζ̃
+values the writer never stored).  The on-disk per-q sphere is built
+at `zeta_cutoff`; V_q's `sqrt_v(q+G)` mask uses
+`bare_coulomb_cutoff`.
+
+- `gw_config.HeadConfig.zeta_cutoff` (new field).
+- `gw_init.fit_zeta`: shared `_resolve_cutoff` helper validates ≤
+  ecutrho, raises on `bare > zeta`.
+- `isdf_fitting.fit_zeta_to_h5(zeta_cutoff_ry=)` builds the per-q
+  sphere at that cutoff and writes it to
+  `isdf_header/zeta_cutoff_ry` (renamed from
+  `bare_coulomb_cutoff_ry`).
+- `ZetaReader` / `ZetaLoader.zeta_cutoff_ry` surfaces it.
+
+### Per-q, G-chunked V_q kernel
+
+New `compute_vcoul.compute_v_q_per_q_g_chunked(zeta_q_L, zeta_q_R,
+v_q, g_chunk=...)` evaluates
+
+    V_q[μ,ν] = Σ_G  conj(ζ̃_μ(G)) · v(q+G) · ζ̃_ν(G)
+
+at a single q with the G-axis chunked into `g_chunk` slices.  Each
+chunk is a GEMM-shape einsum `'mG,nG->mn'` on
+`(n_rmu, g_chunk)` blocks — contiguous G access, no FFT, no
+shared-sphere conversion.  Accumulator is donated so repeated calls
+(e.g. one per q) sum in place under jit.
+
+The companion `compute_v_q_per_G(q_irr_frac, gvec_components, ...)`
+builds `v(q+G)` at the writer's per-q Miller list (matches the
+legacy kernel's full-FFT-grid `get_sqrt_v_and_phase` output at the
+sphere positions for both 2D slab and 3D bulk — tested).
+
+This is the kernel the rewritten V_q driver will call once swapped
+over; the existing `compute_V_q_tile` driver in `v_q_tile.py`
+remains in place for the current production hot path.
+
+### Tests
+
+- `tests/test_v_q_per_q_g_chunked.py` (NEW, 9 tests):
+  - kernel matches one-shot einsum (3 g_chunk sizes);
+  - bispinor off-diagonal (L ≠ R, signed/complex v);
+  - pad-slot invariance (ζ̃ = 0 at j ≥ ngk[q] ⇒ zero contribution
+    regardless of v(G) there);
+  - accumulator donation across multiple kernel calls;
+  - alignment-error path (ngkmax not divisible by g_chunk);
+  - `compute_v_q_per_G` ≡ legacy `get_sqrt_v_and_phase` at the
+    sphere positions, for `sys_dim ∈ {2, 3}`.
+
+### Followups
+
+- Swap `compute_V_q_tile` / `_choose_v_q_chunks` over to the new
+  per-q kernel.  The chooser shrinks to G-chunk + memory model
+  (q-batching gone in this scope; comment marks the seam for a
+  future opt-in).
+- Sigma readers that consume V_q[μν] are unchanged — V_q's μ × ν
+  output shape is identical to the legacy kernel's.
+
 ## 2026-05-11: G-flat ζ on-disk with WFN.h5-style per-q sphere padding [agent]
 
 Branch `agent/zeta-ibz-header` on `lorrax_D`.
