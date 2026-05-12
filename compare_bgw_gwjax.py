@@ -118,12 +118,16 @@ def get_gwjax_kpoints(wfn_path: Path) -> np.ndarray:
     """Read k-points from WFN h5 file. Returns (nk, 3) in crystal coords."""
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lorrax" / "src"))
-    try:
-        from common.wfnreader import WFNReader
-        w = WFNReader(str(wfn_path))
-        return np.array(w.kpoints, dtype=np.float64)
-    finally:
-        pass
+    # WFNReader moved to file_io.wfn_loader.WfnLoader.  Fall back to
+    # raw h5py read for the k-list — that's all we need here, and it
+    # avoids a dependency on the rest of the LORRAX import surface.
+    import h5py as _h5
+    with _h5.File(str(wfn_path), 'r') as f:
+        kpts = np.asarray(f['mf_header/kpoints/rk'][...], dtype=np.float64)
+    # rk in WFN.h5 is (3, nrk); transpose to (nrk, 3).
+    if kpts.ndim == 2 and kpts.shape[0] == 3 and kpts.shape[1] != 3:
+        kpts = kpts.T
+    return kpts
 
 
 def match_kpoint(kcrys_bgw: tuple[float, ...], gwjax_kpts: np.ndarray, tol: float = 1e-4) -> int | None:

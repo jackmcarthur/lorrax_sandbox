@@ -1,5 +1,63 @@
 # Changelog
 
+## 2026-05-11: G-flat ζ + new V_q orchestrator — end-to-end MoS2 3×3 [agent]
+
+Branch `agent/zeta-ibz-header` on `lorrax_D`.
+
+End-to-end shakedown on Perlmutter (1 node × 4× A100, 4-rank).
+Writer ran in G-flat mode (`LORRAX_WRITE_G_FLAT_ZETA=1`), V_q via
+the new `gw.v_q_g_flat.compute_all_V_q_g_flat` orchestrator, Σ
+through the existing path.  No code changes to the kernel since
+yesterday's swap commit — only orchestration patches caught in
+shakedown.
+
+Run directory: `runs/MoS2/00_mos2_3x3_cohsex/D_gflat_xonly_2026-05-11/`
+Report:        `reports/gflat_e2e_mos2_3x3_2026-05-11/report.md`
+
+### Numbers (vs r-space baseline 02_lorrax_xonly)
+
+| Quantity                 | r-space   | G-flat     | Ratio |
+|--------------------------|-----------|------------|-------|
+| `zeta_q.h5` size         | 2.3 GB    | **101 MB** | **23×** |
+| Total wallclock          | 17.2 s    | **11.4 s** | 1.5× |
+| `zeta_fit.close_io`      | 3.8 s     | 0.1 s      | **~38×** |
+| `V_q_compute`            | 4.4 s     | **0.7 s**  | **6.3×** |
+| Σ stage                  | 3.1 s     | 2.9 s      | 1.07× |
+
+sigma_diag agreement: **5 decimals vs r-space baseline** at every
+k, band sampled (per-q sphere is a strict subset of the legacy
+shared sphere; the few cutoff-edge G's drop out by design since
+`v(q+G) → 0` past `zeta_cutoff_ry`).
+
+### Shakedown fixes (commit 6ebfc3e)
+
+- `compute_all_V_q` dispatcher: async prefetch default OFF (env
+  `LORRAX_V_Q_G_FLAT_ASYNC_PREFETCH=0`).  The worker-thread G-flat
+  read deadlocks against the PHDF5 FFI collective in production
+  (NCCL kernel collectives interleave with the MPI read collective
+  via the GIL in ways that hang).  Sync loop is already 6.3× faster
+  than the legacy driver — async is a future opt-in.
+- `v_q_g_flat.compute_all_V_q_g_flat`: caller in `gw_init.py`
+  passes `ZetaReader`, not `ZetaLoader` (the unit tests use the
+  loader).  Orchestrator now detects which API is on hand and
+  dispatches accordingly.
+- Per-q progress print on the sync path (`read=…s, kernel=…s`):
+  one line per q so a stuck JIT compile or NCCL hang is visible
+  in `tail -F run.log`.
+- `gw_init.py` ζ-peek diagnostic: reads `'zeta_q_G'` on G-flat
+  files (was hard-coded to `'zeta_q'`).
+- `compare_bgw_gwjax.py` (sandbox top-level): replaced the stale
+  `common.wfnreader.WFNReader` import with raw h5py k-list read.
+
+### Followups (unchanged)
+
+- BGW agreement: 0.5 eV gap at band 19 for MoS2 3×3 x-only is
+  **pre-existing in the r-space baseline** — not introduced by
+  this rewrite.  Worth a separate dig.
+- Async prefetch re-enable (NCCL ↔ MPI interleave).
+- Bispinor 7-tile orchestrator
+  (`gw.v_q_bispinor.compute_V_q_bispinor_to_h5`).
+
 ## 2026-05-11: V_q driver swap — new G-flat orchestrator [agent]
 
 Branch `agent/zeta-ibz-header` on `lorrax_D`.
