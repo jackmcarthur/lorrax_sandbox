@@ -1,5 +1,39 @@
 # Changelog
 
+## 2026-05-11: V_q driver swap — new G-flat orchestrator [agent]
+
+Branch `agent/zeta-ibz-header` on `lorrax_D`.
+
+The G-flat V_q hot loop is now end-to-end: ζ̃ read off disk in WFN.h5
+per-q sphere layout → v(q+G) built at the per-q Miller components →
+G-chunked contract → dynamic_update_slice into (V_acc, g0_acc) →
+IBZ-to-full unfold.
+
+- `gw/v_q_g_flat.py` (NEW, ~280 LOC) — `compute_all_V_q_g_flat`.
+  Replaces the legacy ``compute_V_q_tile`` / ``_choose_v_q_chunks``
+  pipeline for the G-flat-on-disk case.  μ × ν tiling, the chooser,
+  the in-V_q FFT, and the shared-sphere conversion all collapse:
+  per q, one read + one ``compute_v_q_per_q_g_chunked`` call.  Async
+  prefetch (single-step) overlaps the next q's read with the current
+  q's contract (borrowed from `v_q_tile`).
+- `compute_vcoul.compute_all_V_q` now dispatches on
+  ``zeta_io.zeta_layout``: G-flat → new orchestrator; r-space →
+  legacy `v_q_tile` path (kept as fallback).
+- Tests in ``tests/test_compute_all_V_q_g_flat.py``: synthesised
+  G-flat ζ file → orchestrator output bit-matches a one-shot
+  einsum reference; async vs sync identical; r-space loader is
+  rejected with a clear error.
+
+### Followups
+
+- Larger profile (Si 4×4×4 / MoS2 3×3×1) with the new path enabled
+  to validate the disk-shrinkage + I/O-overlap wins claimed for
+  the writer.
+- Bispinor V^{μ_L, ν_L} 7-tile driver
+  (`gw/v_q_bispinor.compute_V_q_bispinor_to_h5`) still uses the
+  legacy r-space path; swap follows the same pattern (1 q at a time,
+  G-chunked, per-tile signed v).
+
 ## 2026-05-11: per-q G-chunked V_q kernel + ζ-cutoff separate from V_q cutoff [agent]
 
 Branch `agent/zeta-ibz-header` on `lorrax_D`.
