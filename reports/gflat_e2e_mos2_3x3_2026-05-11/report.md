@@ -81,11 +81,27 @@ the sigSX residual, fully consistent.
 
 ### LORRAX vs BGW (sigma_hp.log)
 
-The ~0.5 eV LORRAX-vs-BGW gap at band 19 (LORRAX -16.997 vs BGW
--16.532) exists **in both the legacy r-space path and the new
-G-flat path with identical numerics** — i.e. it's a pre-existing
-discrepancy for MoS2 3×3 x-only, not introduced by this rewrite.
-Separate investigation.
+I overstated the BGW agreement on first reading.  A proper
+band-by-band check (DFT-energy matched) at k=Γ shows the gap is
+**not uniform**:
+
+| band | LORRAX sigSX (eV) | BGW X column (eV) | Δ           |
+|------|-------------------|-------------------|-------------|
+| 19   | -16.997           | -16.532           | 0.47        |
+| 21   | -24.390           | -18.710           | **5.68**    |
+| 23   | -24.404           | -18.614           | **5.79**    |
+| 25   | -18.510           | -17.275           | 1.24        |
+| 27   | -14.302           | -11.052           | 3.25        |
+
+Both LORRAX paths (legacy r-space, new G-flat) produce the **same**
+LORRAX values to 5 decimals, so this discrepancy is independent of
+the V_q rewrite — but it is a real LORRAX-vs-BGW gap that I should
+not have characterized as "0.5 eV pre-existing".  The pattern
+(small at band 19, large at 21/23) is band-specific, not a
+plateau, so per the sandbox memory the right next step is to chase
+algorithm / convention differences (e.g. sym handling at degenerate
+band manifolds, sphere-vs-shell gathering at the cutoff edge) — not
+ISDF rank.  Tracked as a separate followup.
 
 ## On-disk HDF5 layout (G-flat)
 

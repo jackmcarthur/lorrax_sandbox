@@ -1,5 +1,89 @@
 # Changelog
 
+## 2026-05-11: Bispinor V_q orchestrator on G-flat — end-to-end MoS2 3×3 [agent]
+
+Branch `agent/zeta-ibz-header` on `lorrax_D`.
+
+The 7-tile bispinor V_q^{μ_L, ν_L} hot loop is now end-to-end on
+the G-flat ζ disk format.  All seven unique tiles (CC + 3 TT
+diagonal + 3 TT off-diagonal) run through the new per-q +
+G-chunked kernel.
+
+Run directory: `runs/MoS2/00_mos2_3x3_cohsex/D_gflat_bispinor_2026-05-11/`
+Report:        `reports/gflat_e2e_bispinor_mos2_3x3_2026-05-11/report.md`
+
+### Code changes
+
+- `gw/v_q_g_flat.py`: factored a private `_compute_V_q_g_flat_one_tile`
+  helper (~250 LOC) that drives one tile end-to-end.  Charge wrapper
+  `compute_all_V_q_g_flat` reduced to a ~30-line bare-Coulomb
+  v_per_G builder + helper call.  Kernel parametrized over
+  `(n_rmu_L, n_rmu_R)` with separate L/R buffers; the same_zeta
+  path still aliases L=R inside the jit.
+- `gw/v_q_bispinor.py`: added `compute_V_q_bispinor_g_flat_to_h5`
+  (~120 LOC).  Loops over `UNIQUE_TILES`, builds per-tile
+  `v(q+G)` via new `_make_per_q_v_builder_for_tile` (CC = bare
+  Coulomb; TT = bare · `(δ_ij − K̂_i K̂_j)`), calls the shared
+  helper, streams each tile to HDF5.  Reuses the existing
+  `tile_dataset_name`, `UNIQUE_TILES`, `HERMITIAN_PAIRS`,
+  `BispinorVqReader` (output format is unchanged).
+- `gw/gw_init.py`: bispinor dispatch reads the charge ζ's
+  `isdf_header.zeta_layout` and routes to the new orchestrator
+  on G-flat (opens 4 `ZetaReader` handles).  Legacy r-space path
+  preserved as fallback.  Also: copy `sys_dim` onto `meta_curr`
+  (dataclasses.replace strips dynamic attrs — caught by the
+  bispinor shakedown).
+
+### Numbers (vs the legacy bispinor smoke A_bispinor_smoke_2026-05-08)
+
+ζ disk-shrink (per file, all in `tmp/`):
+
+| File              | Legacy r-space | G-flat new | Ratio |
+|-------------------|----------------|------------|-------|
+| `zeta_q.h5`       | 4.0 GB         | 177 MB     | 23×   |
+| `zeta_q_mu1.h5`   | 2.6 GB         | 181 MB     | 14×   |
+| `zeta_q_mu2.h5`   | 4.2 GB         | 181 MB     | 23×   |
+| `zeta_q_mu3.h5`   | 4.2 GB         | 181 MB     | 23×   |
+| **Total ζ**       | **15.0 GB**    | **720 MB** | **~21×** |
+| `v_q_bispinor.h5` | 446 MB         | 424 MB     | 1.05× |
+
+`v_q_bispinor.h5` size is unchanged by design — V_q has
+(μ × μ) axes, no G-axis.
+
+V_q wall: 4.2 s for all 7 tiles on 4× A100 (extrapolated ~6×
+faster than the legacy μ × ν tile driver from the charge-only
+shakedown; total bispinor pipeline 47.3 s).
+
+### Numerics
+
+Bare Σ_X print at k=Γ matches the legacy r-space baseline to
+**0.01 eV** band-by-band (-40.0326 new vs -40.0277 legacy at
+band 1; matching delta of ~5 meV across all sampled bands).  The
+residual is per-q sphere ⊂ shared sphere drop-out of cutoff-edge
+G's, as designed.
+
+Bispinor unit tests in `tests/test_compute_V_q_bispinor_g_flat.py`
+(committed in `ac735cc`):
+* 7 tiles agree with a per-q einsum reference V^{μ_L, ν_L}[μ, ν]
+  = Σ_G conj(ζ_L) · v_q^{μ_L, ν_L} · ζ_R to 1e-10;
+* CC tile from the bispinor orchestrator is bit-identical to the
+  charge-only orchestrator on the same ζ_C file (confirms genuine
+  code path sharing, not just structural duplication).
+
+### Notes
+
+- Each new kernel compile emits ~8 `Involuntary full
+  rematerialization` SPMD warnings (disk read at `P(None, ('x','y'),
+  None)` reshards to `P(('x','y'), None)` inside the jit; XLA does
+  full rematerialization instead of an all-to-all).  Non-fatal;
+  ~20 MB per q per rank lost to the copy, dwarfed by the kernel
+  time.  Followup: have the loader expose a directly-sharded read.
+
+- `eqp0_bisp.dat` (full bispinor Σ^B reading the TT tiles) was
+  not emitted by either the baseline or this run for this config —
+  appears to need an output flag we haven't enabled.  Separate
+  followup.
+
 ## 2026-05-11: G-flat ζ + new V_q orchestrator — end-to-end MoS2 3×3 [agent]
 
 Branch `agent/zeta-ibz-header` on `lorrax_D`.
