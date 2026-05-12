@@ -412,4 +412,102 @@ A100), a safe per-rank XLA budget is 50 GB ⇒ r_chunk ⪅ `5 ·
 (50e9 / 16) / (n_q · n_rmu)` ≈ `1e8 / (36 · 1504)` ≈ 1850 at this
 geometry.  Bisecting downward from 50000.
 
-(Runs in progress; final value will be appended once it lands.)
+### 2026-05-12 — r_chunk-independent OOM ⇒ band_chunk_size is the lever
+
+Device type: **NVIDIA A100-SXM4-40GB** (not 80 GB; the
+``memory_per_device_gb = 60`` in cohsex.in is unenforceable here).
+
+| r_chunk | XLA original | post-remat | XLA floor |
+|---:|---:|---:|---:|
+| 50000  | 60.35 GiB | 41.94 GiB | 27.43 GiB |
+| 14992  | 69.55 GiB | 57.07 GiB | 29.11 GiB |
+
+**XLA's allocation request is r_chunk-independent** (60.24 ≈ 60.35
+GiB at both 15 k and 50 k r-chunks).  The OOM is therefore not in
+the r-axis intermediates (Z_q-class) but in **a fixed-size
+allocation upstream**: the band-chunk FFT box on the
+``psi_G_store.fetch_psi_rchunk`` → ``to_rchunk`` path.
+
+Per-rank band-chunk FFT box if fully sharded:
+``n_k · band_chunk · ns · nx · ny · nz · 16 / P``
+= ``36 · 16 · 4 · 75 · 75 · 200 · 16 / 16 / 16`` ≈ **2.5 GB / rank**
+(at band_chunk = 16, 4×4 mesh).
+
+If XLA materialises that FFT box **unsharded on every rank**:
+``36 · 16 · 4 · 75 · 75 · 200 · 16`` ≈ **41 GB / rank**.
+
+Plus XLA pipelining / fusion overhead → 60 GB.  On a 40 GB A100, this
+is the OOM.  Same FFT box at ``band_chunk = 4``: ~10 GB unsharded
+per rank — fits.
+
+**Empirical rule (CrI3-class, 40 GB A100):**
+- Always set ``band_chunk_size`` such that ``n_k · band_chunk · ns ·
+  n_rtot · 16 < 8 GB`` even when materialised unsharded.  For CrI3
+  6×6×1 (n_k=36, ns=4, n_rtot=1.125 M): ``band_chunk ≤ 4``.
+- ``r_chunk_size`` is then much less constrained; choose for
+  iteration-count efficiency (e.g. ~20–50 chunks total).
+- ``LORRAX_GFLAT_CHUNK_SIZE`` (the accumulate FFT box) should still
+  be set to bound ``chunk_size · n_rtot · 16 < 1 GB`` (CrI3:
+  chunk_size ≈ 64).
+
+The structural root cause — XLA failing to keep the band-chunk FFT
+box sharded — is the same regression class the agent's "16× safety
+margin" comment in ``load_wfns:657`` is working around.  Real fix
+is to add a ``with_sharding_constraint`` inside the per-bc FFT path
+to forbid unsharded materialisation.  Not done in this commit;
+documented as a follow-up.
+
+### 2026-05-12 — band_chunk_size=4 trips a separate phdf5 read bug
+
+Setting ``band_chunk_size = 4, r_chunk_size = 30000`` to bound the
+unsharded FFT box: kernel **doesn't OOM** but now fails at the
+``loader.load(...)`` call inside the k-chunked load path
+(``common/load_wfns.py:795``) with:
+
+```
+HDF5-DIAG: H5S_get_validated_dataspace(): selection + offset not within extent
+  major: Dataspace,  minor: Out of range
+INTERNAL: phdf5 read_kchunk_union: H5Dread failed
+```
+
+phdf5 issues an HDF5 dataspace hyperslab whose `(offset, size)`
+extends past the dataset.  With nband = 150 and ``band_chunk = 4``,
+the last band-chunk has 150 % 4 = 2 bands and the read-bounds math
+in ``read_kchunk_union`` must be off by one for the remainder.
+Untested: ``band_chunk_size`` values that divide n_band cleanly
+(e.g. 10, 15, 25).
+
+**Status:** CrI3 6×6 80 Ry on 40 GB A100s **requires** code-side
+work beyond the μ_XY refactor:
+
+1. Add a `with_sharding_constraint(box, P(None, ('x','y'), None,
+   None, None, None))` inside `to_rmu` / band-chunked load to
+   prevent XLA from materialising the FFT box unsharded.  This is
+   the real fix; would allow `band_chunk_size = 16` to live in
+   ~2.5 GB/rank instead of 41 GB/rank.
+2. OR fix the `read_kchunk_union` remainder bound to allow
+   `band_chunk_size = 4` without overshooting the dataspace.
+
+Either fix unblocks CrI3 6×6 80 Ry.  The μ_XY refactor itself is
+correct (MoS2 3×3 bispinor: bit-identical eqp0, wall 51.8 s vs the
+pre-fix 53 s; structural eliminations confirmed) — it just doesn't
+address either of the two CrI3-scale upstream problems.
+
+### Manual override cookbook (for posterity)
+
+In `cohsex.in`:
+```ini
+memory_per_device_gb = <≤ device_memory − 8 GB>   # 40 GB A100 → 32
+r_chunk_size = <see analytic table §10 above>      # currently 15k–50k untestable
+band_chunk_size = <2–8 ideally; check it divides n_band; check phdf5 bug>
+```
+
+Env knobs:
+```bash
+LORRAX_GFLAT_CHUNK_SIZE=<bytes-budget / (n_rtot · 16)>   # accumulate FFT box
+LORRAX_PSIG_KCHUNK=<n_k / 4>                             # psi_G_store kchunk
+```
+
+Never trust ``memory_per_device_gb`` in cohsex.in as anything more
+than a hint for the (stale) AOT chooser; XLA preallocation does its
+own thing.
