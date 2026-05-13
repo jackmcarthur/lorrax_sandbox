@@ -28,6 +28,18 @@ incorrect sandbox scaffolding is the human's job.
 
 ## Issues
 
+### 2026-05-12: Active LORRAX tree is `sources/lorrax_D`, but top-level docs still reference `sources/lorrax`
+- **Where**: `AGENTS.md` source-code table and non-negotiable rule 5; `skills/checkpoint/SKILL.md` git command examples.
+- **What happened**: Following the documented `sources/lorrax` path failed because this sandbox checkout has `sources/lorrax_D` and `sources/lorrax_D_old`, but no `sources/lorrax` symlink.
+- **Expected**: The docs should either point at the active `sources/lorrax_D` tree or provide a `sources/lorrax` symlink.
+- **Workaround**: Treat `sources/lorrax_D` as the active LORRAX source for this session, matching the user's request to inspect "lorrax D".
+
+### 2026-05-12: MoS2 D variant run directories lack per-variant manifests
+- **Where**: `runs/MoS2/00_mos2_3x3_cohsex/D_perf_after_2026-05-12/` and `D_gflat_bispinor_shardmap_2026-05-12/`; top-level `AGENTS.md` says every run directory must have a `manifest.yaml`.
+- **What happened**: Attempting to read the active variant manifests failed with `No such file or directory`; the parent `runs/MoS2/00_mos2_3x3_cohsex/manifest.yaml` still lists old steps as `pending`.
+- **Expected**: Each D variant run should include a manifest or the parent manifest should track the D variants' states.
+- **Workaround**: Use the corresponding report files and `profile_launch.log` / output files for D-run status until manifests are repaired.
+
 ### ~~2026-04-04: kin_ion.h5 not mentioned in BUILD_INPUTS or run setup docs~~ FIXED
 - **Fix**: Added `kin_ion_file = kin_ion.h5` documentation to `skills/build_inputs/SKILL.md` Step 6 (GWJAX input), describing the file, its shape, how to generate it, and its dependencies.
 

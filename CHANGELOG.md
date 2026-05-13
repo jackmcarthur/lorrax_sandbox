@@ -1,5 +1,161 @@
 # Changelog
 
+## 2026-05-13: WFN rchunk construction communication profile on LORRAX_D [agent]
+
+Report: `reports/wfn_rchunk_profile_2026-05-13/report.md`
+
+Inspected newest `sources/lorrax_D` WFN loading / `psi_n_XYk(rchunk)` path and
+mined the freshest 4-GPU D-usage HLO profile while the new allocation remained
+pending.  The source path intends rank-local behavior after
+`PsiGStore.fetch_psi_rchunk` pulls each rank's host tile, but the HLO shows
+large unwanted all-gathers in the fused per-rchunk kernel: repeated
+`506.25 MiB` `all-gather-start` operations attributed to
+`common/wfn_transforms.py:109`, gathering local
+`c128[4,4,9,24,24,80]` FFT-box shards into full
+`c128[16,4,9,24,24,80]` buffers.  `psi_G_store.populate.loader_load` is only
+~0.84-0.86 s for five band chunks and `shard_to_host` is ~10 ms, so the
+communication problem is not the host tile copy; it is the JAX/SPMD boundary
+around G-flat gather / FFT-box materialization.  Recommended next edit: keep
+the full `to_rchunk` pipeline inside a single `shard_map` region rather than
+only wrapping the FFT.
+
+Follow-up implementation trial on the same branch added an opt-in
+`LORRAX_PSIG_RCHUNK_SHARDMAP=1` path:
+
+- `src/common/wfn_transforms.py`: new `to_rchunk_shard_map` keeps G-flat
+  gather, local IFFT, r-slice, and Bloch phase inside one `shard_map` region.
+- `src/common/psi_G_store.py`: `fetch_psi_rchunk` dispatches to that variant
+  when the env var is set.
+- Fresh 4-GPU run:
+  `runs/MoS2/00_mos2_3x3_cohsex/D_wfn_rchunk_shardmap_2026-05-13`.
+  It completed end-to-end; `eqp0.dat` numeric rows match the prior D-usage
+  profile exactly (timestamp differs).
+- HLO result: the `wfn_transforms.py:109` `506.25 MiB` all-gathers disappear
+  from `collectives_details.txt`.  Top remaining collectives are now V_q-side
+  `gw/v_q_tile.py:717/718` all-gathers at ~183-188 MiB.
+- Targeted validation passed on CPU:
+  `24 passed` for `test_wfn_transforms.py`, `test_rchunk_gflat_pair.py`, and
+  `test_psi_g_store.py`.  Full CPU-forced suite remains not clean due unrelated
+  failures (`gw_jax` regression subprocess OOMed on GPU selection, plus the
+  known `make_v_munu_chunked_kernel(... mesh_xy)` API drift in two V_q tests).
+
+## 2026-05-13: GWJAX FFI/JAX boundary profile on LORRAX_A [agent]
+
+Moved the profiling investigation to `sources/lorrax_A` on branch
+`agent/ffi-boundary-profile-a`, based on `origin/agent/zeta-ibz-header`.
+No LORRAX_A source files were modified.
+
+Report: `reports/ffi_boundary_profile_a_2026-05-13/report.md`
+
+Ran two 4-GPU MoS2 3x3 `gw.gw_jax` profiles with the sandbox profiling stack:
+
+- Baseline A:
+  `runs/MoS2/00_mos2_3x3_cohsex/A_ffi_boundary_profile_2026-05-13`
+  (`path=sharded_cholesky` for charge, JAX/CUDA LU for transverse).
+- cuSOLVERMp A:
+  `runs/MoS2/00_mos2_3x3_cohsex/A_ffi_boundary_cusolvermp_profile_2026-05-13`
+  with `LORRAX_USE_CUSOLVERMP_CHARGE_FACTOR=1` and
+  `LORRAX_USE_CUSOLVERMP_LU=1`.
+
+Key findings:
+
+- End-to-end `run_module:gw.gw_jax` wall time was essentially unchanged:
+  baseline `101.25 s`, cuSOLVERMp `101.40 s`; profiled totals were
+  `85.422 s` vs `85.844 s`.
+- HLO custom-call counts show only 3 `lorrax_cusolvermp_batched_potrf`,
+  3 `lorrax_cusolvermp_batched_potrs`, and 9
+  `lorrax_cusolvermp_batched_solve_lu` calls in the full cuSOLVERMp run, so
+  direct Python/JAX-to-CustomCall boundary count is not the main wall limiter.
+- cuSOLVERMp reduced HLO modules/compile count slightly (`1077 -> 1033`,
+  XLA compile `21.5 s -> 16.4 s`) but greatly increased low-level GPU trace
+  activity (`12k -> 242k` GPU events, `8 -> 654` compute streams).
+- The strongest avoidable JAX overhead is first-run orchestration:
+  roughly 600 cache misses in both runs, led by local `_per_rank` jitted
+  closures in `src/file_io/_slab_io_ffi.py` read/write paths and repeated small
+  primitives in `wfn_loader.py`, `gamma_matrices.py`, and `fft_helpers.py`.
+- The largest steady-state levers are still high-level GWJAX collectives and
+  data motion: `V_q_compute` at ~38.5 s, zeta fits at ~36-37 s total, repeated
+  2.47 GiB all-gathers in `wfn_transforms.py`, and all-reduces in the
+  factorization path.
+- Follow-up: fast-forwarded `lorrax_A` branch `agent/ffi-boundary-profile-a`
+  to the D usage stack (`lorrax_D/agent/cusolvermp-ffi-profile`, commit
+  `c21d855`) and reran the same profile in
+  `runs/MoS2/00_mos2_3x3_cohsex/A_rebased_D_usage_profile_2026-05-13`.
+  Compile/retrace metrics improved (`582/562 -> 478` XLA compiles and
+  `629/602 -> 525` cache misses), but wall time regressed to `150.30 s`
+  (`133.750 s` profiled) because zeta HDF5 write/close time ballooned.
+  The top cache misses still include `_slab_io_ffi.py` `_per_rank` factories
+  (`20` read, `17` write), so the first caching pass is incomplete from JAX's
+  callable-identity perspective.
+- q-loop acceleration probe: prototyped an opt-in CUDA Graph replay path for
+  the existing full-mesh `cusolverMpPotrf` q-loop using stable ctx-owned staging
+  buffers.  The code built, but `cusolverMpPotrf` failed during stream capture
+  with status `7` at `q=0` on all ranks under cuSOLVERMp 0.7.2 / NCCL 2.26.3.
+  Baseline potrf for the same shape was `9.523 ms` median.  Removed the failed
+  prototype and rebuilt the FFI shared library from the reverted source.
+
+## 2026-05-12: cuSOLVERMp FFI 4-GPU profiling harness + Nsight traces [agent]
+
+Branch `agent/cusolvermp-ffi-profile` on `lorrax_D`.
+
+Added a dedicated 4-GPU benchmark/profiling driver near the cuSOLVERMp FFI:
+`sources/lorrax_D/src/ffi/cusolvermp/profile_batched.py`.  The harness runs
+under the normal `lxrun`/Shifter/JAX-distributed path, defaults to the
+MoS2-3x3-like shape (`nq=9`, `n=640`, `mrhs=640`, `complex128`, `2x2` mesh),
+prebuilds donated inputs outside the timed range, and supports
+`nsys --capture-range=cudaProfilerApi`.
+
+Report: `reports/cusolvermp_ffi_profile_2026-05-12/report.md`
+
+Code/profile changes:
+- Added NVTX step ranges to `batched_potrf_ffi.cc` and `batched_potrs_ffi.cc`
+  for cross-stream waits, copies, descriptor setup, buffer-size query,
+  workspace ensure, per-q cuSOLVERMp calls, and descriptor teardown.
+- Added the CUDA toolkit target include directory to the FFI CMake include
+  path so `<nvtx3/nvToolsExt.h>` resolves in the container.
+- Captured rank-local Nsight Systems traces under
+  `runs/FFI/cusolvermp_batched_profile_2026-05-12/nsys/`.
+
+Findings:
+- `potrf` at `nq=9, n=640, c128, 2x2` is ~9.45 ms median; the `nq` sweep
+  is nearly linear (`nq=1`: ~1.95 ms, `nq=18`: ~17.86 ms).
+- Combined `potrf_potrs` is ~28-29 ms median, with `potrf` ~9 ms and `potrs`
+  ~18 ms in the trace.
+- Descriptor creation, buffer-size query, workspace ensure, and destroy are
+  single-digit microseconds per FFI call on this build; caching them is not
+  the first high-impact optimization here.
+- Cross-stream waits are also tiny (~5 us median per bridge). The dominant
+  overhead is the serial per-q cuSOLVERMp call queue and its internal
+  NCCL/cuBLAS/cuSOLVER kernels.
+- Quick NCCL env checks (`NCCL_PROTO=Simple`, `NCCL_PROTO=LL128`,
+  `NCCL_MAX_NCHANNELS=1`) all regressed this shape, so defaults are currently
+  best.
+- Verification: FFI C++ rebuild passed, `profile_batched.py` py-compiled,
+  and a 4-GPU `potrf_potrs` smoke run passed. Full `uv run python -m pytest -q`
+  failed outside the touched FFI/profiling files (`make_v_munu_chunked_kernel`
+  test API drift, k-means label tie mismatches, and one CUDA OOM regression
+  subprocess); see the report for details.
+
+## 2026-05-12: cuSOLVERMp FFI profiling orientation [agent]
+
+Oriented on `lorrax_D` branch `agent/zeta-ibz-header` for the distributed
+linear-algebra FFI overhead investigation.  Read the sandbox skills,
+profiling stack, LORRAX_D agent guide, current branch state, and the
+cuSOLVERMp/cuBLASMp/SLATE/phdf5 FFI docs and hot paths.
+
+Report: `reports/cusolvermp_ffi_profile_orientation_2026-05-12/report.md`
+
+Notes:
+- Active hooks found: `lxalloc`, `lxrun`, `lxshell`, `lxpre`; no `lxattach`
+  hook was present in the searched sandbox/source paths.
+- `batched_potrf_ffi.cc`, `batched_potrs_ffi.cc`, and cuBLASMp batched GEMM
+  all recreate descriptors and re-query workspaces per FFI call; a shared
+  descriptor/workspace-size cache on `LorraxCusolverMpCtx` is the clearest
+  first optimization after adding NVTX ranges.
+- Logged sandbox bookkeeping issues in `KNOWN_SANDBOX_ERRORS.md` for the
+  `sources/lorrax` vs `sources/lorrax_D` doc mismatch and missing D-variant
+  manifests.
+
 ## 2026-05-12: accumulate_rchunk_to_gflat μ-axis chunking [agent]
 
 Branch `agent/zeta-ibz-header` on `lorrax_D`.
