@@ -34,8 +34,6 @@ These are the structured instructions an agent reads before performing a specifi
 |----------|----------|---------|
 | `CHANGELOG.md` | top level | Shared memory across sessions. What's done, what's broken, what to try next. **Read every session; update before ending every session.** |
 | `KNOWN_SANDBOX_ERRORS.md` | top level | Log of documentation errors, broken paths, and stale references found by agents. **If you encounter a sandbox infrastructure problem, record it here immediately before continuing your work.** |
-| `compare_bgw_gwjax.py` | top level | Multi-k comparison script. Matches BGW sigma_hp.log to LORRAX eqp0.dat via WFN.h5 k-points. Produces table + plot. See `skills/compare/SKILL.md` for usage. |
-| `isdf_sos_debug.py` | top level | ISDF sum-over-states debug script. Projects BGW's G-space ε⁻¹ into ISDF basis. Requires `eps0mat.h5`. See `skills/compare/SKILL.md` §3 for when to use. |
 
 ### Code and input documentation
 
