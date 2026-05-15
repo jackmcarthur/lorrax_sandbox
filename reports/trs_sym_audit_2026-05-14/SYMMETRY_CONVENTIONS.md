@@ -1,30 +1,174 @@
 # LORRAX Symmetry Conventions — empirical reference
 
-**Status:** as of 2026-05-15, after the umklapp/orbit-closure investigation. This
-document supersedes the conflicting prior reports in this directory; treat the
-facts here as load-bearing and the older notes as historical.
+**Status:** as of 2026-05-15. This document records the BGW convention
+LORRAX should use, the history of how we converged on it, what works,
+and what's still broken. Treat the **Current state** section as
+load-bearing; the **History** section is for context only.
 
-## TL;DR
+## Current state (load-bearing)
 
-- `wfn.sym_matrices[s]` stores **U_s, the forward direct-space rotation**, in
-  fractional crystal coords. Not K (reciprocal rotation), not K⁻¹, not U⁻¹.
-- For a sym op {U | τ}, real-space points transform forward as
-  `x → U·x + τ (mod 1)`. Inverse direction is `x → U⁻¹·(x − τ) (mod 1)`.
-- For an ISDF basis ζ on a sym-closed centroid set {x_μ}, V_q transforms
-  under (sym + umklapp) as
+### BGW convention (verified against pw2bgw writer + BGW reader + Si atom test)
 
-      V_{q1, μν} = exp(2π i q · (L_μ − L_ν)) · V_{q, α(μ), α(ν)}
+- `wfn.sym_matrices[s] = mtrx[s]` is the **BGW k-action matrix**: `q' = mtrx·q`
+  in column form. It is **NOT** the forward real-space rotation U; an earlier
+  iteration of this doc claimed that, incorrectly.
+- `wfn.translations[s] = tnp[s] = 2π · τ_frac`, per BGW spec
+  (`docs/docs_bgw/wfn.h5.spec:180-185`). LORRAX divides by `2π` everywhere
+  to get τ in fractional crystal coords. **This scaling is correct.**
+- BGW's real-space sym action: **`r' = mtrx⁻¹ · r + τ`** in column form.
+  Verified by `validate_atomic_symmetries` on Si Fd-3m (96/96 atom mappings
+  pass under `inv(mtrx)`; 48/96 under `mtrx` direction).
+- Group composition under this convention: `S_c = S_a S_b`,
+  `τ_c = inv(S_a)·τ_a + τ_b` (mod lattice). Closes 0/2304 fails on Si.
+- Reciprocal forward action: `q' = mtrx · q` (column form). Composition:
+  `q'' = mtrx_a · mtrx_b · q`. So `sym_mats_k = mtrx` directly, NOT `mtrx.T`.
+  **(POSSIBLE BUG: LORRAX currently uses `sym_mats_k = mtrx.T`. See
+  `Outstanding hypotheses` below.)**
 
-  where q1 = K·q + G_R is the full-BZ q (K = U⁻ᵀ acts on q-fractional), q is
-  the IBZ parent q (fractional reciprocal), and (α, L) come from the
-  inverse-direction wrap:
+### The ISDF V_q unfold formula (validated on CrI3)
 
-      y_μ = U⁻¹ (x_μ − τ)     in fractional direct
-      y_μ = x_{α(μ)} + L_μ    with x_{α(μ)} ∈ [0,1)³, L_μ ∈ ℤ³
+For full-BZ q1 with parent q_irr and sym index s:
 
-- **Empirically verified** at ISDF noise floor (rel ~10⁻⁵, ≈ 21 eV out of
-  |V|=2.5×10⁶) on the CrI3 6×6 30 Ry V_q dumps for every q where the centroid
-  set is sym-closed.
+    y_μ = mtrx_s · (x_μ − τ_s) = x_{α_s(μ)} + L_{s,μ},   L ∈ ℤ³
+    V_full[q1, μ', ν'] = exp(2π i q_irr · (L_{s,μ'} − L_{s,ν'}))
+                       · V_ibz[parent, α_s(μ'), α_s(ν')]
+    if TRS row: V_full = conj(V_full)
+
+`compute_centroid_sym_perm` produces `sym_perm = α` and `L_table = L`
+directly per user-spec; `unfold_v_q` consumes them.
+
+### What's verified
+
+| System | Test | Result | Status |
+|--------|------|--------|--------|
+| CrI3 6×6 30 Ry | V_q dump unit test (synthetic q_irr, all 36 q's) | rel 8.7e-6 | ✓ ISDF floor |
+| CrI3 6×6 30 Ry | sym-vs-nosym Σ_X e2e (3024 k×n pairs) | max 0.076 meV | ✓ <1 meV gate |
+| MoS2 3×3 SOC | sym-vs-nosym Σ_X e2e | max 0.090 meV | ✓ <1 meV gate |
+| Si 4×4×4 SOC | centroid orbit closure under BGW conv | 432 centroids, all permutations | ✓ closes |
+| Si 4×4×4 SOC | sym-vs-nosym Σ_X e2e | max 48 eV | ✗ FAILS |
+
+## History — what we've explored this session
+
+### Code changes on lorrax_B `agent/trs-aware-sym-fix`
+
+| Commit | Effect |
+|--------|--------|
+| `0735c2a` | unfold_v_q: per-centroid umklapp L-phase + forward-direction perm |
+| `c657785` | (later reverted) orbit_syms: forward-S direction — wrong, was based on incorrect "mtrx = U" claim |
+| `0b0fc37` | orbit_syms: apply BGW r-action `r' = mtrx⁻¹·r + τ` everywhere; matches subagent diagnosis |
+
+### Diagnostic milestones
+
+1. **Pre-session**: Si 4×4×4 sym-vs-nosym Σ_X had 160 eV gap (full-BZ fallback,
+   centroid orbit closure failed under the old code). CrI3 6×6 30 Ry had 6 eV gap.
+2. **The L-phase commit (0735c2a)** drove CrI3 from 6 eV → 0.076 meV. Si stayed
+   in full-BZ fallback (no IBZ cascade), and incidentally moved from 160 eV →
+   791 meV due to OTHER Phase 2 changes (unfold_psi refactor, R_cart fix) that
+   happened to clean up Si's full-BZ ψ-side path. The L-phase fix itself
+   doesn't fire on Si in full-BZ fallback.
+3. **Subagent diagnosis** confirmed BGW r-action is `r' = mtrx⁻¹·r + τ`, NOT
+   `r' = mtrx·r + τ`. Earlier code in `compute_centroid_sym_perm` and the
+   centroid orbit-closure helpers used the wrong direction; harmless on
+   symmorphic CrI3/MoS2 (τ=0 collapses both directions), fatal on Si Fd-3m.
+4. **BGW-convention fix (0b0fc37)** fixed `compute_centroid_sym_perm` to use
+   the user-spec `y_μ = mtrx·(x_μ−τ) = x_α + L`. Si centroid set now closes
+   (432 centroids form valid permutations under all 96 sym ops including TRS).
+   IBZ cascade fires for Si for the first time.
+5. **But Si Σ_X is now 48 eV — WORSE than the 791 meV fallback state.** The
+   IBZ cascade engagement exposes a downstream ψ-side bug that the fallback
+   path was hiding. CrI3 is unaffected by the BGW-conv fix (τ=0).
+
+## Outstanding hypotheses (Si's 48 eV residual)
+
+Candidates for the downstream bug, in roughly decreasing likelihood:
+
+### H1: `sym_mats_k = mtrx.T` is the wrong direction
+
+`common/symmetry_maps.py:478` defines `self.sym_mats_k = self.sym_matrices.transpose(0,2,1)`.
+Per the BGW reciprocal action `q' = mtrx · q` established above,
+`sym_mats_k` should be `mtrx` directly — NOT the transpose. This matters
+for:
+- `find_irreducible_bz_points` (full→IBZ k-mapping uses sym_mats_k).
+- `unfold_psi` (rotates G-vectors via `sym_mats_k[sym_idx] @ G`).
+- Any q-related sym arithmetic.
+
+If wrong: every Si k-mapping is off, every ψ unfold uses wrong G's.
+Symmorphic systems (τ=0) might cancel out by accident. Non-symmorphic
+Si: catastrophic.
+
+**Evidence to produce**: open WFN.h5 for Si, take an IBZ k and one of
+its sym-related full-BZ k from the k-list, compute `mtrx @ k_irr` and
+`mtrx.T @ k_irr`, see which matches `k_full` mod kgrid.
+
+### H2: `unfold_psi`'s τ-phase application uses wrong matrix on G
+
+In `common/symmetry_maps.py:330-340`, unfold_psi computes:
+```
+rotated = (S_full @ g_bar.T).T          # S_full = sym_mats_k[sym_idx]
+phase = np.exp(-1j * (rotated @ tau))
+```
+The τ-phase formula assumes a specific r-action convention. If
+`sym_mats_k` is wrong (H1), the rotated G is wrong; the τ-phase compounds
+the error.
+
+**Evidence**: take a Si IBZ k with non-trivial sym op, compute
+`ψ_{full}(G) = U_spinor · ψ_{irr}(?_G) · phase`, compare to a direct
+load of ψ at the full-BZ k. Where does the mismatch land?
+
+### H3: The L-phase sign or index convention in `unfold_v_q`
+
+Currently `phase = exp(2π i q_irr · L[s, μ'])`, sign convention "+L_μ − L_ν".
+The user's spec is mathematically clean but the orientation between
+`q_irr` and `q_full` depends on the k-action direction. If `sym_mats_k`
+is wrong (H1), `q_irr_frac[parent]` may not correspond to the right
+physical IBZ q-point for the phase.
+
+**Evidence**: take Si IBZ q and full-BZ q with non-trivial sym, compute
+the user-spec V_full from V_ibz with various phase-sign choices and
+both possible q-mappings, see which closes against a nosym reference V_q
+sample.
+
+### H4: `compute_centroid_sym_perm` τ_frac sign
+
+Internal: `tau_frac = translations / (2π)`. For Si sym 1 we get
+`τ[1] = (-1/2, 0, 0)`. Apply `inv(mtrx) · r + τ`: this gives the BGW
+forward sym in real space. Verified by atom test 96/96.
+
+But subagent noted the validate_atomic_symmetries impl uses
+`transformed = rot @ pos + tau` with `rot = inv(mtrx)` — i.e., the same
+direction. If LORRAX's `compute_centroid_sym_perm` now uses `mtrx · (r-τ)`
+(which equals `inv(mtrx) · r + τ` for the SOURCE direction), the
+**source** map is correct. But maybe the SIGN of τ in this formula is
+flipped (should it be `mtrx · (r + τ)`?) Worth verifying.
+
+**Evidence**: identity-check `mtrx · (r - τ) =? inv(rot_atom) · r - inv(rot_atom)·τ`
+to confirm the source-map algebra is right.
+
+### H5: Spin-side / U_spinor convention for non-symmorphic
+
+Si is bispinor=false, so U_spinor is trivial. But there's still a
+spinor branch in `unfold_psi` controlled by `ns=2`. If Si's WFN.h5 is
+loaded with `ns=1` but unfold_psi takes a spinor path anyway, that's
+a separate issue.
+
+**Evidence**: print `wfn.spinor`, `ns`, and the U_spinor matrix used
+during Si's run. Confirm Si uses the scalar path.
+
+## References
+
+- WFN.h5 spec: `docs/docs_bgw/wfn.h5.spec`
+- BGW pw2bgw writer: `sources/BerkeleyGW/MeanField/ESPRESSO/version-7.2/pw2bgw_qe7.2_with_spinor_mag.f90:826-850`
+- BGW Σ reader using `/(2π)`: `sources/BerkeleyGW/Sigma/sympert_utils.f90:754`
+- BGW HDF5 writer: `sources/BerkeleyGW/Common/wfn_io_hdf5.p.f:557`
+- LORRAX reader: `sources/lorrax_B/src/file_io/mf_header.py:119`
+- LORRAX SymMaps + sym_mats_k: `sources/lorrax_B/src/common/symmetry_maps.py:471-490, 786-792`
+- LORRAX centroid orbit: `sources/lorrax_B/src/centroid/orbit_syms.py` (after `0b0fc37`)
+- LORRAX V_q unfold: `sources/lorrax_B/src/common/symmetry_maps.py:110-260` (`unfold_v_q`)
+- LORRAX ψ unfold: `sources/lorrax_B/src/common/symmetry_maps.py:254-395` (`unfold_psi`)
+- LORRAX IBZ k-mapping: `sources/lorrax_B/src/common/symmetry_maps.py:60-110` (`find_irreducible_bz_points`)
+- CrI3 V_q dump unit test (passing): `reports/trs_sym_audit_2026-05-14/test_production_unfold_v_q.py`
+- Si run dir (currently failing 48 eV): `runs/Si/08_4x4x4_sym_vs_nosym_2026-05-14/run_sym_bgw_conv_2026-05-15/`
+- Si comparison script: `runs/Si/08_4x4x4_sym_vs_nosym_2026-05-14/compare_sigma_x_bgw_conv.py`
 
 ## What the prior investigation got wrong
 
