@@ -244,3 +244,55 @@ on the 14 q's with closed orbits.
 
 The V_q dumps are at
 `reports/trs_sym_audit_2026-05-14/v_q_dumps/{Vq_ibz_sym.h5, Vqmunu_nosym.h5}`.
+
+## Si Fd-3m: τ-table doesn't compose mod-lattice (2026-05-15 finding)
+
+Si 4×4×4 sym-vs-nosym Σ_X residual at 791 meV (down from 160 eV, but
+above the 1 meV gate) traces to a deeper issue than the V_q L-phase.
+For Si's stored sym table:
+
+- **Matrix products close**: every `S_a · S_b` matches some stored `S_c`
+  (48 ops form a true matrix group). ✓
+- **τ composition fails modulo lattice**: only 576/2304 = 25% of (a, b)
+  pairs have `S_a · τ_b + τ_a ≡ τ_{ab} (mod 1)`. The remaining 75%
+  differ by half-lattice translations (e.g. (1/2, 1/2, 0)) which do NOT
+  vanish mod 1.
+
+Consequence: forward action `r → S r + τ` is **not a true group action
+modulo 1** for Si. Applying a sym op to a point in the "forward orbit"
+of x can produce points OUTSIDE that orbit. Concretely:
+
+```
+Forward orbit of (4,8,12)/24:  44 distinct points
+Forward orbit of (12,12,8)/24: 24 distinct points
+(12,12,8) ∈ orbit-of-(4,8,12); (4,8,12) ∈ orbit-of-(12,12,8)
+⇒ should be equal sets (orbits partition for true group actions)
+⇒ but |intersection| = 20, |symdiff| = 28 — they're NOT equal
+```
+
+Atomic positions in Si DO map correctly under the stored sym ops
+(`validate_atomic_symmetries` returns 0 failures), because Si atoms sit
+on high-sym Wyckoff sites where the τ-mismatch lands on lattice
+positions. For generic positions (centroids), the mismatch produces
+half-lattice offsets that break orbit partition.
+
+**Likely root cause**: BGW WFN.h5 stores τ values in a convention that
+encodes the *coset representatives* of a non-symmorphic factor group,
+not a true group of mod-1 actions. The convention works for atomic
+sym checks (and for the BGW computation it was designed for) but breaks
+LORRAX's orbit-aware kmeans + V_q IBZ-cascade closure assumption.
+
+**Status**: Si bypasses the V_q IBZ cascade (use_ibz=False) because
+`compute_centroid_sym_perm` fails closure validation, falling back to
+full-BZ ζ-fit + V_q. The L-phase fix in `unfold_v_q` doesn't fire on
+Si. The 791 meV residual is from somewhere else — likely
+`unfold_psi`'s τ-phase application on the same non-closed τ table.
+
+**Not fixed in this session.** Si needs a separate root-cause
+investigation:
+1. Verify the BGW τ-convention by cross-checking against the QE input
+   atoms and their fractional translations.
+2. Consider deriving an equivalent τ table that IS closed mod-1.
+3. Or accept that for non-symmorphic systems with this BGW quirk, the
+   IBZ cascade can't fire and full-BZ fallback is the right path —
+   then fix any residual sym handling in the full-BZ path.
