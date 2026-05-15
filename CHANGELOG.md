@@ -1,5 +1,314 @@
 # Changelog
 
+## 2026-05-15: CrI3 sym-vs-nosym L-phase + perm-direction fix [agent]
+
+Two-bug fix on `agent/trs-aware-sym-fix` commit `0735c2a`:
+
+1. **Missing per-centroid umklapp phase** `exp(2π i q · (L_μ − L_ν))` in
+   `unfold_v_q`. `L_μ = floor(S r_μ + τ)` is now captured by
+   `compute_centroid_sym_perm` (which returns `(sym_perm, L_table)`) and
+   threaded through `_resolve_ibz_q_list` → `unfold_v_q` in both
+   `gw/v_q_g_flat.py` and `gw/compute_vcoul.py`.
+
+2. **Wrong centroid permutation direction** in `unfold_v_q`. The previous
+   code used `inv_perm = argsort(sym_perm)` (= π⁻¹). Correct direction is
+   `sym_perm` directly (= forward π). For involutive ops (MoS2 σ_h, Si
+   cubic) the two coincide — that's why MoS2 + TRS passed at 0.090 meV
+   while CrI3 C3/S6 sat at 4 eV.
+
+Unit test: `reports/trs_sym_audit_2026-05-14/test_production_unfold_v_q.py`
+closes V_q to ISDF noise floor (rel 8.73e-6 ≈ 22 eV out of |V|=2.5e6) on
+all 36 q's of the CrI3 6×6 30 Ry dump, including non-involutive ops AND
+umklapp shifts (kg0 ≠ 0). 13/13 pytest tests in centroid/unfold domain.
+
+Convention reference document:
+`reports/trs_sym_audit_2026-05-14/SYMMETRY_CONVENTIONS.md`. Empirically
+verified that `wfn.sym_matrices = U` (forward direct-space sym), NOT K
+(reciprocal rotation) as a prior agent claimed; the user's existing DFT
+degeneracy tests across multiple systems relied on this convention.
+
+Run: `runs/CrI3/07_M_6x6_30Ry_sym_vs_nosym_2026-05-14/run_sym_lphase_fix_2026-05-15/`
+(pending e2e gate; expected to drop max |ΔΣ_X| from 6 eV → <1 meV).
+
+## 2026-05-14: CrI3 sym-vs-nosym PR3 validation — FAIL (third sym-handling bug) [agent]
+
+Run dir: `runs/CrI3/07_M_6x6_30Ry_sym_vs_nosym_2026-05-14/`. Source: lorrax_B
+`agent/trs-aware-sym-fix` @ `8504994` + `a45f039` + `69ab42c`. Task #30 mirror
+for a second inversion-containing system, complementary to MoS₂ (PASS, 0.090 meV)
+and Si (FAIL, 160 eV — τ-phase bug).
+
+Pipeline: regenerated nosym NSCF (ntran=1, nrk=36) from existing CrI3 SCF charge
+density → 2 LORRAX cohsex runs (x_only=true, do_screened=false, bispinor=false,
+bare_coulomb_cutoff=30.0) sharing the existing 300 orbit-closed centroids from
+`M_6x6_30Ry_bispinor_2026-05-14`: `run_sym/` (ntran=6, P-3 spatial group with
+inversion, IBZ cascade fires n_q_disk=8 → 36 full-BZ unfold) vs `run_nosym/`
+(ntran=1, direct full-BZ).
+
+Result: **max |ΔΣ_X(k, n)| = 6022 meV ≈ 6.02 eV** across all 36 k × 84 bands.
+Uniform ~5 eV residual at every k-point (no clean k); worst rows at valence-top
+d-bands (b=60-61, 56-57, 64-65); systematic mean −2046 meV (sym more negative
+than nosym). NOT a PR3 firing — CrI3 has spatial inversion in mtrx ⇒ 0 TRS-fold
+k-pts ⇒ PR3 (iσ_y·conj and τ-phase) is a strict no-op for this system, which
+this test experimentally confirms. The 6 eV residual exposes a **third, distinct
+sym-handling bug**: broken IBZ→full V_q (or ζ) cascade unfold for groups
+containing C3 + improper rotations (S6, −I). The MoS₂ pass (E + σ_h only) was
+insufficient to detect this; the Si τ-phase bug (non-symmorphic Fd-3m) is a
+separate failure mode (CrI3 is symmorphic with τ=0 for all 6 ops).
+
+Triage targets (next session):
+1. Bisect against `9e644e9` (pre-Phase-2) on the CrI3 test bed to confirm
+   pre-existing — mirroring the Si triage. Likely pre-existing.
+2. Suspect: SIGN or CONJUGATE flip missing in V_q (or ζ) unfold when sym op
+   has det=−1, OR wrong G-vector mapping under improper rotations / C3.
+3. Fix pre-existing nrk=48 vs n_unfold=36 crashes in `qp_wfn.write_qp_wfn_h5`
+   (line 137 shape check) and `gw_output.write_results` (line 288 indexer)
+   — both fire AFTER sigma_freq_debug.dat is written and so didn't block this
+   validation, but they should use `meta.nkpts_unfolded` not `wfn.nkpts`.
+
+Report: `reports/trs_sym_audit_2026-05-14/cri3_sym_vs_nosym_pr3.md`.
+Comparison: `runs/CrI3/07_M_6x6_30Ry_sym_vs_nosym_2026-05-14/compare_sigma_x.{py,log}`.
+Total cost ~8 GPU-min.
+
+## 2026-05-14: sym-vs-nosym PR3 e2e validation gate — PASS [agent]
+
+Run dir: `runs/MoS2/06_sym_vs_nosym_pr3_2026-05-14/`. Source: lorrax_B
+`agent/trs-aware-sym-fix` @ `8504994` + `a45f039` + `69ab42c`. Task #30 — the
+load-bearing end-to-end gate for the Phase-2 sym refactor.
+
+Pipeline: 1 kmeans run on `00_mos2_3x3_cohsex/qe/nscf/WFN.h5` (sym, ntran=2)
+→ 399 orbit-closed centroids → 2 LORRAX cohsex runs (`x_only=true`,
+`do_screened=false`, `bispinor=false`, `bare_coulomb_cutoff=30.0` explicit)
+sharing those centroids: `run_sym/` (sym WFN, exercises PR3 unfold_psi +
+iσ_y·conj on TRS k {1, 3, 4, 5}) vs `run_nosym/` (`02_mos2_3x3_nosym/qe/nscf/WFN.h5`,
+ntran=1, IBZ cascade trivial).
+
+Result: **max |ΔΣ_X(k, n)| = 0.090 meV** across all 9 k-pts × 56 bands.
+Pass gate was ≤ 1 meV; observed residual is 11× below threshold and is
+essentially the DFT-eigenvalue ULP-offset (0.069 meV mean) between two
+independent SCF runs propagated through the same Σ_X kernel. TRS-group
+mean |ΔΣ_X| = 0.028 meV vs non-TRS-group 0.030 meV — indistinguishable,
+which is exactly the signature of a correct sym implementation. The PR3
+audit (`audit_pr3.md` R3) had shown PR3 shifts Σ_X by ≤95 meV on this same
+test bed (bug was firing); this gate confirms PR3's fix produces the
+*physically correct* answer (matches direct nosym evaluation to ULP).
+
+Report: `reports/trs_sym_audit_2026-05-14/sym_vs_nosym_pr3_validation.md`.
+Comparison: `runs/MoS2/06_sym_vs_nosym_pr3_2026-05-14/compare_sigma_x.{py,log}`.
+Total cost ~3 GPU-min.  PR1+PR2+PR3 cleared from this gate.
+
+## 2026-05-14: testbed_mos2_3x3_soc — PR3 ψ-side TRS-fix validation baseline [agent]
+
+Run dir: `runs/MoS2/03_mos2_3x3_soc_2026-05-14/`. Source: lorrax_B
+`agent/trs-aware-sym-fix` @ `796c043` + a one-line `dft_operators.py` migration
+fix (see below). Goal: bring up a **non-inversion SOC** test bed so PR3's
+ψ k-unfold iσ_y rotation + TRS-row Gkk τ-phase fix has a non-trivial signal.
+
+Pipeline: QE SCF + NSCF + NSCFq (3×3×1, 30 Ry, noncolin+lspinorb, nbnd=58) →
+BGW epsilon + sigma cohsex (`number_bands 56`, `bare_coulomb_cutoff 30.0` explicit) →
+LORRAX kmeans (orbit-closed, 399 centroids from 206 reps) → dipole + kin_ion →
+LORRAX `gw_jax` cohsex on 2 GPUs (nval=26 divisible).
+
+Symmetry probe (`sym_analysis.log`):
+
+```
+ntran = 2  (E + σ_h; no_t_rev=.true. + SOC kills rotations)
+len(sym.sym_mats_k) = 4
+#k via TRS  = 4  (full-BZ {1, 3, 4, 5})
+#q via TRS  = 4  (full-BZ {2, 6, 7, 8})
+has_inversion = False  ← suitable PR3 test bed
+```
+
+Σ_X finite at every (k, n). Group-mean Σ_X (post-PR3, band 19..30 window):
+  - TRS k group     N=48  mean = -17.585 eV
+  - non-TRS k group N=60  mean = -17.523 eV
+
+By the time this task was launched, PR3 (`8504994`) had just landed.  To
+produce a real pre-PR3 baseline, ran cohsex AGAIN with src/ at `796c043` +
+the same dft_operators fix.  PR3 ψ-side TRS-fix diff (`pr3_diff_summary.log`,
+band-19..30 × 9-k window):
+
+|       | Δx_bare max\|Δ\| | Δx_bare rms | Δeqp0 max\|Δ\| | Δeqp0 rms |
+|-------|-----------------|-------------|----------------|-----------|
+| TRS k | 59 mΩ           | 16 mΩ       | 64 mΩ          | 17 mΩ     |
+| non-TRS k | 49 mΩ       | 12 mΩ       | 53 mΩ          | 13 mΩ     |
+
+Δx_head and Δcoh_head are bit-equal (scalar head untouched by PR3).
+Non-TRS k diffs are non-trivial because the wrong ψ at TRS-folded k
+pollutes χ_0(q), hence W(q), hence Σ at every k through q = k − k′.
+The 64-mΩ max-Δ_eqp0 sits in the 10-100 meV PR3 prediction band from the
+task spec; TRS rows are ~20% larger than non-TRS rows.
+
+**Source-code fix** (commit `a45f039` on `agent/trs-aware-sym-fix`):
+`sources/lorrax_B/src/psp/dft_operators.py::generate_gvectors_k` was still
+calling the post-P5-removed `sym.get_gvecs_kfull` API; patched to dispatch
+through `WfnLoader.gvecs(k="full_bz")`, mirroring the pattern in
+`psp/get_DFT_mtxels.py::_gvecs_full_cache`. This unblocks both
+`psp.get_dipole_mtxels` AND `gw.kin_ion_io` on this branch (closes a
+KNOWN_SANDBOX_ERRORS entry).
+
+## 2026-05-14: testbed_cri3_6x6_30Ry_bispinor — bare Σ_X end-to-end on lorrax_B `agent/trs-aware-sym-fix` [agent]
+
+Run dir: `runs/CrI3/M_6x6_30Ry_bispinor_2026-05-14/`. Source: lorrax_B
+`agent/trs-aware-sym-fix` @ `a00722d` (post-PR2 V_q IBZ→full unfold lift).
+
+Pipeline: QE SCF/NSCF (30 Ry, 6×6×1, noncolin+lspinorb, 86 bands) →
+BGW epsilon + sigma (Σ_X reference) → LORRAX kmeans (scalar 300 +
+current-density 298) → LORRAX cohsex (`x_only=true`, `bispinor=true`).
+
+Result: finite bare Σ_X printed for the bispinor configuration. Off-diagonal
+Σ^B tile traces ~7% of diagonal; spin-doubled degeneracy holds to 4 ULP;
+tile hermiticity holds to 4 ULP. Cascade did not fire (bispinor mode
+disables IBZ-only ζ writes by design in `gw_init.py:650`; CrI3 also has
+`-I` so TRS folds = 0). Downstream QP analysis blocked by a separate
+`kin_ion_io` `SymMaps.get_gvecs_kfull` bug (see `KNOWN_SANDBOX_ERRORS.md`).
+
+Important sandbox surface area that this run uncovered (all logged in
+`KNOWN_SANDBOX_ERRORS.md` 2026-05-14):
+- `centroid.kmeans_isdf` is **not** a CLI module; use `centroid.kmeans_cli`.
+- Bispinor V_q requires a second `--density-mode current` kmeans run AND a
+  `centroids_file_current = ...` entry in `cohsex.in`; otherwise the
+  bispinor branch silently falls back to scalar V_q and then crashes on a
+  full-BZ vs IBZ ζ shape mismatch.
+- This run config OOMs on 40GB A100 even with `band_chunk_size=2`,
+  `r_chunk_size=8192` — `--constraint="gpu&hbm80g"` is required.
+
+Caveat (documented in `README.md`): CrI3 has spatial inversion, so this
+test bed validates only the bispinor V_q tile pipeline / cascade
+machinery layout, NOT the iσ_y·conj TRS-spinor patch (Agent 1 sites
+#5/#6/#7). A non-inversion bispinor system (1H-MoSe₂ + SOC, BiI₃, or
+CrI3 + E_perp) will be needed when PR3 lands.
+
+## 2026-05-13: zeta-fit memory model follow-up — 2nd HLO dump + Path D scaffolding on LORRAX_B [agent]
+
+Reports: `reports/zeta_rchunk_memory_model_2026-05-13/{agent_1_hlo_verify,agent_2_structural_fix,hlo_findings}.md`.
+Branch: `sources/lorrax_B` at `agent/zeta-bc-scan-shardmap` (commit `cdd0fba`).
+
+Same allocation as the previous entry, follow-up work on the morning
+commit `ff5873c` (LORRAX_A).
+
+Two agents re-engaged via the tmux team:
+- Agent 1 (HLO verification): independently re-read `module_0408`,
+  confirmed `pair_density_slots = 3` (0.01% accuracy), `S_fft ≈ 3`
+  (formula matches observed bytes at 0.1%), `psi_Y_full` aliases
+  cleanly.  Flagged two errors in `hlo_findings.md` §2/§4: "band_chunk
+  is the lever against W_wfn" was wrong (band_chunk is band-axis-
+  invariant for this term — only `psig_k_chunk_size` and `(nb_L+nb_R)`
+  move it); mesh dimension wasn't explicit.  Both fixed in
+  `hlo_findings.md`.
+- Agent 2 (structural fix design): evaluated 5 candidate paths
+  (`fori_loop`+donation, `scan`+axis-naming, streaming einsum,
+  bc-loop-inside-shard_map, `donate_argnums`).  Recommended **Path D**
+  — push the bc-loop INSIDE the shard_map body via `lax.scan`.  The
+  scan carry is per-rank-local; SPMD has already stopped at the
+  shard_map boundary, so the WhileOp/SPMD trap that killed
+  `solve_zeta`'s fori_loop attempt (cited in `isdf_fitting.py:1119-1141`)
+  does not apply.  Expected: 58 → ~3 FFT-box slots.
+
+2nd HLO dump at `psig_k_chunk_size=1`:
+`runs/CrI3/M_6x6_80Ry_2026-05-07/lorrax_A_hlo_dump_k1_2026-05-13/`.
+Planner picked `r_chunk=17 568, band_chunk=16, gflat_chunk_size=320`;
+predicted HWM = 47 GB/rank on a 35 GB budget (model now over-
+conservative); XLA actually allocated **23.42 GiB/rank** in
+`module_0307.jit__kernel.sm_8.0-memory-usage-report.txt`.  Reduction
+from the OOMing run: 196 → 22 GiB (8.85× vs the model's 6×
+prediction).  Extra factor came from `r_chunk` also dropping ~4×
+(W_zeta term collapse).  Run completed the fit_zeta loop end-to-end
+with no OOM, confirming `ff5873c` plus `psig_k_chunk_size=1` is a
+working empirical config.
+
+Commit `cdd0fba` on LORRAX_B lands the **Path D scaffolding** — two
+read-only helpers that are independently testable and unlock the
+larger 4c kernel rewrite:
+1. `common.wfn_transforms.to_rchunk_inner` (Path D §4b): per-rank-
+   local body of `to_rchunk` without the enclosing shard_map.
+   Callable from inside another shard_map's body or a `lax.scan`
+   body.  Numerical contract verified by three new tests at floating-
+   point precision against `to_rchunk` on a 1×1 mesh.
+2. `common.psi_G_store.PsiGStore._slice_local_tile_bc` (Path D §4a):
+   host-tile slicer that takes a TRACED `bc_idx`, returns a padded
+   `(nk, _bpd_max, ns, ngkmax)` array so `io_callback` inside a
+   `lax.scan` body sees a static return shape.  Added `_bpd_max`
+   field to `__init__`.
+
+15 wfn_transforms tests pass (3 new), 12 psi_g_store + rchunk_gflat
+tests pass (no regressions).
+
+Path D 4c-e (rewrite `c_q_from_psi_sm` / `z_q_from_psi_sm` with the
+`lax.scan` over bcs inside their shard_map bodies — the load-bearing
+kernel rewrite, ~200-250 LOC across `isdf_fitting.py`) deferred to a
+focused session.  Implementation sketch + validation plan are at
+`reports/zeta_rchunk_memory_model_2026-05-13/agent_2_structural_fix.md`
+§4c-e + §5.
+
+Notes recorded for the future implementer:
+- The current planner is now **over-conservative** (predicted HWM 47 GB,
+  reality 22 GB).  This is a side-effect of the simple "everything
+  lives concurrently" model; XLA aliases more aggressively when per-
+  slot bytes drop.  Refining the planner to match reality is lower
+  priority than Path D, which collapses the slot count entirely.
+- The current feasibility-check raise is a sound lower bound
+  (`band_fft_pool > budget` ⇒ definitely infeasible) but not tight.
+  Folded into Path D's follow-up because Path D removes the need for
+  this gate entirely.
+
+## 2026-05-13: zeta-fit r-chunk memory model — 4-agent synthesis + HLO-verified bug fixes on LORRAX_A [agent]
+
+Reports: `reports/zeta_rchunk_memory_model_2026-05-13/{consensus,hlo_findings}.md`
+Branch: `sources/lorrax_A` at `agent/zeta-r-chunk-fixes-2026-05-13` (commit `ff5873c`).
+
+Spawned a 4-agent independent study (4-pane tmux + Opus 4.7) of the
+GWJAX zeta-fit memory model.  Two rounds: from-scratch v1 drafts
+(`agent_{1..4}.md`, ~6k words each) → cross-reading v2 with disagreements
++ open questions (`agent_{1..4}_v2.md`, ~3.5k words each) → orchestrator
+synthesis (`consensus.md`, 3.5k words).  Consensus identified two source
+bugs everyone agreed on and three HLO-only disputes.
+
+Empirical resolution on a CrI3 6×6 80 Ry HLO dump
+(`runs/CrI3/M_6x6_80Ry_2026-05-07/lorrax_A_hlo_dump_2026-05-13/`,
+planner-free at the report.md §7 60 GB / `band_chunk=16` config):
+- Planner-free pick was `r_chunk=73 328` (16 chunks), HWM-estimated 52 GB,
+  not the 12 500 cited in `report.md §7` — the original number was an
+  unverified estimate.
+- XLA actually requested 200.35 GiB per rank → `RESOURCE_EXHAUSTED` OOM
+  at 196.30 GiB on 40 GB A100s.  3.85× model miss attributable entirely
+  to the previously-unmodeled band-FFT pool: 58 concurrent live
+  `c128[k_chunk, band_chunk, ns, nx, ny, nz]` slots at 3.22 GiB each,
+  materialised UNSHARDED on every rank.  XLA cannot alias them because
+  the Python-unrolled bc-loop in `c_q_from_psi_sm` / `z_q_from_psi_sm`
+  has overlapping lifetimes between iterations.
+
+Commit `ff5873c` lands two fixes on `agent/zeta-r-chunk-fixes-2026-05-13`:
+
+1. `_bytes_centroids_LR` helper — fixes the `centroids_persist` term:
+   replace `nk`-typo with `nb_total`; replace `shard=p_xy` with
+   per-axis division for the L+R copies that live on disjoint mesh
+   axes.  ~4× correction on a balanced 4×4 mesh.  Applied at the
+   three sites (lines 184, 316, 350).
+2. Add `band_fft_unsharded` term + structural feasibility check in
+   `plan_gflat_chunks`.  Total cost is
+   `nb_total · S_fft · psig_k_chunk_eff · ns · n_rtot · 16`
+   per rank — **band_chunk-independent**; only `psig_k_chunk_size`
+   reduces it linearly.  When the pool alone exceeds budget the
+   planner raises a structured `ValueError` listing three mitigations
+   (lower `psig_k_chunk_size`, narrow `nval/ncond`, or the structural
+   `lax.fori_loop` rewrite).  `cfg.memory.psig_k_chunk_size` is now
+   threaded through `gw_init.fit_zeta`.
+
+Tests: `tests/test_aot_memory.py` + `tests/test_rchunk_gflat_pair.py`
+13 passed / 3 skipped after the fix.  CPU smoke confirmed: planner
+correctly refuses the previously-OOMing CrI3 config at
+`psig_k_chunk=6` and picks a feasible plan
+(`band_chunk=64, r_chunk=21 808`) at `psig_k_chunk=1`.
+
+Follow-ups not in this commit, in priority order:
+- Peak A's centroid-load FFT box is likely also unsharded (single
+  slot, smaller impact).  Needs Peak A HLO confirmation.
+- Wire `common/fft_helpers.query_fft_peak_bytes` per call site to
+  replace the global `fft_box_factor=4.0`.
+- Structural: convert `c_q_from_psi_sm` / `z_q_from_psi_sm` bc-loop
+  to `lax.fori_loop`.  Would alias the `n_bc · S_fft` slots into one
+  and recover most of the band-FFT pool's memory cost.
+
 ## 2026-05-13: WFN rchunk construction communication profile on LORRAX_D [agent]
 
 Report: `reports/wfn_rchunk_profile_2026-05-13/report.md`
