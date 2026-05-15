@@ -245,54 +245,72 @@ on the 14 q's with closed orbits.
 The V_q dumps are at
 `reports/trs_sym_audit_2026-05-14/v_q_dumps/{Vq_ibz_sym.h5, Vqmunu_nosym.h5}`.
 
-## Si Fd-3m: τ-table doesn't compose mod-lattice (2026-05-15 finding)
+## BGW r-action convention: `r' = mtrx⁻¹ · r + τ` (REVISED 2026-05-15)
 
-Si 4×4×4 sym-vs-nosym Σ_X residual at 791 meV (down from 160 eV, but
-above the 1 meV gate) traces to a deeper issue than the V_q L-phase.
-For Si's stored sym table:
+**Earlier in this doc** I claimed `wfn.sym_matrices = U` (forward
+direct rotation) based on CrI3 empirics. That was right in the
+limited sense that for CrI3 P-3 (symmorphic τ=0), the matrix
+direction doesn't matter — orbits coincide.
 
-- **Matrix products close**: every `S_a · S_b` matches some stored `S_c`
-  (48 ops form a true matrix group). ✓
-- **τ composition fails modulo lattice**: only 576/2304 = 25% of (a, b)
-  pairs have `S_a · τ_b + τ_a ≡ τ_{ab} (mod 1)`. The remaining 75%
-  differ by half-lattice translations (e.g. (1/2, 1/2, 0)) which do NOT
-  vanish mod 1.
+**The actual BGW convention** (verified by reading `pw2bgw_qe7.2_with_spinor_mag.f90:826-850`,
+`BerkeleyGW/Sigma/sympert_utils.f90:754`, and the `validate_atomic_symmetries`
+test on Si Fd-3m which passes 96/96 only under this convention) is:
 
-Consequence: forward action `r → S r + τ` is **not a true group action
-modulo 1** for Si. Applying a sym op to a point in the "forward orbit"
-of x can produce points OUTSIDE that orbit. Concretely:
+    r' = mtrx⁻¹ · r + τ        (forward real-space sym)
+    τ = wfn.translations / (2π) (per BGW spec)
+    Reciprocal: q' = mtrx · q   (BGW's "k-action" via `matmul(syms%mtrx, k)`)
 
-```
-Forward orbit of (4,8,12)/24:  44 distinct points
-Forward orbit of (12,12,8)/24: 24 distinct points
-(12,12,8) ∈ orbit-of-(4,8,12); (4,8,12) ∈ orbit-of-(12,12,8)
-⇒ should be equal sets (orbits partition for true group actions)
-⇒ but |intersection| = 20, |symdiff| = 28 — they're NOT equal
-```
+So `wfn.sym_matrices = mtrx = U⁻¹` where U is the user's "forward
+direct rotation." Equivalently, `inv(wfn.sym_matrices) = U`. This
+reconciles the earlier-confusing reading: BGW stores K (k-action,
+not U), and the r-action uses `Rinv = inv(mtrx) = inv(K)`.
 
-Atomic positions in Si DO map correctly under the stored sym ops
-(`validate_atomic_symmetries` returns 0 failures), because Si atoms sit
-on high-sym Wyckoff sites where the τ-mismatch lands on lattice
-positions. For generic positions (centroids), the mismatch produces
-half-lattice offsets that break orbit partition.
+For the user's umklapp-aware unfold formula:
 
-**Likely root cause**: BGW WFN.h5 stores τ values in a convention that
-encodes the *coset representatives* of a non-symmorphic factor group,
-not a true group of mod-1 actions. The convention works for atomic
-sym checks (and for the BGW computation it was designed for) but breaks
-LORRAX's orbit-aware kmeans + V_q IBZ-cascade closure assumption.
+    y_μ = U⁻¹(x_μ − τ) = mtrx · (x_μ − τ) = x_{α(μ)} + L_μ
 
-**Status**: Si bypasses the V_q IBZ cascade (use_ibz=False) because
-`compute_centroid_sym_perm` fails closure validation, falling back to
-full-BZ ζ-fit + V_q. The L-phase fix in `unfold_v_q` doesn't fire on
-Si. The 791 meV residual is from somewhere else — likely
-`unfold_psi`'s τ-phase application on the same non-closed τ table.
+`compute_centroid_sym_perm` computes this directly (see
+`orbit_syms.py:309`). For symmorphic systems both old and new
+conventions give the same numerical result; for non-symmorphic
+Si the BGW convention is required for orbit closure.
 
-**Not fixed in this session.** Si needs a separate root-cause
-investigation:
-1. Verify the BGW τ-convention by cross-checking against the QE input
-   atoms and their fractional translations.
-2. Consider deriving an equivalent τ table that IS closed mod-1.
-3. Or accept that for non-symmorphic systems with this BGW quirk, the
-   IBZ cascade can't fire and full-BZ fallback is the right path —
-   then fix any residual sym handling in the full-BZ path.
+## Si Fd-3m: progress, but still failing the 1 meV gate (2026-05-15)
+
+**Earlier I claimed Si's τ-table didn't compose mod-1.** That was a
+**wrong** diagnosis — I was using the wrong closure rule. The correct
+BGW closure law under `g·r = mtrx⁻¹·r + τ` is `τ_c = mtrx_a⁻¹·τ_a + τ_b`
+(when `S_c = S_a S_b`). With this rule, Si's stored τ values compose
+correctly: **0/2304 fails**. Closure under the right convention holds.
+
+**After applying the BGW-convention fix to compute_centroid_sym_perm**
+(orbit_syms.py commit `0b0fc37`):
+
+- Si centroid regen produces 432 orbit-closed centroids.
+- All 96 sym ops × 432 centroids form valid permutations under
+  `compute_centroid_sym_perm`, `|L|max = 3` (real lattice wraps).
+- The V_q IBZ cascade fires for the first time on Si (`n_q_ibz=8`,
+  `unfold=IBZ→full`, vs the prior `use_ibz=False` fallback).
+
+**Si Σ_X trajectory:**
+
+| State | max |ΔΣ_X| |
+|---|---|
+| Pre-this-session (Phase 2 only) | 160 eV |
+| L-phase commit only, full-BZ fallback | 791 meV |
+| **BGW-conv fix + IBZ cascade firing** | **48 eV** |
+
+The 48 eV is from a separate bug that the cascade engagement now
+exposes. Likely candidates:
+
+- `unfold_psi` has its own τ-handling that may use a different
+  convention than `compute_centroid_sym_perm` now uses.
+- The L-phase formula in `unfold_v_q` may interact incorrectly with
+  the new α-direction sym_perm semantics for non-symmorphic ops.
+- The k-mapping (`sym.irr_idx_q`, `sym.sym_idx_q`) is built using
+  `sym_mats_k = mtrx.T` (forward k-action under BGW convention is
+  `q' = mtrx · q`, so `sym_mats_k` should be `mtrx`, not `mtrx.T`).
+  Worth auditing.
+
+Symmorphic systems (CrI3, MoS2) are not affected by any of these
+because τ=0 collapses all conventions. The CrI3 gate at 0.076 meV
+still passes after the BGW-convention fix.
