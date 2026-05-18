@@ -1,5 +1,55 @@
 # Changelog
 
+## 2026-05-18: TRUE scalar (nspinor=1) Si non-bispinor μ-sweep + HLO calibration [agent-A]
+
+Mirrored `agent_t_si_bispinor_sweep.md` at the **opposite** extreme — actually
+scalar Si (`noncolin=false, lspinorb=false, nspinor=1, nspin=1`) at 4×4×4
+25 Ry, 4 GPUs on hbm40g (2×2 mesh), μ ∈ {192, 408, 756, 1176, 1764}
+(orbit-pruned counts from requested {192, 384, 768, 1200, 1800}).
+
+**Two latent ns=1 loader bugs surfaced and fixed in-branch** (commits
+`8c18925` `unfold_psi` eager path + `dc0b254` `WfnLoader._ensure_phdf5_static`
+phdf5 path): both blindly built 2×2 spinor rotation matrices regardless of
+the WFN's nspinor, causing silent einsum broadcasting from ns=1 input to
+ns=2 output. Pre-existing `KNOWN_SANDBOX_ERRORS.md` 2026-05-18 entry
+"scalar nspinor=1 Si WFN.h5 trips kmeans_cli" is now marked FIXED. All 44
+loader/unfold tests still pass.
+
+**HLO calibration at ns=1**: `pair_density_slots = 3` and `fft_box_factor_D = 2.0`
+both confirmed bit-exact at μ=408 + μ=1176, per-slot bytes match
+`_bytes_c128(nk=64, 1, 1, mu_padded, r_chunk=13824, shard=p_xy=4)` exactly.
+The invariant 3-slot count now holds across ns=1 (this work), ns=2 (M4),
+ns=4 bispinor (M1) — `pair_density_slots` is a structural constant of
+`fit_one_rchunk`'s scan-INSIDE-shard_map, NOT an ns-dependent count.
+
+**Planner faithfulness pattern is structurally different from bispinor**:
+* μ=192:  HWM_pred=2.81  vs mem_stats peak=8.02 → +185 % UNDER (CUDA-context floor wins)
+* μ=384:  HWM_pred=5.99  vs mem_stats peak=8.03 → +34 % under (floor still in play)
+* μ=768:  HWM_pred=11.17 vs mem_stats peak=8.38 → −25 % OVER (planner conservative)
+* μ=1200: HWM_pred=17.50 vs mem_stats peak=13.04 → −25 % over
+* μ=1800: HWM_pred=26.51 vs mem_stats peak=19.60 → −26 % over
+
+vs bispinor's monotone −0.5 % to −10.8 % range. Two new effects identified:
+(1) a ~8 GB CUDA-context / JIT-cache / NCCL-buffer-pool floor invisible to
+the planner (dominant at small Peak C); (2) the 3-slot prediction is
+**conservatively** correct in multi-chunk plans but **over-counts** when
+only 1 r-chunk runs (slot 3's lifetime is contained in the OUTPUT slot via
+aliasing). Both `pair_density_slots=3` and `fft_box_factor_D=2.0` are still
+the right constants — they correctly characterize the structural worst-case.
+
+**Other findings**:
+* cusolverMpPotrf returns status=7 INTERNAL_ERROR under BFC + MEM_FRACTION=0.95
+  on 2×2 mesh (works on 1×4 in bispinor sweep because `sharded_cholesky`
+  path is selected for 1D meshes). Worked around with
+  `cusolvermp_charge = off, cusolvermp_lu = off` in cohsex.in. Documented
+  in `KNOWN_SANDBOX_ERRORS.md`.
+* No OOMs, no crashes, no leaks. r_chunk = 13824 = n_rtot at every μ; the
+  Si scalar load is so small the planner always picks a single chunk.
+
+Run dir: `runs/Si/MU_nonbispinor_2026-05-18/`
+Report: `reports/memory_model_nonbispinor_kgrid_2026-05-18/agent_a_si_nonbispinor_mu_sweep.md`
+Branch: `agent/si-nonbispinor-mu-sweep` on lorrax_A, tip `dc0b254`.
+
 ## 2026-05-18: Non-bispinor Si k-grid scaling of gflat_memory_model planner [agent-B]
 
 Stress-tested the planner on scalar (`bispinor=false`, ns=2 non-SOC) Si across
