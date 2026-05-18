@@ -1,0 +1,35 @@
+run_id: si_kgrid_nonbispinor_planner_audit_2026-05-18
+system: Si
+pipeline: qe_lorrax
+platform: perlmutter
+
+variant_of: null
+reuse_from_parent: []
+overrides:
+  noncolin: true       # nspinor=2 without SOC (workaround for KNOWN_SANDBOX_ERRORS 2026-05-18)
+  lspinorb: false
+  nspinor: 2           # effective ns=2 in planner formulas
+  ecutwfc: 25.0
+  nbnd: 102            # 100 logical bands used by GW + 2 clearance
+  pseudo: standard/Si.upf (FR-ONCVPSP PBE; QE ignores SO part with lspinorb=.false.)
+  purpose: "Agent B - planner k-grid scaling audit at non-bispinor scalar physics"
+  bispinor: false      # x_only single-channel, not the 4-channel bispinor cascade
+
+# 4 directories: one per kgrid (2x2x2, 3x3x3, 4x4x4, 6x6x6)
+steps:
+  2x2x2_qe:        { state: complete }
+  3x3x3_qe:        { state: complete }
+  4x4x4_qe:        { state: complete }
+  6x6x6_qe:        { state: complete }
+  2x2x2_lorrax:    { state: complete, note: "platform_false + bfc_pre95 variants; HWM_pred=0.28, mem_stats=8.00" }
+  3x3x3_lorrax:    { state: complete, note: "platform_false + bfc_pre95 variants; HWM_pred=3.78, mem_stats=8.02" }
+  4x4x4_lorrax:    { state: complete, note: "platform_false + bfc_pre95 variants; HWM_pred=20.19, mem_stats=20.36 (-0.8%)" }
+  6x6x6_lorrax:    { state: complete, note: "platform_false + bfc_pre95 variants; HWM_pred=24.82, mem_stats=26.42 (-6.1%); 11 r-chunks" }
+
+notes: |
+  Sister to reports/memory_model_refit_2026-05-17/ (Agent T's bispinor mu-sweep).
+  Goal: hold mu density ~constant across kgrids, vary kgrid 2x2x2 -> 6x6x6,
+  test if planner-vs-mem_stats stays in agent_t's -0.5% to -10.8% window.
+
+  mu schedule: choose mu so n_chunks_per_kgrid >= 3 so the r-chunk loop runs
+  (allows LORRAX_MAX_RCHUNKS=3 exit_after_zeta protocol).

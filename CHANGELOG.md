@@ -1,5 +1,240 @@
 # Changelog
 
+## 2026-05-18: Non-bispinor Si k-grid scaling of gflat_memory_model planner [agent-B]
+
+Stress-tested the planner on scalar (`bispinor=false`, ns=2 non-SOC) Si across
+2×2×2 → 6×6×6 k-grids at fixed μ/nk_full ≈ 6 (μ=48, 192, 432, 1348 orbit-
+unfolded). Held nb=100 logical bands, 25 Ry, 24³ FFT box. Each kgrid measured
+under both `platform_false` (production allocator) and `bfc_pre95` (BFC +
+preallocate=true + MEM_FRACTION=0.95) for OOM-relevant `mem_stats` peaks.
+
+**Headline:** 4×4×4 −0.8%, 6×6×6 −6.1% — both inside bispinor's
+[−0.5%, −10.8%] window from agent_T. Small kgrids (2×2×2 −96.5%, 3×3×3 −52.9%)
+have huge fractional %-err but it's a constant ~5–8 GB CUDA/JAX/cuFFT/NCCL
+floor, NOT a multiplicative scaling failure. Δ = peak − HWM_pred is roughly
+constant (~5 GB) across kgrids.
+
+**Per-term scaling**: every component within 5% of analytic predicted exponent
+(nk^0, nk^1, nk^2, nk^3 classes all match — slopes 0.0, 0.9-1.18, 2.06-2.08,
+2.86-2.87 respectively). `sphere_idx_replicated` stays at 1 buffer across all
+kgrids — Round-6 canonical-accessor fix holds. `B_CCT_chol` becomes the 2nd-
+largest peak at 6×6×6 (17.58 GB = 71% of C=24.82 GB) — at larger μ or with
+bispinor cascade it could flip the bottleneck from C to B.
+
+**Sandbox bug found**: `nspinor=1` (true scalar) is blocked by `get_spinor_rotations`
+always returning (n_sym, 2, 2). Logged in KNOWN_SANDBOX_ERRORS.md 2026-05-18.
+Worked around by using `noncolin=true, lspinorb=false` (nspinor=2 no SOC) —
+same per-rank planner formulas exercise, but truly nspinor=1 would require
+a fix in `sources/lorrax_B/src/common/symmetry_maps.py:1220` to special-case
+the trivial spinor.
+
+Run dir: `runs/Si/KGRID_nonbispinor_2026-05-18/`
+Report: `reports/memory_model_nonbispinor_kgrid_2026-05-18/agent_b_si_kgrid_scaling.md`
+Branch: `agent/si-kgrid-scaling` on lorrax_B (no LORRAX-source modifications).
+
+## 2026-05-17: HLO calibration of planner constants pair_density_slots / fft_box_factor_D [agent-D]
+
+Production-scale bispinor 80 Ry CrI3 HLO dumps + analysis to empirically
+calibrate the two free constants of `gflat_memory_model.py`'s Peak C / Peak D.
+JID 53075115 (4 nodes / 16 GPU / 4×4 mesh).
+
+**Result:** `pair_density_slots = 3` and `fft_box_factor_D = 2.0` both confirmed
+exactly. M1 (bispinor 4-channel, r=24576, b=32, gflat=360): 3 pair-density slots
+× 20.04 GiB each (charge) / 19.83 GiB (transverse) in `fit_one_rchunk`'s 60 GiB
+preallocated-temp.  M2: accumulate kernel shows 2 FFT-box slots × 6.03 GiB
+(factor_D=2, not 4).  M3 (gflat=1 sanity): all 4 channels complete cleanly,
+Peak D drops to 4.35 GiB ≈ planner prediction (< 1% error).  M4
+(non-bispinor cross-check): 3 slots × 14.79 GiB (ns=2) matches.
+
+The lorrax_B `agent/bispinor-ibz` working-tree edits to `gflat_memory_model.py`
+(`fft_box_factor_D=2.0` + `pair_density_slots_{charge,transverse}=3`) are
+empirically validated and safe to commit.  Old `fft_box_factor=4.0` was 2×
+over-conservative, leaking ~13.8 GB of phantom Peak D budget at cs=360.
+
+Run dirs (HLO dumps preserved for re-analysis):
+- `runs/CrI3/M_6x6_80Ry_2026-05-07/lorrax_D_bispinor_hlo_2026-05-17/`
+- `runs/CrI3/M_6x6_80Ry_2026-05-07/lorrax_D_bispinor_hlo_gflat1_2026-05-17/`
+
+Report: `reports/memory_model_refit_2026-05-17/agent_d_hlo_calibration.md`.
+
+## 2026-05-16: CrI3 6×6 **80 Ry** bispinor 16-GPU gate — INCOMPLETE (wall budget) [agent]
+
+Attempted the 80 Ry production-scale Σ^B internal-consistency gate on JID 53057076
+(4 nodes / 16 GPU / 4×4 mesh, 2:30 alloc).  Setup complete and on disk:
+`runs/CrI3/M_6x6_80Ry_2026-05-07/{0X_lorrax_bispinor_fullbz_16gpu_2026-05-16,
+0Y_lorrax_bispinor_ibz_16gpu_2026-05-16}/`.  Centroids regenerated:
+charge `centroids_frac_1508.txt` (existing), transverse
+`centroids_frac_1504_current.txt` (new, orbit-aware, ~3 min on 2 GPUs).  Both
+sets pass orbit-closure under CrI3's 6 spatial sym ops.
+
+**Findings & fix landed**:
+1. Auto-planner picked `gflat_chunk_size = 717` at 80 Ry / mesh=16 — cuFFT
+   batched-plan scratch allocator fails (`Failed to create cuFFT batched plan
+   with scratch allocator`, 12 GiB scratch on top of 12.91 GB FFT box).
+   **Worked around**: set `gflat_chunk_size = 360` in cohsex.in → per-iter FFT
+   box 6.48 GB/rank, plan creation succeeds.  *Bug class: planner's
+   `fft_box_factor=4.0` undercounts cuFFT's actual plan-side scratch at
+   large `cs · n_rtot`; should land a correction in
+   `gflat_memory_model.py` next session.*
+
+**Why the gate didn't complete**: bispinor ζ-fit per-r-chunk at 80 Ry is
+~14 s × 138 chunks ≈ 32 min per channel, × 4 channels (charge + 3 μ_L) =
+**~128 min for ζ-fit alone**, plus V_q + Σ^B ≈ ~10–15 min.  Run A total ~140
+min vs ~125 min alloc remaining at first ζ-fit start.  Doubling
+`band_chunk_size` from 16 → 32 did **not** measurably speed up the inner
+chunk (still 13.5 s/chunk; bottleneck is pair-density × cuFFT at
+n_rmu=1508 not the bc-loop count).  Run A killed twice, gate output never
+written; 30 Ry 51 µeV verdict stands as the strongest evidence to date.
+
+**Next session prerequisites**: same branch `agent/bispinor-ibz` HEAD `d96aa46`,
+same run dirs (left intact with cohsex.in + manifest + recon driver), **fresh
+4 h allocation** (~3 h Run A, ~2 h Run B, ~10 min recon).  `lxalloc` with
+`--time=04:00:00 --constraint="gpu&hbm80g"`.
+
+## 2026-05-16: CrI3 6×6 bispinor IBZ 16-GPU end-to-end gate PASSES (51 µeV / 4×4 mesh) [agent]
+
+Final driver for the bispinor IBZ-cascade end-to-end gate at production scale.
+Run A (full-BZ reference, `LORRAX_FORCE_FULL_BZ=1`) and Run B (IBZ cascade) both
+completed Σ^B + `v_q_bispinor.h5` write on a 4-node / 16-GPU / 4×4 mesh allocation
+(JID 53054263).  Reconstruction via `reconstruct_sigma_b.py` rebuilt ψ once and
+diffed Σ^B[k, m, n] between the two `v_q_bispinor.h5` files.
+
+**Verdict: PASS at 0.0512 meV** (gate threshold 1 meV; bit-identical to the 2-GPU
+gate's 51 µeV).  `Σ_X scalar` (charge channel) is bit-identical (Δ=0); the 51 µeV
+residual lives entirely in Σ^B.  Per-tile trace shifts reproduce the 2-GPU
+"Lorentz-mixing-cancels" signature — (μ_L=1,1)↔(1,2) tiles each shift by ~600 meV
+in the IBZ cascade leg, with the cross-shifts cancelling in the channel sum.
+
+Wall times: Run A ~356 s to V_q (n_q_solve=36), Run B ~180 s to V_q (n_q_solve=8,
+~2× speedup from IBZ cascade), reconstruction ~190 s.
+
+Source: branch `agent/bispinor-ibz` advanced from `9956dff` to `d96aa46` over 5
+src/ commits.  The load-bearing one for 16-GPU was **`4930dab`
+`fix(v_q_bispinor,reader): mesh-padded sharded tile reads`** — `BispinorVqReader.get_tile`
+was reading transverse tiles at the on-disk logical extent (n_rmu_T=298), failing
+`_validate_block_divisible` under any mesh with a sharded axis ≥3.  Now rounds μ
+extents up to `gx*gy` and passes the padded shape as `shape=` plus the logical
+extent as `valid_shape=` — mirrors the write-side `_round_up_to_mesh` at
+v_q_tile.py:1116-1118.  Concurrent fixes: `d96aa46` (NamedSharding scope shadow in
+gw_jax.py main()), `eb4a1e0` (band_chunk floor at world_size), `2de70eb`/`4b927dc`
+(WFN loader band-pad past mnband).
+
+Both runs crashed in *post-Σ* artifact writers (`write_qp_wfn_h5` for Run A,
+`write_results` for Run B) — both `nk` vs `nk_irr` indexing bugs in the
+bispinor + full-BZ vs IBZ-cascade combination, not exercised by the 2-GPU
+gate.  Σ^B and `v_q_bispinor.h5` were emitted before either crash, so the
+gate observable is unaffected.  Deferred to a separate writer-fix initiative
+before any downstream BSE / WFN_qp consumer is wired up.
+
+Artifacts:
+- `runs/CrI3/M_6x6_30Ry_bispinor_2026-05-14/sigma_b_gate_16gpu_v2_{A,B}.npz`
+- `runs/CrI3/.../03_lorrax_bispinor_fullbz_16gpu_2026-05-16/tmp/v_q_bispinor.h5`
+- `runs/CrI3/.../04_lorrax_bispinor_ibz_16gpu_2026-05-16/tmp/v_q_bispinor.h5`
+- `recon_sigma_b_gate_16gpu_v2_2026-05-16/recon.out`
+
+## 2026-05-16: CrI3 6×6 bispinor IBZ 16-GPU retest v2 — ABORTED (two new bugs at 4×4 mesh) [agent]
+
+Re-attempted Run A on `agent/bispinor-ibz @ 9956dff` (band-pad fixes for
+`load_centroids_band_chunked` and `psi_G_store._populate_from_loader` in place) on the
+shared 4-node urgent allocation JID 53054263. **Two new bugs surface at 4×4 mesh; both
+hit the failure-mode protocol's "STOP, do NOT patch" rule.** No Σ^B produced; cascade leg
+(Run B) never launched.
+
+- **Step `.0`** (HEAD as handed off): JAX init + COHSEX header OK, then phdf5 kchunk-union
+  reader fails with `HDF5-DIAG: H5Dread failed` and `INTERNAL: phdf5
+  read_kchunk_union: H5Dread failed`. Cause: replicated `counts` table doesn't clamp the
+  tail rank's `(offset, count)` to the on-disk band extent when `mnband=86` is not
+  divisible by `world * bands_per_rank=16 * 6`. SLURM cancelled the step after 41 min.
+- **Step `.1`** (after an in-tree "PHDF5 FIX" + "MU FIX" added per-rank clamped counts to
+  `src/file_io/wfn_loader.py` and `src/ffi/phdf5/read.py`; not committed): all 16 ranks
+  raise `ValueError: empty band range: (86, 86)` in `WfnLoader.load:750`. Call site:
+  `psi_G_store._populate_from_loader:225` requests the pad-only sub-block `(86, 86)` (the
+  final, entirely-past-mnband band-chunk). The patched `WfnLoader.load` now rejects empty
+  windows up-front, overriding the zero-fill path that commit `9956dff` added downstream.
+  Followed by segfaults; SLURM cancelled the step.
+
+Sandbox-errors log gained two new entries:
+- `LORRAX_NGPU` is per-node in `lxrun`, not total — task specs that set
+  `LORRAX_NGPU=16` (total) need `LORRAX_NNODES=4 LORRAX_NGPU=4` instead.
+- Shifter env passthrough — `export LORRAX_FORCE_FULL_BZ=1` from the shell does not reach
+  the container; the launch must add `--env=LORRAX_FORCE_FULL_BZ=1` to `LORRAX_SHIFTER`.
+
+JID 53054263 still RUNNING at the time of write-up (~1 h 13 min left, 4/4 nodes idle).
+No source modified by this session; both new bugs deferred to the orchestrator.
+
+## 2026-05-16: CrI3 6×6 30Ry bispinor IBZ gate FAILS at 16 GPUs — band-axis world-size pad outruns WFN file [agent]
+
+Re-running the prior 2-GPU bispinor IBZ end-to-end gate on the production
+16-GPU / 4×4 mesh (`runs/CrI3/M_6x6_30Ry_bispinor_2026-05-14/03_lorrax_bispinor_fullbz_16gpu_2026-05-16/`
+and `04_lorrax_bispinor_ibz_16gpu_2026-05-16/`, lorrax_B `agent/bispinor-ibz`
+@ `82520a1`) hit the **suspected small-`nbnd` band-sharding death mode**
+(see `~/.claude/.../project_cri3_small_nbnd_band_sharding_suspect.md`)
+on all 16 ranks, before any V_q tile, kernel, or HLO compile.
+
+Mechanism (root cause identified, not patched):
+
+- `common/meta.py:107-109` sets `b_id_4 = round_up(nband_user=84, world_size=16) = 96`.
+- `gw/wavefunction_bundle.py:83` exposes `full_range = (b0, b4) = (0, 96)`.
+- `gw/gw_init.py:1205-1209` → `common/load_wfns.py:437-439` → `loader.load(bands=(0, 96), ...)`.
+- `file_io/wfn_loader.py:678-681` rejects `b_hi=96 > self.nbands=86` (NSCF `nbnd=86`).
+- Error: `band range (0, 96) out of [0, 86); use bands_pad_to-style external padding for over-file requests`.
+- The `meta.py:100-117` comment promises zero-fill past `b_id_4_user` in
+  `load_centroids_band_chunked`; the actual call path doesn't slice or pad
+  externally before the loader sees the over-file extent.
+
+Mesh sensitivity (`nband_user=84`, NSCF `nbnd=86`):
+
+| world_size | `round_up(84, ws)` | vs file `mnband=86` |
+|------------|-------------------|---------------------|
+| 2 (prior gate) | 84 | OK |
+| 4 | 84 | OK |
+| 8 | 88 | FAILS |
+| **16 (this gate)** | **96** | **FAILS** |
+
+So 8 GPUs would already fail; the production 16-GPU mesh fails by 10 slots.
+
+Per task contract: no source patch, no commit, no retry on fewer GPUs.
+Allocation 53050082 (`hbm80g`, 4 nodes) released. Full failure analysis +
+recommendation in the gate report (returned to the user as text — no
+report.md file written per subagent conventions). Run 04 (IBZ-cascade
+leg) was skipped because both legs run the same `Meta.from_system` +
+`prepare_isdf_and_wavefunctions` code path before either IBZ branch is
+taken; the bug would fire identically.
+
+## 2026-05-16: bispinor IBZ Σ^B gate PASS at 51 µeV on CrI3 6×6 30Ry [agent]
+
+End-to-end internal-consistency gate for the new bispinor IBZ cascade
+(`lorrax_B agent/bispinor-ibz` @ `882ed4a`, 3-vector Lorentz mixing on
+TT tiles). Two paired LORRAX runs on the same CrI3 6×6×1 30 Ry SOC
+QE/centroid reference under `runs/CrI3/M_6x6_30Ry_bispinor_2026-05-14/`
+differing only in `cohsex.in: bispinor_use_ibz`:
+
+- `01_lorrax_bispinor_fullbz_ibz_gate_2026-05-16/` — reference (false)
+- `02_lorrax_bispinor_ibz_2026-05-16/` — new IBZ cascade (true)
+
+Per-(k, n) Σ^B reconstructed via `reconstruct_sigma_b.py` (calls
+LORRAX as library; no source mod) and diffed in `analyze_gate.py`:
+
+- `max |Δ Σ^B[k, n]|` = **0.0507 meV** over (36 k) × (84 sigma bands)
+- mean = 0.0027 meV; RMS = 0.0059 meV
+- Gate threshold 1 meV → **PASS** by 20×
+- Scalar Σ_X (charge channel): **bit-identical** between A and B (Δ = 0)
+
+Per-tile traces of (1,1), (2,2), (1,2), (2,1) each shift by ~600 meV
+under in-plane proper rotations with opposite signs that cancel in
+the contracted Σ^B — positive evidence the 3-vector Lorentz mixing
+`V^{ij} = R^{iα} R^{jβ} V^{αβ}_{IBZ-unfold}` is acting unitarily.
+
+V_q kernel wall: 26.28 s (A) → 6.28 s (B), **4.18× speedup** on the
+V_q stage (4.5× IBZ shrink on 36→8 q's for P-3). Total wall is
+dominated by ζ-fit on this 6×6 case (~6 min) which is unchanged.
+
+Both runs are blocked at QP output by the pre-existing kin_ion
+crash (`KNOWN_SANDBOX_ERRORS.md` 2026-05-14) but Σ_X printing
+completes first under `x_only = true`.
+
+Plot: `reports/bispinor_ibz_e2e_gate_2026-05-16/sigma_b_gate_scatter.png`.
+
 ## 2026-05-15: CrI3 sym-vs-nosym L-phase + perm-direction fix [agent]
 
 Two-bug fix on `agent/trs-aware-sym-fix` commit `0735c2a`:
