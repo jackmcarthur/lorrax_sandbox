@@ -1,0 +1,48 @@
+BufferAssignment:
+allocation 0: size 4704, output shape is |pred[8,1,588]|, maybe-live-out:
+ value: <7 broadcast_compare_fusion @0> (size=4704,offset=0): pred[8,1,588]{2,1,0}
+allocation 1: size 2352, parameter 0, shape |s32[1,1,588]| at ShapeIndex {}:
+ value: <6 param @0> (size=2352,offset=0): s32[1,1,588]{2,1,0}
+allocation 2: size 32, parameter 1, shape |s32[8,1,1]| at ShapeIndex {}:
+ value: <5 param.1 @0> (size=32,offset=0): s32[8,1,1]{2,1,0}
+
+Total bytes used: 7088 (6.9KiB)
+
+Used values:
+<5 param.1 @0>
+ positions:
+  param.1
+ uses:
+  broadcast_compare_fusion, operand 0
+ from instruction: %param.1 = s32[8,1,1]{2,1,0} parameter(1), sharding={replicated}, metadata={op_name="y"}
+<6 param @0>
+ positions:
+  param
+ uses:
+  broadcast_compare_fusion, operand 1
+ from instruction: %param = s32[1,1,588]{2,1,0} parameter(0), sharding={replicated}, metadata={op_name="x"}
+<7 broadcast_compare_fusion @0>
+ positions:
+  broadcast_compare_fusion
+ uses:
+ from instruction: %broadcast_compare_fusion = pred[8,1,588]{2,1,0} fusion(%param.1, %param), kind=kLoop, calls=%fused_computation, metadata={op_name="jit(less)/lt" stack_frame_id=7}
+
+
+HloLiveRange (max 3):
+  InstructionSequence:
+    0:param
+    1:param.1
+    2:broadcast_compare_fusion
+  BufferLiveRange:
+    param.1{}:0-3
+    param{}:0-3
+    broadcast_compare_fusion{}:2-3
+  Live ranges at 2 (peak):
+    broadcast_compare_fusion{}: 4704 bytes (cumulative: 4704 bytes)
+    param{}: 2352 bytes (cumulative: 7056 bytes)
+    param.1{}: 32 bytes (cumulative: 7088 bytes)
+  Stack trace breakdown for peak usage: 7 088 bytes
+    main.0_spmd (100.0%, total: 7 088 bytes, current: 0 bytes, remaining: 7 088 bytes)
+      ├── jit(less)/lt (66.4%, total: 4 704 bytes, current: 4 704 bytes, remaining: 2 384 bytes)
+      ├── x (33.2%, total: 2 352 bytes, current: 2 352 bytes, remaining: 32 bytes)
+      └── y (0.5%, total: 32 bytes, current: 32 bytes, remaining: 0 bytes)

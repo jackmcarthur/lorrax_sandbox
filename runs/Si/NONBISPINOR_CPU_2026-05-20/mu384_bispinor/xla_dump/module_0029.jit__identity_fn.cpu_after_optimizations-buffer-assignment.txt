@@ -1,0 +1,36 @@
+BufferAssignment:
+allocation 0: size 14155776, output shape is |s32[256,24,24,24]|, maybe-live-out:
+ value: <1 all-gather @0> (size=14155776,offset=0): s32[256,24,24,24]{3,2,1,0}
+allocation 1: size 3538944, parameter 0, shape |s32[64,24,24,24]| at ShapeIndex {}:
+ value: <0 param @0> (size=3538944,offset=0): s32[64,24,24,24]{3,2,1,0}
+
+Total bytes used: 17694720 (16.88MiB)
+
+Used values:
+<0 param @0>
+ positions:
+  param
+ uses:
+  all-gather, operand 0
+ from instruction: %param = s32[64,24,24,24]{3,2,1,0} parameter(0), sharding={devices=[4,1,1,1]<=[4]}, metadata={op_name="x"}
+<1 all-gather @0>
+ positions:
+  all-gather
+ uses:
+ from instruction: %all-gather = s32[256,24,24,24]{3,2,1,0} all-gather(%param), channel_id=1, replica_groups=[1,4]<=[4], dimensions={0}, use_global_device_ids=true
+
+
+HloLiveRange (max 2):
+  InstructionSequence:
+    0:param
+    1:all-gather
+  BufferLiveRange:
+    param{}:0-2
+    all-gather{}:1-2
+  Live ranges at 1 (peak):
+    all-gather{}: 14155776 bytes (cumulative: 14155776 bytes)
+    param{}: 3538944 bytes (cumulative: 17694720 bytes)
+  Stack trace breakdown for peak usage: 17 694 720 bytes
+    main.0_spmd (100.0%, total: 17 694 720 bytes, current: 0 bytes, remaining: 17 694 720 bytes)
+      ├── all-gather (80.0%, total: 14 155 776 bytes, current: 14 155 776 bytes, remaining: 3 538 944 bytes)
+      └── x (20.0%, total: 3 538 944 bytes, current: 3 538 944 bytes, remaining: 0 bytes)

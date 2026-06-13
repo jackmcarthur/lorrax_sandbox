@@ -1,0 +1,57 @@
+BufferAssignment:
+allocation 0: size 32514048, output shape is |c128[8,432,588]|, maybe-live-out:
+ value: <1 copy @0> (size=8128512,offset=0): c128[8,108,588]{2,0,1}
+ value: <3 copy.1 @0> (size=32514048,offset=0): c128[8,432,588]{2,1,0}
+allocation 1: size 8128512, parameter 0, shape |c128[8,108,588]| at ShapeIndex {}:
+ value: <0 param @0> (size=8128512,offset=0): c128[8,108,588]{2,1,0}
+allocation 2: size 32514048, preallocated-temp:
+ value: <2 all-gather @0> (size=32514048,offset=0): c128[8,432,588]{2,0,1}
+
+Total bytes used: 73156608 (69.77MiB)
+
+Used values:
+<0 param @0>
+ positions:
+  param
+ uses:
+  copy, operand 0
+ from instruction: %param = c128[8,108,588]{2,1,0} parameter(0), sharding={devices=[1,4,1]<=[4]}, metadata={op_name="x"}
+<1 copy @0>
+ positions:
+  copy
+ uses:
+  all-gather, operand 0
+ from instruction: %copy = c128[8,108,588]{2,0,1} copy(%param), sharding={devices=[1,4,1]<=[4]}, metadata={op_name="x"}, backend_config={"outer_dimension_partitions":["3"]}
+<2 all-gather @0>
+ positions:
+  all-gather
+ uses:
+  copy.1, operand 0
+ from instruction: %all-gather = c128[8,432,588]{2,0,1} all-gather(%copy), channel_id=1, replica_groups=[1,4]<=[4], dimensions={1}, use_global_device_ids=true
+<3 copy.1 @0>
+ positions:
+  copy.1
+ uses:
+ from instruction: %copy.1 = c128[8,432,588]{2,1,0} copy(%all-gather), backend_config={"outer_dimension_partitions":["3"]}
+
+
+HloLiveRange (max 4):
+  InstructionSequence:
+    0:param
+    1:copy
+    2:all-gather
+    3:copy.1
+  BufferLiveRange:
+    param{}:0-4
+    copy{}:1-2
+    all-gather{}:2-3
+    copy.1{}:3-4
+  Live ranges at 3 (peak):
+    all-gather{}: 32514048 bytes (cumulative: 32514048 bytes)
+    copy.1{}: 32514048 bytes (cumulative: 65028096 bytes)
+    param{}: 8128512 bytes (cumulative: 73156608 bytes)
+  Stack trace breakdown for peak usage: 73 156 608 bytes
+    main.0_spmd (100.0%, total: 73 156 608 bytes, current: 0 bytes, remaining: 73 156 608 bytes)
+      ├── all-gather (44.4%, total: 32 514 048 bytes, current: 32 514 048 bytes, remaining: 40 642 560 bytes)
+      ├── copy.1 (44.4%, total: 32 514 048 bytes, current: 32 514 048 bytes, remaining: 8 128 512 bytes)
+      └── x (11.1%, total: 8 128 512 bytes, current: 8 128 512 bytes, remaining: 0 bytes)

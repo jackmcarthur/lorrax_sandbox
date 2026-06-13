@@ -1,0 +1,121 @@
+BufferAssignment:
+allocation 0: size 144506880, output shape is |c128[64,60,4,588]|, maybe-live-out:
+ value: <32 transpose_copy_fusion @0> (size=72253440,offset=0): c128[64,588,60,2]{3,2,1,0}
+ value: <40 copy_concatenate_fusion @0> (size=144506880,offset=0): c128[64,60,4,588]{3,2,1,0}
+allocation 1: size 72253440, parameter 0, shape |c128[64,60,2,588]| at ShapeIndex {}:
+ value: <31 psi_2.1 @0> (size=72253440,offset=0): c128[64,60,2,588]{3,2,1,0}
+allocation 2: size 903168, parameter 1, shape |f64[64,588,3]| at ShapeIndex {}:
+ value: <33 gvecs.1 @0> (size=903168,offset=0): f64[64,588,3]{2,1,0}
+allocation 3: size 1536, parameter 2, shape |f64[64,3]| at ShapeIndex {}:
+ value: <34 kvecs.1 @0> (size=1536,offset=0): f64[64,3]{1,0}
+allocation 4: size 72, parameter 3, shape |f64[3,3]| at ShapeIndex {}:
+ value: <36 bvec.1 @0> (size=72,offset=0): f64[3,3]{1,0}
+allocation 5: size 74661888, preallocated-temp:
+ value: <35 add_bitcast_fusion @0> (size=903168,offset=903168): f64[37632,3]{1,0}
+ value: <37 dot @0> (size=903168,offset=0): f64[37632,3]{1,0}
+ value: <38 bitcast_concatenate_fusion @0> (size=2408448,offset=72253440): c128[64,588,2,2]{3,2,1,0}
+ value: <39 dot.1 @0> (size=72253440,offset=0): c128[64,588,60,2]{3,2,1,0}
+
+Total bytes used: 292326984 (278.78MiB)
+
+Used values:
+<31 psi_2.1 @0>
+ positions:
+  psi_2.1
+ uses:
+  transpose_copy_fusion, operand 0
+  copy_concatenate_fusion, operand 0
+ from instruction: %psi_2.1 = c128[64,60,2,588]{3,2,1,0} parameter(0), metadata={op_name="psi_2"}
+<32 transpose_copy_fusion @0>
+ positions:
+  transpose_copy_fusion
+ uses:
+  dot.1, operand 0
+ from instruction: %transpose_copy_fusion = c128[64,588,60,2]{3,2,1,0} fusion(%psi_2.1), kind=kLoop, calls=%fused_computation.3, metadata={op_name="psi_2"}, backend_config={"outer_dimension_partitions":["3"]}
+<33 gvecs.1 @0>
+ positions:
+  gvecs.1
+ uses:
+  add_bitcast_fusion, operand 0
+ from instruction: %gvecs.1 = f64[64,588,3]{2,1,0} parameter(1), metadata={op_name="gvecs"}
+<34 kvecs.1 @0>
+ positions:
+  kvecs.1
+ uses:
+  add_bitcast_fusion, operand 1
+ from instruction: %kvecs.1 = f64[64,3]{1,0} parameter(2), metadata={op_name="kvecs"}
+<35 add_bitcast_fusion @0>
+ positions:
+  add_bitcast_fusion
+ uses:
+  dot, operand 0
+ from instruction: %add_bitcast_fusion = f64[37632,3]{1,0} fusion(%gvecs.1, %kvecs.1), kind=kLoop, calls=%fused_computation.2, metadata={op_name="jit(_kernel)/add" stack_frame_id=12}, backend_config={"outer_dimension_partitions":["3"]}
+<36 bvec.1 @0>
+ positions:
+  bvec.1
+ uses:
+  dot, operand 1
+ from instruction: %bvec.1 = f64[3,3]{1,0} parameter(3), metadata={op_name="bvec"}
+<37 dot @0>
+ positions:
+  dot
+ uses:
+  bitcast_concatenate_fusion, operand 0
+ from instruction: %dot = f64[37632,3]{1,0} dot(%add_bitcast_fusion, %bvec.1), lhs_contracting_dims={1}, rhs_contracting_dims={0}, metadata={op_name="jit(_kernel)/dot_general" stack_frame_id=13}
+<38 bitcast_concatenate_fusion @0>
+ positions:
+  bitcast_concatenate_fusion
+ uses:
+  dot.1, operand 1
+ from instruction: %bitcast_concatenate_fusion = c128[64,588,2,2]{3,2,1,0} fusion(%dot), kind=kLoop, calls=%fused_computation.1, metadata={op_name="jit(_kernel)/concatenate" stack_frame_id=24}, backend_config={"outer_dimension_partitions":["3"]}
+<39 dot.1 @0>
+ positions:
+  dot.1
+ uses:
+  copy_concatenate_fusion, operand 1
+ from instruction: %dot.1 = c128[64,588,60,2]{3,2,1,0} dot(%transpose_copy_fusion, %bitcast_concatenate_fusion), lhs_batch_dims={0,1}, lhs_contracting_dims={3}, rhs_batch_dims={0,1}, rhs_contracting_dims={3}, metadata={op_name="jit(_kernel)/kgij,kbjg->kbig/dot_general" stack_frame_id=25}
+<40 copy_concatenate_fusion @0>
+ positions:
+  copy_concatenate_fusion
+ uses:
+ from instruction: %copy_concatenate_fusion = c128[64,60,4,588]{3,2,1,0} fusion(%psi_2.1, %dot.1), kind=kLoop, calls=%fused_computation, metadata={op_name="jit(_kernel)/concatenate" stack_frame_id=26}, backend_config={"outer_dimension_partitions":["3"]}
+
+
+HloLiveRange (max 10):
+  InstructionSequence:
+    0:psi_2.1
+    1:gvecs.1
+    2:kvecs.1
+    3:bvec.1
+    4:transpose_copy_fusion
+    5:add_bitcast_fusion
+    6:dot
+    7:bitcast_concatenate_fusion
+    8:dot.1
+    9:copy_concatenate_fusion
+  BufferLiveRange:
+    psi_2.1{}:0-10
+    transpose_copy_fusion{}:4-8
+    gvecs.1{}:0-10
+    kvecs.1{}:0-10
+    add_bitcast_fusion{}:5-6
+    bvec.1{}:0-10
+    dot{}:6-7
+    bitcast_concatenate_fusion{}:7-8
+    dot.1{}:8-9
+    copy_concatenate_fusion{}:9-10
+  Live ranges at 9 (peak):
+    copy_concatenate_fusion{}: 144506880 bytes (cumulative: 144506880 bytes)
+    dot.1{}: 72253440 bytes (cumulative: 216760320 bytes)
+    psi_2.1{}: 72253440 bytes (cumulative: 289013760 bytes)
+    gvecs.1{}: 903168 bytes (cumulative: 289916928 bytes)
+    kvecs.1{}: 1536 bytes (cumulative: 289918464 bytes)
+    bvec.1{}: 72 bytes (cumulative: 289918536 bytes)
+  Stack trace breakdown for peak usage: 289 918 536 bytes
+    main.1 (100.0%, total: 289 918 536 bytes, current: 0 bytes, remaining: 289 918 536 bytes)
+      ├── jit(_kernel)/concatenate (49.8%, total: 144 506 880 bytes, current: 144 506 880 bytes, remaining: 145 411 656 bytes)
+      ├── jit(_kernel)/kgij,kbjg->kbig/dot_general (24.9%, total: 72 253 440 bytes, current: 72 253 440 bytes, remaining: 73 158 216 bytes)
+      ├── psi_2 (24.9%, total: 72 253 440 bytes, current: 72 253 440 bytes, remaining: 904 776 bytes)
+      ├── gvecs (0.3%, total: 903 168 bytes, current: 903 168 bytes, remaining: 1 608 bytes)
+      ├── kvecs (0.0%, total: 1 536 bytes, current: 1 536 bytes, remaining: 72 bytes)
+      └── bvec (0.0%, total: 72 bytes, current: 72 bytes, remaining: 0 bytes)

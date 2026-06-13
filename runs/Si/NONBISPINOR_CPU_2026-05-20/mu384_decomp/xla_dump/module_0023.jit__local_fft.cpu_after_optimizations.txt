@@ -1,0 +1,73 @@
+HloModule jit__local_fft, is_scheduled=true, entry_computation_layout={(c128[64,15,2,24,24,24]{5,4,3,2,1,0})->c128[64,15,2,24,24,24]{5,4,3,2,1,0}}, num_partitions=4
+
+FileNames
+1 "<frozen runpy>"
+2 "/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_B/src/gw/gw_jax.py"
+3 "/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_B/src/gw/gw_init.py"
+4 "/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_B/src/common/fft_helpers.py"
+
+FunctionNames
+1 "run_module"
+2 "_run_module_code"
+3 "_run_code"
+4 "<module>"
+5 "main"
+6 "prepare_isdf_and_wavefunctions"
+7 "compute_optimal_chunks"
+8 "compute_optimal_chunks.<locals>._fft_inloop_bytes"
+9 "query_fft_peak_bytes"
+10 "_make_jittable_local_fft.<locals>._local_fft"
+
+FileLocations
+1 {file_name_id=1 function_name_id=1 line=226 end_line=226 column=15 end_column=15}
+2 {file_name_id=1 function_name_id=2 line=98 end_line=98 column=8 end_column=8}
+3 {file_name_id=1 function_name_id=3 line=88 end_line=88 column=4 end_column=4}
+4 {file_name_id=2 function_name_id=4 line=956 end_line=956 column=18 end_column=18}
+5 {file_name_id=2 function_name_id=5 line=169 end_line=169 column=8 end_column=8}
+6 {file_name_id=3 function_name_id=6 line=1198 end_line=1198 column=12 end_column=12}
+7 {file_name_id=3 function_name_id=7 line=360 end_line=360 column=17 end_column=17}
+8 {file_name_id=3 function_name_id=8 line=351 end_line=351 column=15 end_column=15}
+9 {file_name_id=4 function_name_id=9 line=83 end_line=83 column=19 end_column=19}
+10 {file_name_id=4 function_name_id=10 line=259 end_line=259 column=16 end_column=16}
+
+StackFrames
+1 {file_location_id=1 parent_frame_id=1}
+2 {file_location_id=2 parent_frame_id=2}
+3 {file_location_id=3 parent_frame_id=3}
+4 {file_location_id=4 parent_frame_id=4}
+5 {file_location_id=5 parent_frame_id=5}
+6 {file_location_id=6 parent_frame_id=6}
+7 {file_location_id=7 parent_frame_id=7}
+8 {file_location_id=8 parent_frame_id=8}
+9 {file_location_id=9 parent_frame_id=9}
+10 {file_location_id=10 parent_frame_id=10}
+
+
+%fused_computation (param_0.1: c128[64,15,2,24,24,24]) -> c128[64,15,2,24,24,24] {
+  %param_0.1 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} parameter(0)
+  %transpose.5 = c128[64,15,2,24,24,24]{4,5,3,2,1,0} transpose(%param_0.1), dimensions={0,1,2,3,5,4}, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}
+  ROOT %copy.3 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} copy(%transpose.5), metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}
+}
+
+%fused_computation.1 (param_0.3: c128[64,15,2,24,24,24]) -> c128[64,15,2,24,24,24] {
+  %param_0.3 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} parameter(0)
+  %transpose.6 = c128[64,15,2,24,24,24]{3,4,5,2,1,0} transpose(%param_0.3), dimensions={0,1,2,5,4,3}, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}
+  ROOT %copy.4 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} copy(%transpose.6), metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}
+}
+
+%fused_computation.2 (param_0.5: c128[64,15,2,24,24,24]) -> c128[64,15,2,24,24,24] {
+  %param_0.5 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} parameter(0)
+  %transpose.7 = c128[64,15,2,24,24,24]{4,3,5,2,1,0} transpose(%param_0.5), dimensions={0,1,2,4,5,3}, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}
+  ROOT %copy.5 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} copy(%transpose.7), metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}
+}
+
+ENTRY %main.0_spmd (param: c128[64,15,2,24,24,24]) -> c128[64,15,2,24,24,24] {
+  %param = c128[64,15,2,24,24,24]{5,4,3,2,1,0} parameter(0), sharding={devices=[1,4,1,1,1,1]<=[4]}, metadata={op_name="x"}
+  %transpose_copy_fusion.2 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} fusion(%param), kind=kLoop, calls=%fused_computation.2, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}, backend_config={"outer_dimension_partitions":["3"]}
+  %fft.0 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} fft(%transpose_copy_fusion.2), fft_type=FFT, fft_length={24}, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}
+  %transpose_copy_fusion.1 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} fusion(%fft.0), kind=kLoop, calls=%fused_computation.1, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}, backend_config={"outer_dimension_partitions":["3"]}
+  %fft.1 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} fft(%transpose_copy_fusion.1), fft_type=FFT, fft_length={24}, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}
+  %transpose_copy_fusion = c128[64,15,2,24,24,24]{5,4,3,2,1,0} fusion(%fft.1), kind=kLoop, calls=%fused_computation, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}, backend_config={"outer_dimension_partitions":["3"]}
+  ROOT %fft.2 = c128[64,15,2,24,24,24]{5,4,3,2,1,0} fft(%transpose_copy_fusion), fft_type=FFT, fft_length={24}, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}
+}
+

@@ -1,0 +1,36 @@
+BufferAssignment:
+allocation 0: size 154140672, output shape is |c128[256,32,2,588]|, maybe-live-out:
+ value: <1 all-gather @0> (size=154140672,offset=0): c128[256,32,2,588]{3,2,1,0}
+allocation 1: size 38535168, parameter 0, shape |c128[64,32,2,588]| at ShapeIndex {}:
+ value: <0 param @0> (size=38535168,offset=0): c128[64,32,2,588]{3,2,1,0}
+
+Total bytes used: 192675840 (183.75MiB)
+
+Used values:
+<0 param @0>
+ positions:
+  param
+ uses:
+  all-gather, operand 0
+ from instruction: %param = c128[64,32,2,588]{3,2,1,0} parameter(0), sharding={devices=[4,1,1,1]<=[4]}, metadata={op_name="x"}
+<1 all-gather @0>
+ positions:
+  all-gather
+ uses:
+ from instruction: %all-gather = c128[256,32,2,588]{3,2,1,0} all-gather(%param), channel_id=1, replica_groups=[1,4]<=[4], dimensions={0}, use_global_device_ids=true
+
+
+HloLiveRange (max 2):
+  InstructionSequence:
+    0:param
+    1:all-gather
+  BufferLiveRange:
+    param{}:0-2
+    all-gather{}:1-2
+  Live ranges at 1 (peak):
+    all-gather{}: 154140672 bytes (cumulative: 154140672 bytes)
+    param{}: 38535168 bytes (cumulative: 192675840 bytes)
+  Stack trace breakdown for peak usage: 192 675 840 bytes
+    main.0_spmd (100.0%, total: 192 675 840 bytes, current: 0 bytes, remaining: 192 675 840 bytes)
+      ├── all-gather (80.0%, total: 154 140 672 bytes, current: 154 140 672 bytes, remaining: 38 535 168 bytes)
+      └── x (20.0%, total: 38 535 168 bytes, current: 38 535 168 bytes, remaining: 0 bytes)

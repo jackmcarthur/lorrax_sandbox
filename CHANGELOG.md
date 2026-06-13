@@ -1,5 +1,151 @@
 # Changelog
 
+## 2026-05-20: CPU port + planner backend-aware pair_density_slots [coord]
+
+End-to-end CPU MPI port of the GW driver on Si 4×4×4 μ=384 non-bispinor.
+Three JAX-0.9 strictness fixes were needed to get past the multi-process
+code path (lorrax_B branch `agent/jax-09-cpu-compat`, commit `c7e6695`):
+`cholesky_2d.py` panel_init `lax.pcast(('x','y'), to='varying')`,
+`_slab_io_allgather.py` + `isdf_fitting.py` `tiled=True`. Backend-agnostic
+fixes — GPU back-compat verified byte-identical (HWM 20.12, peak 20.13,
+−0.05% — same as 2026-05-19 reference).
+
+Planner finding (lorrax_B `5c2dae7`): CPU XLA's BufferAssignment schedules
+**4 concurrent pair-density slots** in `fit_one_rchunk` where GPU XLA
+schedules 3. Per-slot bytes match the existing `_bytes_c128(nk, ns², mu,
+r_chunk, /p_xy)` formula exactly on both backends; only the slot count
+differs. The +30% RSS excess over HWM_pred on CPU is **exactly this one
+extra slot**. New helper `_default_pair_density_slots()` in
+`gflat_memory_model.py` resolves the value via `jax.default_backend()` at
+function-call time.
+
+HLO evidence — robust across:
+* Scalar non-bispinor (`module_0342.jit_fn`): 4 × 5.70 GiB
+* Bispinor charge (`module_0360.jit_fn`): 4 × 16.92 GiB
+* Bispinor transverse (`module_0413.jit_fn`): 4 × 16.92 GiB
+* FFT-scratch hypothesis tested + REJECTED: at band_chunk ∈ {32, 64, 120}
+  slot count + per-slot bytes invariant; FFT-box shapes alias into slots
+  but don't size them.
+
+Post-fix predictor accuracy on CPU at Si μ=384:
+* n=1: HWM_pred 73.92 vs RSS 71.89 → **+2.8%** over
+* n=2: HWM_pred 52.39 vs RSS 53.06 → **−1.3%** under
+* n=4: HWM_pred 26.24 vs RSS 26.64 → **−1.5%** under
+
+(was −24% to −33% across the same configs before the fix.)
+
+Profiling stack: `scripts/profiling/pf.py` (+40 LOC) gains a CPU-backend
+branch — psutil RSS fallback when `device.memory_stats()` returns None,
+peak_rss_bytes tracking, pre-import of `jax.profiler` to dodge a
+JAX-0.9 lazy-import race that crashes the sampler on CPU. GPU path
+unchanged. New `skills/profiling_stack/cpu_addendum.md` documents the CPU
+launch recipe + what's empty + HLO naming conventions.
+
+Reports:
+* `reports/memory_model_nonbispinor_kgrid_2026-05-18/CPU_VALIDATION_2026-05-20.md`
+  — initial CPU port (n=1/2/4 RSS vs planner)
+* `reports/memory_model_nonbispinor_kgrid_2026-05-18/CPU_OVERHEAD_DECOMP_2026-05-20.md`
+  — subagent decomposition of the +6.5 GB excess into HLO-evidenced
+  contributors; identified the 4-slot finding
+* `reports/memory_model_nonbispinor_kgrid_2026-05-18/CPU_PLANNER_LANDED_2026-05-20.md`
+  — this session's FFT-test + bispinor confirmation + planner-landed note
+
+Run dirs:
+* `runs/Si/NONBISPINOR_CPU_2026-05-20/{mu384,mu384_decomp,mu384_fft_probe,mu384_bispinor}/`
+* `runs/Si/NONBISPINOR_BUDGETSWEEP_2026-05-20/` — earlier today: planner
+  budget-fill behavior at memory_per_device_gb ∈ {25, 35, 50, 70} GB at
+  both μ=384 (single-chunk) and μ=1200 (multi-chunk). Picker fills 80%
+  of budget when binding, sits at single-chunk floor when loose, never
+  exceeds budget; mem_stats peak tracks HWM_pred within +1% across the
+  sweep.
+* `runs/Si/NONBISPINOR_PROD_2026-05-19/` — 2026-05-19 GPU production
+  redo + this session's GPU back-compat smoke test.
+
+Allocations released (CPU 54411765, GPU 54411976).
+
+## 2026-05-19: Non-bispinor planner audit — production-config redo, planner is faithful [coord]
+
+Re-did the 2026-05-18 non-bispinor audit at the production configuration
+(`noncolin=.true., lspinorb=.true.`, FR-ONCVPSP PBE pseudo, `bispinor=false`,
+cuSOLVERMp default-on, hbm80g + BFC+0.95) after the 2026-05-18 sweep was
+flagged as scope-erroneous (Agent A built `nspinor=1`; agents disabled
+cuSOLVERMp instead of using `hbm80g` per env docs).
+
+Two μ values matching the bispinor sister sweep on JID 53207377:
+
+| μ | r_chunk × n_chunks | HWM_pred | mem_stats peak | %-err |
+|---|---|---|---|---|
+| 384 | 13824 × 1 | 20.12 | 20.13 | **−0.05%** (bit-exact) |
+| 1200 | 13468 × 2 | 55.99 | 55.74 | **+0.45%** (slightly conservative) |
+
+Both inside (and on the optimistic side of) bispinor's [−0.5%, −10.8%] band.
+
+**Falsifies the all_gather-slab planner refinement** Agent C proposed at the
+scope-erroneous config: it would have shown up here as a measurable
+under-prediction in either μ data point — neither does. **Stand down on
+the planner edit.**
+
+The 2026-05-18 scope-error addendum: `nspinor=1` is unsupported (production
+always uses FR pseudo + noncolin=true → nspinor=2); `cusolverMp status=7`
+under BFC+0.95 is hbm40g vs hbm80g, not a sandbox bug (documented in
+`ENVIRONMENT_COMPREHENSIVE.md` §3.2 + §8.3). The two `nspinor=1` loader
+"fixes" landed on `agent/si-nonbispinor-mu-sweep` (`8c18925`, `dc0b254`)
+were reset out — branch back to `origin/main`. Same for the
+`d4cb599` cherry-pick on `agent/si-band-sensitivity`. Misleading
+KNOWN_SANDBOX_ERRORS.md entries WITHDRAWN with cross-refs to the real docs.
+
+Report: `reports/memory_model_nonbispinor_kgrid_2026-05-18/REDO_PROD_2026-05-19.md`.
+Run dir: `runs/Si/NONBISPINOR_PROD_2026-05-19/` (qe/ symlinks to
+`runs/Si/05_si_4x4x4_sym/qe/`).
+
+## 2026-05-18: Memory-model non-bispinor + k-grid robustness — SYNTHESIS [coord]
+
+Cross-cut synthesis of three parallel sub-agents (A: μ-sweep + HLO at scalar
+ns=1; B: k-grid 2³→6³ scaling; C: nb=100 vs nb=200 sensitivity) on Si non-bispinor
+against the bispinor-calibrated planner from `memory_model_refit_2026-05-17`.
+
+**Headline.** Planner constants survive ns ∈ {1, 2, 4} bit-exact (A HLO),
+per-term kgrid scaling matches analytic prediction within 5–6% on all 4 kgrids
+(B), no leaks across r-chunks/bc-chunks/sym-channels/kgrids. Production-scale
+non-bispinor configs (Si 4×4×4 nb=100 −0.8%, Si 6×6×6 nb=100 −6.1%, Si 4×4×4
+nb=200 −3.2%) sit inside bispinor's [−0.5%, −10.8%] under-prediction window.
+
+**Three biases identified, each with a quantitative mechanism:**
+1. ~5–8 GB CUDA/JIT/NCCL framework floor dominates whenever the algorithmic
+   peak is small (Si 2×2×2 → +96.5%, Si 3×3×3 → +52.9%, Si 4×4×4 μ=192 → +185%).
+   Additive, NOT multiplicative — already user-deferred per §6.2.
+2. Single-r-chunk degenerate configs over-predict by ~25% because the planner
+   reserves 3 pair-density slots but only ~2 are concurrently live when
+   n_chunks=1 (Si scalar μ≥768 in A).
+3. **NEW**: Si 3×3×3 nb=200 breaks the bispinor window at −13.9%. Root cause
+   identified — unmodeled `c128(nk, band_chunk, ns, r_chunk/p_y)` all_gather
+   slab on `psi_l_X`/`psi_r_X` inside `z_q_from_psi_sm._local`. Documented in
+   `docs/MEMORY_MODEL.md` §R-Chunk but absent from `_peak_C_fit_one_rchunk`.
+   Same shape as bispinor Si μ=768 −10.8% and CrI3 80Ry −8.5% gaps.
+
+**Highest-leverage open work (synthesis §5.1):** add `M_all_gather_slab` to
+Peak C; Agent C estimates it lands the 3×3×3 nb=200 outlier at −5.8% and
+likely cuts CrI3 80Ry from −8.5% to −5%. Needs HLO calibration of slab
+coefficient first (1× vs 2×, with/without aliasing).
+
+**Latent ns=1 bugs fixed in-branch.** Agent A: `unfold_psi` and
+`WfnLoader._ensure_phdf5_static` both silently broadcast nspinor=1 → 2 via
+2×2 spinor-rotation einsums. Commits `8c18925`, `dc0b254` on
+`agent/si-nonbispinor-mu-sweep` (lorrax_A), 30 LOC, all 44 loader/unfold
+tests pass at ns=2 — clean merge candidates for origin/main.
+
+**New sandbox bug.** `cusolverMpPotrf` returns status=7 INTERNAL_ERROR under
+BFC + PREALLOCATE=true + MEM_FRACTION=0.95 on a 2D mesh. Workaround:
+`cusolvermp_charge=off, cusolvermp_lu=off` in cohsex.in. Logged at
+`KNOWN_SANDBOX_ERRORS.md:117`.
+
+**Bottleneck-flip risk.** B_CCT_chol hits 71% of binding Peak C at Si 6×6×6 μ=1348.
+Will flip to bottleneck at larger μ or under bispinor 4-channel cascade. No
+r-chunk knob to mitigate — remedy is smaller μ or larger mesh.
+
+Synthesis: `reports/memory_model_nonbispinor_kgrid_2026-05-18/SYNTHESIS.md`.
+Per-agent reports + JSON data + run dirs preserved under same dir + `runs/Si/{MU,KGRID,BANDS}_nonbispinor_2026-05-18/`.
+
 ## 2026-05-18: TRUE scalar (nspinor=1) Si non-bispinor μ-sweep + HLO calibration [agent-A]
 
 Mirrored `agent_t_si_bispinor_sweep.md` at the **opposite** extreme — actually
@@ -49,6 +195,62 @@ the right constants — they correctly characterize the structural worst-case.
 Run dir: `runs/Si/MU_nonbispinor_2026-05-18/`
 Report: `reports/memory_model_nonbispinor_kgrid_2026-05-18/agent_a_si_nonbispinor_mu_sweep.md`
 Branch: `agent/si-nonbispinor-mu-sweep` on lorrax_A, tip `dc0b254`.
+
+## 2026-05-18: Non-bispinor Si band-count sensitivity of gflat_memory_model planner [agent-C]
+
+Stress-tested the planner's nb-scaling at fixed (kgrid, μ) by sweeping
+nb=100 → nb=200 on Si non-bispinor (ns=2 noncolin=true, no SOC; cohsex.in
+`bispinor=false`) at two k-grids: 3×3×3 (μ=408 snapped from 384, 1 r-chunk)
+and 4×4×4 (μ=816 snapped from 768, 4 r-chunks). 40 Ry ecutwfc (bumped from
+25 Ry so nbnd=200 fits the smallest-k sphere on 3×3×3), `cusolvermp_charge=off`
++ `cusolvermp_lu=off` to dodge agent-A's BFC bug, 28 GB budget per device.
+
+**Headline:** planner stays within Agent T's `-0.5% to -10.8%` window at 3
+of 4 (kgrid, nb) pairs but **3×3×3 nb=200 breaks out to -13.9% under-prediction**
+(HWM_pred 15.70 vs mem_stats peak 18.24 GB/dev). Other 3: 3×3×3 nb=100 -0.5%,
+4×4×4 nb=100 -1.2%, 4×4×4 nb=200 -3.2%. The 13.6%-point %-err jump nb=100→nb=200
+at 3×3×3 is the largest in any A/B/C sweep so far at non-bispinor scale.
+
+**Per-term nb-scaling:** every planner term scales exactly as predicted —
+`centroids_persist` doubles (×2.00 measured ≈ predicted ×2.00 from
+`4·c128(nk, ns, μ, nb_total)/p_xy` with `nb_total = nb_left + nb_right =
+2·nb_cohsex`); all flat-in-nb terms (P_pair, zeta_out, gflat_acc, L_q)
+match within 1%. **Peak C HWM_pred itself moves only +0.07 GB nb=100→200
+at 3×3×3** (centroids-only delta), but mem_stats peak grows +2.53 GB —
+36× more than the planner predicts.
+
+**Where the missing +2.32 GB lives:** live_arrays at `after_fit_one_rchunk`
+grew by only +0.21 GB nb=100→200 at 3×3×3, but `peak − live_total` (the
+XLA preallocated-temp budget) grew by **+2.32 GB**. That excess is
+unmodeled in-jit transient inside `z_q_from_psi_sm._local`, candidate
+shape `c128(nk, band_chunk, ns, r_chunk/p_y)` — the per-rank post-all_gather
+slab on `psi_l_X` + `psi_r_X` (×2). Predicted slab diff at 3×3×3
+nb=100→200: 2 × 27 × 128 × 2 × 13500 × 16 = 3.0 GB (no aliasing); observed
++2.32 GB is consistent with one slab × 2 with ~25% aliasing discount.
+
+**Proposed planner refinement:** add an `M_all_gather` term to Peak C
+persistent base. HLO calibration of `z_q_from_psi_sm._local` at 3×3×3
+nb=100 vs nb=200 needed to nail the coefficient (1× vs 2× slabs, and
+aliasing). Expected to fix the 3×3×3 nb=200 gap from -13.9% to roughly
+-5%, AND explain agent-T's worst-case bispinor μ=768 -10.8% gap (CrI3
+production's -8.5% is also probably this all_gather slab not NCCL
+overhead alone).
+
+**Cross-r-chunk leak check (4×4×4, 3 r-chunks measured):** zero growth in
+live_total across consecutive r-chunks at either nb=100 or nb=200 —
+bc-scan correctly aliases its slots, no nb-correlated cross-chunk leak.
+
+**Sandbox infra:** Agent A's `unfold_psi` nspinor=1 fix (commit `8c18925`)
+cherry-picked as `d4cb599` on lorrax_C so future truly-scalar runs aren't
+blocked (also fixed the nspinor=1 phdf5-loader issue per A's `dc0b254`
+landing — A's pair of fixes is now on `origin/agent/si-nonbispinor-mu-sweep`).
+Even with the unfold fix, the production loader still pads ns=1 → ns=2 via
+`load_wfns.py:psi_G_flat` `ns_pad`, so the planner runs ns=2 for this
+sweep too (consistent with agent-A and agent-B).
+
+Run dir: `runs/Si/BANDS_nonbispinor_2026-05-18/`
+Report: `reports/memory_model_nonbispinor_kgrid_2026-05-18/agent_c_si_band_sensitivity.md`
+Branch: `agent/si-band-sensitivity` on lorrax_C, tip `d4cb599`.
 
 ## 2026-05-18: Non-bispinor Si k-grid scaling of gflat_memory_model planner [agent-B]
 

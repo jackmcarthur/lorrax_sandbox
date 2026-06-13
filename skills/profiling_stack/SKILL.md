@@ -13,12 +13,14 @@ summaries, each row points at a source_file:line or jit name.
 2. The target module's import name. LORRAX modules live under
    `sources/lorrax/src/` and import as `<subdir>.<file>`:
    `src/psp/run_nscf.py` → `-m psp.run_nscf`,
-   `src/centroid/kmeans_isdf.py` → `-m centroid.kmeans_isdf`,
+   `src/centroid/kmeans_cli.py` → `-m centroid.kmeans_cli` (the
+   ``kmeans_isdf`` module next to it is the algorithm library — no
+   ``__main__``, no CLI),
    `src/gw/gw_jax.py` → `-m gw.gw_jax`.
 3. The module's CLI args. These are **module-specific**, not part of this
    skill — check the module's own `main()` or the canonical invocation in
    `skills/execute_workflow/SKILL.md`. E.g. `gw.gw_jax` takes `-i cohsex.in`
-   but `centroid.kmeans_isdf` takes a bare positional integer (n_centroids).
+   but `centroid.kmeans_cli` takes a bare positional integer (n_centroids).
 4. The module's working directory must contain its input files. `WFN.h5`
    is the most common requirement; `cohsex.in` for GW runs; etc.
 
@@ -195,7 +197,13 @@ skills/profiling_stack/
     SKILL.md               # this file, the cold entry point
     drilldowns.md          # Memory / Compute / Sharding / Compilation interpretations + fixes
     aot_reports.md         # secondary tool: one-function AOT probe
+    cpu_addendum.md        # CPU backend (no lxrun, no nvidia-smi, RSS-based peak)
 ```
+
+If the target is the CPU backend (no GPUs, `JAX_PLATFORMS=cpu`), read
+`cpu_addendum.md` for the launch recipe — `lxrun` is GPU-specific, `device.memory_stats()`
+returns None, and the OOM-relevant metric is per-rank `/usr/bin/time -v` Maximum
+RSS, not `device.peak_bytes_in_use`.
 
 ## Gotchas
 

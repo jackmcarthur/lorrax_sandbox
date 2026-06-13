@@ -320,10 +320,42 @@ class _LiveArraySampler:
         self.timeline: list[dict] = []   # every sample
         self.peak_bytes: int = 0
         self.peak_sample: dict | None = None
+        self.peak_rss_bytes: int = 0      # per-process RSS peak (CPU + GPU)
         self._t0 = time.perf_counter()
+        # Cache the psutil handle so each sample is a single syscall.
+        try:
+            import psutil
+            self._proc = psutil.Process()
+        except Exception:
+            self._proc = None
+        # Detect backend ONCE (jax may not be importable yet at __init__);
+        # set lazily in first _snapshot call.
+        self._backend: str | None = None
+
+    def _rss_bytes(self) -> int:
+        """Process RSS in bytes via psutil (preferred) or /proc/self/status."""
+        if self._proc is not None:
+            try:
+                return int(self._proc.memory_info().rss)
+            except Exception:
+                pass
+        try:
+            with open("/proc/self/status") as fh:
+                for line in fh:
+                    if line.startswith("VmRSS:"):
+                        kb = int(line.split()[1])
+                        return kb * 1024
+        except Exception:
+            pass
+        return 0
 
     def _snapshot(self) -> dict:
         import jax
+        if self._backend is None:
+            try:
+                self._backend = jax.default_backend()
+            except Exception:
+                self._backend = "unknown"
         dev = jax.local_devices()[0]
         try:
             stats = dev.memory_stats() or {}
@@ -331,6 +363,15 @@ class _LiveArraySampler:
             stats = {}
         bytes_in_use = int(stats.get("bytes_in_use", 0))
         peak_bytes = int(stats.get("peak_bytes_in_use", 0))
+        # On the CPU backend device.memory_stats() returns None and the JAX
+        # arrays live in the same process address space as everything else
+        # (Python heap, numpy, BLAS arenas, glibc fragmentation, XLA CPU
+        # scratch buffers). For OOM-relevance the right peak is process RSS.
+        rss_bytes = self._rss_bytes()
+        if self._backend == "cpu":
+            # Treat RSS as "bytes_in_use" for peak-finding so the sampler's
+            # peak-sample logic captures the moment of max process RSS.
+            bytes_in_use = max(bytes_in_use, rss_bytes)
         arr_summary: list[dict] = []
         try:
             arrs = list(jax.live_arrays())
@@ -360,9 +401,11 @@ class _LiveArraySampler:
             "t": time.perf_counter() - self._t0,
             "bytes_in_use": bytes_in_use,
             "peak_bytes_in_use": peak_bytes,
+            "rss_bytes": rss_bytes,
             "live_bytes_sum": total_live,
             "n_live_arrays": len(rows),
             "top_arrays": arr_summary,
+            "backend": self._backend or "unknown",
         }
 
     def _run(self):
@@ -372,6 +415,8 @@ class _LiveArraySampler:
             if s["bytes_in_use"] > self.peak_bytes:
                 self.peak_bytes = s["bytes_in_use"]
                 self.peak_sample = s
+            if s.get("rss_bytes", 0) > self.peak_rss_bytes:
+                self.peak_rss_bytes = s["rss_bytes"]
             self._stop.wait(self.interval_s)
 
     def start(self) -> None:
@@ -393,6 +438,8 @@ class _LiveArraySampler:
             if s["bytes_in_use"] > self.peak_bytes:
                 self.peak_bytes = s["bytes_in_use"]
                 self.peak_sample = s
+            if s.get("rss_bytes", 0) > self.peak_rss_bytes:
+                self.peak_rss_bytes = s["rss_bytes"]
         except Exception:
             pass
 
@@ -402,6 +449,7 @@ class _LiveArraySampler:
         # JSON for machine use
         out.with_suffix(".json").write_text(json.dumps({
             "peak_bytes": self.peak_bytes,
+            "peak_rss_bytes": self.peak_rss_bytes,
             "peak_sample": self.peak_sample,
             "timeline": self.timeline,
         }, indent=2))
@@ -420,11 +468,21 @@ class _LiveArraySampler:
         lines.append("")
         if self.peak_sample:
             ps = self.peak_sample
-            lines.append(f"── Peak live HBM  at t={ps['t']:.2f}s  ──────────────────────────")
+            backend = ps.get("backend", "unknown")
+            lines.append(f"── Peak  at t={ps['t']:.2f}s  (backend={backend})  ──────────────────────────")
             lines.append(f"bytes_in_use                = {_hb(ps['bytes_in_use'])}")
             lines.append(f"device.peak_bytes_in_use    = {_hb(ps['peak_bytes_in_use'])}  (cumulative)")
+            if "rss_bytes" in ps:
+                lines.append(f"process RSS at peak          = {_hb(ps['rss_bytes'])}")
             lines.append(f"sum of jax.live_arrays()    = {_hb(ps['live_bytes_sum'])}")
             lines.append(f"n live arrays at peak        = {ps['n_live_arrays']}")
+            if self.peak_rss_bytes:
+                lines.append(f"peak RSS across run          = {_hb(self.peak_rss_bytes)}  (this process)")
+            if backend == "cpu":
+                lines.append("")
+                lines.append("# NOTE: CPU backend — device.memory_stats() is empty.")
+                lines.append("# bytes_in_use above is the per-sample process RSS (max of stats vs RSS).")
+                lines.append("# For multi-rank decomposition use /usr/bin/time -v on a per-rank wrapper.")
             lines.append("")
             lines.append("Top JAX arrays at peak:")
             lines.append(f"  {'size':>14s}  {'dtype':<12s}  shape")
@@ -432,11 +490,13 @@ class _LiveArraySampler:
                 lines.append(f"  {_hb(a['bytes']):>14s}  {a['dtype']:<12s}  "
                              f"{tuple(a['shape'])}")
             lines.append("")
-        lines.append("── Timeline (t, bytes_in_use, n_live) ─────────────────────────")
-        lines.append(f"{'t (s)':>8s}  {'bytes_in_use':>14s}  {'n_live':>7s}  {'live_bytes_sum':>14s}")
+        lines.append("── Timeline (t, bytes_in_use, rss, n_live) ─────────────────────────")
+        lines.append(f"{'t (s)':>8s}  {'bytes_in_use':>14s}  {'rss':>14s}  "
+                     f"{'n_live':>7s}  {'live_bytes_sum':>14s}")
         for s in self.timeline:
             lines.append(
                 f"{s['t']:>8.2f}  {_hb(s['bytes_in_use']):>14s}  "
+                f"{_hb(s.get('rss_bytes', 0)):>14s}  "
                 f"{s['n_live_arrays']:>7d}  {_hb(s['live_bytes_sum']):>14s}"
             )
         out.write_text("\n".join(lines) + "\n")
@@ -451,7 +511,22 @@ def start_memory_sampler(interval_s: float = 0.25, top_n: int = 10) -> None:
     Should be called AFTER jax is importable. Pair with ``stop_memory_sampler``
     (or rely on atexit — not yet wired). Produces ``memory_timeline.txt`` and
     ``memory_timeline.json`` when ``write_memory_timeline`` is called.
+
+    NOTE: on the CPU backend with JAX 0.9, the sampler thread's first call to
+    ``jax.live_arrays()`` races with the MainThread's lazy import of
+    ``jax._src.profiler`` and raises a circular-import error. Force-import the
+    relevant submodules here, on the MainThread, before starting the thread.
     """
+    # Pre-warm jax.live_arrays / jax.profiler / jax.local_devices on this
+    # thread; the sampler's call to live_arrays() then doesn't trigger any
+    # lazy submodule initialisation.
+    try:
+        import jax as _jax  # noqa: F401
+        import jax.profiler as _jp  # noqa: F401
+        _ = _jax.live_arrays()
+        _ = _jax.local_devices()
+    except Exception:
+        pass
     global _SAMPLER
     if _SAMPLER is not None:
         return

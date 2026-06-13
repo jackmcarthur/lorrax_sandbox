@@ -1,0 +1,36 @@
+BufferAssignment:
+allocation 0: size 11943936, output shape is |c128[8,2,216,1,216]|, maybe-live-out:
+ value: <3 bitcast_copy_fusion @0> (size=11943936,offset=0): c128[8,2,216,1,216]{4,3,2,1,0}
+allocation 1: size 11943936, parameter 0, shape |c128[8,2,1,216,216]| at ShapeIndex {}:
+ value: <2 param @0> (size=11943936,offset=0): c128[8,2,1,216,216]{4,3,2,1,0}
+
+Total bytes used: 23887872 (22.78MiB)
+
+Used values:
+<2 param @0>
+ positions:
+  param
+ uses:
+  bitcast_copy_fusion, operand 0
+ from instruction: %param = c128[8,2,1,216,216]{4,3,2,1,0} parameter(0), sharding={devices=[1,1,2,1,1]<=[2]}, metadata={op_name="a"}
+<3 bitcast_copy_fusion @0>
+ positions:
+  bitcast_copy_fusion
+ uses:
+ from instruction: %bitcast_copy_fusion = c128[8,2,216,1,216]{4,3,2,1,0} fusion(%param), kind=kLoop, calls=%fused_computation, metadata={op_name="jit(_moveaxis)/transpose" stack_frame_id=10}, backend_config={"outer_dimension_partitions":["3"]}
+
+
+HloLiveRange (max 2):
+  InstructionSequence:
+    0:param
+    1:bitcast_copy_fusion
+  BufferLiveRange:
+    param{}:0-2
+    bitcast_copy_fusion{}:1-2
+  Live ranges at 1 (peak):
+    bitcast_copy_fusion{}: 11943936 bytes (cumulative: 11943936 bytes)
+    param{}: 11943936 bytes (cumulative: 23887872 bytes)
+  Stack trace breakdown for peak usage: 23 887 872 bytes
+    main.0_spmd (100.0%, total: 23 887 872 bytes, current: 0 bytes, remaining: 23 887 872 bytes)
+      ├── a (50.0%, total: 11 943 936 bytes, current: 11 943 936 bytes, remaining: 11 943 936 bytes)
+      └── jit(_moveaxis)/transpose (50.0%, total: 11 943 936 bytes, current: 11 943 936 bytes, remaining: 0 bytes)

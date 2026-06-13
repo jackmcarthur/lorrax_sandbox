@@ -1,0 +1,48 @@
+BufferAssignment:
+allocation 0: size 32, output shape is |s32[4,2]|, maybe-live-out:
+ value: <2 concatenate.1 @0> (size=32,offset=0): s32[4,2]{1,0}
+allocation 1: size 16, parameter 0, shape |s32[4,1]| at ShapeIndex {}:
+ value: <0 args_0_.1 @0> (size=16,offset=0): s32[4,1]{1,0}
+allocation 2: size 16, parameter 1, shape |s32[4,1]| at ShapeIndex {}:
+ value: <1 args_1_.1 @0> (size=16,offset=0): s32[4,1]{1,0}
+
+Total bytes used: 64 (64B)
+
+Used values:
+<0 args_0_.1 @0>
+ positions:
+  args_0_.1
+ uses:
+  concatenate.1, operand 0
+ from instruction: %args_0_.1 = s32[4,1]{1,0} parameter(0), metadata={op_name="args[0]"}
+<1 args_1_.1 @0>
+ positions:
+  args_1_.1
+ uses:
+  concatenate.1, operand 1
+ from instruction: %args_1_.1 = s32[4,1]{1,0} parameter(1), metadata={op_name="args[1]"}
+<2 concatenate.1 @0>
+ positions:
+  concatenate.1
+ uses:
+ from instruction: %concatenate.1 = s32[4,2]{1,0} concatenate(%args_0_.1, %args_1_.1), dimensions={1}, metadata={op_name="jit(concatenate)/concatenate" stack_frame_id=10}
+
+
+HloLiveRange (max 3):
+  InstructionSequence:
+    0:args_0_.1
+    1:args_1_.1
+    2:concatenate.1
+  BufferLiveRange:
+    args_0_.1{}:0-3
+    args_1_.1{}:0-3
+    concatenate.1{}:2-3
+  Live ranges at 2 (peak):
+    concatenate.1{}: 32 bytes (cumulative: 32 bytes)
+    args_0_.1{}: 16 bytes (cumulative: 48 bytes)
+    args_1_.1{}: 16 bytes (cumulative: 64 bytes)
+  Stack trace breakdown for peak usage: 64 bytes
+    main.1 (100.0%, total: 64 bytes, current: 0 bytes, remaining: 64 bytes)
+      ├── jit(concatenate)/concatenate (50.0%, total: 32 bytes, current: 32 bytes, remaining: 32 bytes)
+      ├── args[0] (25.0%, total: 16 bytes, current: 16 bytes, remaining: 16 bytes)
+      └── args[1] (25.0%, total: 16 bytes, current: 16 bytes, remaining: 0 bytes)

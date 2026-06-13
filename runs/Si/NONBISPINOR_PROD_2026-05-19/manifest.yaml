@@ -1,0 +1,33 @@
+run_id: si_nonbispinor_prod_planner_audit_2026-05-19
+system: Si
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: si_4x4x4_sym_2026-04-14         # 05_si_4x4x4_sym QE (noncolin=true, lspinorb=true, FR pseudo)
+reuse_from_parent: [qe/nscf/WFN.h5]
+overrides:
+  cohsex_bispinor: false                    # vs agent_t bispinor μ-sweep (sister)
+
+system_params:
+  formula: Si
+  prefix: silicon
+  dimensionality: 3
+  n_val: 8
+  n_cond: 52
+  n_band: 60
+  ecutwfc: 25.0
+  kgrid: [4, 4, 4]
+  metal: false
+  noncolin: true
+  lspinorb: true
+  nspinor: 2
+
+# Purpose: re-run the non-bispinor planner audit at the production-correct
+# config (FR pseudo + lspinorb=true), with cusolverMp at defaults and the
+# hbm80g allocation that makes BFC+0.95 measurements coexist with cuSOLVERMp.
+# Two μ values matching the bispinor sister (agent_t Si μ=384 + μ=1200) so
+# the planner-vs-mem_stats %-err numbers are directly comparable.
+
+steps:
+  mu384:  { state: complete, note: "HWM_pred=20.12, mem_stats peak=20.13 → −0.05% bit-exact" }
+  mu1200: { state: complete, note: "HWM_pred=55.99, mem_stats peak=55.74 → +0.45% slightly over (multi-chunk, r=13468)" }

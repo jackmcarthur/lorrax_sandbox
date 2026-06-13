@@ -1,0 +1,25 @@
+run_id: si_nonbispinor_cpu_smoketest_2026-05-20
+system: Si
+pipeline: lorrax_only
+platform: perlmutter_cpu
+
+variant_of: si_nonbispinor_prod_planner_audit_2026-05-19   # the GPU production reference
+reuse_from_parent: [qe/nscf/WFN.h5]
+overrides:
+  platform: cpu                       # 4 ranks × 8 threads on 1 Milan node (urgent_milan)
+  use_ffi_io: false                   # h5py_allgather (no phdf5 FFI on CPU)
+  cusolvermp_charge: off              # sharded_cholesky in-tree path
+  cusolvermp_lu: off                  # per-q jnp.linalg.solve in-tree path
+purpose: |
+  CPU port smoke test. The GPU reference at the same μ (HWM_pred 20.12,
+  mem_stats peak 20.13 → -0.05%) is in runs/Si/NONBISPINOR_PROD_2026-05-19.
+  Compare CPU per-rank peak RSS to that HWM_pred to decide whether the
+  planner's calibrated constants (pair_density_slots=3, fft_box_factor_A=4.0,
+  fft_box_factor_D=2.0) carry over to CPU XLA or need re-calibration.
+
+steps:
+  mu384:
+    state: complete
+    n1_mesh1x1: "HWM_pred=56.00, max_RSS=72.15 GB (+28.8%), 54s wall"
+    n2_mesh1x2: "HWM_pred=40.24, max_RSS=53.27 GB (+32.4%), 29s wall"
+    n4_mesh2x2: "HWM_pred=20.12 (= GPU planner), max_RSS=26.64 GB (+32.4%), 17s wall"

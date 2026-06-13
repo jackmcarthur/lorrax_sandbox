@@ -1,0 +1,48 @@
+BufferAssignment:
+allocation 0: size 32, output shape is |s64[4]|, maybe-live-out:
+ value: <6 broadcast_add_fusion @0> (size=32,offset=0): s64[4]{0}
+allocation 1: size 32, parameter 0, shape |s64[4]| at ShapeIndex {}:
+ value: <4 args_0_.1 @0> (size=32,offset=0): s64[4]{0}
+allocation 2: size 8, parameter 1, shape |s64[]| at ShapeIndex {}:
+ value: <5 args_1_.1 @0> (size=8,offset=0): s64[]
+
+Total bytes used: 72 (72B)
+
+Used values:
+<4 args_0_.1 @0>
+ positions:
+  args_0_.1
+ uses:
+  broadcast_add_fusion, operand 0
+ from instruction: %args_0_.1 = s64[4]{0} parameter(0), metadata={op_name="args[0]"}
+<5 args_1_.1 @0>
+ positions:
+  args_1_.1
+ uses:
+  broadcast_add_fusion, operand 1
+ from instruction: %args_1_.1 = s64[] parameter(1), metadata={op_name="args[1]"}
+<6 broadcast_add_fusion @0>
+ positions:
+  broadcast_add_fusion
+ uses:
+ from instruction: %broadcast_add_fusion = s64[4]{0} fusion(%args_0_.1, %args_1_.1), kind=kLoop, calls=%fused_computation, metadata={op_name="jit(add)/add" stack_frame_id=10}
+
+
+HloLiveRange (max 3):
+  InstructionSequence:
+    0:args_0_.1
+    1:args_1_.1
+    2:broadcast_add_fusion
+  BufferLiveRange:
+    args_0_.1{}:0-3
+    args_1_.1{}:0-3
+    broadcast_add_fusion{}:2-3
+  Live ranges at 2 (peak):
+    args_0_.1{}: 32 bytes (cumulative: 32 bytes)
+    broadcast_add_fusion{}: 32 bytes (cumulative: 64 bytes)
+    args_1_.1{}: 8 bytes (cumulative: 72 bytes)
+  Stack trace breakdown for peak usage: 72 bytes
+    main.1 (100.0%, total: 72 bytes, current: 0 bytes, remaining: 72 bytes)
+      ├── args[0] (44.4%, total: 32 bytes, current: 32 bytes, remaining: 40 bytes)
+      ├── jit(add)/add (44.4%, total: 32 bytes, current: 32 bytes, remaining: 8 bytes)
+      └── args[1] (11.1%, total: 8 bytes, current: 8 bytes, remaining: 0 bytes)

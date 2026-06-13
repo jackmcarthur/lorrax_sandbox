@@ -1,0 +1,83 @@
+HloModule jit_cholesky, is_scheduled=true, entry_computation_layout={(c128[8,432,432]{2,1,0})->c128[8,432,432]{2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={xla.sdy.meshes={mesh = #sdy.mesh<["x"=1, "y"=1]>}}
+
+FileNames
+1 "<frozen runpy>"
+2 "/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_B/src/gw/gw_jax.py"
+3 "/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_B/src/gw/gw_init.py"
+4 "/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_B/src/common/isdf_fitting.py"
+
+FunctionNames
+1 "_run_module_as_main"
+2 "_run_code"
+3 "<module>"
+4 "main"
+5 "prepare_isdf_and_wavefunctions"
+6 "fit_zeta"
+7 "fit_zeta_to_h5"
+8 "factor_c_q"
+
+FileLocations
+1 {file_name_id=1 function_name_id=1 line=198 end_line=199 column=11 end_column=42}
+2 {file_name_id=1 function_name_id=2 line=88 end_line=88 column=4 end_column=27}
+3 {file_name_id=2 function_name_id=3 line=956 end_line=956 column=18 end_column=24}
+4 {file_name_id=2 function_name_id=4 line=169 end_line=181 column=8 end_column=2}
+5 {file_name_id=3 function_name_id=5 line=1228 end_line=1231 column=45 end_column=51}
+6 {file_name_id=3 function_name_id=6 line=708 end_line=726 column=15 end_column=3}
+7 {file_name_id=4 function_name_id=7 line=2100 end_line=2102 column=14 end_column=67}
+8 {file_name_id=4 function_name_id=8 line=1121 end_line=1121 column=20 end_column=48}
+
+StackFrames
+1 {file_location_id=1 parent_frame_id=1}
+2 {file_location_id=2 parent_frame_id=2}
+3 {file_location_id=3 parent_frame_id=3}
+4 {file_location_id=4 parent_frame_id=4}
+5 {file_location_id=5 parent_frame_id=5}
+6 {file_location_id=6 parent_frame_id=6}
+7 {file_location_id=7 parent_frame_id=7}
+8 {file_location_id=8 parent_frame_id=8}
+
+
+%fused_computation (param_0.1: c128[8,432,432], param_1.3: s32[8]) -> c128[8,432,432] {
+  %iota.3 = s64[432,432]{1,0} iota(), iota_dimension=0, metadata={op_name="jit(cholesky)/iota" stack_frame_id=8}
+  %iota.2 = s64[432,432]{1,0} iota(), iota_dimension=1, metadata={op_name="jit(cholesky)/iota" stack_frame_id=8}
+  %ge.0 = pred[432,432]{1,0} compare(%iota.3, %iota.2), direction=GE, metadata={op_name="jit(cholesky)/ge" stack_frame_id=8}
+  %broadcast_in_dim.1 = pred[8,432,432]{2,1,0} broadcast(%ge.0), dimensions={1,2}, metadata={op_name="jit(cholesky)/broadcast_in_dim" stack_frame_id=8}
+  %param_1.3 = s32[8]{0} parameter(1)
+  %constant.3 = s32[] constant(0)
+  %broadcast.3 = s32[8]{0} broadcast(%constant.3), dimensions={}
+  %cholesky.3 = pred[8]{0} compare(%param_1.3, %broadcast.3), direction=EQ, metadata={op_name="jit(cholesky)/cholesky" stack_frame_id=8}
+  %cholesky.2 = pred[8,432,432]{2,1,0} broadcast(%cholesky.3), dimensions={0}, metadata={op_name="jit(cholesky)/cholesky" stack_frame_id=8}
+  %param_0.1 = c128[8,432,432]{1,2,0} parameter(0)
+  %copy.3 = c128[8,432,432]{2,1,0} copy(%param_0.1), frontend_attributes={num_batch_dims="1",xla.sdy.sharding_rule="#sdy.op_sharding_rule<([i, j, k])->([i, l, m], [i]) {i=8, j=432, k=432, l=432, m=432}, custom>"}, metadata={op_name="jit(cholesky)/cholesky" stack_frame_id=8}
+  %constant.2 = c128[] constant((nan, nan))
+  %cholesky.1 = c128[8,432,432]{2,1,0} broadcast(%constant.2), dimensions={}, metadata={op_name="jit(cholesky)/cholesky" stack_frame_id=8}
+  %cholesky.0 = c128[8,432,432]{2,1,0} select(%cholesky.2, %copy.3, %cholesky.1), metadata={op_name="jit(cholesky)/cholesky" stack_frame_id=8}
+  %constant.1 = c128[] constant((0, 0))
+  %broadcast_in_dim.0 = c128[8,432,432]{2,1,0} broadcast(%constant.1), dimensions={}, metadata={op_name="jit(cholesky)/broadcast_in_dim" stack_frame_id=8}
+  ROOT %select_n.0 = c128[8,432,432]{2,1,0} select(%broadcast_in_dim.1, %cholesky.0, %broadcast_in_dim.0), metadata={op_name="jit(cholesky)/select_n" stack_frame_id=8}
+}
+
+%fused_computation.1 (param_0.5: c128[8,432,432]) -> c128[8,432,432] {
+  %param_0.5 = c128[8,432,432]{2,1,0} parameter(0)
+  %copy.5 = c128[8,432,432]{1,2,0} copy(%param_0.5), sharding={replicated}, frontend_attributes={xla.sdy.sharding="#sdy.sharding<@mesh, [{}, {\"x\"}, {\"y\"}]>"}, metadata={op_name="a"}
+  %real.2 = f64[8,432,432]{2,1,0} real(%param_0.5), metadata={op_name="jit(cholesky)/real" stack_frame_id=8}
+  %imag.2 = f64[8,432,432]{2,1,0} imag(%param_0.5), metadata={op_name="jit(cholesky)/imag" stack_frame_id=8}
+  %neg.2 = f64[8,432,432]{2,1,0} negate(%imag.2), metadata={op_name="jit(cholesky)/neg" stack_frame_id=8}
+  %complex.2 = c128[8,432,432]{2,1,0} complex(%real.2, %neg.2), metadata={op_name="jit(cholesky)/complex" stack_frame_id=8}
+  %transpose.15 = c128[8,432,432]{1,2,0} transpose(%complex.2), dimensions={0,2,1}, metadata={op_name="jit(cholesky)/complex" stack_frame_id=8}
+  %add.0 = c128[8,432,432]{1,2,0} add(%copy.5, %transpose.15), metadata={op_name="jit(cholesky)/add" stack_frame_id=8}
+  %constant.8 = c128[] constant((0.5, 0))
+  %broadcast.4 = c128[8,432,432]{1,2,0} broadcast(%constant.8), dimensions={}, metadata={op_name="jit(cholesky)/div" stack_frame_id=8}
+  %multiply.1 = c128[8,432,432]{1,2,0} multiply(%add.0, %broadcast.4), metadata={op_name="jit(cholesky)/div" stack_frame_id=8}
+  ROOT %copy.4 = c128[8,432,432]{1,2,0} copy(%multiply.1), metadata={op_name="jit(cholesky)/div" stack_frame_id=8}
+}
+
+ENTRY %main.1 (a.1: c128[8,432,432]) -> c128[8,432,432] {
+  %a.1 = c128[8,432,432]{2,1,0} parameter(0), sharding={replicated}, frontend_attributes={xla.sdy.sharding="#sdy.sharding<@mesh, [{}, {\"x\"}, {\"y\"}]>"}, metadata={op_name="a"}
+  %multiply_copy_fusion = c128[8,432,432]{1,2,0} fusion(%a.1), kind=kLoop, calls=%fused_computation.1, metadata={op_name="jit(cholesky)/div" stack_frame_id=8}, backend_config={"outer_dimension_partitions":["6"]}
+  %cholesky.11 = (c128[8,432,432]{1,2,0}, s32[8]{0}) custom-call(%multiply_copy_fusion), custom_call_target="lapack_zpotrf_ffi", operand_layout_constraints={c128[8,432,432]{1,2,0}}, output_to_operand_aliasing={{0}: (0, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="1",xla.sdy.sharding_rule="#sdy.op_sharding_rule<([i, j, k])->([i, l, m], [i]) {i=8, j=432, k=432, l=432, m=432}, custom>"}, metadata={op_name="jit(cholesky)/cholesky" stack_frame_id=8}, backend_config={uplo = 76 : ui8}
+  %cholesky.13 = s32[8]{0} get-tuple-element(%cholesky.11), index=1, frontend_attributes={num_batch_dims="1",xla.sdy.sharding_rule="#sdy.op_sharding_rule<([i, j, k])->([i, l, m], [i]) {i=8, j=432, k=432, l=432, m=432}, custom>"}, metadata={op_name="jit(cholesky)/cholesky" stack_frame_id=8}
+  %cholesky.12 = c128[8,432,432]{1,2,0} get-tuple-element(%cholesky.11), index=0, frontend_attributes={num_batch_dims="1",xla.sdy.sharding_rule="#sdy.op_sharding_rule<([i, j, k])->([i, l, m], [i]) {i=8, j=432, k=432, l=432, m=432}, custom>"}, metadata={op_name="jit(cholesky)/cholesky" stack_frame_id=8}
+  ROOT %broadcast_select_fusion = c128[8,432,432]{2,1,0} fusion(%cholesky.12, %cholesky.13), kind=kLoop, calls=%fused_computation, metadata={op_name="jit(cholesky)/select_n" stack_frame_id=8}, backend_config={"outer_dimension_partitions":["6"]}
+}
+

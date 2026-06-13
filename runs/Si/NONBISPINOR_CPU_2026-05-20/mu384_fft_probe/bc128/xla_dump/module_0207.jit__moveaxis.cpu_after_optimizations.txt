@@ -1,0 +1,54 @@
+HloModule jit__moveaxis, is_scheduled=true, entry_computation_layout={(c128[8,1,1,216,216]{4,3,2,1,0})->c128[8,1,216,1,216]{4,3,2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+FileNames
+1 "<frozen runpy>"
+2 "/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_B/src/gw/gw_jax.py"
+3 "/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_B/src/gw/gw_init.py"
+4 "/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_B/src/common/isdf_fitting.py"
+5 "/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_B/src/common/cholesky_2d.py"
+
+FunctionNames
+1 "_run_module_as_main"
+2 "_run_code"
+3 "<module>"
+4 "main"
+5 "prepare_isdf_and_wavefunctions"
+6 "fit_zeta"
+7 "fit_zeta_to_h5"
+8 "factor_c_q"
+9 "tiles_to_dense"
+
+FileLocations
+1 {file_name_id=1 function_name_id=1 line=198 end_line=198 column=11 end_column=11}
+2 {file_name_id=1 function_name_id=2 line=88 end_line=88 column=4 end_column=4}
+3 {file_name_id=2 function_name_id=3 line=956 end_line=956 column=18 end_column=18}
+4 {file_name_id=2 function_name_id=4 line=169 end_line=169 column=8 end_column=8}
+5 {file_name_id=3 function_name_id=5 line=1228 end_line=1228 column=45 end_column=45}
+6 {file_name_id=3 function_name_id=6 line=708 end_line=708 column=15 end_column=15}
+7 {file_name_id=4 function_name_id=7 line=2100 end_line=2100 column=14 end_column=14}
+8 {file_name_id=4 function_name_id=8 line=1158 end_line=1158 column=16 end_column=16}
+9 {file_name_id=5 function_name_id=9 line=88 end_line=88 column=14 end_column=14}
+
+StackFrames
+1 {file_location_id=1 parent_frame_id=1}
+2 {file_location_id=2 parent_frame_id=2}
+3 {file_location_id=3 parent_frame_id=3}
+4 {file_location_id=4 parent_frame_id=4}
+5 {file_location_id=5 parent_frame_id=5}
+6 {file_location_id=6 parent_frame_id=6}
+7 {file_location_id=7 parent_frame_id=7}
+8 {file_location_id=8 parent_frame_id=8}
+9 {file_location_id=9 parent_frame_id=9}
+
+
+%fused_computation (param_0.1: c128[8,1,1,216,216]) -> c128[8,1,216,1,216] {
+  %param_0.1 = c128[8,1,1,216,216]{4,3,2,1,0} parameter(0)
+  %bitcast.1 = c128[8,1,216,1,216]{4,2,0,3,1} bitcast(%param_0.1), metadata={op_name="a"}
+  ROOT %copy.1 = c128[8,1,216,1,216]{4,3,2,1,0} copy(%bitcast.1), metadata={op_name="jit(_moveaxis)/transpose" stack_frame_id=9}
+}
+
+ENTRY %main.0_spmd (param: c128[8,1,1,216,216]) -> c128[8,1,216,1,216] {
+  %param = c128[8,1,1,216,216]{4,3,2,1,0} parameter(0), sharding={devices=[1,2,2,1,1]<=[4]}, metadata={op_name="a"}
+  ROOT %bitcast_copy_fusion = c128[8,1,216,1,216]{4,3,2,1,0} fusion(%param), kind=kLoop, calls=%fused_computation, metadata={op_name="jit(_moveaxis)/transpose" stack_frame_id=9}, backend_config={"outer_dimension_partitions":["3"]}
+}
+

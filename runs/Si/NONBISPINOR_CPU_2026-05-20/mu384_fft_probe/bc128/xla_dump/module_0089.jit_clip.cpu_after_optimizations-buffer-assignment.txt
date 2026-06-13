@@ -1,0 +1,48 @@
+BufferAssignment:
+allocation 0: size 128, output shape is |s64[16]|, maybe-live-out:
+ value: <6 broadcast_maximum_fusion @0> (size=128,offset=0): s64[16]{0}
+allocation 1: size 128, parameter 0, shape |s64[16]| at ShapeIndex {}:
+ value: <4 arr.1 @0> (size=128,offset=0): s64[16]{0}
+allocation 2: size 8, parameter 1, shape |s64[]| at ShapeIndex {}:
+ value: <5 min.1 @0> (size=8,offset=0): s64[]
+
+Total bytes used: 264 (264B)
+
+Used values:
+<4 arr.1 @0>
+ positions:
+  arr.1
+ uses:
+  broadcast_maximum_fusion, operand 0
+ from instruction: %arr.1 = s64[16]{0} parameter(0), metadata={op_name="arr"}
+<5 min.1 @0>
+ positions:
+  min.1
+ uses:
+  broadcast_maximum_fusion, operand 1
+ from instruction: %min.1 = s64[] parameter(1), metadata={op_name="min"}
+<6 broadcast_maximum_fusion @0>
+ positions:
+  broadcast_maximum_fusion
+ uses:
+ from instruction: %broadcast_maximum_fusion = s64[16]{0} fusion(%arr.1, %min.1), kind=kLoop, calls=%fused_computation, metadata={op_name="jit(clip)/max" stack_frame_id=10}
+
+
+HloLiveRange (max 3):
+  InstructionSequence:
+    0:arr.1
+    1:min.1
+    2:broadcast_maximum_fusion
+  BufferLiveRange:
+    arr.1{}:0-3
+    min.1{}:0-3
+    broadcast_maximum_fusion{}:2-3
+  Live ranges at 2 (peak):
+    arr.1{}: 128 bytes (cumulative: 128 bytes)
+    broadcast_maximum_fusion{}: 128 bytes (cumulative: 256 bytes)
+    min.1{}: 8 bytes (cumulative: 264 bytes)
+  Stack trace breakdown for peak usage: 264 bytes
+    main.1 (100.0%, total: 264 bytes, current: 0 bytes, remaining: 264 bytes)
+      ├── arr (48.5%, total: 128 bytes, current: 128 bytes, remaining: 136 bytes)
+      ├── jit(clip)/max (48.5%, total: 128 bytes, current: 128 bytes, remaining: 8 bytes)
+      └── min (3.0%, total: 8 bytes, current: 8 bytes, remaining: 0 bytes)

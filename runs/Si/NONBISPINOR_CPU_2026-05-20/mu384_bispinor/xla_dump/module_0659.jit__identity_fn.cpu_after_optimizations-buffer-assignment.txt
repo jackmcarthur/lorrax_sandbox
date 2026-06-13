@@ -1,0 +1,94 @@
+BufferAssignment:
+allocation 0: size 141944832, output shape is |c128[8,108,10268]|, maybe-live-out:
+ value: <12 copy_slice_fusion.1 @0> (size=70972416,offset=0): c128[8,1,1,108,5134]{4,3,2,1,0}
+ value: <17 copy_bitcast_fusion @0> (size=141944832,offset=0): c128[8,108,10268]{2,1,0}
+allocation 1: size 141944832, parameter 0, shape |c128[8,216,5134]| at ShapeIndex {}:
+ value: <11 param @0> (size=141944832,offset=0): c128[8,216,5134]{2,1,0}
+allocation 2: size 212917312, preallocated-temp:
+ value: <13 copy_slice_fusion @0> (size=70972416,offset=64): c128[8,1,1,108,5134]{4,3,2,1,0}
+ value: <14 all-to-all.1{} @0> (size=16,offset=0): (c128[8,1,1,108,5134]{4,3,2,1,0}, c128[8,1,1,108,5134]{4,3,2,1,0})
+ value: <15 all-to-all.1{0} @0> (size=70972416,offset=70972480): c128[8,1,1,108,5134]{4,3,2,1,0}
+ value: <16 all-to-all.1{1} @0> (size=70972416,offset=141944896): c128[8,1,1,108,5134]{4,3,2,1,0}
+
+Total bytes used: 496806976 (473.79MiB)
+
+Used values:
+<11 param @0>
+ positions:
+  param
+ uses:
+  copy_slice_fusion.1, operand 0
+  copy_slice_fusion, operand 0
+ from instruction: %param = c128[8,216,5134]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="x"}
+<12 copy_slice_fusion.1 @0>
+ positions:
+  copy_slice_fusion.1
+ uses:
+  all-to-all.1, operand 0
+ from instruction: %copy_slice_fusion.1 = c128[8,1,1,108,5134]{4,3,2,1,0} fusion(%param), kind=kLoop, calls=%fused_computation.2, backend_config={"outer_dimension_partitions":["3"]}
+<13 copy_slice_fusion @0>
+ positions:
+  copy_slice_fusion
+ uses:
+  all-to-all.1, operand 1
+ from instruction: %copy_slice_fusion = c128[8,1,1,108,5134]{4,3,2,1,0} fusion(%param), kind=kLoop, calls=%fused_computation.1, backend_config={"outer_dimension_partitions":["3"]}
+<14 all-to-all.1{} @0>
+ positions:
+  all-to-all.1 {}
+ uses:
+  get-tuple-element.3, operand 0 {}
+  get-tuple-element.4, operand 0 {}
+ from instruction: %all-to-all.1 = (c128[8,1,1,108,5134]{4,3,2,1,0}, c128[8,1,1,108,5134]{4,3,2,1,0}) all-to-all(%copy_slice_fusion.1, %copy_slice_fusion), channel_id=1, replica_groups=[2,2]<=[4]
+<15 all-to-all.1{0} @0>
+ positions:
+  all-to-all.1 {0}
+  get-tuple-element.3
+ uses:
+  copy_bitcast_fusion, operand 0
+ from instruction: %all-to-all.1 = (c128[8,1,1,108,5134]{4,3,2,1,0}, c128[8,1,1,108,5134]{4,3,2,1,0}) all-to-all(%copy_slice_fusion.1, %copy_slice_fusion), channel_id=1, replica_groups=[2,2]<=[4]
+<16 all-to-all.1{1} @0>
+ positions:
+  all-to-all.1 {1}
+  get-tuple-element.4
+ uses:
+  copy_bitcast_fusion, operand 1
+ from instruction: %all-to-all.1 = (c128[8,1,1,108,5134]{4,3,2,1,0}, c128[8,1,1,108,5134]{4,3,2,1,0}) all-to-all(%copy_slice_fusion.1, %copy_slice_fusion), channel_id=1, replica_groups=[2,2]<=[4]
+<17 copy_bitcast_fusion @0>
+ positions:
+  copy_bitcast_fusion
+ uses:
+ from instruction: %copy_bitcast_fusion = c128[8,108,10268]{2,1,0} fusion(%get-tuple-element.3, %get-tuple-element.4), kind=kLoop, calls=%fused_computation, backend_config={"outer_dimension_partitions":["3"]}
+
+
+HloLiveRange (max 7):
+  InstructionSequence:
+    0:param
+    1:copy_slice_fusion.1
+    2:copy_slice_fusion
+    3:all-to-all.1
+    4:get-tuple-element.3
+    5:get-tuple-element.4
+    6:copy_bitcast_fusion
+  BufferLiveRange:
+    param{}:0-7
+    copy_slice_fusion.1{}:1-3
+    copy_slice_fusion{}:2-3
+    all-to-all.1{}:3-5
+    all-to-all.1{0}:3-6
+    all-to-all.1{1}:3-6
+    copy_bitcast_fusion{}:6-7
+  Live ranges at 3 (peak):
+    param{}: 141944832 bytes (cumulative: 141944832 bytes)
+    all-to-all.1{0}: 70972416 bytes (cumulative: 212917248 bytes)
+    all-to-all.1{1}: 70972416 bytes (cumulative: 283889664 bytes)
+    copy_slice_fusion{}: 70972416 bytes (cumulative: 354862080 bytes)
+    copy_slice_fusion.1{}: 70972416 bytes (cumulative: 425834496 bytes)
+    all-to-all.1{}: 16 bytes (cumulative: 425834512 bytes)
+  Stack trace breakdown for peak usage: 425 834 512 bytes
+    main.0_spmd (100.0%, total: 425 834 512 bytes, current: 0 bytes, remaining: 425 834 512 bytes)
+      ├── x (33.3%, total: 141 944 832 bytes, current: 141 944 832 bytes, remaining: 283 889 680 bytes)
+      ├── all-to-all.1{0} (16.7%, total: 70 972 416 bytes, current: 70 972 416 bytes, remaining: 212 917 264 bytes)
+      ├── all-to-all.1{1} (16.7%, total: 70 972 416 bytes, current: 70 972 416 bytes, remaining: 141 944 848 bytes)
+      ├── copy_slice_fusion (16.7%, total: 70 972 416 bytes, current: 70 972 416 bytes, remaining: 70 972 432 bytes)
+      ├── copy_slice_fusion.1 (16.7%, total: 70 972 416 bytes, current: 70 972 416 bytes, remaining: 16 bytes)
+      └── all-to-all.1 (0.0%, total: 16 bytes, current: 16 bytes, remaining: 0 bytes)
