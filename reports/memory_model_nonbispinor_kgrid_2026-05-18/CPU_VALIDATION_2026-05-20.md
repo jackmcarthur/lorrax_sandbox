@@ -59,7 +59,7 @@ Working tree on lorrax_B (uncommitted; **not pushed**). All three are JAX-0.9 st
 
 The two `tiled` fixes are exactly the change JAX 0.9's deprecation message tells you to make. The `pcast` fix is exactly what the VMA error message suggests. All three are tiny (1–3 LOC each).
 
-Three more `tiled=False` call sites remain in non-ζ-fit paths (`src/solvers/davidson.py:59`, `src/psp/run_nscf.py:252/255/259`, `src/bse/bse_davidson_helpers.py:53`) — these would crash if the BSE / Davidson / NSCF drivers are run on CPU multi-process but don't affect the GW ζ-fit path tested here. Worth bundling into a single "JAX-0.9 multi-process compat" PR.
+Other `tiled=False` sites remain in code paths I did NOT exercise in this validation — `grep -rn "tiled=False" src/` finds them. The important ones for a full GW run are in `src/gw/ppm_sigma.py` (PPM Σ pipeline), `src/gw/minimax_screening.py`, and `src/gw/v_q_tile.py` (V_q post-ζ-fit) — these would crash a CPU multi-process run that goes past `LORRAX_EXIT_AFTER_ZETA=1`. Others live in `src/solvers/davidson.py`, `src/psp/run_nscf.py`, `src/bse/{davidson_absorption.py, bse_davidson_helpers.py}`, plus a few benchmarks and tests. The fix is mechanical (`tiled=False` → `tiled=True`) but each site should be smoke-tested before landing. Recommend a follow-up "JAX-0.9 multi-process compat sweep" PR.
 
 ## Launch recipe — what worked
 
