@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-05-20: `_to_host` refactored to metadata dispatch (lorrax_B 89690f0) [coord]
+
+Subagent design review of the 4-case shape-switch `_to_host` introduced
+in 565750a flagged it as accidental complexity: 3 of 4 branches were
+defending against return shapes that the JAX 0.9 source provably cannot
+produce for the inputs `_to_host` actually receives. Empirically
+characterized the sharding inventory at every gather call site (debug
+run, Si μ=384 x_only CPU n=4) — confirmed:
+
+* Every NamedSharded `mesh_xy` array (gflat_acc, G0_all, V_qmunu, etc.)
+  is non-fully-addressable → `process_allgather(tiled=True)` Path (B)
+  returns shape exactly `A.shape`.
+* The lone Path-(D) failure case (`enk_full`) is `SingleDeviceSharding`
+  with `is_fully_replicated=True`, which can be short-circuited via
+  `A.addressable_data(0)` without ever calling `process_allgather`.
+
+Replaced the 50-line 4-case switch with a 30-line 2-case dispatch on
+stable `jax.Array` metadata (`is_fully_replicated`). Folded the inline
+gathers in `gw_init.py:1121` and `isdf_fitting.py:2685` into `_to_host`
+calls; dropped their legacy `shape[0] == 1` post-process guards (dead
+code under the current geometry — G0 is 2D, gflat_acc is 3D, the guards
+checked for 5D/4D leftovers from an old V_q bispinor layout).
+
+Net: −24 LOC, no dead branches, no shape arithmetic, dispatches on
+documented public API. End-to-end Si μ=384 x_only CPU n=4 `eqp0.dat`
+**byte-identical** to the 565750a baseline (timestamp only differs).
+Max rank-0 RSS unchanged at 26.6 GB.
+
+Design review report:
+`reports/memory_model_nonbispinor_kgrid_2026-05-18/PROCESS_ALLGATHER_DESIGN_REVIEW_2026-05-20.md`
+
 ## 2026-05-20: CPU port + planner backend-aware pair_density_slots [coord]
 
 End-to-end CPU MPI port of the GW driver on Si 4×4×4 μ=384 non-bispinor.
