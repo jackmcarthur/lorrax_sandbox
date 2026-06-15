@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-05-20: full COHSEX (do_screened=true) validated on CPU MPI [coord]
+
+End-to-end full-COHSEX (`x_only=false, do_screened=true, screening=cohsex`)
+on CPU n=4 (Milan node) at Si μ=384 production config completes **on the
+first attempt with no additional source patches required**. Tests Σ_SX +
+Σ_COH (static screened-exchange + Coulomb-hole) on top of the bare Σ_X
+that the prior x_only validation exercised.
+
+| | wall | Σ at (k=0, band=1) | eqp0.dat vs GPU |
+|---|---|---|---|
+| CPU 4 ranks × 8 threads | ~50 s | −16.478 eV (was −8.915 for x_only — δ ≈ −7.56 eV is Σ_C) | byte-identical except timestamp |
+| GPU 4×A100 hbm80g | comparable | identical to CPU | reference |
+
+pytest on lorrax_B against modules we patched: **63 passed, 15 skipped,
+0 failed**.
+
+Branch ready for merge to origin/main. The five-commit branch tip is
+89690f0; see lorrax_B `git log origin/main..agent/jax-09-cpu-compat`.
+
 ## 2026-05-20: `_to_host` refactored to metadata dispatch (lorrax_B 89690f0) [coord]
 
 Subagent design review of the 4-case shape-switch `_to_host` introduced
