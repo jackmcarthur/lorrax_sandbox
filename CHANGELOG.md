@@ -1,5 +1,42 @@
 # Changelog
 
+## 2026-06-16: Milestone-A bispinor screened W via channel-blocked supermatrix [C]
+
+New `gw/w_bispinor.py`: assemble the 4×4-Lorentz-block `(nq,N,N)` supermatrix (N=n_C+3·n_T) from
+the bispinor V/χ tiles, invert via the existing `w_isdf.solve_w` (per-q LU, reused), extract W
+tiles. **Milestone A = χ only in the (0,0) charge block** → collapses to W⁰⁰=scalar screened,
+W^{ij}=bare, W^{0i}=0 (unit test `test_w_bispinor_supermatrix.py`, 2 passed). **Wired into the
+driver** (`gw_jax`/`cohsex_sigma`/`sigma_x_bispinor` take `w_ij_tiles`; the standalone charge
+`solve_w(V⁰⁰)` is gone for bispinor): W⁰⁰→Σ_SX/Σ_COH, W^{ij}→Σ^B. **E2E (MoS2 3×3): sigma_diag
+BIT-IDENTICAL to analytic-A** (`runs/MoS2/C_60Ry_bispinor_supermatrixA_2026-06-16/`); pytest 16
+passed. Full-BZ only for now (LORRAX_FORCE_FULL_BZ=1; IBZ per-channel unfold is the upgrade).
+Branch `lorrax_C agent/bispinor-supermatrix-w` cad7378 (not pushed). **Milestone B** = un-trace χ
+(`w_isdf.py:181`) so the transverse χ tiles are nonzero — assembly/solve/extract unchanged.
+Report: `reports/bispinor_supermatrix_a_2026-06-16/`.
+
+## 2026-06-16: NEW orbital-magnetization tool (modern theory, explicit dH/dk) + FM CrI₃ [B]
+
+Built `psp/orbital_magnetization.py` + `psp/orbital_magnetization_THEORY.md` (branch
+`agent/orbital-magnetization`): per-cell orbital magnetic moment of a SOC spinor crystal via the
+modern-theory **sum-over-states** formula, `m_z/μ_B = (−½) Σ_k w_k Im Σ_{n occ} Σ_{m≠n} ε_zab
+v^a_nm v^b_mn (ε_m+ε_n−2μ)/(ε_n−ε_m)²`, reusing the psp velocity machinery
+(`velocity_matrix_k = 2(k+G) + dV_NL/dk`, **analytic dV_NL/dk, no finite differences**). Prefactor
+−½ in Ry AU verified 3 ways + adversarially. Built via an `ultracode` workflow (11 agents:
+deep code-read + independent theory derivations + adversarial verify).
+
+**KEY FINDING:** every existing sandbox CrI₃ WFN is **non-magnetic** — `noncolin/lspinorb=.true.`
+but **no `starting_magnetization`** → converges to the TRS (Kramers-paired, zero-net-spin) state,
+for which spin and orbital magnetization are *identically zero* (tool correctly returns 0).
+Generated a **ferromagnetic** variant `runs/CrI3/B_orbmag_FM_6x6_30Ry_2026-06-16/` (SCF total mag
+(0,0,**6.01**) μ_B, gap **+1.50 eV**). Result (6×6, 180 bands, midgap): spin **6.01 μ_B** ✓,
+m_x=m_y≈0 ✓, **orbital m_z = +0.026 μ_B, parallel to spin** — sign matches the expected +0.1 μ_B;
+magnitude under-converged (band-ceiling sweep oscillates; μ-scan +0.032→+0.019 across the gap;
+6×6 is coarse). Nonlocal velocity sign resolved definitively: `compute_vnl_velocity_cart =
++dV_NL/dk` (off-diagonal FD, ratio 1.000) → physical velocity `p+vNL` (the dipole driver's `p−vNL`
+is a BGW convention; it would flip the sign to −0.081). Report:
+`reports/B_orbital_magnetization_cri3_2026-06-16/report.md`. Also fixed `lxrun` (missing `--overlap`,
+see KNOWN_SANDBOX_ERRORS).
+
 ## 2026-06-16: FIX bispinor IBZ-cascade zeta crash + sym==nosym validated [C]
 
 The IBZ-cascade bispinor zeta crash (`B.shape 9!=5`, see milestone-A report) was an **ordering
