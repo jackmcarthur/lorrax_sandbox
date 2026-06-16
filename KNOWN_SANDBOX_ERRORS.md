@@ -107,16 +107,168 @@ Round 8 `agent_o_allocator_audit.md` corrects this: under BFC + preallocated, tr
 
 **Rule of thumb:** for OOM-relevant HWM measurement, either (a) run with `XLA_PYTHON_CLIENT_ALLOCATOR=default` + `XLA_PYTHON_CLIENT_PREALLOCATE=true` + `XLA_PYTHON_CLIENT_MEM_FRACTION=0.95` to access `device.memory_stats()`, or (b) trust the planner's static prediction as a lower-bound. Do NOT cite nvidia-smi peaks under platform allocator as a tight HBM measurement.
 
-### 2026-05-18: scalar (`nspinor=1`) Si WFN.h5 trips `centroid.kmeans_cli` — `get_spinor_rotations` returns (n,2,2) even when nspinor=1, so `unfold_psi` blows up the spinor axis from 1 to 2
-- **Where**: `sources/lorrax_B/src/common/symmetry_maps.py:1220` (`SymMaps.get_spinor_rotations`) and `sources/lorrax_B/src/common/symmetry_maps.py:726` (`unfold_psi`'s `np.einsum("jk,nkl->njl", U_eff, cnk)`), reached from `centroid.kmeans_cli` via `WFNReader._eager_build` (`sources/lorrax_B/src/file_io/wfn_loader.py:1020`).
-- **What happened**: Built a fully scalar Si NSCF with `noncolin=.false. lspinorb=.false.` (planning a scalar non-bispinor k-grid sweep for the planner audit). Resulting `WFN.h5` has `nspin=1, nspinor=1, wfns/coeffs shape (102, 1, 1693, 2)` (correct BGW layout). `kmeans_cli WFN.h5` crashed in `_eager_build` with `ValueError: could not broadcast input array from shape (4,2,537) into shape (4,1,537)` — `unfold_psi`'s spinor rotation is hardcoded `(n_sym, 2, 2)` and the einsum turns input `(nb, 1, ngk)` into `(nb, 2, ngk)`. The path is `kmeans_cli → WFNReader → SymMaps.get_spinor_rotations → unfold_psi`.
-- **Expected**: For nspinor=1 the spinor rotation should be identity (the 1×1 trivial U) and `unfold_psi`'s einsum should preserve the input shape. Per the docstring of `unfold_psi`: "For ns=1 (non-SOC), U_eff is the 1×1 identity and this einsum is a no-op (callers can still pass it without special-casing)." — but the construction in `get_spinor_rotations` hardcodes `(nsym, 2, 2)` so this no-op contract isn't honored.
-- **Workaround**: For the planner audit, fall back to `noncolin=.true. lspinorb=.false.` (nspinor=2 without SOC). The cohsex.in `bispinor=false` flag still produces a non-bispinor pipeline (no 4-channel transverse μ_L); the `ns=2` factor in the planner's per-rank formulas (`_bytes_c128(nk, ns, ns, mu, r_chunk, shard=p_xy)` for the P-pair carry, etc.) is exercised but it's the production setting for any scalar-non-SOC GW workload, so it's still a legitimate "non-bispinor scalar" case. Truly nspinor=1 testing would require a fix to `get_spinor_rotations` to special-case the trivial spinor.
-- **UPDATE 2026-05-18 (Agent A `agent/si-nonbispinor-mu-sweep`)**: FIXED in `lorrax_A` commits `8c18925` (eager `unfold_psi`, `symmetry_maps.py`) and `dc0b254` (phdf5 `WfnLoader._ensure_phdf5_static`, `wfn_loader.py`). When `cnk.shape[1] == 1` (eager) or `self.nspinor == 1` (phdf5), the spinor mixing is now an identity no-op (TRS branch's complex conjugation still applies; iσ_y is undefined for ns=1). Both fixes are independent of the underlying 2×2 `get_spinor_rotations` shape, which is left alone. All 44 `tests/test_{unfold_psi_trs,wfn_loader_eager,wfn_loader_phdf5_clamp,wfn_transforms,v_q_transverse_unfold,trs_unfold_centroid_perm}.py` tests still pass. Truly scalar Si μ-sweep at `nspinor=1` completed end-to-end ζ-fit on the Agent A branch.
+### 2026-05-19: WITHDRAWN — `nspinor=1` is an unsupported code path
+- The prior 2026-05-18 entry described `unfold_psi` / `WfnLoader._ensure_phdf5_static` shape mismatches when a `noncolin=.false. lspinorb=.false.` Si WFN.h5 is loaded. Production LORRAX runs always use fully-relativistic pseudopotentials with `noncolin=.true.` (and typically `lspinorb=.true.`), giving `nspinor=2`. Non-bispinor in LORRAX means `bispinor=false` in `cohsex.in`, NOT `nspinor=1` at the QE level.
+- The two `lorrax_A` commits (`8c18925`, `dc0b254`) that "fixed" the broadcast in the ns=1 codepath were reset out of `agent/si-nonbispinor-mu-sweep` on 2026-05-19. The unsupported path stays unsupported.
 
-### 2026-05-18: cusolverMpPotrf status=7 INTERNAL_ERROR under BFC + MEM_FRACTION=0.95 on 2D mesh
-- **Where**: `sources/lorrax_A/src/ffi/cusolvermp/cpp/batched_potrf_ffi.cc:136`, called from `factor_c_q` → `batched_distributed_cholesky` in `src/common/isdf_fitting.py:1104`. Active when `_resolve_solver_kind_charge` returns `'cusolvermp_cholesky'` (= true 2D mesh, `px≥2 AND py≥2`) and the run uses `XLA_PYTHON_CLIENT_ALLOCATOR=default + PREALLOCATE=true + MEM_FRACTION=0.95`.
-- **What happened**: Si 4×4×4 25 Ry scalar non-bispinor on 4 GPUs / 2×2 mesh under BFC+0.95 dies in the first Cholesky with `cusolverMpPotrf (q=0) failed: status=7`. NCCL banner prints `[lorrax cusolverMp] library 0.7.2, NCCL 2.26.3, comm path: NCCL, grid: 2x2 (row-major)` immediately before the failure. C_q here is only ~1.5 MB so this is NOT a numerical / PSD issue.
-- **Expected**: cusolverMpPotrf should succeed; the bispinor sister sweep `agent_t_si_bispinor_sweep.md` ran cleanly at MEM_FRACTION=0.95 but on a `1×4` mesh (so the `sharded_cholesky` path was selected instead).
-- **Root cause hypothesis**: NCCL user-buffer-pool registration tries to allocate inside the (already-95%-BFC-preallocated) HBM and gets refused. The non-2D mesh case avoids cusolverMp entirely, which is why bispinor was immune.
-- **Workaround**: For OOM-relevant measurements on a true 2D mesh, set `cusolvermp_charge = off` and `cusolvermp_lu = off` in cohsex.in. This selects the in-tree `sharded_cholesky` / `lu` paths (same code used on 1×N meshes). Alternatively `MEM_FRACTION=0.80` leaves ~8 GB headroom for NCCL/cuSOLVERMp and the FFI succeeds. Both are wired into `runs/Si/MU_nonbispinor_2026-05-18/_run_gw.sh` as the `bfc_pre95` (with cusolvermp_off) and `bfc_pre80` variants.
+### 2026-05-19: WITHDRAWN — `cusolverMpPotrf status=7` is hbm40g + BFC@0.95, not a bug
+- The prior 2026-05-18 entry framed this as a sandbox bug to be worked around by disabling cusolverMp. That was wrong:
+  - The Si bispinor μ-sweep (`agent_t`, JID 53096549) ran on the same 2×2 mesh / BFC+0.95 / cusolverMp-on combination and completed cleanly, because it was on an `hbm80g` allocation (80 GB/GPU → 76 GB BFC pool, 4 GB free for NCCL/CAL).
+  - The failed runs (JID 53097982) were on plain `lxalloc` = `hbm40g` (40 GB/GPU → 38 GB BFC pool, 2 GB free, NCCL user-buffer registration starves).
+  - Both `sources/lorrax_B/docs/ENVIRONMENT_COMPREHENSIVE.md` §3.2 + §8.3 and the user's `feedback_lxalloc_gpu_constraint_mixes_hbm.md` memory already document the right answer.
+- **Operating guideline**: For BFC + `MEM_FRACTION=0.95` measurements on a 2D mesh, use `salloc --constraint="gpu&hbm80g" -J lx-alloc-$USER`. Don't toggle `cusolvermp_*=off` — cuSOLVERMp is a shipping default of the community release.
+
+## 2026-06-15 — JAX version triple-mismatch: pyproject pins >=0.9.0/cuda13, Shifter image ships ~0.8/cuda12, skill says 0.7.2
+
+Three in-repo sources disagree on the JAX version, and current `main` (`e85be60`)
+added a JAX-0.9-only symbol with no fallback. Surfaced while planning the rebase of
+an old-main checkout to `e85be60` for the CrI3 6×6 GN-PPM study.
+
+- `sources/lorrax_*/pyproject.toml` (lines ~9-10) pins **`jax[cuda13]>=0.9.0`** — a
+  *build requirement* the running environment does not satisfy. This pin already
+  existed at old main `0f355b7` (not introduced by the rebase).
+- The Perlmutter module sets the Shifter image from
+  `config/perlmutter/site_config.sh:32` → `LORRAX_IMAGE="nvcr.io/nvidia/jax:25.04-py3"`,
+  a **CUDA-12** image shipping a JAX in roughly the **0.5–0.8** range — NOT 0.9, NOT
+  cuda13. The `isdf_site` venv layered via PYTHONPATH deliberately contains no jax
+  (only `jaxtyping`), so the container's JAX is authoritative.
+- `skills/execute_workflow/SKILL.md:136` claims **JAX 0.7.2**; `docs/MEMORY_MODEL.md:922`
+  (in lorrax source) says **JAX 0.8 / CUDA 12.9**. Three different numbers.
+
+**The new landmine (added by the rebase to `e85be60`):** commit `c7e6695` introduced
+`lax.pcast(...)` at `src/common/cholesky_2d.py:186` (old main had `jnp.zeros` there).
+`lax.pcast` does not exist in JAX <0.9 → `AttributeError` at trace time **if that code
+path executes**. It is reached only via the in-tree `sharded_cholesky` ζ-fit path,
+which on a 2D mesh with the production default `cusolvermp_charge=auto`
+(`isdf_fitting.py:943-953` → `cusolvermp_cholesky` FFI) is **not** taken. So CrI3 6×6
+GN-PPM on 16 GPUs (4×4 mesh) is expected to run; the landmine only fires if a run
+forces `cusolvermp_charge=off` or uses a 1D mesh. `ppm_sigma._to_host_np`
+(`src/gw/ppm_sigma.py:240-248`) wraps its `process_allgather(tiled=False)` calls in
+try/except → JAX-0.9 `tiled=` strictness degrades gracefully, not a crash.
+
+**Guidance:** On the currently-pinned `jax:25.04-py3` container, do NOT force
+`cusolvermp_charge=off` and do NOT run a 1D mesh on current main. Fully satisfying the
+`>=0.9.0`/cuda13 pin requires bumping `LORRAX_IMAGE` to a JAX-0.9/CUDA-13 NGC build —
+an environment task orthogonal to the git rebase. GPU memory-model / planner slot
+counts are byte-identical between old and current main (the 9 rebase commits are
+CPU-MPI + JAX-0.9 strictness only), so prior CrI3 planning numbers transfer 1:1.
+
+## 2026-06-15 — QE/BGW module names in execute_workflow skill are stale (unversioned)
+
+`skills/execute_workflow/SKILL.md:44` says `module load espresso berkeleygw`, but on
+the current Perlmutter stack there is **no bare `espresso` or `berkeleygw` module** —
+`module load espresso` silently swaps PrgEnv/compiler modules and leaves `pw.x` NOT on
+PATH (`which pw.x` → not found). The actual modules are versioned:
+
+- `espresso/7.5-libxc-7.0.0-gpu` (the `(D)` default) or `espresso/7.3.1-libxc-6.2.2-gpu`
+  — also `*-cpu` variants.
+- `berkeleygw/4.0-nvhpc-23.9` (the `(D)` default) or `berkeleygw/4.0-gcc-12.3`.
+
+Use `module load espresso/7.5-libxc-7.0.0-gpu berkeleygw/4.0-nvhpc-23.9` for the
+QE→BGW preprocessing steps (pw.x / pw2bgw.x / wfn2hdf.x). The skill's command should be
+updated to a versioned form (or a note that the version must be appended).
+
+Also note: a bash `module load X 2>&1 | tail -1` pipe runs `module` in a subshell, so
+the PATH changes are LOST. Load modules without a trailing pipe in the same shell.
+
+## 2026-06-15 — execute_workflow LORRAX preprocessing module names are wrong (`*_chunked`)
+
+`skills/execute_workflow/SKILL.md` (Perlmutter §, steps 5b/5c) invokes
+`python3 -m psp.get_dipole_mtxels_chunked` and `python3 -m gw.kin_ion_io_chunked`.
+Neither runs: `No module named gw.kin_ion_io_chunked` / `psp.get_dipole_mtxels_chunked`.
+
+In current main (`e85be60`), `src/gw/kin_ion_io_chunked.py` and
+`src/psp/get_dipole_mtxels_chunked.py` exist **but have no `__main__`** (they are
+library helpers), so `-m` fails. The runnable entrypoints are the non-`_chunked`
+modules, which DO have `__main__`:
+- `python3 -u -m gw.kin_ion_io -i cohsex.in`
+- `python3 -u -m psp.get_dipole_mtxels -i cohsex.in`
+
+This matches the `lorrax_agent` `lxpre` shell function (`modulefiles/lorrax_agent/1.0.lua`),
+which correctly uses the non-`_chunked` names. Only the execute_workflow skill is stale.
+
+## 2026-06-15 — centroid prune (pivoted_cholesky) cuFFT-scratch OOM under platform allocator
+
+`python3 -m centroid.kmeans_cli <N> --seed 42` (the documented invocation) OOMs at the
+pivoted-Cholesky prune step on an 80 GB A100, for ALL counts (observed at N=1500 and
+N=6000):
+```
+Failed to create cuFFT batched plan with scratch allocator
+Failed to allocate request for 16.50GiB ... on device ordinal 0   (batch_count: 984)
+```
+Root cause: with the container's default `XLA_PYTHON_CLIENT_ALLOCATOR=platform`
+(cudaMallocAsync), `jax.memory_stats()` returns `bytes_limit=None`, so
+`gpu_utils.get_device_memory_gb()` falls back to nvidia-smi (~71 GB) and the prune's
+`build_gram_q0_via_loadwfns` picks `band_chunk_size=64`, whose cuFFT plan needs ~16.5 GB
+scratch that cudaMallocAsync can't satisfy alongside the Gram arrays.
+
+Workaround (per the skill's `memory_per_device_gb = 28` cuFFT-OOM hint, applied at the
+container level): append BFC + low mem-fraction env so the auto-detected budget drops to
+~29 GB and band_chunk shrinks:
+```
+--env=XLA_PYTHON_CLIENT_ALLOCATOR=default
+--env=XLA_PYTHON_CLIENT_PREALLOCATE=true
+--env=XLA_PYTHON_CLIENT_MEM_FRACTION=0.4   # bytes_limit≈32GB → budget≈29GB
+```
+The same BFC env is needed for `gw.kin_ion_io` / `psp.get_dipole_mtxels` to avoid the
+same cuFFT-scratch OOM. Existing `centroids_frac_1500.txt` from prior CrI3 80 Ry runs
+(same geometry) are reusable to sidestep regeneration at that count.
+
+**Update 2026-06-16 (partial fix + a second, deeper OOM):** Added an opt-in
+**`--prune-mem-gb`** flag to `kmeans_cli` (default 0 = legacy auto-detect; threads
+`memory_per_device_gb` → `prune_candidates_by_pivoted_cholesky` →
+`build_gram_q0_via_loadwfns`). `--prune-mem-gb 20` **fixes the cuFFT-scratch OOM**: the
+prune's FFT chunk `cs ∝ budget` (the OOM's `cs=984` came from the 71 GB auto-budget). NB a
+`band_chunk_size` override would NOT have worked — `load_centroids_band_chunked` sets
+`cs = cs_budget` when `k_chunk_size is None`, ignoring `band_chunk_size`. **But fixing (1)
+exposes a SECOND OOM:** at large candidate counts (μ≥6000 → ~9000 candidates) the prune's
+Gram build needs **173 GB** (`prune_candidates_by_pivoted_cholesky` line 387) — the
+candidate axis is unchunked. **Workaround for large μ: `--oversample 1.0`** (skips the prune
+entirely — fine for OOM/memory tests where only the centroid *count* matters). Proper fix:
+chunk the candidate axis in the Gram build. Both on `lorrax_A agent/cri3-ppm-maxbands`.
+
+## 2026-06-16 — IBZ-cascade crashes the bispinor zeta fit (full-BZ Z_q vs IBZ L_q)
+
+A bispinor `gw.gw_jax` run on current `main` (`e85be60`) with orbit-closed centroids dies in
+the transverse zeta fit:
+```
+ValueError: B.shape[0]=9 != Nq=5
+  ffi/cusolvermp/batched.py:200  batched_distributed_potrs
+  common/isdf_fitting.py:1301    solve_zeta
+```
+The cusolverMp Cholesky back-solve gets a **full-BZ Z_q (9 q-points)** against an
+**IBZ-factored L_q (5 q-points)**. The IBZ cascade activates on centroid orbit-closure
+(`gw_init.py:959-961`); it was activated 2026-05-11, so bispinor runs from before then (e.g.
+`runs/MoS2/D_60Ry_bispinor`, 2026-05-05) were immune and never exercised this path.
+
+**Workaround:** `export LORRAX_FORCE_FULL_BZ=1` (full-BZ = identical physics, just disables the
+symmetry optimization). Used for the milestone-A screened-bispinor validation
+(`reports/bispinor_screened_a_validation_2026-06-16/`). Genuine LORRAX regression (the full-BZ
+Z_q must be sliced to IBZ before potrs, or L_q unfolded to full BZ) — fix pending.
+
+NB — **the plain `export` DID reach the container here**, empirically contradicting the
+2026-05-16 "Shifter env passthrough" entry above: run 1 (no env) crashed IBZ-active at Nq=5;
+run 2 (`export LORRAX_FORCE_FULL_BZ=1`, identical centroids) ran full-BZ (9 q). The only changed
+input was the export, so on `lorrax_C` @ `e85be60` via `lxrun`, shifter forwards host env and no
+`LORRAX_SHIFTER --env=` idiom was needed. (Possibly module/shifter-config-specific — the 2026-05-16
+note was on `lorrax_B`. If a future full-BZ guard silently no-ops, fall back to the `--env=` idiom.)
+
+## 2026-06-16 — lorrax module stack: don't pipe `module load` / `lxattach`; base modulepath
+
+Two footguns when bringing up the `lorrax_agent` pool overlay (cost several wasted attempts):
+
+1. **Never pipe `module load …` or `lxattach`.** `module load lorrax_C 2>&1 | tail -1` runs the
+   module function in a **pipe subshell**, so its `setenv`/`export` never reach the parent shell
+   → `LORRAX_ROOT` stays empty and the overlay errors "requires a base lorrax module". Same for
+   `lxattach … | head` — its `export SLURM_JOBID` is lost, so `lxrun` then says "SLURM_JOBID not
+   set". Run them bare (redirects like `2>/dev/null` are fine; pipes are not).
+2. **Base modulefiles live at `/global/u2/j/jackm/modulefiles`** (the overlay is at
+   `$SANDBOX/modulefiles`). Full stack in ONE shell (each Bash call is a fresh shell):
+   ```
+   module use /global/u2/j/jackm/modulefiles; module load lorrax_C 2>/dev/null
+   module use $PSCRATCH/lorrax_sandbox/modulefiles; module load lorrax_agent 2>/dev/null
+   lxattach >/dev/null 2>&1   # sets SLURM_JOBID; no pipe
+   lxrun python3 -u -m gw.gw_jax -i $(pwd)/cohsex.in > gw.out 2>&1
+   ```
+The `execute_workflow` skill documents only raw `srun --jobid` and doesn't mention the overlay
+or these gotchas — consider adding a pointer there.

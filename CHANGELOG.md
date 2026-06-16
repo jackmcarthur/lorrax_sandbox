@@ -1,5 +1,67 @@
 # Changelog
 
+## 2026-06-16: Milestone A — screened-charge bispinor COHSEX (+ bare Breit) validated [C]
+
+Rebased `lorrax_C` to `main` `e85be60`. Mapped the bispinor GW pipeline
+(`reports/bispinor_screened_gw_state_2026-06-15/`): today's bispinor Σ is **bare DHF + bare-Breit
+exchange only**; the path to full screened bispinor W is to invert `(δ−Vχ)` in the channel μ-basis.
+**Milestone A** (screened charge channel + bare Breit; the χ_μν = χ⁰⁰-only reduction →
+W⁰⁰=scalar screened, W^{ij}=bare, W^{0i}=0) turned out to be **already wired** in the one-shot
+driver (`gw_jax.py:359` `compute_cohsex_sigma(do_screened=True, …, bispinor args)`), so A reduced
+to a validation.
+
+**Validated** (MoS₂ 3×3, nband=32, full-BZ, 64 s, 1 node;
+`runs/MoS2/C_60Ry_bispinor_cohsex_2026-06-15/`,
+`reports/bispinor_screened_a_validation_2026-06-16/`): screened bispinor COHSEX runs end-to-end;
+screening reduces exchange (bare Σ_X −37.09 → screened Σ_SX −22.14 eV, n=0); bare-Breit Σ^B
+coexists (diag −0.153/−0.153/−0.144 eV, in-plane (1,1)=(2,2) per z-mirror, Hermitian, Σ_tot^B
+≈−0.52 eV); Kramers degeneracy preserved; COHSEX gap 2.40 eV (reduced model). Charge-block
+reduction (bispinor Σ_SX/Σ_COH == scalar) holds **by construction** (`cohsex_sigma.py:211-212`
+untouched by the bispinor branch); empirical scalar cross-check pending (allocation occupied by a
+concurrent 16-GPU pool job).
+
+**Blocker found + worked around:** IBZ cascade crashes the bispinor zeta fit on current main
+(`B.shape[0]=9 != Nq=5`, full-BZ Z_q vs IBZ L_q; parent ran pre-cascade so was immune).
+`LORRAX_FORCE_FULL_BZ=1` workaround (identical physics). Logged in KNOWN_SANDBOX_ERRORS.
+
+**Remaining for A:** wire Σ^B through `compute_sigma_xc`/`sc_iteration` (+ transverse U_qp
+rotation) for the SC path; then B = the genuine supermatrix (un-trace χ → channel δ−Vχ → LU →
+screened Σ_c^B).
+
+## 2026-06-15: CrI3 6×6 80Ry GN-PPM max-bands-before-OOM — bottleneck + ceiling [coord]
+
+First **CrI3 GN-PPM** run in the sandbox (all prior CrI3 runs were x-only / COHSEX).
+Rebased an old-main checkout (`lorrax_A`, branch `agent/cri3-ppm-maxbands`) to current
+main `e85be60` (9-commit JAX-0.9/CPU-MPI delta; GPU memory model byte-identical, TRS-fix
++ IBZ-cascade already in both). 800-band NSCF (8 IBZ k, ngkmax=59990) → WFN.h5; reused
+80Ry SCF. Run dir `runs/CrI3/6x6_80Ry_gnppm_maxbands_2026-06-15/`.
+
+**Memory bottleneck = `C_fit_one_rchunk`** (ISDF pair-density transient
+`slots·16·nk·ns²·μ·r_chunk/p_xy`), NOT the V_q buffer. Validated live: the production
+driver printed `HWM=56.00 GB/dev, bottleneck=C_fit_one_rchunk` at nb150, matching a
+standalone `plan_gflat_chunks` sweep. Mechanism: planner shrinks r_chunk to pin HWM=56
+until r_chunk floors at `max_chunks=64`; past that HWM climbs with μ → OOM.
+
+**EMPIRICAL ceilings (16× A100-80GB, μ=10·nband, both set at the ζ-fit):**
+- **Non-bispinor: 700–798 bands** — nb700 (μ6986) FITS (ζ-fit + IBZ V_q in ~24 min),
+  nb798 (μ7980) OOMs at the ζ-fit (60.5 GB alloc). The planner (~640) is **conservative**:
+  nb700 fits at planner HWM=113% of budget (it assumes full-BZ V_q but runtime is IBZ
+  n_q=8, and over-charges Peak C).
+- **Bispinor: 200–300 bands — ~3× LOWER** — nb200 (μ2000) clears the binding charge ζ-fit,
+  nb300 (μ2992) OOMs at it (`fit_zeta`, 90.8 GB). The 4 ζ channels (charge + 3 transverse)
+  give a ~3.8× steeper Peak C slope (in-driver r_chunk=19536/58ch vs non-bisp 73824/16ch at
+  nb150). The in-driver planner tracks bispinor well (nb300@145% OOMs, nb200@97% fits); only
+  the *standalone* `plan_gflat_chunks(is_bispinor=True)` doesn't — worth a follow-up.
+
+Enabling the sweep required a source fix + a workaround: **`--prune-mem-gb` flag** added to
+`kmeans_cli` (threads `memory_per_device_gb` to the prune's Gram FFT — fixes the
+cuFFT-scratch OOM); large-μ centroids then generated with **`--oversample 1.0`** (skips the
+prune's still-unchunked 173 GB candidate-Gram). Full QP completion (eqp0.dat) still blocked
+by the dipole.h5 box OOM (downstream of the ζ-fit, so it does NOT affect the ceiling result);
+fix is to k-chunk `get_dipole_mtxels` via its existing `k_range`. Sandbox issues logged to
+KNOWN_SANDBOX_ERRORS.md. Report: `reports/cri3_gnppm_maxbands_2026-06-15/report.md`.
+Allocations JID 54541850 (session 1) + 54544991 (session 2).
+
 ## 2026-05-20: full COHSEX (do_screened=true) validated on CPU MPI [coord]
 
 End-to-end full-COHSEX (`x_only=false, do_screened=true, screening=cohsex`)
