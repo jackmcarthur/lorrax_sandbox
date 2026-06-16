@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-06-16: FIX bispinor IBZ-cascade zeta crash + sym==nosym validated [C]
+
+The IBZ-cascade bispinor zeta crash (`B.shape 9!=5`, see milestone-A report) was an **ordering
+bug**, not a wrong-unfold bug: `fit_zeta_to_h5` sliced `C_q`/`L_q` to IBZ before the orbit-closure
+auto-fallback (which flips `write_ibz_only=False`) ran — so on a non-closed centroid set the charge
+channel left `L_q` at IBZ while `Z_q` reverted to full-BZ. **Fixed** by finalizing `write_ibz_only`
+before the slice (`lorrax_C agent/bispinor-ibz-zeta-fallback-fix` `fc9984e`, +48/−49 in
+`isdf_fitting.py`). `LORRAX_FORCE_FULL_BZ` is no longer needed.
+
+**Validated** (`reports/bispinor_ibz_zeta_fallback_fix_2026-06-16/`): pytest 21 passed; fixed code
+with no FORCE completes + bit-identical to forced full-BZ; and with orbit-closed centroids (charge
+**641** regenerated orbit-aware + transverse 668) the **full bispinor IBZ cascade (all 4 channels,
+5 IBZ q / 9 full-BZ) is BIT-IDENTICAL to the same-basis full-BZ run** → the IBZ→full-BZ unfold (ζ̃
+and V_q, charge + transverse) is numerically exact. Data finding: the original `centroids_frac_640`
+was not orbit-closed (z-mirror partners absent); regen orbit-aware to get the IBZ speedup. Runs:
+`runs/MoS2/C_60Ry_bispinor_{ibztest,fullibz,fullbz641}_2026-06-16/`.
+
 ## 2026-06-16: Milestone A — screened-charge bispinor COHSEX (+ bare Breit) validated [C]
 
 Rebased `lorrax_C` to `main` `e85be60`. Mapped the bispinor GW pipeline

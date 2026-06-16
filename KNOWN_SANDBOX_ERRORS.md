@@ -28,6 +28,12 @@ incorrect sandbox scaffolding is the human's job.
 
 ## Issues
 
+### 2026-06-16: `lxrun` GPU srun missing `--overlap` → step creation fails "Requested nodes are busy" on attached hbm80g allocations
+- **Where**: `modulefiles/lorrax_agent/1.0.lua`, the GPU-path `srun` line in the `lxrun` shell function (was lines ~265-273). The `lxshell` override (same file, ~277-300) already uses `--overlap` and documents exactly this footgun, but `lxrun` never got the same flag.
+- **What happened**: After `lxattach` to a running `lx-alloc-jackm` allocation (JID 54544991, the raw-salloc `--constraint=gpu&hbm80g` 80 GB type), `lxrun python3 -u -m psp.orbital_magnetization ...` — and even `lxrun hostname` — died immediately with `srun: error: Unable to create step for job 54544991: Requested nodes are busy`, despite `lxstatus` showing 4/4 nodes free and no competing steps on the job (only `.extern`). Without `--overlap`, the step request cannot coexist with the allocation's implicit/extern step, so SLURM reports the node busy (or hangs).
+- **Expected**: `lxrun` should create the step like `lxshell` does. Confirmed by direct test on the same node: `srun --jobid=$JID -N1 -n1 --gres=gpu:1 --immediate=10 hostname` → "busy"; adding `--overlap` → succeeds. `--gpus-per-task=1 --overlap` also works.
+- **Workaround / fix applied**: Added `--overlap` to `lxrun`'s GPU `srun` line (one line, mirroring the existing `lxshell` precedent and rationale). Safe for all allocation types — `--overlap` only permits step coexistence; the pool `prelaunch` still selects distinct free nodes, so node assignment is unchanged. Flagged for human review in case the CPU-path `srun` (no `--overlap` either) should get the same treatment.
+
 ### 2026-05-16: bispinor 16-GPU retest spec uses `LORRAX_NGPU=16` (total) but lxrun reads it as per-node → gres error
 - **Where**: bispinor IBZ 16-GPU retest task spec ("Run A" / "Run B" sequence), which sets `SLURM_JOBID=53054263 LORRAX_NGPU=16 lxrun python3 -u -m gw.gw_jax ...`.
 - **What happened**: `lxrun` (defined in `modulefiles/lorrax_agent/1.0.lua:170-222`) treats `LORRAX_NGPU` as GPUs **per node** and builds `--gres="gpu:${LORRAX_NGPU}"`. With `LORRAX_NGPU=16` on Perlmutter (4 GPUs/node), srun rejected the step: `srun: error: Unable to create step for job 53054263: Invalid generic resource (gres) specification`. Run died in 2 s with no gw.out beyond the lxrun banner.
@@ -227,24 +233,27 @@ candidate axis is unchunked. **Workaround for large μ: `--oversample 1.0`** (sk
 entirely — fine for OOM/memory tests where only the centroid *count* matters). Proper fix:
 chunk the candidate axis in the Gram build. Both on `lorrax_A agent/cri3-ppm-maxbands`.
 
-## 2026-06-16 — IBZ-cascade crashes the bispinor zeta fit (full-BZ Z_q vs IBZ L_q)
+## ~~2026-06-16 — IBZ-cascade crashes the bispinor zeta fit (full-BZ Z_q vs IBZ L_q)~~ FIXED
 
-A bispinor `gw.gw_jax` run on current `main` (`e85be60`) with orbit-closed centroids dies in
-the transverse zeta fit:
+A bispinor `gw.gw_jax` run on `main` (`e85be60`) with a non-orbit-closed centroid set died in
+the **charge-channel** zeta fit:
 ```
 ValueError: B.shape[0]=9 != Nq=5
   ffi/cusolvermp/batched.py:200  batched_distributed_potrs
   common/isdf_fitting.py:1301    solve_zeta
 ```
-The cusolverMp Cholesky back-solve gets a **full-BZ Z_q (9 q-points)** against an
-**IBZ-factored L_q (5 q-points)**. The IBZ cascade activates on centroid orbit-closure
-(`gw_init.py:959-961`); it was activated 2026-05-11, so bispinor runs from before then (e.g.
-`runs/MoS2/D_60Ry_bispinor`, 2026-05-05) were immune and never exercised this path.
+**Root cause (ordering bug):** `fit_zeta_to_h5` sliced `C_q`/`L_q` to IBZ (`isdf_fitting.py:~2079`)
+using the *initial* `write_ibz_only`, but the orbit-closure **auto-fallback** that flips
+`write_ibz_only=False` ran *after* `factor_c_q`. On a non-closed set the charge channel fell back
+(`write_ibz_only=False` → `Z_q` full-BZ 9) while `L_q` was already IBZ-sliced (5) → the potrs shape
+crash. The IBZ unfold math was correct; only the fallback path produced inconsistent shapes.
 
-**Workaround:** `export LORRAX_FORCE_FULL_BZ=1` (full-BZ = identical physics, just disables the
-symmetry optimization). Used for the milestone-A screened-bispinor validation
-(`reports/bispinor_screened_a_validation_2026-06-16/`). Genuine LORRAX regression (the full-BZ
-Z_q must be sliced to IBZ before potrs, or L_q unfolded to full BZ) — fix pending.
+**FIXED** (`lorrax_C agent/bispinor-ibz-zeta-fallback-fix` `fc9984e`): move the closure check
+before the slice so `write_ibz_only` is finalized first; a non-closed set now falls back to full-BZ
+cleanly. `LORRAX_FORCE_FULL_BZ=1` is **no longer needed**. Validated bit-identical sym==nosym with
+orbit-closed centroids; pytest 21 passed. See `reports/bispinor_ibz_zeta_fallback_fix_2026-06-16/`.
+NB the original `centroids_frac_640.txt` was itself not orbit-closed (z-mirror partners absent);
+regenerate with `kmeans_cli` (orbit-aware by default for ntran>1) to activate the IBZ speedup.
 
 NB — **the plain `export` DID reach the container here**, empirically contradicting the
 2026-05-16 "Shifter env passthrough" entry above: run 1 (no env) crashed IBZ-active at Nq=5;
@@ -252,6 +261,21 @@ run 2 (`export LORRAX_FORCE_FULL_BZ=1`, identical centroids) ran full-BZ (9 q). 
 input was the export, so on `lorrax_C` @ `e85be60` via `lxrun`, shifter forwards host env and no
 `LORRAX_SHIFTER --env=` idiom was needed. (Possibly module/shifter-config-specific — the 2026-05-16
 note was on `lorrax_B`. If a future full-BZ guard silently no-ops, fall back to the `--env=` idiom.)
+
+## 2026-06-16 — two multi-GPU JAX jobs on the same node collide (coordination-service abort)
+
+Launching two `lxrun python3 -u -m gw.gw_jax ...` steps **concurrently on the same node** (1-node
+allocation) crashed one with EXIT 134:
+```
+ABORTED: /job:jax_worker/replica:0/task:1 unexpectedly tried to connect with a different
+incarnation. It has likely restarted.
+... F .../pjrt/distributed/client.h:80] Terminating process because the JAX distributed service
+detected fatal errors.
+```
+The two steps' JAX distributed coordination services collide (same coordinator addr/port on the
+shared node). `lxrun`'s pool `prelaunch` picks free nodes, but with only one node both land on it.
+**Run multi-GPU JAX jobs sequentially per node, or pin them to distinct nodes** (`LORRAX_NNODES`
+/ separate allocations). Cost one wasted run during the bispinor IBZ sym/nosym validation.
 
 ## 2026-06-16 — lorrax module stack: don't pipe `module load` / `lxattach`; base modulepath
 
