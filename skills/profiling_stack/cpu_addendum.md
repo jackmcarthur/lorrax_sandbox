@@ -7,11 +7,27 @@ instead.
 
 ## Launch recipe — CPU
 
-`lxrun` is GPU-specific (sets `--gres=gpu:N` and Shifter `--module=gpu`). On a
-CPU interactive node use raw `srun` after `salloc`:
+As of 2026-06-16 both `lxalloc` and `lxrun` understand `LORRAX_PARTITION=cpu`:
 
 ```bash
-# Get the alloc (no lxalloc on cpu)
+LORRAX_PARTITION=cpu lxalloc 1 02:00:00 &        # CPU node, no --gres=gpu
+lxattach                                          # discover JID
+LORRAX_PARTITION=cpu lxrun python3 -u -m gw.gw_jax -i cohsex.in
+```
+
+`lxrun` on CPU strips Shifter + `select_gpu.sh` + `in_container.sh` and uses
+native `srun -c <cpus-per-task>`.  Knobs (env vars at lxrun time):
+
+| var | default | meaning |
+|---|---|---|
+| `LORRAX_NRANKS` | 4 | ranks per node |
+| `LORRAX_CPUS_PER_TASK` | 8 | cores per rank |
+
+For tools that need the raw flow (or for one-off interactive nodes outside
+the `lorrax_agent` module), the equivalent manual recipe:
+
+```bash
+# Get the alloc directly
 salloc --nodes=1 --qos=interactive --constraint=cpu --time=02:00:00 \
        --account=m2651 -J "lx-alloc-$USER" bash -c "sleep 100000" &
 # Wait for RUNNING in squeue, then:
@@ -140,8 +156,10 @@ XLA + glibc fragmentation + thread stacks).
 
 ## Don't
 
-- Don't use `lxrun` on CPU nodes — it sets GPU-specific flags and will fail
-  or run in surprising configurations.
+- Don't omit `LORRAX_PARTITION=cpu` when using `lxalloc` / `lxrun` on a CPU
+  node — without it both default to the GPU configuration (`--gres=gpu:4`,
+  Shifter, `select_gpu.sh`) and the alloc/launch will either fail or run in
+  the wrong container.
 - Don't rely on `device.memory_stats()` on CPU.
 - Don't expect HLO `.txt` files inside per-jit subdirs — they're flat at the
   top of `xla_dump/`.
