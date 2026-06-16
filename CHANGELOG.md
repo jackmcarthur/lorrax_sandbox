@@ -1,5 +1,103 @@
 # Changelog
 
+## 2026-06-16: orbital-mag — ROOT CAUSE of CrI₃ H-reconstruction bug: spin-blind V_xc [B]
+
+Pinned the CrI₃-specific `⟨v|H|v⟩−ε_v` ≈ 1.4 eV residual (vs MoS₂ 0.2 meV) that was
+blocking the band-sum-free Sternheimer orbital-mag. **Root cause: LORRAX's standalone
+V_scf reconstruction (`dft_operators.compute_V_H_and_V_xc:317-323`) builds V_xc from
+the CHARGE density only via spin-unpolarized `pbe_functional()`, omitting the xc
+magnetic field B_xc(r).** Exact for non-magnetic systems (MoS₂, Si → 0.2 meV / 0 mRy);
+wrong by ~the exchange splitting (~eV, peaked at the magnetic ions) for ferromagnetic
+CrI₃ (6 μ_B). Confirmed by a full elimination chain (all *ruled out*): diagnostic
+unfaithful (MoS₂ gate=0.21 meV ✓), NLCC missing (off makes it worse), radial-table
+n_q (flat 4k→32k), Hankel FT accuracy (8× refine Δ≤6e-4), dense-grid/ecutrho (|G|max
+24 bohr⁻¹), and ρ_val reconstruction (matches QE `charge-density.hdf5` to 0.03%) — then
+`diag_xc_field.py` showed the omitted |V_x↑−V_x↓| is ~6 eV peak / ~4 eV mean over the
+Cr atoms, matching the band residual. Scripts in `reports/B_orbital_magnetization_cri3_2026-06-16/diag_{nlcc_toggle,nq_sweep,hankel_radial,qe_density,xc_field}.py`.
+
+**Scope:** affects only paths that *rebuild and apply/invert* the KS H on a **magnetic**
+system — the Sternheimer covariant-derivative resolvent (→ Sternheimer orbital-mag
+magnitude) and any **rebuilt-V_scf GW screening on magnetic systems (bispinor-CrI₃)**.
+*Not* affected: the SOS orbital-mag (velocity-only, no V_scf), the velocity/dipole
+operator (kinetic+nonlocal), and the **core `gw.gw_jax` GW driver** (uses WFN ε/ψ
+directly, never rebuilds V_scf). Fix = noncollinear V_xc + B_xc·σ̂ + 2×2 spin-dependent
+`apply_H` (real feature, scoped in report "Next steps").
+
+**Un-retraction:** the prior entry's "antiparallel is likely a truncation artifact" is
+**overturned** — the band-sum-free Sternheimer (no empty-band sum) *also* gives
+antiparallel (−0.063 μ_B), agreeing with the SOS extrapolation (~−0.08) and experiment
+(−0.067). The antiparallel sign (Hund's 3rd rule, Cr³⁺ 3d³ < ½-filled) is robust and
+V_scf-independent; only the Sternheimer *magnitude* is pending the spin-V_xc fix.
+
+## 2026-06-16: orbital-mag — LITERATURE CHECK: direct SOS is the wrong route [B]
+
+Deep-research literature check (cited, `reports/B_orbital_magnetization_cri3_2026-06-16/
+RESEARCH_NOTES_band_convergence.md`) on the band convergence. Findings: (1) the slow
+`band^−1.15` tail is **real & structural** — the local-circulation ("H−ε") term has a
+SINGLE energy denominator `Σ_m v·v/(ε_n−ε_m)` vs the squared denominator of the
+Berry-curvature term (Xiao-Chang-Niu RMP 2010; Souza-Vanderbilt). Not a bug. (2) BUT
+the **direct SOS is documented as impractical** for first-principles (CTVR PRB 74,024408:
+only OK for tight-binding/few bands); the empty-band sum is provably removable via Q=1−P
+→ occupied-states-only. (3) **Correct method = band-sum-free covariant finite-difference**
+of occupied Bloch states (Lopez-Vanderbilt-Thonhauser-Souza PRB 85,014435; CTVR App.A),
+or Wannier90 berry / QE-CONVERSE — no empty-band sum. (4) Published DFT+SOC for monolayer
+CrI₃ = **+0.099 μ_B/Cr PARALLEL** to spin (Ovesen-Olsen arXiv:2405.04239, GPAW), exp
+−0.067 antiparallel (PBE gets sign wrong). **⇒ our SOS antiparallel −0.08/cell is most
+likely a truncation artifact, NOT physical**; neither +0.024 (180 b) nor −0.08 (4000 b)
+is trustworthy. The earlier "Hund's-rule antiparallel" reading is retracted. Fix:
+implement covariant-FD orbital mag (reuses WFN reader + SymMaps k-neighbors).
+
+## 2026-06-16: orbital-mag — band convergence to 4000: ANTIPARALLEL ~0.1 μ_B (Hund) [B]
+
+Mapped CrI₃ orbital-moment band convergence to **4000 bands** (6×6 IBZ, 8 k;
+`nscf_6x6sym_{2000,4000}`, NSCF ~80 s / ~3 min on 8 GPUs). m_z(∥spin) vs SOS band
+ceiling: 180→+0.026, 400→+0.006, 800→−0.028, 2000→−0.061, **4000→−0.078**, slope
+still shallowing. Per-band increment ~**band^−1.15** (full AND kinetic-only →
+intrinsic local-circulation slow convergence, the single-energy-denominator term;
+NOT a nonlocal bug). Marginally convergent (partial sums ~N^−0.15) → even 4000
+bands isn't fully converged; limit ≈ **−0.08 to −0.12 μ_B**. **Verdict: |m_orb| ≈
+0.08–0.10 μ_B, ANTIPARALLEL to spin** — magnitude matches the ~0.1 expectation,
+sign is Hund's-third-rule (Cr³⁺ 3d³, <half-filled). The +0.024 "plateau" at 180
+bands was a truncation artifact. Direct dH/dk SOS is correct but band-pathological
+for orbital mag; a converged number needs a sum-free method (DFPT/Sternheimer or
+Wannier covariant derivatives). Plots: `band_convergence_6x6_{2000,4000}.png`.
+
+## 2026-06-16: orbital-mag — 400-band convergence: NOT band-converged [B]
+
+Pushed the SOS band count to 400 (6×6 IBZ, `nscf_6x6sym_400`, 8 IBZ k). Added
+`colA_z/colB_z` to the `--out` npz (band-resolved z-columns → cumsum = m_z vs band
+ceiling, plotted by `plot_band_convergence_400.py`). **Finding:** m_z(∥spin)
+humps to ≈+0.025 near N≈180 then DECREASES MONOTONICALLY — 180→+0.0256,
+240→+0.0204, 300→+0.0144, 360→+0.0093, **400→+0.0061** (still dropping). So the
+earlier "+0.024 plateau" was a 180-band truncation artifact; the direct
+sum-over-states (k·p) orbital sum is very slowly band-convergent (the reason
+Wannier interpolation / LVTS12 exists). PBE orbital moment is small and needs
+≫400 bands (or Wannier interp) to pin. Plot: `band_convergence_6x6_400.png`.
+
+## 2026-06-16: orbital-mag — k-convergence (8×8/10×10) + symmetry-reduced IBZ mode [B]
+
+Extended `psp/orbital_magnetization.py` (branch `agent/orbital-magnetization`):
+(1) **vectorized reductions** (μ-linear `PA/PB`; mu-scan/per-band/convergence now
+free, numerically identical — verified). (2) **`--ibz` symmetry-reduced mode**:
+loops the stored IBZ k-points (G-flat, no ψ unfold) and symmetrizes the
+**axial-vector** orbital-moment density over the **magnetic point group**,
+`M = Σ_i w_i (1/|G|) Σ_g det(R_g) R_g m(k_i)` (det factor for improper ops; T and
+M_z-flipping σ_v/C₂ excluded). Built via an ultracode workflow (6 agents); both
+adversarial verdicts confirmed (axial transform, det factor, no w_i·1/|G|
+double-count, frame consistency).
+
+**CrI₃ FM convergence** (`runs/CrI3/B_orbmag_FM_conv_2026-06-16/`, one SCF reused;
+orbital ∥ spin, μ_B, midgap): 6×6 = +0.0255, 8×8 = +0.0227, 10×10 = +0.0235,
+12×12 = +0.0231, 14×14 = +0.0228, **16×16 = +0.0234** (IBZ 8/12/18/26/34/44 k) —
+**k-converged at ≈ +0.023 μ_B parallel to spin** (flat 8×8→16×16; does NOT climb
+to ~0.1 with k; the under-convergence is band-count — the SOS sweep oscillates).
+**IBZ validated EXACT**: 8×8 IBZ (12 k) = +0.02272 = full-BZ (64 k); 10×10 IBZ
+(18 k) = +0.02353 = full-BZ (100 k) to all digits (same SCF ⇒ exact unfold);
+6×6 IBZ (8 k)=+0.0256 vs full (36 k)=+0.0255. |G|=6 (S₆), m_x=m_y=0. ~5× fewer
+k-points at identical physics. Magnetic sym-reduced NSCF works via `automatic`
+grid (the earlier `irrek_nc` crash was the explicit-k-list path).
+Report: `reports/B_orbital_magnetization_cri3_2026-06-16/report.md`.
+
 ## 2026-06-16: Milestone-A bispinor screened W via channel-blocked supermatrix [C]
 
 New `gw/w_bispinor.py`: assemble the 4×4-Lorentz-block `(nq,N,N)` supermatrix (N=n_C+3·n_T) from

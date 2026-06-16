@@ -265,6 +265,7 @@ set_shell_function("lxrun", string.format([[
     srun --jobid="$SLURM_JOBID" $mpiflag \
         --nodelist="${nodelist}" -N "${nnodes}" -n "${total_ranks}" \
         --gres="gpu:${ngpu_per_node}" \
+        --overlap \
         --immediate="${immediate}" \
         --job-name="${jobname}" \
         %s \
