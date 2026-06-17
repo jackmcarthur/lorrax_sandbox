@@ -1,0 +1,50 @@
+run_id: VI3_gap_recipe_80Ry_6x6_2026-06-16
+system: VI3
+pipeline: qe_only          # QE SCF: noncollinear PBE+SOC+U, occupation-matrix-seeded insulating state
+platform: perlmutter
+
+variant_of: VI3_monolayer_80Ry_6x6_2026-06-16
+reuse_from_parent: []
+overrides:
+  goal: "open the FM band gap that plain PBE+U+SOC missed (came out metallic)"
+  fix: "starting_ns_eigenvalue seed of the V-3d d2 occupation + mixing_fixed_ns pin + U raise"
+
+system_params:
+  formula: VI3
+  prefix: VI3
+  dimensionality: 2
+  ecutwfc: 80.0
+  kgrid: [6, 6, 1]          # nosym -> 36 k-points
+  a_angstrom: 6.84
+  c_angstrom: 18.0
+  noncolin: true
+  lspinorb: true
+  hubbard_projectors: ortho-atomic
+  hubbard_scheme: Dudarev   # U only; J/Liechtenstein noncollinear support uncertain in QE 7.5
+  hubbard_u_V_3d_eV: 5.0
+  starting_magnetization_V: 2.0
+
+files:
+  scf: qe/scf/scf.in
+
+steps:
+  qe_scf:
+    state: complete
+    note: >
+      RESOLVED the metallic-VI3 problem. ROOT CAUSE (confirmed via research workflow +
+      experiment): DFT+U occupation-matrix BISTABILITY, not U magnitude / k / cutoff.
+      Plain noncollinear PBE+SOC+U self-consistently lands in the metallic equally-
+      occupied-t2g basin (m=+4.96 uB/cell, HOMO 0.17 eV ABOVE LUMO). FIX: seed the V-3d
+      occupation matrix to the d2 insulating pattern (starting_ns_eigenvalue, 2 occ/3 empty
+      in the majority spinor) + Hubbard_occ=2.0 + PIN it the whole SCF (mixing_fixed_ns=250,
+      both mixers sloshed on release) + U=5.0.
+      RESULT: FM INSULATOR. gap = +0.106 eV (HOMO -5.466 / LUMO -5.360), converged 15 iter,
+      m_z = -4.02 uB/cell = 2 uB/V (d2 S=1), clean d2 occ (0.989/0.991). Compare:
+      U=4 same seed -> -0.022 eV (just touching, saved as scf_U4_nearmiss.out);
+      no seed -> -0.17 eV metal.
+      CAVEAT: 0.11 eV < literature ~0.5 eV. Dudarev-U slope is ~0.13 eV/eV-U; matching 0.5 eV
+      needs unphysical U~8. Literature 0.5 eV comes from Hund's J (Liechtenstein U=4/J=0.9)
+      splitting the SOC-active e' doublet; QE noncollinear kind=1+J support is ambiguous
+      (source only shows kind=0/kind=2 with noncolin) -- unverified, would need a test.
+      This is also a PINNED-ns (occupation-constrained) gap = upper bound; a released-ns
+      self-consistent value would be similar or slightly smaller but sloshes without U-ramp.

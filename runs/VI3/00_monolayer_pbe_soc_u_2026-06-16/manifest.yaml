@@ -1,0 +1,91 @@
+run_id: VI3_monolayer_pbe_soc_u_2026-06-16
+system: VI3
+pipeline: qe_only          # QE SCF only: noncollinear PBE + SOC + Hubbard U
+platform: perlmutter
+
+variant_of: null
+reuse_from_parent: []
+overrides: {}
+
+# ----------------------------------------------------------------------------
+# VI3 monolayer, isostructural with CrI3: honeycomb of V3+ (d2, S=1) ions in
+# edge-sharing VI6 octahedra; layered vdW Ising ferromagnet, out-of-plane easy
+# axis. Calculation: noncollinear PBE + spin-orbit coupling + Hubbard U = 3.5 eV
+# on V-3d (ortho-atomic projectors), ferromagnetic (V moment along +z).
+#
+# Structure: experimental in-plane a = 6.84 Angstrom (bulk R-3, well established
+# across multiple refs). Internal coordinates copied from the proven CrI3
+# monolayer geometry (isostructural approximation) -- NOT relaxed. Recommended
+# next step: relax internal positions (V-I bond in VI3 ~2.80 A vs CrI3 ~2.73 A).
+#
+# N_val = 2*13 (V) + 6*7 (I) = 68 electrons (spinor bands).
+# ----------------------------------------------------------------------------
+
+system_params:
+  formula: VI3
+  prefix: VI3
+  dimensionality: 2
+  n_val: 68
+  ecutwfc: 50.0
+  kgrid: [3, 3, 1]
+  a_angstrom: 6.84
+  c_angstrom: 18.0
+  metal: false
+  noncolin: true
+  lspinorb: true
+  hubbard_projectors: ortho-atomic
+  hubbard_u_V_3d_eV: 3.5
+  starting_magnetization_V: 0.5     # +z, out-of-plane
+
+pseudopotentials:
+  - V.upf   # assets/pseudopotentials/standard/V.upf  FR-ONCVPSP PBE, z_val 13
+  - I.upf   # assets/pseudopotentials/standard/I.upf  FR-ONCVPSP PBE, z_val 7
+
+files:
+  scf: qe/scf/scf.in
+
+steps:
+  qe_relax:
+    state: partial
+    note: >
+      Fixed-cell ionic relax at a=6.84 (calculation='relax', plain mixing, fixed
+      occ, 50 Ry, 3x3). 5 BFGS steps: total force 0.078 -> 0.017 Ry/bohr (~78%
+      down). KEY RESULT: V-I bond 2.731 (CrI3-derived) -> 2.810 A == VI3 lit.
+      2.80 A; the I cage expanded from the Cr geometry to V's. Mag steady ~4.4 uB.
+      NOT fully force-converged: at the 6th geometry the electronic SCF broke down
+      ("eigenvalues not converged" -> "convergence NOT achieved after 200 iter")
+      -- the near-metallic state is delicate with fixed occupations as the cage
+      moves. Best geometry = 5th ATOMIC_POSITIONS block (relax.out line 14145 is
+      the failed step; line 11490 is the F=0.017 structure). Input: qe/relax/relax.in.
+      Next: re-SCF at the relaxed coords; production at 80 Ry + denser k.
+  qe_vcrelax:
+    state: failed
+    note: >
+      vc-relax (cell_dofree='2Dxy', plain mixing, fixed occ) at 50 Ry RUNS but
+      the cell collapses by accelerating steps: a = 6.84->6.82->6.79->6.75->6.70
+      ->6.61->6.48 A over 6 BFGS steps (stopped manually). Classic Pulay stress
+      from the low cutoff + NC iodine -> spurious compressive stress. Mag stayed
+      ~4.35 uB. LESSONS: (1) smearing + plain mixing slosh (never converged);
+      (2) local-TF plateaus at ~4e-6; (3) ONLY fixed-occ + plain converges, but
+      (4) the 50 Ry CELL relaxation is meaningless (Pulay). Use fixed-cell ionic
+      'relax' at 50 Ry (forces are fine) for internal coords, and/or vc-relax at
+      80 Ry for the lattice constant. Input: qe/vcrelax/vcrelax.in.
+  qe_scf:
+    state: complete
+    note: >
+      Converged in 43 iter / 64s wall on 4x A100 (JID 54616242, -npools 4).
+      E = -450.2721 Ry; net m_z = 4.40 uB/cell; |m| = 6.91 uB; per-V m_z = 2.80 uB.
+      NB these are SPIN-only (pw.x magnetization excludes the orbital moment L;
+      net 4.40 ~ 2 V x d2 spin-only + ligand; per-V 2.80 is sphere-integrated spin).
+      The orbital moment needs psp/orbital_magnetization.py (modern theory).
+      V-3d Tr[ns] = 3.76. CAVEAT: highest-occ (-5.79 eV) lies ABOVE lowest-unocc
+      (-5.87 eV) -> near-metallic / overlapping bands at this coarse 3x3 +
+      unrelaxed + 50 Ry level (lit. ~0.3-0.5 eV FM semiconductor). Needs
+      structural relax + k-grid + cutoff convergence for the gap.
+
+# Recommended follow-ups (in priority order):
+#   1. Relax internal coordinates (calculation='relax') at a=6.84 A -- VI3 V-I
+#      bond ~2.80 A vs the CrI3-derived ~2.73 A used here.
+#   2. Converge ecutwfc (iodine wants >=60-80 Ry) and k-grid (6x6+).
+#   3. Re-check the gap; VI3+U+SOC can converge to distinct orbital solutions
+#      (quenched vs large orbital moment) -- may need starting_ns_eigenvalue.

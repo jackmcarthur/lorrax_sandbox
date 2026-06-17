@@ -341,3 +341,33 @@ Built by the `cri3-orbmag-bandstructure` workflow (Bands phase) + this session
   per-state decomposition, standard in orbital-moment bandstructures).
 - Scripts: `compute_orbmag_bandpath.py` (+validation), `plot_orbmag_bandstructure.py`;
   arrays in `orbmag_bandpath.npz`.
+
+---
+
+## 2026-06-17 — Spin-resolved bandstructures + VI3 (all DFT)
+
+Four DFT bandstructures along Γ-M-K-Γ, one generic plotter (`plot_band_colored.py`,
+mode `spin`|`orb`) and one generic compute (`compute_orbmag_general.py`, derives the
+k-path distance from the WFN reciprocal lattice). **All DFT — no GW self-energy.**
+
+- **CrI3 spin** `cri3_spin_bandstructure.png` — color = ⟨σ_z⟩ (red ↑ / blue ↓), from the
+  same path WFN's `SZ`. Net moment along −z (majority blue); many near-white bands =
+  strong I-5p SOC mixing.
+- **VI3 (FM, PBE+U+SOC)** — new run `runs/VI3/05_bandpath_orbmag_2026-06-17/`. Built a
+  band-path NSCF off the gap-recipe SCF (U=5 eV, ortho-atomic, the occupation-matrix-
+  pinned **insulating** d² basin; `occup.txt`+density copied, not symlinked). 80 Ry,
+  121 k, 120 bands → **27.7 GB WFN.h5**. pw2bgw needed the **dftU-strip workaround**
+  (lda_plus_u=T makes pw2bgw abort writing `.hub1` during `orthoUwfc`; removed the two
+  `<dftU>` blocks from the save XML — wavefunctions/eigenvalues already computed, export
+  unaffected). `vi3_orbmag_bandstructure.png` + `vi3_spin_bandstructure.png`.
+  - **Sanity (no full-BZ ref for VI3):** occ-summed ⟨σ_z⟩/k = **+4.02 μ_B** = expected
+    V³⁺ 3d² FM spin moment. mu=−5.41 eV, **gap 0.10 eV** (small, +U-stabilized).
+  - **Orbital moment −0.31 μ_B antiparallel** at 120 bands (Hund, 3d²<½; larger than CrI3
+    — stronger V-3d orbital character / smaller gap). Underconverged in band count like CrI3.
+
+**GW status:** none of these are GW. A GW *eigenvalue* bandstructure is feasible via
+htransform (VI3 `cohsex_bands.in` + centroids + `kin_ion.h5` already exist from the
+04_gw run; CrI3 has GW `eqp` from today's C/D runs). A GW bandstructure *colored by
+orbital magnetization* is NOT feasible without new code (htransform ψ lives in the
+ISDF/centroid basis; no centroid→G-space reconstruction for the velocity operators).
+Blocked on the 06-17 maintenance window (compute down ~06:00, reservation through 06-24).

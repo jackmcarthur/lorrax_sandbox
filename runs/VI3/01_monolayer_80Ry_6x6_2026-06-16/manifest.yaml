@@ -1,0 +1,51 @@
+run_id: VI3_monolayer_80Ry_6x6_2026-06-16
+system: VI3
+pipeline: qe_only          # QE ionic relax: noncollinear PBE + SOC + Hubbard U
+platform: perlmutter
+
+variant_of: VI3_monolayer_pbe_soc_u_2026-06-16
+reuse_from_parent: []      # new ecutwfc (80) + new k-grid (6x6) -> new top-level run
+overrides:
+  ecutwfc: 80.0            # was 50.0
+  kgrid: [6, 6, 1]         # was [3, 3, 1]
+  calculation: relax       # fixed-cell ionic relax, seeded from 00-run relaxed coords (V-I=2.81)
+
+system_params:
+  formula: VI3
+  prefix: VI3
+  dimensionality: 2
+  n_val: 68
+  ecutwfc: 80.0
+  kgrid: [6, 6, 1]         # 20 IBZ k-points
+  a_angstrom: 6.84
+  c_angstrom: 18.0
+  noncolin: true
+  lspinorb: true
+  hubbard_projectors: ortho-atomic
+  hubbard_u_V_3d_eV: 3.5
+  starting_magnetization_V: 0.5
+
+pseudopotentials:
+  - V.upf
+  - I.upf
+
+files:
+  relax: qe/relax/relax.in
+
+steps:
+  qe_relax:
+    state: partial
+    note: >
+      80 Ry / 6x6 (20 IBZ k-pts) ionic relax on 5 GPUs of shared alloc 54617004.
+      RESULTS: (1) SCF STABILITY FIXED -- the denser 6x6 grid cured the SCF
+      breakdown that killed the 50 Ry/3x3 relax; every SCF converged to ~1e-9,
+      no eigenvalue trouble. (2) Relax did 2 BFGS steps (F 0.0153 -> 0.0140
+      Ry/bohr) -- structure essentially at the relaxed geom already (V-I~2.81),
+      barely moving. (3) GAP STILL CLOSED: highest-occ -5.86 eV ABOVE lowest-unocc
+      -6.03 eV -> metallic even at 80 Ry/6x6/relaxed, MORE inverted than 3x3.
+      m_z rose to 4.96 uB/cell, |m|=7.07. CONCLUSION: the missing ~0.5 eV gap is
+      NOT a k/cutoff/structure convergence issue -- it's the U=3.5+SOC level /
+      orbital state. PREEMPTED by other calcs (SIGTERM on step 54617004.20 at the
+      3rd SCF, iter 105); not force-converged (F=0.014).
+      NEXT: U-sweep (3.5->4.0->4.5, +/- Hund J) at this geometry to find the
+      insulating solution; the literature FM-semiconductor needs U>=4 and/or J.
