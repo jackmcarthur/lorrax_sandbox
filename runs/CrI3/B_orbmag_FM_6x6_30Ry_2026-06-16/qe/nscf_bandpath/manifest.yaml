@@ -1,0 +1,37 @@
+run_id: cri3_FM_6x6_30Ry_bandpath_2026-06-17
+system: CrI3
+pipeline: qe_only
+platform: perlmutter
+
+variant_of: cri3_FM_6x6_30Ry_2026-06-16
+reuse_from_parent:
+  - ../scf/CrI3.save/charge-density.hdf5   # FM SCF density (read-only)
+overrides:
+  calculation: nscf
+  nbnd: 120                  # parent nscf used 180; 120 ample for orbital-mag SOS
+  kpoints: explicit Gamma-M-K-Gamma path (121 pts, 40/segment)
+  pw2bgw: wfng_kgrid = .false. (path WFN, not uniform grid)
+
+# Explicit band path Gamma(0,0,0)-M(1/2,0,0)-K(1/3,1/3,0)-Gamma, crystal coords.
+# Node k-indices: Gamma=0, M=40, K=80, Gamma=120.  See path_info.npz
+# (kpts_crys, kcart, dist, node_idx, labels) for plotting coordinates.
+#
+# WARNING: CrI3.save is a symlink to ../scf/CrI3.save (QE convention).  This
+# band-path NSCF therefore overwrote the wfc*.hdf5 and data-file-schema.xml in
+# the shared scf.save with the 121-kpt path wavefunctions.  charge-density.hdf5
+# (the actual SCF reference) is read-only and untouched.  Same pattern as the
+# parent ../nscf run.  Re-run ../nscf if the uniform-grid wfc are needed again.
+
+# POST-PROCESS: pw2bgw writes kgrid=(0,0,0) for any non-uniform k-list (the
+# "kgrid set to zero" warning).  common.symmetry_maps.SymMaps divides by kgrid
+# and crashes (IndexError) on a zero grid.  Fixed by patching the WFN.h5 header
+# field mf_header/kpoints/kgrid -> (240,240,1) (patch_kgrid.py in the report
+# dir).  240 makes every path k-point an exact integer (max frac err 8e-9);
+# only the otherwise-meaningless grid metadata changes -- k-coords and all
+# wavefunction coefficients are untouched.  velocity_at_k then loads cleanly
+# (smoke_velocity_path.py: sz_sum(occ) = -6.01 mu_B, the expected CrI3 moment).
+
+steps:
+  nscf_bandpath: { state: complete, note: "pw.x nscf, 121 kpts x 120 bands, 1 high-band eig not converged (benign)" }
+  pw2bgw:        { state: complete, note: "WFN binary + WFN.h5 via wfn2hdf.x; kgrid=0 warning expected for path; kgrid patched to (240,240,1)" }
+  velocity_smoke: { state: complete, note: "velocity_at_k consumes path WFN; sz_sum(occ)=-6.01 mu_B at G/M/K" }

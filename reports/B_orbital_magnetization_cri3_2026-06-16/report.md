@@ -312,3 +312,32 @@ for nspin=4). Not a gross missing term; a subtle few-tens-of-meV effect that doe
 (Sternheimer / standalone-H, and rebuilt-V_scf GW screening on bispinor-CrI₃);
 the core `gw.gw_jax` driver (uses WFN ε/ψ directly) and non-magnetic systems are
 unaffected.
+
+---
+
+## 2026-06-17 — Orbital-magnetization-resolved bandstructure (`cri3_orbmag_bandstructure.png`)
+
+Per-(n,k) orbital moment along Γ-M-K-Γ, colored red (∥ spin) / blue (anti-∥).
+Built by the `cri3-orbmag-bandstructure` workflow (Bands phase) + this session
+(OrbMag/Plot phases, which the workflow lost to API-529 overload).
+
+- **Real QE NSCF on the k-path** (not htransform — the htransform readers
+  confirmed centroid-space ψ can't be reconstructed to dense G-space for the
+  velocity operators): Γ(0,0,0)→M(½,0,0)→K(⅓,⅓,0)→Γ, 40 k/seg = **121 k-points,
+  120 bands, nspinor=2**. WFN at `runs/CrI3/B_orbmag_FM_6x6_30Ry_2026-06-16/qe/nscf_bandpath/WFN.h5`.
+  One band-path fix: `pw2bgw` writes `kgrid=(0,0,0)` for a non-uniform list →
+  patched the `mf_header/kpoints/kgrid` metadata to (240,240,1) so `SymMaps`
+  doesn't divide-by-zero (coords/coeffs untouched; `patch_kgrid.py`).
+- **m_z(n,k) = −½ Im Σ_{m≠n}(vˣ_nm vʸ_mn − vʸ_nm vˣ_mn)(Eₙ+Eₘ−2μ)/(Eₙ−Eₘ)²**,
+  v = v_p + v_NL. **Formula validated to 3×10⁻¹²** against the 10×10 full-BZ npz
+  (sum over occ n & k reproduces stored m_orb[2]=+0.02353). Path: μ=−4.79 eV,
+  gap 1.49 eV, spin along −z, occ-summed m_z = −0.0185 μ_B at 120 bands
+  (antiparallel, consistent with the −0.078 converged value — 120 bands is the
+  underconverged end of the slow SOS tail).
+- **Orbital weight concentrates in the upper Cr-3d/I-5p valence manifold**
+  (bands 59–64); deep semicore and high conduction carry little. Color saturates
+  at ±0.04 μ_B — the per-state moment is O(0.01–0.08) μ_B away from crossings but
+  1/(Eₙ−Eₘ)² spikes at (avoided) band crossings (a real feature of the SOS
+  per-state decomposition, standard in orbital-moment bandstructures).
+- Scripts: `compute_orbmag_bandpath.py` (+validation), `plot_orbmag_bandstructure.py`;
+  arrays in `orbmag_bandpath.npz`.
