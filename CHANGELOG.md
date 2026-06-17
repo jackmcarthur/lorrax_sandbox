@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-06-17: Screened bispinor χ/W through IBZ + Σ_xc Breit comparison; Hartree & SC-GN-PPM audits [C]
+
+`sources/lorrax_C` `agent/bispinor-ibz-lorentz-unfold`. **The full screened bispinor χ/W workflow now
+runs through the IBZ cascade** (the low-scaling path). Report: `reports/cri3_breit_sigma_xc_2026-06-17/`.
+
+- **Screened-IBZ unfold crash FIXED** (`8605574`): screened supermatrix-W returns TT tiles replicated
+  `P()`, but the R⊗R Lorentz-mix jit declares `in_shardings=P(None,None,None,'x','y')` → `ValueError`
+  at `symmetry_maps.py:562` (only on `do_screened + _use_ibz_super`). Constrain `V_in` before the jit.
+  Regression test reproduces the crash pre-fix, passes after. **Validated:** 16-GPU IBZ screened Σ^B is
+  **bit-identical** to full-BZ-direct on FM CrI₃ (−6.796/−6.670/−6.438). (A 4-GPU run gave −9.4 via the
+  band-sharding-at-small-mesh mode — CrI₃ MUST run 16 GPU / 4×4.)
+- **Σ^B folded into static QP Σ_xc + screened/unscreened Breit comparison** (`c8c9a97`): static COHSEX
+  `sigma_total` was dropping Σ^B (it only reached the QP via the dynamic/PPM `sig_x`). Now folded in;
+  also evaluate Σ^B with BOTH screened W^{ij} and bare V^{ij} in one pass → `breit_comparison.dat`.
+- **Σ_xc Breit result (FM CrI₃, converged 1800/600/200, k=0):** Breit contributes **−30..−36 meV** to Σ_xc
+  on the band edges (more on deeper bands), slightly **widening the QP gap**; the gap correction is small &
+  basis-sensitive (+12.8 meV @640/200 → **+3.2 meV @1800/600**, not fully converged — abs per-band Breit is
+  the robust number). **Screened ≈ unscreened to <1 μeV** → transverse channel *effectively unscreened*
+  (χ⁰≈0). Run `runs/CrI3/C_FM_breit_compare_1800_2026-06-17` (16 GPU, 600 s).
+- **Bispinor transverse-centroid ψ restart** (`4523686`): round-trips the σ^B ψ; restart skips the ζ-fit,
+  bit-identical Σ^B. Per-band Σ^B diagnostic (`4bc0d46`): the eV `tr Σ` is a SUM over all k·band; per-band
+  Breit is meV (α²-suppressed vs the ~50 eV exchange) — not a regression.
+- **Hartree (Q1):** `cohsex_sigma.hartree` is **charge-only** (ρ=J⁰, no γ̃ⁱ). The current–current
+  (J^{1,2,3}) magnetic Hartree is **absent** — correct for zero-current systems, an α²-order omission for
+  magnetic ones (no DFT counterpart; Milestone-C).
+- **SC bispinor GN-PPM (Q2):** the SC/QSGW dispatch `sigma_dispatch.compute_sigma_xc` takes no transverse
+  params and never builds Σ^B, and there is **no config guard** → SC bispinor GN-PPM *runs but silently
+  drops Breit*. One-shot GN-PPM carries it (via `sig_x`). SC path needs the transverse plumbing or a gate.
+- **Infra:** logged in KNOWN_SANDBOX_ERRORS — the venv editable `.pth` pins `lorrax` to **lorrax_B/src**, so
+  bare `pytest` from lorrax_C silently tests lorrax_B (also the root cause of the `gw.w_bispinor` collection
+  failure); fix = `PYTHONPATH=<checkout>/src`.
+
 ## 2026-06-17: B_xc implemented + CrI3 orbital-mag converged; residual audit exhaustive [B]
 
 Noncollinear **B_xc (xc magnetic field)** now implemented in LORRAX's standalone
@@ -23,7 +55,11 @@ since pw2bgw refuses VXC for nspin=4); does not move the orbital moment.
 band count is the bottleneck (slow SOS tail crosses zero → −0.078; +0.026 at 180 b);
 k-grid flat (+0.026/0.023/0.024 at 6×6/8×8/10×10). Plot
 `reports/B_orbital_magnetization_cri3_2026-06-16/cri3_orbmag_convergence.png`.
-Orbital-mag-resolved Γ-M-K-Γ bandstructure: in progress (workflow).
+**Orbital-mag-resolved Γ-M-K-Γ bandstructure** `cri3_orbmag_bandstructure.png`: per-(n,k)
+m_z colored red(∥spin)/blue(anti-∥) on a real QE NSCF k-path (121 k, 120 b); SOS formula
+validated to 3e-12 vs the 10×10 BZ total; orbital weight in the upper Cr-3d/I-5p valence
+manifold. (Workflow built the path WFN; OrbMag/Plot redone manually after API-529 killed
+those phases.) `compute_orbmag_bandpath.py` + `plot_orbmag_bandstructure.py`.
 
 ## 2026-06-17: VI3 monolayer FM band gap OPENED — occupation-matrix bistability, not U/k/cutoff [D]
 
