@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-06-17: VI3+CrI3 GW pipeline overnight — orbital-moment convergence delivered; σ_mnk blocked on head-OOM [D]
+
+Big multi-stage push for VI3 & CrI3 monolayers (6×6 NSCF 600b → GW GN-PPM σ_mnk(ω) −10:10:0.25, 120-band Σ,
+4000 centroids → bands → orbmag). lorrax_D moved to `main` (was `agent/install-blitz-integration` — preserved).
+Two hard constraints: (1) full-machine maintenance 06-17 06:00→06-24, raced live on an interactive alloc + queued
+batch backups (54624232 VI3, 54624233 CrI3); (2) the GW q=0 head can't be built on main — `psp.get_dipole_mtxels`
++ `bandstructure.htransform` load ALL wavefunctions to one GPU (155–231 GiB) → OOM for 6×6/80Ry; `epshead` needs
+BGW eps0mat. **DELIVERED:** VI3 +U-gapped FM SCF (gap 0.11 eV) + NSCF + WFN.h5(41GB); **orbital-moment vs #bands**
+for VI3 (spin 4.02 μB; m_orb 100b −0.284 → 600b −0.440 μB ∥spin, unconverged ∝N⁻¹·¹⁵, →lit. large-OM); CrI3 FM
+80Ry SCF/NSCF/WFN + orbmag (running). **BLOCKED:** GW σ_mnk + DFT/GW bandstructures (head/dipole OOM — needs a
+per-k-streaming dipole code fix, or vhead/whead overrides, or BGW eps0mat). Solved 9 pipeline blockers en route
+(module names, pw2bgw+DFT+U `.hub1` davcio → strip `<dftU>` from .save XML, wfn2hdf abs-path, freed 16TB
+`zeta_q*.h5`, centroid OOM→`--oversample 1.0`, cohsex inline-comment parse, kin_ion `--nb 120`, σ(ω) int64
+overflow→`kij_stream`, npools-divides-ntasks). All in KNOWN_SANDBOX_ERRORS.md. Report:
+`reports/vi3_cri3_gw_overnight_2026-06-17/report.md`.
+
 ## 2026-06-17: Screened bispinor χ/W through IBZ + Σ_xc Breit comparison; Hartree & SC-GN-PPM audits [C]
 
 `sources/lorrax_C` `agent/bispinor-ibz-lorentz-unfold`. **The full screened bispinor χ/W workflow now
@@ -60,6 +76,13 @@ m_z colored red(∥spin)/blue(anti-∥) on a real QE NSCF k-path (121 k, 120 b);
 validated to 3e-12 vs the 10×10 BZ total; orbital weight in the upper Cr-3d/I-5p valence
 manifold. (Workflow built the path WFN; OrbMag/Plot redone manually after API-529 killed
 those phases.) `compute_orbmag_bandpath.py` + `plot_orbmag_bandstructure.py`.
+**+ CrI3 spin-resolved + VI3 (orbital-mag & spin) DFT bandstructures** (`d257166b`): generic
+`plot_band_colored.py` (spin=⟨σ_z⟩ | orb=m_z). VI3 new run `05_bandpath_orbmag`: 80Ry/121k
+band-path NSCF off the gap-recipe insulating d² basin → 27.7GB WFN; pw2bgw needed the
+**dftU-strip** workaround (lda_plus_u=T aborts on `.hub1`). Sanity occ-summed ⟨σ_z⟩=+4.02 μB
+= V³⁺ spin moment; orbital moment −0.31 μB antiparallel. Finished 39s before the 06-17
+maintenance outage. **All DFT — GW bandstructures still TODO** (htransform GW-eigenvalue path
+exists; GW *colored by orbital-mag* needs centroid→G-space code that doesn't exist).
 
 ## 2026-06-17: VI3 monolayer FM band gap OPENED — occupation-matrix bistability, not U/k/cutoff [D]
 
