@@ -261,3 +261,54 @@ for optical matrix elements, not the physical velocity.)
    final magnitude; optionally split LC vs IC contributions.
 4. The non-magnetic-WFN finding affects any CrI₃ "magnetic" interpretation of
    prior GW work in this sandbox — flagged for the user.
+
+---
+
+## 2026-06-17 UPDATE — B_xc IMPLEMENTED + exhaustive residual audit
+
+**B_xc is implemented and validated** (lorrax_B branch `agent/bxc-vscf-magnetic`,
+commits `eba8609` + `c5ec2f0`):
+- `psp/xc.py`: spin-polarized PBE (`_pbe_x_spin` via exact spin-scaling reusing
+  `pbe_x`; `_pbe_c_spin` PW92 spin-interp + φ(ζ) gradient — verified term-by-term
+  vs QE `pw_spin`/`pbec_spin`/`pbex`) + `compute_V_xc_spin` (per-spin GGA V↑/V↓).
+- `psp/scf_potential.py`: `build_magnetization_from_wfn` (full-BZ Pauli sandwiches,
+  matches QE charge-density m to 0.1%); `build_dft_potentials(m_vec=...)` → spin
+  V_xc with the **signed magnetization** (segni = sign(m·û), smooth — avoids the
+  |m|-kink that corrupts the GGA gradient at magnetization sign-changes).
+- `psp/dft_operators.py`: `HamiltonianK.B_vec` + `(B·σ)ψ` (helper `_bsigma_psi`) in
+  `apply_H_k`/`apply_H_k_from_G`/`build_matrix_k`; `B_vec` kwarg in `setup_H_k*`.
+  Non-magnetic path is bit-identical (trace-time `None` guard).
+
+**H-reconstruction result** (⟨v|H|v⟩−ε):
+
+| system | result |
+|--------|--------|
+| MoS₂ / Si (non-magnetic, FR-SOC, PBE, NLCC, 2D) | **0.2 meV** (exact) |
+| CrI₃ FM, **no B_xc** | 1400 meV |
+| CrI₃ FM, **B_xc + segni** | **~19 meV mean / 74 meV max**, deep Cr-3s 2 meV |
+
+**Exhaustive residual audit (every component checked against QE; all match):**
+density (charge-density.hdf5, 0.03%/0.1%); spin-PBE functional (pointwise +
+on-grid, ≤0.05 meV); V_NL SOC D-matrix (VKB `deeq_nc` eigenvalues, exact, rank
+36/atom); V_loc incl. 2D cutoff (pp.x V_bare, ⟨ψ|Δ|ψ⟩ ≤7 meV, uncorrelated with
+residual); 2D Coulomb (validated by the MoS₂ control — same `assume_isolated='2D'`
+input); spinor frame (native-wfc: self-consistent, frame-invariant). E_nk
+preserved by pw2bgw export exactly (0.0 meV). **The remaining ~19 meV is confined
+to the m≠0-only finite-ζ spin V_xc on the Cr 3p/3d semicore** — vanishes at ζ=0
+(so MoS₂/Si miss it) and never directly diffable against QE (pw2bgw refuses VXC
+for nspin=4). Not a gross missing term; a subtle few-tens-of-meV effect that does
+**not** move the orbital moment (a valence-d property). Diagnostics in
+`agent4_xc_diff/` and `diag_*.py`.
+
+**Orbital moment (the deliverable)** — `cri3_orbmag_convergence.png`:
+- **Antiparallel to spin, m_z ≈ −0.078 μ_B/cell** (6×6, 4000-band SOS), consistent
+  with Hund's 3rd rule (Cr³⁺ 3d³ < ½) and experiment (−0.067). Sign is robust
+  (V_scf-free SOS).
+- **Band count is the convergence bottleneck**: the SOS m_z(N) is +0.026 at 180
+  bands, crosses zero, and grows to −0.078 by 4000 bands (slow tail).
+- **k-grid is fast/flat**: +0.026/+0.023/+0.024 μ_B at 6×6/8×8/10×10 (N=180).
+
+**Scope reminder:** B_xc affects only rebuilt-V_scf paths on magnetic systems
+(Sternheimer / standalone-H, and rebuilt-V_scf GW screening on bispinor-CrI₃);
+the core `gw.gw_jax` driver (uses WFN ε/ψ directly) and non-magnetic systems are
+unaffected.

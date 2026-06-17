@@ -1,5 +1,156 @@
 # Changelog
 
+## 2026-06-17: B_xc implemented + CrI3 orbital-mag converged; residual audit exhaustive [B]
+
+Noncollinear **B_xc (xc magnetic field)** now implemented in LORRAX's standalone
+V_scf/H reconstruction (branch `agent/bxc-vscf-magnetic`, commits eba8609+c5ec2f0):
+spin-polarized PBE (`psp/xc.py` `compute_V_xc_spin`, verified term-by-term vs QE),
+`build_magnetization_from_wfn` + signed-magnetization (segni) spin split
+(`scf_potential.py`), and `(B·σ)ψ` in `apply_H_k`/`apply_H_k_from_G`/`build_matrix_k`
+with `HamiltonianK.B_vec` (`dft_operators.py`). Non-magnetic path bit-identical.
+CrI3 ⟨v|H|v⟩−ε: **1.4 eV → ~19 meV** (deep Cr-3s 2 meV); MoS2/Si stay 0.2 meV.
+
+**Residual audit:** every H component checked against QE and matches — density
+(0.03%), spin-PBE functional, V_NL SOC D-matrix (VKB deeq_nc, exact), V_loc incl.
+2D cutoff (pp.x V_bare, ≤7 meV projected), 2D Coulomb (MoS2 control, same
+`assume_isolated='2D'`), spinor frame (native-wfc, self-consistent/frame-invariant),
+E_nk (pw2bgw preserves exactly). The remaining ~19 meV is confined to the m≠0-only
+finite-ζ spin V_xc on the Cr semicore (vanishes at ζ=0, not directly QE-diffable
+since pw2bgw refuses VXC for nspin=4); does not move the orbital moment.
+
+**Orbital moment of monolayer CrI3 (FM): antiparallel, m_z ≈ −0.078 μ_B/cell**
+(6×6, 4000-band SOS) — Hund's 3rd rule (Cr³⁺ 3d³<½), exp −0.067. Convergence:
+band count is the bottleneck (slow SOS tail crosses zero → −0.078; +0.026 at 180 b);
+k-grid flat (+0.026/0.023/0.024 at 6×6/8×8/10×10). Plot
+`reports/B_orbital_magnetization_cri3_2026-06-16/cri3_orbmag_convergence.png`.
+Orbital-mag-resolved Γ-M-K-Γ bandstructure: in progress (workflow).
+
+## 2026-06-17: VI3 monolayer FM band gap OPENED — occupation-matrix bistability, not U/k/cutoff [D]
+
+Resolved why noncollinear PBE+SOC+U VI3 monolayer came out METALLIC (see prior entry) despite being
+a known FM semiconductor. A research workflow (3 web-research agents -> synthesis; cites Yang PRB101
+100402, Sandratskii&Carva PRB103 214451, Hovancik NanoLett 2023) + experiment confirmed: **DFT+U
+occupation-matrix BISTABILITY**. Plain +U self-consistently lands in the metallic equally-occupied-t2g
+basin; raising U/ecut/k-points does NOT escape it. **FIX (run `runs/VI3/03_gap_recipe_80Ry_6x6_2026-06-16/`):**
+seed the V-3d occupation to the d2 insulating pattern via `starting_ns_eigenvalue` (2 occ/3 empty,
+majority spinor) + `Hubbard_occ=2.0` + PIN it the whole SCF (`mixing_fixed_ns=250` — both plain and
+local-TF sloshed badly on release: a single static SCF ran 188 electronic iters without converging) +
+U=5.0 (ortho-atomic Dudarev). **RESULT: FM INSULATOR, gap = +0.106 eV** (HOMO -5.466 / LUMO -5.360),
+converged 15 iter, m_z = 2 uB/V (d2 S=1), clean d2 occ 0.989/0.991. Trail: no-seed -0.17 eV metal ->
+U4+seed -0.022 eV (touching) -> U5+seed +0.106 eV insulator. CAVEAT: 0.11 eV < lit ~0.5 eV; Dudarev-U
+slope ~0.13 eV/eV-U (reaching 0.5 would need unphysical U~8). Lit 0.5 eV needs Hund's J (Liechtenstein
+U=4/J=0.9) splitting the SOC e' doublet; QE noncollinear kind=1+J support is AMBIGUOUS (source shows
+only kind=0/kind=2 with noncolin) -- untested. Also a pinned-ns (constrained) gap = upper bound.
+Reference clone: /pscratch/sd/j/jackm/qe_cri3/scf.in.
+
+## 2026-06-17: Bispinor transverse-centroid ψ restart — Σ^B works on restart [C]
+
+`sources/lorrax_C` @ `4523686` (branch `agent/bispinor-ibz-lorentz-unfold`). Clean mirror of the
+existing charge restart for the σ^B side. Before this, a bispinor restart left `wfns_transverse=None`
+(hard-coded "not-yet-supported") so Σ^B couldn't run on restart — forcing a full ζ re-fit (the
+expensive transverse fit). The charge V_q/ψ and the bispinor V_q tiles already round-tripped (latter
+via the deterministic `v_q_bispinor.h5` path); the only missing piece was the transverse-centroid ψ.
+Fix: write `wfns_transverse.psi_yr` as a `psi_full_y_transverse` dataset alongside the charge
+`psi_full_y`, read it back with the same `y3_psi_Y`/`x1_psi_X` sharding, and rebuild the bundle on
+restart via `build_wavefunction_bundle`. The transverse-`Meta` sizing is factored into
+`_transverse_meta(cfg, meta)` so the ζ-fit and restart paths size the bundle identically; old restart
+files (no transverse dataset) degrade loudly (warn + skip Σ^B). **Round-trip (CrI3 6×6 30Ry bispinor
+x_only, 300/102 cent, 4 GPU):** restart SKIPS the ζ-fit (25→0 fit markers, 898→69 log lines) and
+reproduces all 9 Σ^B tiles **bit-identically** (max|diff| 0.0 eV). 19 transverse/helper/sigma_x
+bispinor pytest pass. Run dir `runs/CrI3/C_restart_test_2026-06-17/`. Files: `tagged_arrays.py`
+(+23), `gw_init.py` (+net 40). Not pushed.
+
+## 2026-06-16: PROD magnetic bispinor GW — FM CrI3, Milestone-B screened-W no-NaN; screened-IBZ unfold bug found [C]
+
+First production-scale bispinor GW on a *genuinely magnetic* (FM) CrI3 monolayer (6×6, 30 Ry, SOC;
+mag 6.01 μB/cell ‖z; indirect gap **1.504 eV**), `sources/lorrax_C` @ `9128728` (transverse-CCT
+covariance fix), 16×A100-80GB, 4×4 mesh. Run dir `runs/CrI3/C_FM_prod_bispinor_2026-06-16/` (641
+charge + 200 current orbit centroids seed 42; nval=8/ncond=8/nband=180; `cusolvermp_lu=off`,
+`LORRAX_RCOND_INDEF=1e-5`). **(1) Transverse Σ^B on REAL magnetism is substantial + covariant**:
+diagonal xx=−6.80, yy=−6.67, zz=−6.44 eV, in-plane anisotropy **1.88%** (≈isotropic), xy=yx=−0.143
+(**no sign flip**) — the fix's signature, NOT the 23%-anisotropic/sign-flipped pre-fix pattern.
+**(2) Milestone-B screened-W runs without NaN** on the gapped FM system: minimax R=71.4, fit_err
+2.9e-6, 0 NaN; δ−Vχ charge inversion completed (chi0_W 4.07s); sigCOH **nonzero** (~−9.7..−10.4 eV;
+0 in x_only). DFT gap re-verified 1.5042 eV. **CRITICAL caveat:** the FM base WFN was NSCF'd
+`nosym=.true.` (it's the orbital-mag SOS WFN) → **ntran=1 / nrk=36**, so the IBZ cascade is a NO-OP
+(q-IBZ 36/36, disk shrink 1.0×). IBZ (run1) and full-BZ-direct (run2) are **bit-identical**; the
+C3-orbit covariance gate is **DEGENERATE** (orbits are singletons → gauge S(q) spread 0.0, IBZ-vs-
+fullBZ 0.0 *trivially*, not a tested pass). The covariance fix IS exercised (per-q indef solve), but
+the *symmetry unfold* can't be tested on this WFN — needs a **symmetric** FM WFN (ntran>1). **(3)
+REAL BUG:** the *screened* bispinor IBZ→full-BZ unfold (`unfold_bispinor_tiles` →
+`unfold_v_q_bispinor_lorentz`, symmetry_maps.py:697, from gw_jax.py:343) crashes with a JAX
+sharding-spec mismatch — TT tiles `complex128[3,3,36,208,208]` arrive replicated `PartitionSpec()`
+but the Lorentz-mix pjit wants `(None,None,None,'x','y')`. Only on `_use_ibz_super AND do_screened`
+(previously unexercised). NOT NaN/conditioning — pure plumbing. Bypassed with `LORRAX_FORCE_FULL_BZ=1`
+(run4, the complete physics for ntran=1). Peak 58.18 GB/dev → **requires 80 GB nodes** (40 GB OOMs).
+Infra: backgrounded `salloc --constraint=gpu&hbm80g -q interactive` revoked twice with "Connection
+timed out" before nodes booted; fixed with `SALLOC_WAIT_ALL_NODES=1` + `SLURM_MSG_TIMEOUT=120`
+(logged in KNOWN_SANDBOX_ERRORS.md). No source edited.
+
+## 2026-06-16: VI3 monolayer noncollinear PBE+SOC+U=3.5 SCF — set up & converged [D]
+
+New system. VI3 is isostructural with CrI3 (honeycomb V3+ d2 S=1, edge-sharing VI6 octahedra,
+out-of-plane Ising FM). Built `runs/VI3/00_monolayer_pbe_soc_u_2026-06-16/` by adapting the proven
+CrI3 FM monolayer input (`B_orbmag_FM_6x6_30Ry`): swap Cr->V (V.upf, assets/.../standard, FR-ONCVPSP
+PBE z_val 13), a=6.84 A (exp. bulk R-3) with CrI3-isostructural internal coords (NOT relaxed),
+c=18 A, ecutwfc=50, 3x3x1, noncolin+lspinorb, starting_magnetization +z, assume_isolated='2D',
+`HUBBARD ortho-atomic / U V-3d 3.5`. **SCF converged 43 iter / 64s on 4x A100** (-npools 4):
+E=-450.2721 Ry; net m_z=4.40 uB/cell, |m|=6.91; per-V m_z=2.80 uB (these are SPIN-only; pw.x
+magnetization excludes the orbital moment L -- use psp/orbital_magnetization.py for L);
+V-3d Tr[ns]=3.76. **CAVEAT:** highest-occ (-5.79 eV) sits ABOVE
+lowest-unocc (-5.87 eV) -> near-metallic at this coarse/unrelaxed/50Ry level (lit. ~0.3-0.5 eV FM
+semiconductor). Next: relax internal coords (VI3 V-I ~2.80 A vs CrI3 ~2.73), converge ecut(I wants
+>=60-80)/k-grid, recheck gap (U+SOC has quenched-vs-large-orbital solutions; may need
+starting_ns_eigenvalue). Report: `reports/vi3_monolayer_setup_2026-06-16/report.md`.
+Infra notes: V.upf has the 3D PP_PSWFC needed for Hubbard; ortho-atomic is valid for noncollinear
+k-point runs (only gamma-only force/stress & pseudo/wf/norm-atomic k-projectors are blocked in QE
+src); the GPU `espresso/7.5-libxc-7.0.0-gpu` module only applies (PrgEnv-gnu->nvidia swap) under
+`bash -lc` in the non-interactive agent shell.
+
+## 2026-06-16: bispinor transverse Σ^B C3-covariance — FIXED at the indefinite-CCT solve [C]
+
+Resolves the transverse Breit V_q C3-covariance residual from the sweep below. **The R⊗R IBZ
+unfold was never the bug** — proven by a gauge-invariant test `S(q)=Σ_ij‖V^{ij}_TT(q)‖²_F`
+(invariant under the per-q ζ̃ basis unitary AND the channel rotation R): IBZ-unfold tiles are
+S-orbit-constant to 1e-7, and the loaded ψ / transverse current / γ̃ algebra are covariant to
+machine precision. **Root cause: the per-q transverse-CCT solve** (`_ridge_indef_solve`,
+`common/isdf_fitting.py`). The transverse CCT is Hermitian-INDEFINITE; its TRS-paired in-plane
+near-null current modes (|λ|~1e-7·σ_max, cond≈3e7) sit far above the old fixed ridge
+(LU_RIDGE=1e-12·tr/n), so LU inverted them as 1/λ and amplified sub-covariance-floor noise →
+q-inconsistent in-plane ζ̃ → non-covariant tiles. **A +ridge can't regularize an indefinite matrix**
+(a larger ε shifts a small −λ through zero → Σ^B_yy blew up to −912 eV at ε=1e-4). **Fix
+(`9128728`):** relative-|λ| truncated-eigendecomposition pseudoinverse — drop
+`|λ|<RCOND_INDEF·|λ|max` (default 1e-5, env `LORRAX_RCOND_INDEF`); correct for indefinite,
+covariance-preserving (eigvecs at Sq are sym-images of those at q). Transverse `auto` now routes to
+this in-tree path; the cuSolverMp getrf+getrs branch keeps the indefinite-incompatible +ridge →
+opt-in only until ported to the PSD `(LᴴL+δ²I)` Cholesky-Tikhonov form (transverse is ~3× smaller
+than charge so per-q eigh is cheap; charge keeps cuSolverMp Cholesky). **Validation (CrI3 6×6 30Ry,
+300/102 cent, x_only): IBZ-vs-fullBZ Σ^B in-plane gap 23%→~3%; xy sign-flip GONE; both isotropic;
+z exact; gauge-inv S(q) in-plane orbit-spread 6–18%→0.3–1.5%. eigh==exact-LU to 5e-15; 21 bispinor
+pytest pass.** Residual ~3% = the CCT's ~1e-4 covariance floor (transverse signal overlaps the
+near-null modes; needs better ψ-sampling, not a solve fix; `rcond=1e-4` over-truncates). Runs
+`runs/CrI3/C_cri3_{fix_validate,ibz_fix}_2026-06-16`; reports `reports/bispinor_tt_conditioning_2026-06-16/`.
+Pre-existing: `tests/test_w_bispinor_supermatrix.py` fails collection (`gw.w_bispinor` import,
+unrelated to this fix). Knob: `RCOND_INDEF` trades covariance vs magnitude.
+
+## 2026-06-16: bispinor transverse V_q — CLEAN C3-covariance sweep confirms a REAL residual [C]
+
+Redid the muddied transverse-centroid convergence sweep of the bispinor in-plane (x,y) Breit V_q
+C3-covariance violation with **rigorously identical methodology** (the prior 102/206/308/410 sweep
+was contaminated — its 410 leg needed a per-run `memory_per_device_gb` 36→26 tweak). All counts:
+kmeans `LORRAX_NGPU=1 --orbit --density-mode current --seed 42` oversample 1.5; gw full-BZ-direct
+(`LORRAX_FORCE_FULL_BZ=1`) x_only, 4×A100-40GB, **budget 36 GB**, charge fixed at the 300 set.
+Every run verified identical (Devices 4, full BZ 36 q, peak 34.92 GB — set by the fixed charge FFT,
+N-transverse-independent). New runs `runs/CrI3/C_cri3_sweep_t{150,210,264,318}_2026-06-16/`
+(orbit-closed to 152/212/266/320). **Verdict: the in-plane covariance violation does NOT shrink
+toward 0** — it is erratic in a 0.07–0.33 band (102→0.186, 152→0.072, 212→0.332, 266→0.255,
+320→0.086), no convergence/undersampling signature; charge-tr & z-z exact (~1e-8) throughout.
+Meanwhile median|TT_22| inflates monotonically ~300× (8.9e2→2.65e5). This **reproduces the prior
+sweep cleanly** — the inflation/non-covariance is a **real transverse-ζ̃ conditioning residual**
+(indefinite CCT), not basis undersampling. The domain-expert's "well-conditioned, shrinks with
+centroids" expectation is not borne out. No source edited (diagnosis only). Report appended:
+`reports/bispinor_tt_conditioning_2026-06-16/report.md` ("CLEAN RE-SWEEP" section).
+
 ## 2026-06-16: orbital-mag — ROOT CAUSE of CrI₃ H-reconstruction bug: spin-blind V_xc [B]
 
 Pinned the CrI₃-specific `⟨v|H|v⟩−ε_v` ≈ 1.4 eV residual (vs MoS₂ 0.2 meV) that was
