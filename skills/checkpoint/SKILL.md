@@ -19,12 +19,25 @@ requirements — you must be on an `agent/<initiative>` branch before reaching t
 
 ### 1. Run the test suite (if source was modified)
 
+Run the full suite on a GPU (never the login node):
+
 ```bash
-cd /home/jackm/projects/lorrax && uv run python -m pytest -q
+cd sources/lorrax_<X> && LORRAX_NGPU=1 lxrun python3 -m pytest -q tests
 ```
 
-If tests fail, fix them before proceeding. If you cannot fix them, note the failure
-in the report and CHANGELOG and do NOT commit broken code.
+**Golden gates — these MUST pass.** A checkpoint is not valid unless all three are green:
+
+- `tests/test_gw_jax_regression.py::test_gw_jax_matches_reference[cohsex]`
+- `tests/test_gw_jax_regression.py::test_gw_jax_matches_reference[gnppm]`
+- `tests/test_gw_jax_regression.py::test_ibz_full_bz_equivalence`
+
+A clean run reports **0 failed**. Four tests are expected to **skip**, not fail —
+`tests/active/test_reshard_all_to_all.py` (one) and `tests/test_aot_memory.py`
+(three GPU cuFFT tests) are conditionally skipped on the Shifter container's JAX
+0.5.3 (pyproject pins ~0.9); their skipif conditions auto-clear once the env
+matches, so they still catch regressions. Any other failure — or a skip of a
+golden gate — is real: fix it before proceeding, or note it in the report and
+CHANGELOG and do NOT commit broken code.
 
 ### 2. Commit to the feature branch (if source was modified)
 
