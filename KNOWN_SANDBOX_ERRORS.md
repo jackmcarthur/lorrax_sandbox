@@ -28,6 +28,33 @@ incorrect sandbox scaffolding is the human's job.
 
 ## Issues
 
+### 2026-06-17: pw2bgw on a DFT+U calculation aborts on the `.hub1` Hubbard-projector write
+- **Where**: GW pipeline for VI3/CrI3 with `HUBBARD`/`lda_plus_u=T` in the NSCF (`runs/{VI3,CrI3}/04_gw_6x6_600b_2026-06-17`). The existing CrI3 GW runs were all plain PBE, so this DFT+U pw2bgw path was never exercised.
+- **What happened**: `pw2bgw.x` (GPU build, `espresso/7.5-libxc-7.0.0-gpu`) calls `orthoUwfc()` unconditionally when `lda_plus_u=T` (PP/src/pw2bgw.f90:458), which `save_buffer`s the Hubbard wfcs to `./<prefix>.hub1` (PW/src/orthoatwfc.f90:113, `IF nks>1`). The davcio write fails: `Error in routine davcio (13): error writing file "./VI3.hub1"` → MPI_Abort. Reproduced with 1 task, 4 tasks (G-vector parallel: different MPI_Abort), kih_flag on/off, and after freeing 6 TB of quota — so it is **not** disk space and **not** the kih path. Quota was a red herring (15 PB free, 7 TB headroom).
+- **Expected**: pw2bgw should export the (already +U-gapped) wavefunctions/eigenvalues to WFN; the orthoUwfc/.hub1 step is only needed for `vhub_flag` Hubbard-potential matrix elements, which the LORRAX kih pipeline does not use.
+- **Workaround (works)**: strip the `<dftU>...</dftU>` blocks from the **disposable** `<prefix>.save/data-file-schema.xml` so pw2bgw reads `lda_plus_u=F` and skips orthoUwfc entirely: `sed -i '/<dftU/,/<\/dftU>/d' <prefix>.save/data-file-schema.xml`, then run pw2bgw with ONE task (`-n1`, `MPICH_GPU_SUPPORT_ENABLED=0`). The stored gapped wavefunctions + eigenvalues are untouched → WFN.h5 is correct. Verified: VI3 WFN (18 GB BIN) + WFN.h5 (41 GB) produced. Baked into the run_*_gw.sbatch backups.
+
+### 2026-06-17: `wfn2hdf.x` not on PATH from the `berkeleygw` module (Lmod prepend not applied)
+- **Where**: execute_workflow skill (`wfn2hdf.x BIN WFN WFN.h5`). `module load berkeleygw` is ambiguous (two versions: `4.0-gcc-12.3`, `4.0-nvhpc-23.9`); even loading the explicit version via `bash -lc`, `which wfn2hdf.x` stays empty (the modulefile's `prepend_path PATH` didn't take, same class of Lmod-in-non-login-context issue as the espresso entry below).
+- **Workaround**: call it by absolute path: `/global/common/software/nersc9/berkeleygw/zen3/gcc-12/mpich/berkeleygw/BerkeleyGW-4.0/bin/wfn2hdf.x BIN WFN WFN.h5`. Runs fine (runtime libs satisfied by the default env); ~91 s for VI3 600-band/36-kpt.
+
+### 2026-06-17: execute_workflow LORRAX module names are stale (`*_chunked` don't exist on main)
+- **Where**: `skills/execute_workflow/SKILL.md` LORRAX steps use `gw.kin_ion_io_chunked` and `psp.get_dipole_mtxels_chunked`.
+- **What happened**: neither module exists on `lorrax_D@main` (`ModuleNotFoundError`). Caught by a shifter import smoke-test before launching the queued jobs.
+- **Workaround**: correct names are `gw.kin_ion_io` and `psp.get_dipole_mtxels` (verified by import + by how the real runs invoke them). Skill should be updated.
+
+### 2026-06-16: `module load espresso` is a no-op in the agent's non-interactive Bash shell — needs `bash -lc`
+- **Where**: `skills/execute_workflow/SKILL.md` Perlmutter section ("Load modules once at session start: `module load espresso berkeleygw`"). Works in an interactive `salloc` shell; fails in the Claude Code Bash tool.
+- **What happened**: In the agent Bash tool, `module load espresso/7.5-libxc-7.0.0-gpu` only printed a `cray-libsci`/`cray-mpich` "reloaded" line and did **not** apply the modulefile's `depends_on("PrgEnv-nvidia")` swap or its `prepend_path("PATH", .../bin)` — `which pw.x` stayed empty and PrgEnv-gnu stayed loaded, even in a fresh shell with no lorrax modules. `module swap PrgEnv-gnu PrgEnv-nvidia` likewise didn't take. (The NERSC GPU espresso build is `depends_on` PrgEnv-nvidia + cray-fftw + cray-hdf5-parallel; the partial load left pw.x unreachable.)
+- **Expected**: `module load espresso/...` should put `pw.x` on PATH and swap PrgEnv, as it does interactively.
+- **Workaround**: Wrap the whole QE invocation in a login shell: `bash -lc 'module load espresso/7.5-libxc-7.0.0-gpu; export SLURM_JOBID=<jid>; OMP_NUM_THREADS=16 srun --jobid=$SLURM_JOBID --gres=gpu:4 --overlap -N1 -n4 -c16 pw.x -npools 4 -i scf.in > scf.out 2>&1'`. Verified: under `bash -lc` the PrgEnv-gnu→nvidia swap applies and `pw.x` resolves to `/global/common/software/nersc9/espresso/7.5-libxc-7.0.0-gpu/bin/pw.x`. (Also note the default `espresso` module is now **7.5** with libxc-7.0.0, not 7.4; HUBBARD-card + noncollinear DFT+U syntax is unchanged.)
+
+### 2026-06-16: backgrounded raw `salloc --constraint="gpu&hbm80g" -q interactive` revoked with "Connection timed out" before nodes boot
+- **Where**: The recommended raw-salloc recipe in the prod-bispinor task spec / `feedback_lxalloc_gpu_constraint_mixes_hbm` memory: `nohup salloc -N 4 --gpus=16 --constraint="gpu&hbm80g" -q interactive -t 02:00:00 -A m2651 -J lx-alloc-$USER bash -c "sleep 7200" &`.
+- **What happened**: Twice in a row (jobs 54615249, 54616243) the scheduler ASSIGNED the hbm80g nodes (`SchedNodeList=nid[008377,008380,008597,008600]`, `Features=gpu&a100&hbm80g`) but the backgrounded salloc died with `salloc: error: Unable to allocate resources: Connection timed out` and the allocation was immediately revoked. The 80 GB nodes are clearly available (resources granted); the failure is the salloc client↔controller connection timing out while the hbm80g nodes boot (slower boot than the default 40 GB nodes), aggravated by `nohup`/background detaching the salloc client.
+- **Expected**: salloc holds the allocation once nodes are granted.
+- **Workaround**: Add `SALLOC_WAIT_ALL_NODES=1` and increase the client message timeout, or (more robust under `nohup`) submit a real `sbatch` job that holds the nodes + sleeps, then `lxattach` to it. Retrying the raw salloc also sometimes succeeds (transient). Documented here pending human review; falling back to 40 GB `lxalloc` (`memory_per_device_gb=28`) is the spec's sanctioned fallback if 80 GB keeps timing out.
+
 ### 2026-06-16: `lxrun` GPU srun missing `--overlap` → step creation fails "Requested nodes are busy" on attached hbm80g allocations
 - **Where**: `modulefiles/lorrax_agent/1.0.lua`, the GPU-path `srun` line in the `lxrun` shell function (was lines ~265-273). The `lxshell` override (same file, ~277-300) already uses `--overlap` and documents exactly this footgun, but `lxrun` never got the same flag.
 - **What happened**: After `lxattach` to a running `lx-alloc-jackm` allocation (JID 54544991, the raw-salloc `--constraint=gpu&hbm80g` 80 GB type), `lxrun python3 -u -m psp.orbital_magnetization ...` — and even `lxrun hostname` — died immediately with `srun: error: Unable to create step for job 54544991: Requested nodes are busy`, despite `lxstatus` showing 4/4 nodes free and no competing steps on the job (only `.extern`). Without `--overlap`, the step request cannot coexist with the allocation's implicit/extern step, so SLURM reports the node busy (or hangs).
@@ -296,3 +323,67 @@ Two footguns when bringing up the `lorrax_agent` pool overlay (cost several wast
    ```
 The `execute_workflow` skill documents only raw `srun --jobid` and doesn't mention the overlay
 or these gotchas — consider adding a pointer there.
+
+## 2026-06-16: tests/test_w_bispinor_supermatrix.py fails collection (gw.w_bispinor import)
+`pytest tests/test_w_bispinor_supermatrix.py` errors at collection with
+`ModuleNotFoundError: No module named 'gw.w_bispinor'`, even though `src/gw/w_bispinor.py`
+exists (other `gw.*` imports in the same test dir resolve). Pre-existing on
+`agent/bispinor-ibz-lorentz-unfold` (reproduces with local edits stashed) — a test-env
+sys.path / packaging quirk, not a code regression. Other bispinor tests
+(test_v_q_transverse_unfold, test_v_q_bispinor_helpers, test_compute_V_q_bispinor_g_flat,
+test_sigma_x_bispinor) collect + pass fine. Workaround: run those explicitly, exclude
+test_w_bispinor_supermatrix until the import path is fixed.
+
+## 2026-06-17: bare `pytest` from lorrax_C/A/D silently tests lorrax_B (editable .pth) — ROOT CAUSE of the gw.w_bispinor mystery above
+
+The venv `.venv/lib/python3.12/site-packages/__editable__.lorrax-0.1.0.pth` pins the `lorrax`
+package (`common`, `gw`, `file_io`, …) to **`/global/u2/j/jackm/software/lorrax_B/src`**. So a bare
+`pytest` (or `python3 -c "import common"`) from ANY other checkout resolves modules from **lorrax_B**,
+not the session's checkout — `module load lorrax_C` does NOT set `PYTHONPATH` to lorrax_C/src
+(`PYTHONPATH` is just `/opt/nersc/pymon`). Two consequences:
+1. Edits to `lorrax_C/src/common/*`, `gw/*`, `file_io/*` are **invisible to bare pytest** — it tests
+   the unfixed lorrax_B copy. (Verified live: a regression test crashed against `lorrax_B/.../symmetry_maps.py:562`,
+   then passed once pinned to lorrax_C.) Production `gw.gw_jax` is unaffected — its launcher sets the
+   right src path (the prod screened-IBZ crash traceback was `sources/lorrax_C/.../symmetry_maps.py:562`).
+2. lorrax_C-only modules absent from lorrax_B (e.g. `gw.w_bispinor`) fail collection with
+   `ModuleNotFoundError` — this is the cause of the "test_w_bispinor_supermatrix.py fails collection"
+   entry above, NOT a packaging quirk.
+
+**Fix/workaround:** prepend the checkout's src before running pytest:
+`export PYTHONPATH=/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src:$PYTHONPATH`
+(PYTHONPATH wins over the site-packages .pth). Verify with
+`python3 -c "import common; print(common.__file__)"` → must show the lorrax_C path. The checkpoint
+skill's `uv run python -m pytest` does not pin this; checkpoints that reported "pytest passed" from a
+non-B checkout actually exercised lorrax_B.
+
+### 2026-07-01: Base `lorrax_{A..D}` modulefiles' FFI default dirs point to purged $SCRATCH paths
+- **Where**: `/global/homes/j/jackm/modulefiles/lorrax_D/0.1.0.lua` (and presumably A/B/C). Defaults `LORRAX_FFI_NVHPC_DIR=/pscratch/sd/j/jackm/lorrax_nvhpc`, `LORRAX_FFI_PHDF5_DIR=/pscratch/sd/j/jackm/lorrax_phdf5_cray/stage`, `LORRAX_FFI_SLATE_DIR=/pscratch/sd/j/jackm/lorrax_slate_cray/stage`.
+- **What happened**: those scratch paths no longer exist (purged; deps relocated to `$HOME/software` per home_migration_2026-06-24). `module load lorrax_D` bakes the dead paths into `LORRAX_SHIFTER` `--volume=` mounts, so `lxrun` would fail to mount /lorrax_nvhpc, /lorrax_phdf5, /lorrax_slate.
+- **Expected**: defaults should match the relocated `/global/homes/j/jackm/software/lorrax_*` dirs (execute_workflow SKILL.md already uses the home paths).
+- **Symptom if hit**: `lxrun` aborts *immediately* (exit 1), NOT a hang: `shifter_realpath: failed to lstat /var/udiMount/pscratch/.../lorrax_nvhpc` → `FAILED to find real path for volume "from"` → `FAILED to setup image`. (Confirmed 2026-07-02.)
+- **FIXED 2026-07-02** for `lorrax_D`: `0.1.0.lua` defaults now point to `/global/homes/j/jackm/software/lorrax_{nvhpc,phdf5_cray/stage,slate_cray/stage}` (verified: `module load lorrax_D` with no overrides mounts correctly and exposes cuSOLVERMp 0.7.2). **A/B/C still carry the dead $SCRATCH defaults** — apply the same three-line edit (lines ~79-81) or keep exporting the `LORRAX_FFI_*_DIR` overrides before `module load`.
+
+### 2026-07-02: cusolvermp_cholesky FFI deadlock on 2×2 mesh — NOT REPRODUCIBLE in the fixed env (resolved)
+- **Original report**: MoS2 3×3 COHSEX overlay (640 centroids) on 4 GPUs hung **18+ min at 0% GPU util** at `Computing L_q = chol(C_q) [path=cusolvermp_cholesky]` (`common/isdf_fitting.py:1104` → `ffi.cusolvermp.batched_distributed_cholesky`, distributed potrf). Hypothesised stale/mismatched `.so` after the 2026-06-24 `$HOME/software` FFI relocation.
+- **Re-investigation 2026-07-02 (env: `LORRAX_FFI_*_DIR=$HOME/software/...` before `module load lorrax_D`, salloc 4×A100, 2×2 mesh) — the deadlock did NOT reproduce anywhere:**
+  1. **Isolated FFI** `common.cusolvermp_batched_test --mesh 2x2 --dtype c128`: potrf+potrs collectives complete in ms. Banner: `[lorrax cusolverMp] library 0.7.2, NCCL 2.26.3, comm path: NCCL, grid: 2x2 (row-major)`. (Test then errors on a *harness* bug — `RuntimeError: Array has been deleted` because it `process_allgather`s `A` after `batched_distributed_cholesky` donated it; unrelated to the FFI.)
+  2. **Full pipeline**: made variant `runs/MoS2/00_mos2_3x3_cohsex/03_lorrax_cusolvermp_repro` (copy of `02_..._noavg` with `cusolvermp_charge = on`), ran on 4 GPUs (2×2). Completed **EXIT 0** through cusolvermp_cholesky → chi0/W → sigma (~5.5 min wall, all in W/sigma compile; cholesky itself ~0 s). QP energies match the native `off`/1-GPU run's `eqp0.dat` to **max|Δ|=1.3e-5** (reduction-order noise) — distributed potrf is *correct*, not just non-hanging.
+- **`ldd` (in-container) is clean**, no missing symbols. Note a benign **version mix**: `.so` RUNPATH is baked to `/lorrax_nvhpc/25.5_cuda12.9/.../lib64` (ships cuSOLVERMp **0.6.0** + CAL 0.4.4 + cublasMp 0.4.0 + nvshmem); `libcusolverMp.so.0` resolves to **0.7.2** only because the `LORRAX_SHIFTER` `LD_LIBRARY_PATH` lists the `0.7.2_cuda12.9` dir first (the 0.7.2 tree ships *only* cusolverMp, so cal/cublasmp/nvshmem fall through to 25.5 — harmless because 0.7.x uses the NCCL-comm grid path, not CAL).
+- **Latent fragility (mitigated, not a live bug)**: if the 0.7.2 dir ever drops off `LD_LIBRARY_PATH`, the loader falls through RUNPATH to cuSOLVERMp **0.6.0**, which uses the `comm path: CAL` shim and prints the 2D-grid correctness WARNING. Forcing 0.6.0 (prepend the 25.5 lib dir) was tested: it loads the CAL path but potrf still **completed** (did not deadlock) — so even 0.6.0 is not the hang. **Diagnostic**: the rank-0 banner must read `library 0.7.2 … comm path: NCCL`. If it says `0.6.0 … CAL`, the wrong lib won — fix `LD_LIBRARY_PATH`/`LORRAX_FFI_NVHPC_DIR`, don't disable cusolvermp.
+- **Most likely original cause**: a transient mid-migration FFI state (partially-populated `$HOME/software` dirs, or a dead-`$SCRATCH`-mount attempt — see purged-paths KSE above; note that failure now *errors immediately*, it doesn't hang), possibly compounded by NCCL falling back to **TCP Socket** transport (no `libibverbs` in the container → `Failed to open libibverbs.so` → `Using network Socket`) while cuSOLVERMp bootstraps a *second, independent* NCCL communicator alongside XLA's — a known class of occasionally-flaky Socket rendezvous. Not reproducible on demand.
+- **Recommendation**: `cusolvermp_charge = auto`/`on` is safe again on 2×2; the `off` workaround is no longer required. Env recipe (verified end-to-end): export `LORRAX_FFI_{NVHPC,SLATE,PHDF5}_DIR=$HOME/software/lorrax_*` **before** `module load lorrax_D` (or use the now-fixed lorrax_D default), confirm the `library 0.7.2 … NCCL` banner. If a hang ever recurs, capture a `py-spy dump`/SIGQUIT stack of the hung rank and check whether it is in `ncclCommInitRank` (bootstrap) vs `cusolverMpPotrf` (collective), and whether the banner printed.
+
+### 2026-07-02: compare SKILL `parse_sigma_freq_debug` column layout is STALE
+- **Where**: `skills/compare/SKILL.md` §2c parser and column doc for LORRAX `sigma_freq_debug.dat`.
+- **What the skill says**: 13 columns `k n Edft-Ef E_dft kin_ion sex_0 coh_0 x_bare sig_c(0) sig_c+(w) sig_c-(w) sig_c_invld(0) sig_c(Edft) [sig_c_head]`, with the key comparison quantity `sig_c(Edft)` at **col 12**.
+- **Actual format written by LORRAX 0.1.0 (verified 2026-07-02, fresh MoS2 3×3 GN-PPM run)**: 14 columns, tab-separated, different meaning:
+  `0:k  1:n  2:E_dft  3:Edft-Ef  4:kin_ion  5:V_H  6:x_bare  7:x_head  8:sig_c(Edft).Re  9:sig_c(Edft).Im  10:sig_c_head(Edft).Re  11:sig_c_head(Edft).Im  12:eqp0  13:eqp1`
+  Header line in-file: `# k n E_dft Edft-Ef kin_ion V_H x_bare x_head sig_c(Edft).Re sig_c(Edft).Im sig_c_head(Edft).Re sig_c_head(Edft).Im eqp0 eqp1`.
+- **Consequence of trusting the stale parser**: it reads **col 12 = eqp0** as if it were `sig_c(Edft)`, giving a nonsense BGW-vs-LORRAX Σc comparison (MAE ~8 eV, wrong sign/shape). The correct comparison quantity is now **col 8 = `sig_c(Edft).Re`** (real part) vs BGW `Corp` (SX-X+CH'). The head is a SEPARATE column (col 10), NOT folded into col 8, so decide explicitly whether to add it (for the fresh MoS2 run, no-head col-8 tracked BGW better: MAE 1.75 eV vs 3.19 eV with head).
+- **Fix**: update §2c parser to the 14-col layout above (`sigc_re=p[8]`, `sigc_im=p[9]`, `sigc_head_re=p[10]`, `eqp0=p[12]`), keyed on `len(p)>=14`. Working v2 parser used for the comparison lives at `reports/gnppm_gate_2026-07-02/` notes. Not yet edited into the skill (left for a source-owner pass since the skill is a shared doc).
+
+### 2026-07-03: `tools/profile_gw_xprof.py` has a stale `gw_isdf` import (broken)
+- **Where**: `sources/lorrax_D/tools/profile_gw_xprof.py:66` (also present in the other checkouts' copies).
+- **What**: the tool does `from gw_isdf import gw_jax`, but the package was renamed to `gw` (the CLI is `python -m gw.gw_jax`). Every invocation dies with `ModuleNotFoundError: No module named 'gw_isdf'`, so the XProf memory-viewer capture path (`profile_gw_xprof.py` → `analyze_xprof_memory.py`) is unusable as-is. `analyze_xprof_memory.py` additionally imports `xprof.convert.raw_to_tool_data`, which may not be installed in the container.
+- **Fix**: line 66 → `from gw import gw_jax` (**DONE 2026-07-03** in `lorrax_D`; the capture now runs and writes a valid `*.xplane.pb`).
+- **Second gap (open)**: `analyze_xprof_memory.py:17` imports `from xprof.convert.raw_to_tool_data import xspace_to_tool_data`, but **`xprof` is not installed** in the `nvcr.io/nvidia/jax:25.04` container → `ModuleNotFoundError: No module named 'xprof'`. The per-module memory-viewer summary is therefore unavailable in this env. Use the faithful whole-run peak via `LORRAX_MEM_DEBUG=1` under the BFC allocator (`XLA_PYTHON_CLIENT_ALLOCATOR=default`, unset `TF_GPU_ALLOCATOR`), which reports `peak_bytes_in_use` — that is what the memory-model validation in `reports/memory_model_refit_2026-07-03/` used.

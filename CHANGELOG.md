@@ -1,5 +1,108 @@
 # Changelog
 
+## 2026-07-03: ISDF memory model redesigned — one planner, live-validated [D]
+
+Rewrote `gw/gflat_memory_model.py` to the `MEMORY_MODEL_DESIGN.md` §1a form: **persistent(P)
+floor + max over five stage transients**, two-phase picker (rank floor `P_min` → dial `chunk_r`),
+q/k folded in at the actual `chunk_r`. **Deleted** `gw_init.compute_optimal_chunks` (the legacy
+384-line 5-moment band/r model + helpers) — there is now ONE planner call in
+`prepare_isdf_and_wavefunctions`, not two stacked ones; `fit_zeta` is a pure consumer. LOC:
+`gflat_memory_model` **922→374**, `gw_init` **1169→741** (net −976 planner lines). Resolved the six
+§5 divergences: **centroid term fixed to ÷√P single-axis** (was ÷p_xy — √P× under-count), ns²-aware
+util (0.90/0.85/0.78), stale `n_bc` dropped, sphere-idx dropped as negligible, FFT box XLA-queried,
+production cuSolverMp solve (no replicated-L). Added the `P_min` rank floor.
+
+**Live validation** (job 55447628, BFC `peak_bytes_in_use`, MoS2 charge ns=2 + bispinor ns=4,
+4/16 GPU × 3 budgets): predicted HWM tracks real BFC peak to **≤0.1%** wherever the algorithmic ÷P
+memory binds — e.g. bispinor 4-GPU/28 GB **21.84 vs 21.85**, bispinor 16-GPU/28 GB **21.84 vs 21.85**,
+all six 4-GPU cells 8.5–21.9 GB within 0.15%. The ns²-aware util (0.78 for ns=4) is the one
+calibration — it fixes a bispinor single-arena OOM (a 23 GB contiguous pair-density buffer). **Known
+gap**: at 16 GPU / 4 nodes there is a ~8 GB P-independent runtime floor (NCCL/cuFFT/CUDA context) that
+the shape-algebra model does not predict; it under-predicts only when algorithmic memory falls *below*
+that floor (low-occupancy = huge headroom, never OOMs) — reported, not fudged (design §6 puts NCCL out
+of scope). **5 e2e gates green** (gnppm reference re-frozen: new valid `chunk_r` shifts the
+chunk-order-sensitive Σc by ≤5.9e-5; sigX/VH bit-identical — see KNOWN_SANDBOX_ERRORS). Fixed the
+stale `gw_isdf` import in `tools/profile_gw_xprof.py`. Report + logs:
+`reports/memory_model_refit_2026-07-03/`. Branch `agent/memplanner-cleanup`.
+
+## 2026-07-03: First bispinor e2e regression gate [D]
+
+Closed the last gate gap. Added `tests/regression/bispinor_debug/` + a parametrized `bispinor` case to
+`tests/test_gw_jax_regression.py::_CASES` — the first e2e gate on the **bispinor path** (nspinor=2,
+screened-charge COHSEX Σ_SX+Σ_COH on W⁰⁰ plus bare Breit Σ^B; 4 ζ channels / 7 V_q tiles / transverse γ̃).
+System = MoS2 3×3, the hand-validated `reports/bispinor_screened_a_validation_2026-06-16/` config.
+**Fixture WFN** = the source 82-band WFN truncated to **34 bands** (52.6 MB, comparable to the 46 MB gnppm
+fixture; a buffer over the nband=32 window) — verified **BIT-IDENTICAL** to a full-82-band run on current
+code (bands above 32 never enter the COHSEX/ζ window; the ~0.08 meV vs the 2026-06-16 baseline was code
+drift, not truncation). **Runs on 1 GPU** (`LORRAX_NGPU=1`, `memory_per_device_gb=30`) — the standard pytest
+harness drives it, no multi-GPU marker needed. Σ^B folds into the **sigSX** column, so labels are the same
+`sigSX/sigCOH/sigTOT` as scalar COHSEX (no separate Σ^B columns); existing `_parse_eqp_rows` unchanged.
+IBZ closure fails on this non-orbit-closed centroid set so the run is full-BZ-direct; Σ_X/Σ^B is covariant,
+so the freeze is valid. Full suite: **243 passed, 24 skipped, 0 failed** (regression subset now 5 gates:
+cohsex, gnppm, si_cohsex_3d, ibz_full_bz_equivalence, bispinor). Committed + pushed to
+`agent/memplanner-cleanup` (`3fc93b4`). Note: WFN.h5 is 52.6 MB → GitHub soft-warns (>50 MB) but accepts.
+
+## 2026-07-02: GN-PPM regression-gate seed on a FRESH full WFN (MoS2 3×3) — clean run [D]
+
+New run `runs/MoS2/01_mos2_3x3_gnppm_gate_2026-07-02/`. Ran QE **fresh** (SCF 11 it → NSCF → pw2bgw →
+wfn2hdf) to a clean full `WFN.h5` (9 k, 82 bands, nspinor=2), plus a shifted `WFNq.h5`. **GN-PPM
+(`compute_mode=gn_ppm`) ran EXIT 0** on it in ~27 s (4 GPUs, cuSOLVERMp 0.7.2/NCCL/2×2). Key result:
+the `enk_full = wfns.enk[:, s.full]` / `build_G` einsum crash that the reduced `WFNsmall.h5` gate fixture
+triggers **did NOT recur** — confirming that crash is **fixture-specific** to the truncated WFNsmall, not a
+GN-PPM-path bug. No source change; no diagnostic print needed. Baseline artifacts for the gate:
+`00_lorrax_gnppm/{eqp0.dat,sigma_diag.dat,sigma_freq_debug.dat,sigma_mnk.h5}`. Also ran a BGW
+`frequency_dependence 3` reference (`01_bgw_gnppm/`, epsilon+sigma Job Done): LORRAX `Re sig_c(Edft)` tracks
+BGW `Corp` (SX-X+CH') at Γ to **MAE 1.75 eV** (mean +0.77, near-constant offset — same 2D head/convention
+family as the COHSEX study; shape+sign agree). Caveats (reproduced from the reference run, not regressions):
+deep FR-pseudo states carry huge imaginary Σc (GN "invalid modes" 1.09%), and conduction-band `eqp0` diverges
+from the `QSGW: 444 clipped (61.7%)` diagonal-SC clipping — only near-Fermi **real** Σc is the meaningful
+cross-code quantity. **Sandbox finding:** `skills/compare/SKILL.md` §2c `parse_sigma_freq_debug` is **stale** —
+`sigma_freq_debug.dat` is now 14 tab-cols with `sig_c(Edft).Re` at **col 8** (col 12 is `eqp0`); the old parser
+reads eqp0-as-Σc and yields a bogus ~8 eV MAE. Corrected layout logged in KNOWN_SANDBOX_ERRORS.md. Note:
+kmeans emits **642** centroids (orbit closure), so cohsex.in uses `centroids_frac_642.txt`.
+
+## 2026-07-02: GW refactor map + gate-0 repair + cusolvermp fix + MoS2 exact-agreement study [D]
+
+Three interlocked initiatives, all under `reports/gw_refactor_map_2026-07-01/`. **(1) GW refactor map:**
+agent fan-out over ~150 files → teleological catalog (`MAP.md`, `FEATURES.md`), 1049 adversarial verdicts
+(`DEAD_CODE.md`: 212 confirmed-dead, 185 refactor targets, 74 suspected bugs), full 128-flag surface (`FLAGS.md`),
+regression-gate coverage audit (`GATE_AUDIT.md`). Landed a **delete-pass** (5 verified-dead modules ~1600 L) +
+a **CONVENTIONS** section in AGENTS.md (sole sharded-FFT helper, k/q flat axes for NUFFT, io_callback host caches,
+one sym table, no parallel old/new) — branch `agent/gw-delete-pass`. **(2) gate-0:** the e2e regression gate was
+RED on main — fixed the `write_qp_wfn_h5` crash (IBZ/full-BZ Σ mismatch → skip-not-crash) + added an `Eo` column
+to sigma_diag for BGW band-alignment; branch `agent/gate-0-qpwfn`, unit suite 250-green. Remaining: re-freeze
+`eqp_ref.dat` (benign k-uniform ~3.3 meV W-drift from fc1602a). **(3) cusolvermp FFI "deadlock" RESOLVED:** the
+`lorrax_D` modulefile FFI defaults still pointed at purged `$SCRATCH` — repointed to `$HOME/software/lorrax_*`;
+cuSOLVERMp 0.7.2 potrf now completes on a 2×2 mesh (4-GPU ≡ 1-GPU to 1.3e-5). A/B/C modulefiles still need the
+3-line edit. **(4) MoS2 exact-agreement study:** built a BGW-noavg COHSEX reference (`cell_average_cutoff 1d-12`)
+and swept the q→0 head source — native (no overlay, s_tensor head) is 6-20× better than the BGW-vcoul/head overlay
+(**62 meV** vs 368 `epshead` vs 1278 explicit-`vhead`). The Si 0.12 meV overlay recipe does NOT transfer to 2D-slab
+(ε⁻¹[0,0]≈0.96). MoS2 2D sub-meV is a genuine research problem — residual is the static-CH partition + 2D q=0 head;
+lead for a future session: read `whead` directly from BGW `DEBUG HEAD TERMS`/`wcoul` instead of `vhead·ε⁻¹`.
+Bug ledger in `BUGS_FOUND.md` (14 issues); infra in KNOWN_SANDBOX_ERRORS.md. **Exact-agreement gate recommendation:**
+Si 4×4×4 0.12 meV pair (Option A, zero-GPU) for the sub-meV anchor; freeze MoS2 native run (05) as a ~62 meV 2D gate.
+**(5) Gate safety net completed + real GN-PPM bug fixed.** Re-froze the COHSEX gate reference (was silently RED
+from the benign fc1602a W-drift) → green. Then discovered GN-PPM crashed on 1 GPU (all prior "WFNsmall GN-PPM
+crashes" were actually `LORRAX_NGPU=1`): `build_G_tau` mask_A from `wfns.occ` carries a leading nspin axis a 1×1
+mesh doesn't squeeze → `phases` broadcasts to 3-D and build_G's 'kn' einsum fails. Fixed (reshape mask to enk.shape;
+no-op on 4-GPU). A subagent ran QE cleanly (SCF→NSCF→pw2bgw→wfn2hdf) to make a fresh full MoS2 3×3 WFN
+(`runs/MoS2/01_mos2_3x3_gnppm_gate_2026-07-02/`), which is what exposed it as 1-GPU-not-WFNsmall. Wired a
+parametrized GN-PPM regression gate (dynamic Σc, sigX/sigC/sigXC) alongside COHSEX — **both green** (`2 passed`,
+1 GPU). Branch `agent/gnppm-1gpu-mask-fix` stacks the full net (crash fix + Eo + COHSEX re-freeze + mask fix + GN-PPM
+gate); unit suite 250 passed. Also: cusolvermp fixed on 4 GPU (modulefile FFI paths repointed).
+**(6) Refactor step 2 (single-source):** cohsex.in parser ×2→1 (deleted the diverged `get_DFT_mtxels`
+duplicate, reconciled `sys_dim` 3→2 + `ecutrho`→WFN `ecutwfc`; 252 passed); stripped `gw/vcoul.py` 234→72 L
+(dead commented `get_V_qG` + 2 zero-caller fns). Found eqp0/eqp1/Z already single-sourced in `eqp_bgw`
+(stale map entry). Remaining step-2 items (`load_wfns`, zeta readers) are real migrations, deferred to
+step 3+. **(7) Memory-planner cleanup (step 3, C6):** a mapping workflow found THREE "memory models" — gflat
+(1007L, sole live closed-form planner) + `gw/aot_memory_model/` (3488L DOE/NNLS/chooser framework, DEAD-by-clobber:
+`plan_gflat_chunks` always overwrote its chunk picks) + `runtime/aot_memory.py` (519L live cuFFT-scratch query).
+Deleted the aot_memory_model package + `gw_init._apply_aot_chunk_model` + `gw_config` chooser knobs = **~8775 lines**
+(252 passed, both gates + planner units). Rewrote `docs/architecture/memory-model.md` 1010→817 (killed the dead
+'AOT Memory Model' section + the 'four choosers' code-vs-doc contradiction) and the gflat module docstring 76→42
+physics-first. Branch `agent/memplanner-cleanup`. Plan: `reports/memplanner_cleanup_2026-07-02/PLAN.md`. Deferred:
+Phase 2 gflat code/comment simplifications + Phase 3 V_q sizing consolidation (touch live code, need verify runs).
+
 ## 2026-06-17: VI3+CrI3 GW pipeline overnight — orbital-moment convergence delivered; σ_mnk blocked on head-OOM [D]
 
 Big multi-stage push for VI3 & CrI3 monolayers (6×6 NSCF 600b → GW GN-PPM σ_mnk(ω) −10:10:0.25, 120-band Σ,
@@ -2845,3 +2948,11 @@ What still looks worth improving:
 
 - For multi-GPU GWJAX on Perlmutter, use Shifter, not `uv run`.
 - *Keep one MPI rank per GPU. Do not ever run one mpi rank per node with 4 GPUs or so forth.*
+
+## 2026-07-01 — Regression-gate audit (lorrax_D, agent/docs-tighten == main e7b6c7d)
+- Full audit: `reports/gw_refactor_map_2026-07-01/GATE_AUDIT.md` (inventory, GPU run, coverage matrix, golden-gate recommendations).
+- Suite run on 1×A100 (pool `lx-alloc-jackm`): **5 failed / 250 passed / 20 skipped in 10:48**.
+- **The COHSEX e2e gate is RED on main**, twice over: (1) driver crashes in one-shot `write_qp_wfn_h5` (full-BZ U (9,30,30) vs wfn.nkpts=4; `debug.write_wfn_h5` default true) before the eqp compare; (2) with the writer disabled, sigSX/sigCOH drifted vs `eqp_ref.dat` (MAE 3.5 meV, max 12.5 meV sigTOT, all 270 rows > tol, VH exact) — plateau-shaped, W-side; candidates fc1602a/882ed4a. Needs bisect + either fix or reference re-freeze.
+- Other 4 failures are environment mismatch (container JAX 0.5.3 vs pyproject jax>=0.9: reshard `jax.jit` kwargs form; aot_memory libcufft probe ×3).
+- Coverage: only e2e value gate = static COHSEX / charge / 2D / single-GPU. GN-PPM, HL-PPM, real-axis Σ_C, bispinor Σ values, 3D, head-off, SC loop, multi-GPU driver: all ungated (unit layer strong on ζ-fit/V_q/unfolds). Recommended 7 golden gates with existing seeds under `runs/` — see report §4.
+- Sandbox: base lorrax_{A..D} modulefiles' `LORRAX_FFI_*` defaults point at purged $SCRATCH paths → logged in KNOWN_SANDBOX_ERRORS.md (workaround: env overrides to $HOME/software before module load).
