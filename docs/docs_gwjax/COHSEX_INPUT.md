@@ -106,10 +106,66 @@ If true, use 4-component Dirac bispinor wavefunctions with γ⁰ Coulomb vertex
 factors: Σ_{ab} = γ⁰_{aa} γ⁰_{bb} G_{ab} V, where γ⁰ = diag(1,1,−1,−1).
 If false, use 2-component Pauli spinors (standard for spin-orbit coupling).
 
-### `self_consistent` (bool, default: `false`)
-If true, iterate the diagonal self-energy to self-consistency:
-E_n^{(i+1)} = diag(H₀ + V_H) + Re Σ_xc(E_n^{(i)}).
-Not compatible with `use_ppm_sigma = true`.
+### `qp_solver` (str, default: `"auto"` → `"one_shot_dft"`)
+How QP energies are extracted from Σ — orthogonal to the Σ ansatz
+(`compute_mode`). Three states, each naming a standard method:
+
+- **`"one_shot_dft"`** (the default): textbook G0W0. Σ is built once from the
+  DFT inputs and *everything* is evaluated at E_DFT — the eqp0/eqp1 text
+  outputs (at-DFT Newton + Z-linearization, as always) AND the
+  QSGW-symmetrised Σ_xc whose eigh produces `E_qp_ry` /
+  `qp_wfn_rotations.h5` / `WFN_qp.h5`. No iteration of any kind.
+- **`"fixed_point"`**: one-shot Σ + diagonal on-shell solve
+  E = h0 + Re Σ(E) for the QSGW-build evaluation energies (eigenvalue-only;
+  Σ is never rebuilt). Dynamic modes (`gn_ppm`/`hl_ppm`) only — rejected at
+  config validation for static modes (no ω-grid to solve on).
+  `sigma_at_dft_extrapolate` is a sub-knob of this state.
+- **`"self_consistent"`**: full QSGW loop — Σ rebuilt each iteration from
+  rotated ψ + the previous iteration's E (ζ/V_q are *not* refit; χ₀→W is
+  re-solved every iteration). Works for all modes (COHSEX and GN-PPM
+  verified end-to-end). Loop knobs: the `sc_*` keys below.
+
+`"auto"` resolves: `self_consistent = true` → `"self_consistent"`, else
+`"one_shot_dft"`. Validation: `fixed_point`/`self_consistent` ×
+`sigma_omega_accumulation = kij_stream` is rejected (streamed Σ_c(ω) leaves
+no in-memory ω-tensor for the on-shell solve / QSGW rebuild).
+
+eqp0.dat / eqp1.dat keep the same formula in all three states; only the
+provenance of Σ changes under `self_consistent` (converged Σ, still
+evaluated at E_DFT).
+
+### `self_consistent` (bool, default: `false`) — DEPRECATED
+Deprecated alias (2026-07-08) for `qp_solver = self_consistent`; still
+honored via `qp_solver = auto` resolution. Set `qp_solver` instead.
+
+### `sc_max_iter` (int, default: `20`)
+Maximum self-consistency iterations (`qp_solver = self_consistent` only).
+The deprecated `LORRAX_SC_MAX_ITER` env var overrides it (a note is printed).
+
+### `sc_tol_ev` (float, default: `1e-4`)
+Convergence threshold on the RMS ΔE (eV) between consecutive iterations'
+QP eigenvalues. Env override: `LORRAX_SC_TOL_EV`.
+
+### `sc_accelerator` (str, default: `"rcrop"`)
+- **`"rcrop"`**: Anderson-style restart-CROP acceleration — required for QSGW
+  on dense band manifolds (the fixed-point Jacobian typically has a 2-cycle
+  direction). Makes TWO pipeline calls per accelerator iteration
+  (trial + residual).
+- **`"linear"`**: plain α-mixing with damping `sc_mixing` (diagnostic).
+
+Env override: `LORRAX_SC_ACCEL`.
+
+### `sc_history_depth` (int, default: `5`)
+rCROP history depth (m=5 is BGW's QSGW default). Env override:
+`LORRAX_SC_DEPTH`.
+
+### `sc_mixing` (float, default: `1.0`)
+Linear damping coefficient α (`sc_accelerator = linear` only). Env override:
+`LORRAX_SC_MIXING`.
+
+### `sc_dump_dir` (str, default: `""`)
+If set, dump the per-iteration QP-energy history to
+`<sc_dump_dir>/e_history_kn_ev.npy`. Env override: `LORRAX_SC_DUMP_DIR`.
 
 ---
 
@@ -199,13 +255,20 @@ in BGW's epsilon (which is 2.0 Ry = 27.2 eV by default).
 
 ### `ppm_fallback_omega` (float, default: `2.0` Ry)
 Fallback plasmon frequency for GN modes where the extraction gives unphysical
-(negative or imaginary) Ω. Used when `ppm_invalid_mode = "fixed_2ry"`.
+(negative or imaginary) Ω. The fitted pole is only used when
+`ppm_invalid_mode = "2ry"`, but the fit always bakes it in (`B = −½·W^c(0)·Ω`).
 
 ### `ppm_invalid_mode` (str, default: `"static_limit"`)
-Policy for invalid GN modes (where Ω² < 0 or the fit is unphysical):
-- **`"static_limit"`**: Exclude invalid modes from the dynamic sum. Add a static
-  correction: Σ_invalid = Σ_{occ}(G_occ, W^c_invalid(0)) − ½ Σ_{all}(I, W^c_invalid(0)).
-- **`"fixed_2ry"`**: Replace Ω with `ppm_fallback_omega` for invalid modes.
+Policy for invalid GN modes (Ω² < 0), = BGW `invalid_gpp_mode`
+(implemented 2026-07-08; validated vs BGW modes 0/2/3 on Si 4×4×4 —
+see `reports/bgw_invalid_mode_refs_2026-07-08/`):
+- **`"static_limit"`** (BGW mode 3 = BGW default): exclude invalid modes from
+  the dynamic pole sum and add the analytic ω-independent static-COHSEX term
+  Σ_invalid = Σ_occ(G_occ, W^c_inv(0)) − ½ Σ_RI(I, W^c_inv(0)).
+- **`"zero"`** (BGW mode 0): drop invalid modes entirely.
+- **`"2ry"`** (BGW mode 2): keep the fit's `ppm_fallback_omega` pole.
+- `"infinity"` is accepted as an alias of `"static_limit"`; `"imaginary"`
+  (BGW mode 1) is unsupported.
 
 ### `fermi_reference` (str, default: `"midgap"`)
 Reference energy for the ω grid and the Σ± branch splitting:
@@ -273,13 +336,19 @@ How to accumulate Σ_c(k,i,j,ω) over time nodes:
 - **`"kij_stream"`**: Stream ω-chunks to `sigma_kij_h5_file` on disk. For very
   large grids where in-memory accumulation exceeds GPU memory.
 
-### `sigma_at_dft_energies` (bool, default: `false`)
-If true, interpolate Σ^c(ω) at ω_rel = E_DFT − E_F for each band, producing
-`sigC_EDFT` in the eqp0 output. This is the quantity compared to BGW's `Cor`.
+### `sigma_at_dft_energies` (bool, default: `false`) — DEPRECATED
+Deprecated alias (2026-07-08) for `qp_solver = one_shot_dft` — which is now
+the default. (The at-DFT interpolation of Σ^c(ω), producing the `sigC`
+column compared to BGW's `Cor`, runs unconditionally in every dynamic mode;
+this key's intended meaning — authoritative at-DFT QP evaluation for the
+eigh-family outputs too — is exactly `qp_solver = one_shot_dft`.) Remove it
+from input files; set `qp_solver` instead.
 
 ### `sigma_at_dft_extrapolate` (bool, default: `false`)
-If true, extrapolate Σ^c(ω) outside the grid [ω_min, ω_max] for bands whose
-E_DFT falls outside. If false, such bands get NaN.
+Sub-knob of `qp_solver = fixed_point` (ignored in the other two states).
+If true, bands whose E_DFT falls outside the ω-grid [ω_min, ω_max] get a
+scissor extrapolation (fitted on in-grid bands) instead of the on-shell
+solve; if false, such bands fall back to E_DFT.
 
 ### `sigma_debug_split_contrib` (bool, default: `false`)
 If true, store Σ⁺ (valence/occupied branch) and Σ⁻ (conduction/unoccupied branch)

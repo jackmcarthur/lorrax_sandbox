@@ -1,5 +1,108 @@
 # Changelog
 
+## 2026-07-08: ppm_invalid_mode=static_limit implemented + made DEFAULT (BGW mode 3) — WS6 last physics item [D, source]
+
+On lorrax_D `agent/memplanner-cleanup` (fdf89c2 + follow-ups). Invalid PPM poles (Ω²<0) are now,
+by DEFAULT, excluded from the τ-pole sum with an analytic ω-independent **static-COHSEX term**
+added for exactly those modes: `Σ_static = sigma_sx(G_occ, Wc0·inv_mask) + sigma_coh(Wc0·inv_mask)`
+(cohsex kernels reused; `Wc0_q` retained on PPMBuildResult, replacing the dead W0_q/Wiwp_q; term is
+pad-neutral and lands identically on kij/kij_stream). **Physics note:** BGW mode 3 keeps BOTH the
+static SEX (occ) and CH terms (`mtxel_cor.f90` ω̃→∞: ssx→−I_ε, sch→−½I_ε) — the research note's
+"SX pole → 0" was wrong; the implemented term is the exact Ω→∞ limit of the pole sum (occ→−½Wc0,
+unocc→+½Wc0). **Validated three-way on Si 4×4×4** (same-code rerun triple 03b_zero/03b_2ry/03_static
+vs BGW m0/m2/m3; `reports/bgw_invalid_mode_refs_2026-07-08/lorrax_mode_table3.dat`): PASS — deep
+valence up (+1.5 meV vs BGW +17), window-top down (−0.5 vs −5.2), VBM smallest; mean|Δ| ~12× below
+BGW (≈ population ratio 1.13%/8.63%); Δ(static−2ry)=0.21 ≪ Δ(static−zero)=0.71 meV (BGW 3.05≪8.56);
+statics bit-identical. Per-q n_invalid diagnostic added (Si: strong q-clustering 166–11134/q).
+**Default flip re-freeze:** gnppm golden + fixed-point rotations refs re-frozen (MoS2 3×3 fixture,
+0.47% invalid: ΔΣc mean|Δ|≈40 meV, max 0.32 eV — 2D Wc0 scale, band-1/deep-valence dominated;
+Σ_X/V_H bit-identical; 2ry−zero cross-check same order). COHSEX/si_cohsex_3d/bispinor/IBZ gates
+untouched (static path — verified green). Docs/templates: COHSEX_INPUT.md, templates/cohsex.in,
+SIGMA_PPM_MAP §2C marked done, GN_PPM guide §3.4/§8.
+
+## 2026-07-08: qp_solver toggle — G0W0 (one_shot_dft) default / fixed_point / self_consistent + SCConfig + qsgw jit hoist [D, source]
+
+Implemented `reports/gw_refactor_map_2026-07-01/G0W0_SC_TOGGLE_DESIGN.md` on lorrax_D
+`agent/memplanner-cleanup` (base 620b501). **New config axis `qp_solver`** (how QP energies
+are extracted from Σ, orthogonal to `compute_mode`): `one_shot_dft` (DEFAULT — textbook G0W0,
+QSGW-build eigh evaluated at E_DFT, consistent with eqp0) | `fixed_point` (previous
+dynamic-mode behavior: diagonal on-shell solve + scissor; dynamic modes only) |
+`self_consistent` (QSGW loop). `auto` resolution absorbs the deprecated `self_consistent`
+bool AND the orphaned `sigma_at_dft_energies` (TIER-0★ A: its intended meaning IS the new
+default; both keys deprecation-warned, still honored). Validation errors for
+`fixed_point` × static and `fixed_point|self_consistent` × explicit `kij_stream` (was a
+silent static-eigh degradation). **`LORRAX_SC_*` envs promoted to `SCConfig`**
+(`sc_max_iter`/`sc_tol_ev`/`sc_accelerator`/`sc_history_depth`/`sc_mixing`/`sc_dump_dir`;
+envs remain deprecated overrides with a printed note — closes NEXT_TARGETS #11). **Default
+flip proven a pure re-labeling** on the GN-PPM fixture: sigma_diag/eqp0/eqp1 bit-identical
+(timestamp-only header diff); only the eigh family moves (max 1.215 eV, design §2a); new gate
+`test_gnppm_fixed_point_reproduces_frozen_qp_rotations` pins `fixed_point` to the pre-toggle
+frozen E_qp (ref .npy from HEAD 620b501). **qsgw jit hoist:** `_extract`/`_kernel`
+(qsgw_utils nested-scope closures) hoisted to module-scope mesh-keyed factory caches —
+SC-GN-PPM compiles/iter 91/8/**2** → 91/6/**0** (steady state now 0 compiles / 0 retraces,
+matching COHSEX); SC RMS trajectories bit-identical. Stale "only COHSEX is wired" comments
+fixed (SC-GN-PPM verified e2e). templates/cohsex.in + docs_gwjax/COHSEX_INPUT.md + skills
+updated to the new keys. Validation runs + before/after compile tables:
+`reports/gw_refactor_map_2026-07-01/g0w0_sc_toggle_impl/README.md`. Suite: full pass
+(golden gates bit-identical; +16 new tests: 15 config-unit + 1 fixed-point freeze).
+
+## 2026-07-08: Padding consolidation executed — PADDING_AUDIT items 1–7, net −553 lines [D, source]
+
+Executed the ranked consolidation from `reports/device_invariance_2026-07-08/PADDING_AUDIT.md`
+(new **AS-CONSOLIDATED** section has per-item verdicts) on lorrax_D `agent/memplanner-cleanup`,
+commits `6c850bd..620b501` (pushed). Every audit item re-verified live at HEAD before acting;
+full suite after EVERY commit; goldens bit-identical throughout. **Two latent bugs fixed:**
+(1) restart writers persisted the P-dependent PADDED μ extent (V_qmunu/G0_mu_nu/W0_qmunu/ψ-μ +
+init_W0 placeholder) — now clipped to logical via SlabIO `valid_shape` with re-pad-on-read via
+`padded_mu_extent`; a restart written at one P is now readable/bit-correct at another (new gate
+`tests/test_restart_pad_roundtrip.py`; bse_io's `lcm` divisor retired — ONE μ round-up convention);
+(2) the allgather zeta_q_G bypass wrote the padded gather into the logical dataset (crash under
+any μ pad) — deleted by unifying both backends on one SlabIO write path. **Consolidation:** pad
+modes now born DEAD (Ω=0) at the GN-PPM fit with a REQUIRED `n_mu_logical` (consumer-side
+`mu_logical_mask` arm + driver mask deleted; census structurally pad-safe); `Meta.*_jax`
+wrong-divisor fields deleted + `w_isdf` getattr fallback → hard `meta.n_rmu` read; the dead
+PadAxis shadow API + `tests/test_padding.py` deleted (−757; zero callers); ONE `round_up`
+spelling; ONE `solve_at_logical` wrapper for the slice-to-logical solve idiom (5 sites — the
+grep-able invariant for the ROOT_CAUSE defect class) + `pad_last_axis_to` for the triplicated
+NRHS pad; μ pad baked into the IBZ sym tables at construction with strict both-direction extent
+guards in `unfold_v_q`/`_unfold_g0_ibz_to_full` (closes the silent `promise_in_bounds` OOB).
+Suite 249→241 passed / 24→9 skipped (= exactly `test_padding.py`'s 24 tests removed + 1 roundtrip
+gate added). Known remaining: restart ψ/enk BAND axis still stores padded `b_id_4` (P-dependent
+iff `nband % world != 0`); Fix-3 robustness items unchanged.
+
+## 2026-07-08: Device-invariance μ-pad fixes — bispinor 4g↔16g eqp 2.535 eV → 1.45e-7 eV [D, source + runs]
+
+Implemented the ROOT_CAUSE fix plan (`reports/device_invariance_2026-07-08/ROOT_CAUSE.md`, now with
+an AS-FIXED section) on lorrax_D `agent/memplanner-cleanup`. **Root cause (proven): solves ran on the
+PADDED μ extent `round_up(n_rmu, world_size)`, so the pad extent — which changes with device count —
+deterministically changed the answer.** Commit series: (1) `LORRAX_EXTRA_MU_PAD` promoted to a
+permanent env-only test knob via `runtime/padding.py:padded_mu_extent` (single source of truth; the
+knob exposed and unified two V_q-side local pads that computed their own round-up — pre-fix shape
+crash); (2) transverse ζ_T LU + charge triangular back-solve + single-device dense Cholesky +
+per-q W-Dyson LU all μ-sliced to the LOGICAL extent with zero-filled pad rows, LU ridge on the
+logical trace/n, false "LU logical-block bit-identical" docstring corrected (cuSolverMp falls back
+to per-q LU when the logical extent isn't per-axis divisible); (3) PPM mode census / invalid count /
+masked-Ω window stats / unfulfilled fraction on LOGICAL modes only; (4) gates + `g0_mu` on-disk
+extent clipped to logical (was written padded — caught by the new Tier-2 gate).
+**Confirm run** (§6, `A_charge/padtest_4g_pad12`, knob-only): census inflation exactly
+pad-deterministic (720,620 = base + 464,640 pads + 0), Σ_C moves 5.14 eV at FIXED P — but the 16g
+minimax node change (15→13/14) and "+2 flipped modes" are NOT pad-driven (cross-P noise flipping
+near-threshold divergent-Ω modes). **Post-fix:** bispinor 4g↔16g max|Δeqp| **2.535 eV → 1.45e-7 eV**
+(Σ^B tile22 −117.914 → −0.152608 = 4g exactly); charge census now P-invariant; charge eqp spread
+unchanged (max 5.64 eV on-pole, 0.27 eV on the 26 |Im Σ_C|<100 eV bands) — carried by on-pole
+GN-PPM ill-posedness + the noise-driven node-count flip, both Fix-3-class robustness items, NOT pad
+defects (deliberately not forced). Both 4g postfix reruns BIT-IDENTICAL to pre-fix (no pad at P=4);
+full suite 247 passed / 0 failed. **Gates:** Tier-1 in-suite `tests/test_mu_pad_invariance.py`
+(fixed-P pad flip, 1 GPU: bispinor fully bit-identical incl. the catastrophic 672 extent; gnppm
+census/nodes/Σ_X exact + Σ_C ≤ 2e-4 eV — bit-identity unreachable for the dynamic chain: XLA
+fusion tiling gives 1–2 ULP on ζ/V per pad extent, amplified to 6.3e-5 eV through the near-singular
+PPM fit ratio); Tier-2 multi-GPU script `tests/multi_device/run_tier2.sh` (P=1 vs P=4) — first run
+PASSES both fixtures under measurement-calibrated tolerances: node counts + n_total exactly equal,
+ζ_C 2.8e-6, Σ_X 1e-6 eV, bispinor ζ_T 2e-7 (vs 0.9–5.5e2 pre-fix); Fix-3-gated residuals reported
+honestly (invalid split ±8 near-threshold flips; off-pole eqp 69 meV from discrete mode-flip
+add/drop under `ppm_invalid_mode='zero'`, provisional 0.1 eV gate; bispinor fixture ζ_C 0.25 frob =
+rank-deficient-CCT null space, physical Σ_SX 1.85e-4 eV / eqp 34 meV within provisional bounds).
+
 ## 2026-07-08: LORRAX ppm_invalid_mode zero-vs-2ry validated against the BGW references [D, runs+analysis only]
 
 Ran the two wired invalid-pole modes on the BGW-matched Si 4×4×4 window (new variants

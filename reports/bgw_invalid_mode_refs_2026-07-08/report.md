@@ -166,5 +166,25 @@ HL invalid poles hit ~3–4× harder than GN and shift every band by tens of meV
   **done 2026-07-08**, see `lorrax_zero_2ry_validation.md` (wiring PASS; invalid fraction 1.13%
   of ISDF pairs, non-vacuous; deltas 15–34× below BGW with edge-band sign agreement only —
   the BGW tables anchor sign/order at the window edges, not meV values)
-- [ ] LORRAX side: implement `static_limit`, validate against `01c_bgw_gn_mode3`
+- [x] LORRAX side: `static_limit` **implemented + validated + made DEFAULT 2026-07-08**
+  (lorrax_D agent/memplanner-cleanup, commit fdf89c2 + default-flip commit). Three-way
+  same-code rerun triple `03b_..._zero` / `03b_..._2ry` / `03_..._static` (the original 03
+  pair predates the qp_solver/pad refactors); table: `lorrax_mode_table3.dat`, script
+  `lorrax_mode_diff3.py`. **Verdict: PASS** per the edge-band protocol —
+  Δ(static−zero): deep valence **+1.52** meV (BGW m3−m0 **+17.2**, ✓ up), window top
+  **−0.49** (BGW **−5.19**, ✓ down), VBM manifold smallest mover; mean|Δ| 0.71 vs BGW
+  8.56 meV (~12× smaller, consistent with the 7.6× smaller invalid population);
+  internal hierarchy Δ(static−2ry)=0.21 ≪ Δ(static−zero)=0.71 meV (BGW 3.05 ≪ 8.56);
+  statics bit-identical (max|Δ x_bare|=0). Si-window Σ_static: max|diag| 1.7 meV.
+  **Implementation note**: BGW mode 3 keeps BOTH the static SEX (occupied) and CH terms
+  (`mtxel_cor.f90` ω̃→∞ gives `ssx→−I_ε`, `sch→−½·I_ε`; the earlier research-note line
+  "SX pole → 0" is wrong) — LORRAX adds
+  `Σ_static = sigma_sx(G_occ, Wc0·mask) + sigma_coh(Wc0·mask)` (cohsex kernels reused;
+  `Wc0_q` retained on `PPMBuildResult`), the exact Ω→∞ limit of the two-branch pole sum
+  (occ → −½Wc0 = B/Ω, unocc → +½Wc0). A CH-only term would flip the occupied channel —
+  ruled out by static−zero tracking 2ry−zero band-by-band.
+- [x] Per-q localization of LORRAX invalid poles (source item from
+  `lorrax_zero_2ry_validation.md`): per-q `n_invalid` print added; Si shows strong
+  q-clustering, counts 166–11134 per q (uniform 1.13% total) — unlike BGW's
+  q-uniform ~8.8%.
 - [ ] (optional) offline HL invalid count — needs a RHO reader + `wpeff` sum-rule replica
