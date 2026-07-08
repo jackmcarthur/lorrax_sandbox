@@ -140,20 +140,66 @@ def parse_ch_converge(path):
 
 Per-band diagonal sigma decomposition. Written when `sigma_freq_debug_output = true`.
 
-```
-k    n    Edft-Ef  E_dft  kin_ion  sex_0  coh_0  x_bare  sig_c(0)  sig_c+(w)  sig_c-(w)  sig_c_invld(0)  sig_c(Edft)  [sig_c_head]
-0    1      2        3      4       5      6       7        8          9          10           11              12            13
+**Current format (LORRAX ≥ 2026-06 refactor)**: named columns, self-describing.
+The file carries a provenance header (`#` lines) ending in a column-name line
+`# k n <colnames...>`; complex quantities are split into `.Re`/`.Im` sub-columns.
+Column set varies by mode — dynamic PPM runs emit
+`E_dft Edft-Ef kin_ion V_H x_bare [x_head] sig_c(Edft).Re sig_c(Edft).Im
+[sig_c_head(Edft).Re sig_c_head(Edft).Im] eqp0 eqp1`; static runs emit
+`sex_0/coh_0` in place of the `sig_c(Edft)` pair. Use the header-driven parser —
+never positional indices (the 2026-07-02 KNOWN_SANDBOX_ERRORS entry documents an
+8 eV-scale wrong-column comparison from trusting the old fixed layout).
+
+Key comparison quantity: **`sig_c(Edft).Re`** vs BGW `Cor'`. The head correction
+(`sig_c_head(Edft).Re`) is a SEPARATE column, not folded in — decide explicitly
+whether to add it. Band mapping: LORRAX `n` is 0-indexed; BGW is 1-indexed.
+Physical band = n + 1. Bands whose `Edft-Ef` falls outside
+`[sigma_omega_min_ev, sigma_omega_max_ev]` have `nan` in `sig_c(Edft)` unless
+`sigma_at_dft_extrapolate = true` — widen the grid when deep bands matter.
+
+```python
+def parse_sigma_freq_debug_v2(path):
+    """Header-driven parser for the current named-column format.
+
+    Returns (columns, data): data maps (k, n_physical) -> {colname: float},
+    n_physical = in-file n + 1, 'nan' kept as np.nan. Covers ALL k-points
+    (LORRAX evaluates the full-BZ grid; BGW only the irreducible wedge —
+    match k by crystal coords mod G, as in compare_bgw_gwjax.py).
+    """
+    cols = None
+    data = {}
+    for line in open(path):
+        s = line.strip()
+        if s.startswith('#'):
+            p = s.lstrip('#').split()
+            if len(p) >= 3 and p[0] == 'k' and p[1] == 'n':
+                cols = p[2:]
+            continue
+        if not s or cols is None:
+            continue
+        p = s.split()
+        if len(p) != len(cols) + 2:
+            continue
+        try:
+            k, n = int(p[0]), int(p[1])
+        except ValueError:
+            continue
+        data[(k, n + 1)] = {c: (np.nan if v == 'nan' else float(v))
+                            for c, v in zip(cols, p[2:])}
+    if cols is None:
+        raise ValueError(f"{path}: no '# k n ...' header line found")
+    return cols, data
 ```
 
-Key comparison quantity: **`sig_c(Edft)`** (col 12) vs BGW `Cor'`.
-Band mapping: LORRAX `n` is 0-indexed; BGW is 1-indexed. Physical band = n + 1.
-Optional col 13 (`sig_c_head`) is the scalar head correction, present when head
-correction module is active. Check whether sig_c(Edft) includes the head by
-reading the file header comment.
+**Legacy format (pre-refactor outputs, ≤ 2026-05 — archived runs only)**:
+fixed 13/14-column layout
+`k n Edft-Ef E_dft kin_ion sex_0 coh_0 x_bare sig_c(0) sig_c+(w) sig_c-(w)
+sig_c_invld(0) sig_c(Edft) [sig_c_head]` with `sig_c(Edft)` at col 12.
+Parse archival files with:
 
 ```python
 def parse_sigma_freq_debug(path):
-    """Returns dict of {physical_band: {field: value}} for k=0."""
+    """LEGACY layout only. Returns dict of {physical_band: {field: value}} for k=0."""
     bands = {}
     for line in open(path):
         s = line.strip()
@@ -184,6 +230,9 @@ def parse_sigma_freq_debug(path):
                 pass
     return bands
 ```
+
+Disambiguation: current-format files have a `# k n ...` named header line;
+legacy files have the fixed `sig_c_invld(0)` column name in their header.
 
 ### 2d. ISDF SoS `sos_cor_gn.dat`
 

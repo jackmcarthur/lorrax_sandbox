@@ -1,5 +1,46 @@
 # Changelog
 
+## 2026-07-08: LORRAX ppm_invalid_mode zero-vs-2ry validated against the BGW references [D, runs+analysis only]
+
+Ran the two wired invalid-pole modes on the BGW-matched Si 4×4×4 window (new variants
+`runs/Si/00_si_4x4x4_60band/03_lorrax_gnppm_invalidmode_{zero,2ry}`, single-key cohsex.in diff,
+1×A100 each). **Invalid population: 167,092/14,745,600 ISDF poles = 1.13%** (identical in both
+runs; vs BGW 8.63% of plane-wave pairs — same order, non-vacuous). **Verdict: wiring PASS,
+quantitative BGW anchoring FAIL**: Δ(2ry−zero) per band matches BGW's Δ(m2−m0) in sign at the
+window edges (deep valence +1.1 meV vs +22.7; window-top −0.5 vs −3.3; VBM ~unmoved in both) but
+is 15–34× smaller overall (max 1.16 vs 39.6 meV ≈ population-ratio scaling) and mid-conduction
+sign flips — the ISDF invalid-pole population sits on different pairs than BGW's (BGW's: 8.2% of
+Σ|W_c|, all off-diagonal, every q). Statics bit-identical between runs; star-symmetry spread
+≤0.4 meV. Per-q localization of LORRAX's invalid poles remains open (April `w_copies_debug.h5`
+stores full W, not W_c — offline refit confounded; needs a 1-line per-q count print, source
+session). Full table + dig: `reports/bgw_invalid_mode_refs_2026-07-08/lorrax_zero_2ry_validation.md`
+(also the static_limit three-way scaffold). Ops: ω-grid −15 eV drove the ω<E_F crossing minimax
+fit to A_core≈124 where the exact Remez solver stalls (>7 min); −13 eV + ξ=0.35 (A_core≤77) is
+fast — recorded in the report. Compare-skill §2c updated with the header-driven
+`parse_sigma_freq_debug_v2` (current named-column format; old parser kept as legacy);
+KNOWN_SANDBOX_ERRORS: COHSEX_INPUT.md `ppm_invalid_mode` section is stale (documents
+`static_limit` default + `fixed_2ry`; code = `zero` default, `zero/skip/2ry`). No LORRAX source
+changes.
+
+## 2026-07-08: G0W0-vs-SC toggle design + Σ-pipeline single-jit audit [D, analysis only]
+
+Delivered `reports/gw_refactor_map_2026-07-01/G0W0_SC_TOGGLE_DESIGN.md` (NEXT_TARGETS TIER-0★ A
+`sigma_at_dft_energies` wiring + #11 env-knob promotion, designed not implemented). **Proposal:**
+one new axis `qp_solver = one_shot_dft (default, textbook G0W0) | fixed_point (today's dynamic-mode
+on-shell diagonal solve) | self_consistent (QSGW loop)`; absorbs the orphaned `sigma_at_dft_energies`
+and legacy `self_consistent` via `auto`-resolution; `LORRAX_SC_*` (5 knobs + DUMP_DIR) promote to an
+`SCConfig` group; eqp0/eqp1 formulas invariant across all three states. ~30-line sketch at
+`gw_config.py` + `gw_jax.py:475/:649`. **Jit audit (empirical, MoS2 fixtures, 1 GPU,
+JAX_LOG_COMPILES):** SC-COHSEX steady state = **0 compiles / 0 retraces per iteration** (iters 2-4);
+SC-GN-PPM steady state = **exactly 2 retrace+recompiles per iteration**, both from nested-scope
+`@jax.jit` closures (`qsgw_utils.py:165 _extract`, `:262 _kernel`) — hoist to module scope to reach
+0. Iter-1 pays one extra specialization of the χ₀/W/Σ kernels (rotated-bundle committedness).
+**Findings:** SC IS wired for GN-PPM (ran 3 iters end-to-end; `gw_config.py:51,190` comments stale);
+streamed `kij_stream` × SC/fixed_point silently degrades (static Σ in the eigh, eqp1 Z lost);
+pre-SC one-shot W+Σ pass is redundant for SC runs; static-mode eqp0 writer vs freq_debug disagree on
+Σ_SX−Σ_X (flagged, unverified). Runs + parser: `reports/gw_refactor_map_2026-07-01/g0w0_sc_toggle_audit/`.
+No LORRAX source changes.
+
 ## 2026-07-08: BGW invalid_gpp_mode reference set (Si 4×4×4) — LORRAX ppm_invalid_mode validation targets
 
 Produced complete three-mode BGW reference lines for invalid-PPM-pole handling on

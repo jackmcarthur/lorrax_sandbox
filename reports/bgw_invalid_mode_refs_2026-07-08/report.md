@@ -162,6 +162,9 @@ HL invalid poles hit ~3–4× harder than GN and shift every band by tens of meV
 - [x] Three-mode HL reference line
 - [x] Exact GN invalid-pole counts (8.63%)
 - [x] Compare-skill parser extended for freq_dep=1 logs (KNOWN_SANDBOX_ERRORS entry filed)
-- [ ] LORRAX side: run `ppm_invalid_mode = zero` vs `2ry` on this Si setup and compare deltas (§ above)
+- [x] LORRAX side: run `ppm_invalid_mode = zero` vs `2ry` on this Si setup and compare deltas —
+  **done 2026-07-08**, see `lorrax_zero_2ry_validation.md` (wiring PASS; invalid fraction 1.13%
+  of ISDF pairs, non-vacuous; deltas 15–34× below BGW with edge-band sign agreement only —
+  the BGW tables anchor sign/order at the window edges, not meV values)
 - [ ] LORRAX side: implement `static_limit`, validate against `01c_bgw_gn_mode3`
 - [ ] (optional) offline HL invalid count — needs a RHO reader + `wpeff` sum-rule replica
