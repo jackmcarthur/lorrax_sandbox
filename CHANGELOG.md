@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-07-08: BGW invalid_gpp_mode reference set (Si 4×4×4) — LORRAX ppm_invalid_mode validation targets
+
+Produced complete three-mode BGW reference lines for invalid-PPM-pole handling on
+`runs/Si/00_si_4x4x4_60band` (reused WFN + eps; 4 new ~29 s sigma variants, job 55674176).
+**GN-GPP line** (freq_dep=3, = LORRAX GN-PPM flavor): `01b`(mode 0) / `01_bgw_gn_ppm`(mode 2,
+pre-existing) / `01c`(mode 3) / `01d`(keyword omitted — **bit-identical to mode 3, default
+verified**). **HL line** (freq_dep=1): pre-existing `02b`(0)/`02c`(3) + new `02d`(2); `02d` is
+bit-identical to the mutated `02_bgw_hl_ppm` → that legacy run was mode 2. **Invalid poles are
+plentiful**: exact offline count (BGW's own formula on ε⁻¹(0)/ε⁻¹(iω₂)) = 186,608 of 2,162,680
+(G,G′) pairs = **8.63%**, uniform across q. Physical size of the choice: GN ΔEqp0 max 51 meV
+(mean 8.5); HL max 104 meV (mean ~35). Movers: deep valence + top-of-window conduction; VBM
+manifold nearly immune. Γ direct-gap shifts 6–8 meV (GN), 18–49 meV (HL). LORRAX validation
+protocol (compare mode-to-mode DELTAS, not absolute Σc; GN line primary): see
+`reports/bgw_invalid_mode_refs_2026-07-08/report.md`. Also: extended compare-skill
+`parse_sigma_hp` for the 11-column freq_dep=1 sigma_hp.log layout (was silently returning zero
+blocks — KNOWN_SANDBOX_ERRORS entry filed). No LORRAX source changes.
+
 ## 2026-07-03: ISDF memory model redesigned — one planner, live-validated [D]
 
 Rewrote `gw/gflat_memory_model.py` to the `MEMORY_MODEL_DESIGN.md` §1a form: **persistent(P)

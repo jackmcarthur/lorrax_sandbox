@@ -54,6 +54,10 @@ Machine-readable BGW sigma output. One block per k-point.
 
 Key comparison quantity: **`Cor' = SX-X + CH'`** (cols 4 + 10). For `frequency_dependence 3`, primed = unprimed.
 
+Caution: HL-GPP (`frequency_dependence 1`) logs omit the four primed columns —
+the band row is 11 columns (`n Emf Eo X SX-X CH Sig Vxc/KIH Eqp0 Eqp1 Znk`).
+The parser below handles both layouts (11-column rows fall back primed = unprimed).
+
 ```python
 import re
 import numpy as np
@@ -88,6 +92,20 @@ def parse_sigma_hp(path):
                 'Znk': float(p[14]),
                 'Cor': float(p[4]) + float(p[5]),
                 'Corp': float(p[4]) + float(p[10]),
+            }
+        elif len(p) == 11 and p[0].isdigit():
+            # freq_dep=1 (HL-GPP) layout: no primed columns; primed = unprimed.
+            n = int(p[0])
+            if not any(b.get('ik') == ik for b in blocks):
+                blocks.append({'kcrys': kcrys, 'ik': ik, 'bands': {}})
+            blocks[-1]['bands'][n] = {
+                'X': float(p[3]), 'SXmX': float(p[4]), 'CH': float(p[5]),
+                'Sig': float(p[6]), 'Vxc': float(p[7]),
+                'Eqp0': float(p[8]), 'Eqp1': float(p[9]),
+                'CHp': float(p[5]), 'Sigp': float(p[6]),
+                'Znk': float(p[10]),
+                'Cor': float(p[4]) + float(p[5]),
+                'Corp': float(p[4]) + float(p[5]),
             }
     return blocks
 ```

@@ -30,8 +30,18 @@ gwjax:
   centroids_file: centroids_frac_480.txt
 
 steps:
-  qe:                { state: running, note: "SCF complete, NSCF pending" }
-  00_bgw_cohsex:     { state: pending }
-  01_bgw_gn_ppm:     { state: pending }
-  00_lorrax_cohsex:  { state: pending }
-  01_lorrax_gn_ppm:  { state: pending }
+  qe:                { state: complete }
+  00_bgw_cohsex:     { state: complete }
+  01_bgw_gn_ppm:     { state: complete, note: "GN-GPP freq_dep=3, invalid_gpp_mode 2" }
+  00_lorrax_cohsex:  { state: complete }
+  01_lorrax_gn_ppm:  { state: complete }
+  # invalid_gpp_mode reference set (2026-07-08, reports/bgw_invalid_mode_refs_2026-07-08):
+  # GN line reuses 01_bgw_gn_ppm eps (freq_dep=3, 2 freqs); HL line reuses 00_bgw_cohsex
+  # static eps + RHO (freq_dep=1). Only invalid_gpp_mode differs within each line.
+  01b_bgw_gn_mode0:  { state: complete, note: "invalid_gpp_mode 0 (skip); eps reused from 01_bgw_gn_ppm" }
+  01c_bgw_gn_mode3:  { state: complete, note: "invalid_gpp_mode 3 (static-COHSEX); eps reused from 01_bgw_gn_ppm" }
+  01d_bgw_gn_default: { state: complete, note: "keyword omitted; sigma_hp.log bit-identical to 01c -> default==3" }
+  02_bgw_hl_ppm:     { state: complete, note: "HL-GPP freq_dep=1; sigma.inp lost to later mutation, output bit-identical to 02d -> was mode 2" }
+  02b_bgw_hl_mode0:  { state: complete, note: "HL invalid_gpp_mode 0 (pre-existing, 2026-04-28)" }
+  02c_bgw_hl_mode3:  { state: complete, note: "HL invalid_gpp_mode 3 (pre-existing, 2026-04-28)" }
+  02d_bgw_hl_mode2:  { state: complete, note: "HL invalid_gpp_mode 2 (fresh 2026-07-08); completes HL mode set" }
