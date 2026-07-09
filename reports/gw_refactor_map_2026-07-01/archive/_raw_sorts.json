@@ -1,0 +1,1140 @@
+[
+ {
+  "categories": [
+   {
+    "name": "Pipeline orchestration (GW driver & stage sequencing)",
+    "teleology": "Exists to decide WHAT runs WHEN: parse config once, build the mesh, thread (wfns bundle, meta, config) between stage kernels, and route by compute_mode. Contains no math. A new feature that changes execution order, stage wiring, or mode routing goes here.",
+    "members": [
+     "src/gw/gw_jax.py",
+     "src/gw/gw_init.py:stage-orchestration (centroid load, zeta-fit/V_q sequencing, restart branch, bundle build)",
+     "src/gw/ppm_pipeline.py",
+     "src/gw/sigma_dispatch.py",
+     "src/gw/screening.py",
+     "src/gw/sc_iteration.py:SC driver loop + post-SC artifact dumps",
+     "src/gw/gw_driver_helpers.py:profile_section + build_bgw_v_grid_fn glue"
+    ],
+    "notes": "Two parallel orchestration generations coexist: gw_jax.main inlines the one-shot path (calls compute_cohsex_sigma directly, full kwargs incl. bispinor) while sigma_dispatch/screening own the mode-orthogonal SC path (Gij=None, no bispinor). Unifying on the dispatcher is a prerequisite for every stage refactor."
+   },
+   {
+    "name": "Configuration & input-flag surface",
+    "teleology": "Exists to be the single source of truth for every user-visible knob: cohsex.in parsing, the frozen LorraxConfig tree, mode enums, and path resolution. A new flag goes here and nowhere else.",
+    "members": [
+     "src/gw/gw_config.py",
+     "src/gw/minimax_config.py",
+     "src/gw/gw_driver_helpers.py:PPMSigmaRuntimeOptions + build_ppm_sigma_runtime_options (23-field config mirror)",
+     "src/file_io/paths.py",
+     "src/psp/nscf_input.py",
+     "src/psp/get_DFT_mtxels.py:read_cohsex_input duplicate parser (consumed by kin_ion_io, get_dipole_mtxels, run_sternheimer)"
+    ],
+    "notes": "Three parallel legacy/new flag encodings live simultaneously (compute_mode vs do_screened+use_ppm_sigma; isdf_memory_mode vs ScreeningSolver; use_ffi_io vs SlabIOBackend), plus a shadow env-var config system (LORRAX_SC_*, LORRAX_FORCE_FULL_BZ, LORRAX_V_Q_*, ISDF_*)."
+   },
+   {
+    "name": "Physics stage: ISDF zeta fit",
+    "teleology": "Exists to build the ISDF interpolation vectors: pair densities, CCT/ZCT metric, distributed factor+solve, G-flat accumulate, zeta_q.h5 write. A new fitting algorithm or channel (e.g. new vertex type) goes here.",
+    "members": [
+     "src/common/isdf_fitting.py:pair-density/CCT/ZCT/solve kernels + r-chunk driver + zeta writer"
+    ],
+    "notes": "An entire GW pipeline stage living in common/ \u2014 the single biggest file-layout-vs-taxonomy fight. Also hosts embedded memory probes and FFI solver dispatch (features homed elsewhere). Charge (Cholesky) vs transverse (indefinite, LU) channel fork is the bispinor axis cutting through this stage."
+   },
+   {
+    "name": "Physics stage: bare-Coulomb V_q",
+    "teleology": "Exists to compute V_q(mu,nu) = sum_G zeta* v(q+G) zeta and g0_mu, for scalar and bispinor tiles. New V_q compute strategies or tile types go here.",
+    "members": [
+     "src/gw/compute_vcoul.py",
+     "src/gw/v_q_tile.py:tile kernels (r-space + G-flat Case A/B)",
+     "src/gw/v_q_g_flat.py:per-q G-chunked GEMM kernel + batched IBZ pre-read",
+     "src/gw/v_q_bispinor.py",
+     "src/common/coulomb_sphere.py"
+    ],
+    "notes": "Three parallel implementations of the same einsum physics ('qmG,qnG->qmn'): v_q_tile r-space, v_q_tile G-flat, v_q_g_flat per-q kernel \u2014 dispatched on the on-disk zeta_layout string. The legacy r-space branch is kept alive though the writer no longer produces its input. Collapse to the v_q_g_flat path is the obvious stage refactor."
+   },
+   {
+    "name": "Physics stage: chi0/W screening",
+    "teleology": "Exists to build chi0(q,mu,nu) via minimax tau-quadrature over Green's-function pairs and Dyson-solve W=(I-Vchi0)^-1 V. New screening models or W-solve strategies go here.",
+    "members": [
+     "src/gw/w_isdf.py",
+     "src/gw/greens_function_kernel.py (shared G primitive, also serves Sigma stage)",
+     "src/gw/experimental/head_wing_schur.py (staged head/wing Schur W rebuild, zero production callers)",
+     "src/gw/experimental/__init__.py"
+    ],
+    "notes": "Two W-solve backends (JAX shard_map LU vs cuBLASMp fused FFI) behind ScreeningSolver; head_wing_schur is a third W-builder waiting to be promoted or deleted. Sternheimer/SOS chi0 head backends live in the head-correction axis, not here \u2014 the chi0 concept is split across two categories by design (body vs q\u21920 head)."
+   },
+   {
+    "name": "Physics stage: self-energy (Sigma_X / COHSEX / Sigma_c)",
+    "teleology": "Exists to contract G with V or W into Sigma matrix elements: static COHSEX kernels, PPM fit + Sigma_c(omega) tau-quadrature, bispinor transverse Sigma^B. A new self-energy approximation goes here.",
+    "members": [
+     "src/gw/cohsex_sigma.py",
+     "src/gw/ppm_sigma.py",
+     "src/gw/sigma_x_bispinor.py"
+    ],
+    "notes": "cohsex_sigma's sigma_sx kernel doubles as the bare-X kernel \u2014 good single-source. But compute_v_h_sigma_x is a near-verbatim parallel entry to compute_cohsex_sigma, and the ~12-line Sigma^B stanza is duplicated in both. ppm_sigma carries deliberate jax/numpy mirror pairs and a dead GPU accumulator."
+   },
+   {
+    "name": "Physics stage: QP solve, eqp & self-consistency",
+    "teleology": "Exists to turn Sigma matrix elements into quasiparticle energies and (for QSGW) iterate: Z-factors, eqp linearization, diagonal fixed point, Hermitisation, band partition/scissor masking, degenerate averaging, fixed-point iteration map.",
+    "members": [
+     "src/gw/qsgw_utils.py",
+     "src/gw/scissor.py",
+     "src/gw/band_partition.py",
+     "src/gw/degen_average.py",
+     "src/gw/sc_iteration.py:gw_iteration_map + fixed-point solvers",
+     "src/gw/eqp_bgw.py:eqp0/eqp1 + Z-factor math"
+    ],
+    "notes": "The eqp math (E_dft + Delta, Z from central difference) is implemented ~4x: eqp_bgw core, gw_output.write_results assembly, gw_jax freq-debug block, make_eqp_bgw CLI. One canonical eqp function is a cheap early win."
+   },
+   {
+    "name": "Variant axis: frequency treatment (minimax quadrature & PPM parameter fitting)",
+    "teleology": "Exists to emit (tau, alpha) node sets and PPM (B,Omega) parameters for every frequency scheme (static, imag-axis, HL real-axis, GN-PPM, Sigma_c windows). Cuts across chi0/W and Sigma stages. A new frequency scheme = new quadrature builder here + one dispatch case in the stages.",
+    "members": [
+     "src/common/minimax.py",
+     "src/gw/minimax_screening.py"
+    ],
+    "notes": "Clean factory architecture (the healthiest variant axis). Internal debt: old/new GN-PPM extraction pair, dead imag window-pair sibling, two npz schemas for the same payload, 3 VarPro-LM implementations in minimax.py."
+   },
+   {
+    "name": "Variant axis: Coulomb truncation & q\u21920 head correction",
+    "teleology": "Exists to own everything about v(q+G) boundary conditions and the G=0 singularity: 3D/2D-slab/0D kernels, mini-BZ MC averages, head-source resolution (epshead / S-tensor / dipole SOS / Sternheimer), and head injection into V/W/Sigma. Cuts across V_q, W, Sigma_X, Sigma_c, and BSE.",
+    "members": [
+     "src/gw/coulomb/__init__.py",
+     "src/gw/coulomb/base.py",
+     "src/gw/coulomb/bulk_3d.py",
+     "src/gw/coulomb/slab_2d.py",
+     "src/gw/coulomb/box_0d.py",
+     "src/gw/compute_vcoul_0d.py:compute_vcoul_box kernel",
+     "src/gw/vcoul.py",
+     "src/gw/head_correction.py",
+     "src/common/chi_from_dipole.py",
+     "src/common/chi_sos.py (unwired SOS backend)"
+    ],
+    "notes": "The gw/coulomb strategy dispatch (get_kernel(sys_dim).q0_average) is the right shape, but only q0_average is wired: the live v(q+G) formulas are DUPLICATED inline in compute_vcoul.py per sys_dim (v_qG methods dead), so the axis exists twice. vcoul.py is a superseded shim; head_correction has five raw/wrapper function pairs."
+   },
+   {
+    "name": "Variant axis: bispinor / relativistic channel",
+    "teleology": "Exists to hold the spin-algebra machinery unique to bispinor runs: gamma-tilde vertices, optimized spin contractions, small-component lift, current-density weights. Cuts across zeta fit, V_q, and Sigma_X.",
+    "members": [
+     "src/common/gamma_matrices.py",
+     "src/file_io/wfn_loader.py:bispinor small-component lift (_apply_bispinor_lift)",
+     "src/centroid/current_density.py"
+    ],
+    "notes": "This axis has NO single home: it is mostly implemented as parallel files inside stage categories (v_q_bispinor, sigma_x_bispinor, the transverse channel of isdf_fitting) plus if-branches in gw_init. That is the current layout fighting the taxonomy hardest among variant axes \u2014 each stage grew a bispinor twin rather than the stage kernels being channel-generic (v_q_tile is the one counterexample: one kernel, L/R vertex args)."
+   },
+   {
+    "name": "Variant axis: IBZ symmetry & BZ mapping",
+    "teleology": "Exists to be the one place that knows how psi, zeta, V_q, W, and k/q indices transform under space-group + TRS operations: IBZ tables, sym_perm/L_table construction, unfold kernels, k-q umklapp plumbing. Cuts across every stage.",
+    "members": [
+     "src/common/symmetry_maps.py",
+     "src/centroid/orbit_syms.py",
+     "src/common/kq_mapping.py",
+     "src/gw/v_q_tile.py:_unfold_g0_ibz_to_full + _unfold_v_q_ij_ibz_to_full",
+     "src/gw/v_q_g_flat.py:_resolve_ibz_q_list (shared IBZ-cascade gate)",
+     "src/file_io/wfn_loader.py:psi symmetry unfold (eager + on-device)",
+     "src/file_io/zeta_loader.py:_unfold_q_full_bz",
+     "src/file_io/qe_save_reader.py:build_kgrid/_reduce_mp_to_ibz (second IBZ reduction)",
+     "src/file_io/read_bgw_vcoul.py:find_q_index q-matching",
+     "src/common/symmetry_test.py"
+    ],
+    "notes": "The most smeared category: >=8 files hand-roll pieces of the same sym action (this is the TRS-blind-bug breeding ground). compute_centroid_sym_perm is rebuilt independently at 4 call sites. The declared Phase-2 plan \u2014 one canonical IBZ table + one sym-action helper on SymMaps \u2014 IS the refactor for this category; everything listed with a colon here is a extraction target into symmetry_maps/orbit_syms."
+   },
+   {
+    "name": "Canonical data layout, sharding & shape contracts",
+    "teleology": "Exists to define the shared vocabulary every kernel assumes: the Wavefunctions 4-copy bundle, the module-level PartitionSpec constants for all chi0/W/Sigma intermediates, Meta shape bookkeeping, the pad-to-mesh contract, unit constants. A new sharded intermediate's layout is declared here.",
+    "members": [
+     "src/gw/wavefunction_bundle.py",
+     "src/common/meta.py",
+     "src/runtime/padding.py",
+     "src/common/units.py",
+     "src/common/__init__.py"
+    ],
+    "notes": "wavefunction_bundle straddles: besides the layout contract it owns physics (rotate_wavefunctions for QSGW, project for Sigma_mn) \u2014 those are kernels that consume the contract, misfiled with it. runtime/padding is the written-down padding contract but has exactly one production caller; ad-hoc padding logic still lives at jit boundaries. Meta carries two generations of padding fields (n_rmu_jax vs n_rmu_padded)."
+   },
+   {
+    "name": "Numerical infrastructure: sharded FFT & G<->r layout transforms",
+    "teleology": "Exists to provide physics-free, sharding-aware array transforms: local/sharded/flat-k FFT factories, psi(G)<->box<->r-slab<->centroid transforms, Bloch phases, the G->FFT-box gather table. Reusable by GW, BSE, DFT alike.",
+    "members": [
+     "src/common/fft_helpers.py:FFT factory functions",
+     "src/common/wfn_transforms.py",
+     "src/common/gvec_fft_box.py"
+    ],
+    "notes": "Two parallel local-FFT families (custom_partitioning vs shard_map) and the Bloch-phase formula written 4x despite an 'ONLY place in LORRAX' comment. gvec_fft_box's runtime kernel half is dead (superseded by wfn_transforms._box_kernel)."
+   },
+   {
+    "name": "Distributed linear algebra (FFI backends + in-tree fallback)",
+    "teleology": "Exists to solve dense distributed factor/solve/eig problems the JAX-native path can't fit in memory: .so loading + XLA FFI registration, per-backend context/NCCL management, batched potrf/potrs/LU/gemm/fused-W-solve wrappers, and the pure-JAX 2D-blocked Cholesky fallback. A new distributed kernel goes here behind the existing register-and-wrap pattern.",
+    "members": [
+     "src/ffi/common/ffi_loader.py",
+     "src/ffi/common/broadcast.py",
+     "src/ffi/cusolvermp/__init__.py",
+     "src/ffi/cusolvermp/batched.py",
+     "src/ffi/cusolvermp/context.py",
+     "src/ffi/cusolvermp/eigh.py",
+     "src/ffi/cublasmp/__init__.py",
+     "src/ffi/cublasmp/batched.py",
+     "src/ffi/cusolvermg/__init__.py",
+     "src/ffi/cusolvermg/eigh.py",
+     "src/ffi/slate/__init__.py",
+     "src/ffi/slate/context.py",
+     "src/ffi/slate/cholesky.py",
+     "src/ffi/slate/trsm.py",
+     "src/ffi/slate/eigh.py",
+     "src/ffi/slate/batched.py",
+     "src/common/cholesky_2d.py",
+     "src/common/fft_helpers.py:compute_block_size_for_2d_cholesky"
+    ],
+    "notes": "Four backends for overlapping ops (eigh in 3 packages, batched cholesky in 2) \u2014 cusolvermp/cublasmp are production, slate is a documented AMD-fallback evaluation, cusolvermg is bench-only. cusolvermp/context.py is really ffi/common infrastructure (cublasmp depends on it). Production consumers are exactly two: isdf_fitting (potrf/potrs/LU) and w_isdf (fused W solve)."
+   },
+   {
+    "name": "Parallel I/O substrate (sharded HDF5)",
+    "teleology": "Exists to move sharded device arrays to/from HDF5 without materializing them anywhere: the SlabIO facade + three backends (FFI collective, mpi4py host, allgather fallback), the phdf5 FFI primitives, Lustre striping, the async write queue. Format-agnostic; a new large artifact just calls SlabIO.",
+    "members": [
+     "src/file_io/slab_io.py",
+     "src/file_io/_slab_io_ffi.py",
+     "src/file_io/_slab_io_mpi_host.py",
+     "src/file_io/_slab_io_allgather.py",
+     "src/ffi/phdf5/__init__.py",
+     "src/ffi/phdf5/context.py",
+     "src/ffi/phdf5/write.py",
+     "src/ffi/phdf5/read.py",
+     "src/common/async_io.py"
+    ],
+    "notes": "Clean layered design with two warts: inverted layering (slab_io imports gw_config for the backend enum; phdf5/read lazily imports upward from _slab_io_ffi), and async_io.AsyncDispatcher was written to replace _slab_io_ffi's inline _dispatch_loop but the migration never happened."
+   },
+   {
+    "name": "Per-format readers/writers (artifact schemas)",
+    "teleology": "Exists to own one on-disk schema per module: WFN.h5, zeta_q.h5 (+isdf_header/mf_header groups), sigma outputs, restart tensors, QP-WFN, kin_ion.h5, BGW eps/vcoul/eqp, QE .save, UPF, centroid txt. A new file format gets a new module here; format changes touch exactly one file (aspirationally).",
+    "members": [
+     "src/file_io/wfn_loader.py:reader core (eager + phdf5 backends)",
+     "src/file_io/zeta_reader.py",
+     "src/file_io/zeta_loader.py:reader API",
+     "src/file_io/mf_header.py",
+     "src/file_io/isdf_header.py",
+     "src/file_io/wfn_writer.py",
+     "src/file_io/qp_wfn.py",
+     "src/file_io/tagged_arrays.py",
+     "src/file_io/kin_ion.py",
+     "src/file_io/sigma_output.py",
+     "src/gw/gw_output.py",
+     "src/gw/eqp_bgw.py:BGW eqp text writers",
+     "src/file_io/epsreader.py",
+     "src/file_io/read_bgw_vcoul.py:text parser",
+     "src/file_io/qe_save_reader.py:reader core",
+     "src/file_io/centroids.py",
+     "src/centroid/centroid_io.py (orphaned duplicate)",
+     "src/file_io/__init__.py",
+     "src/common/load_wfns.py (deprecated facade, P4-slated)",
+     "src/common/provenance.py",
+     "src/psp/upf/load_upf.py",
+     "src/psp/upf/normalize.py",
+     "src/psp/upf/upf_model_2_0_1/qe_pp_2_0_1.py",
+     "src/psp/pseudos.py"
+    ],
+    "notes": "The mf_header schema is hand-maintained 3x (MfHeader, CrystalData, WFNWriter._write_header) \u2014 a schema-module extraction target. ZetaReader/ZetaLoader are an unfinished old->new migration pair with verbatim-duplicated attribute mirrors. WFNReader=WfnLoader alias keeps ~25 metadata-only import sites unswept."
+   },
+   {
+    "name": "Resource management: memory planning & chunk choosing",
+    "teleology": "Exists to predict per-rank HBM peaks and pick static chunk sizes (band_chunk, r_chunk, gflat_chunk, q/mu/G chunks) so jit kernels fit the budget. A new kernel needing chunking gets a model here, not an inline heuristic.",
+    "members": [
+     "src/gw/gflat_memory_model.py",
+     "src/gw/aot_memory_model/__init__.py",
+     "src/gw/aot_memory_model/core.py",
+     "src/gw/aot_memory_model/chooser.py",
+     "src/gw/aot_memory_model/cost.py",
+     "src/gw/aot_memory_model/presets.py",
+     "src/gw/aot_memory_model/doe.py",
+     "src/gw/aot_memory_model/sweep.py",
+     "src/gw/aot_memory_model/predict_cli.py",
+     "src/gw/aot_memory_model/kernels/__init__.py",
+     "src/gw/aot_memory_model/kernels/fit_one_rchunk.py",
+     "src/gw/aot_memory_model/kernels/load_psi_rchunk.py",
+     "src/gw/aot_memory_model/kernels/chi0_tau_step.py",
+     "src/gw/aot_memory_model/kernels/sigma_kij.py",
+     "src/gw/aot_memory_model/kernels/vq_mu_chunk.py",
+     "src/gw/aot_memory_model/kernels/slab_write.py",
+     "src/gw/aot_memory_model/kernels/zct_lr.py",
+     "src/gw/aot_memory_model/kernels/solve_q.py",
+     "src/gw/aot_memory_model/kernels/pair_density.py",
+     "src/gw/aot_memory_model/kernels/cct_lr.py",
+     "src/runtime/aot_memory.py",
+     "src/gw/gw_init.py:compute_optimal_chunks legacy planner",
+     "src/gw/v_q_tile.py:_choose_v_q_chunks 3-tier chooser",
+     "src/common/fft_helpers.py:query_fft_peak_bytes",
+     "src/common/gpu_utils.py",
+     "src/common/isdf_fitting.py:mem_probe / nvidia-smi peak samplers"
+    ],
+    "notes": "FOUR planning systems for the zeta-fit alone, stacked so gflat_memory_model.plan_gflat_chunks silently overwrites the aot chooser's picks (gw_init.py:636). runtime/aot_memory (exact AOT + cuFFT-plan query) is the architecturally correct successor; the per-stage aot kernels are largely subsumed by the composite fit_one_rchunk kernel. Refactor: one planner, importing production kernel factories (fit_one_rchunk pattern) instead of hand-mirroring bodies."
+   },
+   {
+    "name": "Resource management: host caches & compile cache",
+    "teleology": "Exists to keep big read-only data off-device and off-jit-arg-lists (psi(G) host tiles served per-slice via io_callback) and to persist XLA compilation across runs. A new large read-only cache follows the PsiGStore io_callback pattern.",
+    "members": [
+     "src/common/psi_G_store.py",
+     "src/common/jax_compile_cache.py"
+    ],
+    "notes": "PsiGStore's static-shape io_callback slice contract is duplicated by hand in the memory model's _AotStubPsiGStore. w_isdf re-wraps ensure_jax_compile_cache under a legacy name that ppm_sigma reaches through."
+   },
+   {
+    "name": "Runtime bootstrap & process init",
+    "teleology": "Exists to make the process safe before jax is imported and before the first collective: env defaults (X64), jax.distributed init with the Perlmutter/SLURM pattern, CPU fallback, NCCL warmup, MPI init ordering. Every driver's first lines come from here.",
+    "members": [
+     "src/runtime/__init__.py",
+     "src/gw/__init__.py",
+     "src/gw/gw_driver_helpers.py:setup_runtime (NCCL warmup + phdf5 MPI init + compile-cache activation)"
+    ],
+    "notes": "Import-order side effects are load-bearing and fragile: JAX_ENABLE_X64 setdefault is repeated in 8+ modules; cusolvermp_eigh_test still carries a drifted private copy of the distributed-init logic this package was created to eliminate."
+   },
+   {
+    "name": "Generic iterative solvers & spectral methods",
+    "teleology": "Exists to provide physics-free Hermitian-matvec algorithms reusable by DFT, GW-SC, and BSE: Davidson, Lanczos, Chebyshev/KPM, DOS windowing, FEAST contour quadrature, fixed-point acceleration (Anderson/CROP/rCROP).",
+    "members": [
+     "src/solvers/davidson.py",
+     "src/solvers/lanczos.py",
+     "src/solvers/chebyshev.py",
+     "src/solvers/dos.py",
+     "src/solvers/quadrature.py",
+     "src/solvers/minres.py (test-only, superseded)",
+     "src/solvers/__init__.py (dead facade)",
+     "src/mixing/acceleration.py"
+    ],
+    "notes": "Five Lanczos variants and three window partitioners for one algorithm family each. mixing/acceleration: only rcrop_nojit is production (sc_iteration); the jitted cores it duplicates line-for-line are dormant."
+   },
+   {
+    "name": "DFT/DFPT operator & pseudopotential stack",
+    "teleology": "Exists to build and apply the plane-wave KS Hamiltonian and its derivatives: T/V_loc/V_H/V_xc/V_NL kernels, KB projector algebra, radial->q tables, solid harmonics, Sternheimer linear-response primitives and preconditioners. Serves kin_ion, dipole, NSCF, Sternheimer, and orbital-mag drivers.",
+    "members": [
+     "src/psp/dft_operators.py",
+     "src/psp/vnl_ops.py",
+     "src/psp/h_dft.py",
+     "src/psp/xc.py",
+     "src/psp/scf_potential.py",
+     "src/psp/ionic_gspace.py",
+     "src/psp/radial_tables.py",
+     "src/psp/radial/radial_jax.py",
+     "src/psp/radial/solid_harmonics.py",
+     "src/psp/radial/build_projectors_qe.py",
+     "src/psp/species.py",
+     "src/psp/gvec_utils.py",
+     "src/psp/dft_precond.py",
+     "src/psp/operator_checks.py",
+     "src/psp/get_DFT_mtxels.py:H-mtxel kernel library (kinetic/local-V/valence-density)",
+     "src/solvers/sternheimer_solve.py",
+     "src/solvers/sternheimer_precond.py",
+     "src/solvers/projectors.py"
+    ],
+    "notes": "Heaviest internal duplication in the repo: full second VNL implementation in dft_operators vs vnl_ops (FD vs analytic derivatives), compute_ngkmax defined twice with disjoint caller sets, three valence-density builders, four real-harmonic implementations. Spin-blind V_xc (no B_xc) is the known physics gap. The three Sternheimer modules live in solvers/ but are DFPT-specific."
+   },
+   {
+    "name": "Preprocessing pipeline drivers (GW-input producers)",
+    "teleology": "Exists to manufacture the files gw_jax consumes: kin_ion.h5, dipole.h5, sternheimer.h5, WFN.h5 (native NSCF + pseudobands). Each is a standalone CLI over the DFT operator stack. A new required GW input gets a driver here.",
+    "members": [
+     "src/gw/kin_ion_io.py",
+     "src/psp/get_DFT_mtxels.py:main() legacy k=0 debug driver",
+     "src/psp/get_dipole_mtxels.py",
+     "src/psp/run_sternheimer.py",
+     "src/psp/run_nscf.py",
+     "src/solvers/pseudobands.py",
+     "src/solvers/pseudobands_v2.py",
+     "src/psp/orbital_magnetization.py (absent from lorrax_D; lives in lorrax_B worktree)"
+    ],
+    "notes": "kin_ion_io is filed under gw/ but is teleologically a psp driver; it and its siblings use the duplicate cohsex.in parser rather than gw_config. pseudobands v1/v2 is an explicit old/new pair behind pb_version with divergent kwarg spellings."
+   },
+   {
+    "name": "ISDF centroid generation toolchain",
+    "teleology": "Exists to pick the ISDF sampling points: density/current weights, orbit-aware weighted k-means, pivoted-Cholesky pruning, centroid file writing. Runs once before GW (lorrax-centroids CLI); its orbit-closure property gates the downstream IBZ cascade.",
+    "members": [
+     "src/centroid/kmeans_isdf.py",
+     "src/centroid/kmeans_cli.py",
+     "src/centroid/charge_density.py",
+     "src/centroid/pivoted_cholesky.py"
+    ],
+    "notes": "pivoted_cholesky embeds its own sharded distributed select kernel and three generations of Gram builders (two test-only). kmeans_isdf carries 5 plain-vs-orbit parallel function pairs where the orbit path reduces to plain at n_sym=1 \u2014 plain path deletable."
+   },
+   {
+    "name": "Diagnostics, instrumentation & bench harnesses",
+    "teleology": "Exists to observe, not compute: timing/profiler/progress instrumentation, FFI correctness/bench CLIs, parity tests of production paths, plotting. A new smoke test or profiler hook goes here; deleting any member changes no run's numbers.",
+    "members": [
+     "src/common/timing.py",
+     "src/common/jax_profile.py",
+     "src/common/progress.py",
+     "src/common/cusolvermp_eigh_test.py",
+     "src/common/cusolvermp_batched_test.py",
+     "src/common/cusolvermp_solve_lu_test.py",
+     "src/common/potrs_rhs_test.py",
+     "src/common/chol_natural_test.py",
+     "src/common/cusolvermg_eigh_test.py",
+     "src/common/cublasmp_gemm_test.py",
+     "src/common/cublasmp_w_solve_test.py",
+     "src/common/w_solve_modes_test.py",
+     "src/common/isdf_zeta_mode_test.py",
+     "src/common/slate_batched_test.py",
+     "src/common/slate_cholesky_trsm_test.py",
+     "src/common/slate_chol_trsm_bench.py",
+     "src/common/slate_eigh_test.py",
+     "src/common/slate_trsm_isolated_test.py",
+     "src/common/slate_vs_cusolvermp_bench.py",
+     "src/common/eigh_benchmark.py",
+     "src/common/eigh_block_sweep.py",
+     "src/common/wfn_loader_backend_parity_test.py",
+     "src/ffi/cusolvermp/profile_batched.py",
+     "src/centroid/kmeans_plot.py",
+     "src/mixing/benchmark_synthetic.py",
+     "src/psp/kpm_dos.py",
+     "src/gw/compute_vcoul_0d.py:main() BGW-vcoul comparison CLI"
+    ],
+    "notes": "~20 standalone FFI harnesses squat in src/common/ with 4+ drifted copies of the distributed-bootstrap boilerplate and cloned HPD-matrix builders \u2014 one parametrized harness under a tools/ or ffi/tests/ home would replace most of them. timing vs jax_profile are two instrumentation systems by design (text table vs XLA trace)."
+   },
+   {
+    "name": "Archived / dead code awaiting deletion",
+    "teleology": "Exists only as history or as test oracles pending retargeting; nothing here executes in any production path. The refactor's delete list starts here.",
+    "members": [
+     "src/psp/archive/projector_pipeline.py (unimportable, broken relative imports)",
+     "src/psp/archive/charge_density.py (unimportable, stale import path)",
+     "src/psp/archive/build_projectors.py (zero callers)",
+     "src/solvers/cg_posdef.py (zero importers; algorithm reimplemented in sternheimer_solve)",
+     "src/common/bispinor_init.py (legacy bispinor lift, test oracle for wfn_loader's copy)",
+     "src/centroid/centroid_io.py (orphaned duplicate of file_io/centroids.py)"
+    ],
+    "notes": "Distinct from the ~30 live old/new parallel-path pairs (those are features inside home categories); these files are wholly dead. file_io/wfn_writer.write_wfn_h5, gw/vcoul.compute_wcoul0_with_S, sigma_output.write_chunked_complex_dataset_h5 etc. are function-level dead code catalogued in their home files' digests."
+   }
+  ],
+  "interactions": [
+   {
+    "a": "Pipeline orchestration (gw_jax.main)",
+    "b": "all physics stage categories",
+    "mechanism": "Direct function calls in hard-coded order, threading (Wavefunctions bundle, Meta, LorraxConfig) plus device-resident V_q/W_q arrays between stages; stage boundaries are function signatures, not files."
+   },
+   {
+    "a": "Canonical data layout (wavefunction_bundle)",
+    "b": "chi0/W + Sigma stages (w_isdf, cohsex_sigma, ppm_sigma)",
+    "mechanism": "Shared array-layout contract: module-level PartitionSpec constants (G_FFT7D_SPEC, V_FFT5D_SPEC, CHI_Q_SPEC...) and the Wavefunctions pytree protocol (.xn/.yr/.xr/.yn, un-conjugated, 4 layouts) that every kernel's einsums assume; experimental/head_wing_schur copies the convention rather than importing it."
+   },
+   {
+    "a": "ISDF zeta-fit stage (isdf_fitting)",
+    "b": "bare-Coulomb V_q stage (via zeta_reader/zeta_loader)",
+    "mechanism": "zeta_q.h5 file format: zeta_q_G dataset + isdf_header group; the on-disk zeta_layout string ('r_space' vs 'G_flat') dispatches WHICH V_q compute path runs (gw_init.py:988) \u2014 a file attribute selecting between parallel kernels."
+   },
+   {
+    "a": "v_q_bispinor.py (V_q stage)",
+    "b": "sigma_x_bispinor.py (Sigma stage)",
+    "mechanism": "v_q_bispinor.h5 format contract: 7 unique tiles + v_qmunu_format='bispinor_lorentz_v1' + JSON unique/zero/hermitian-pair attrs; BispinorVqReader synthesizes zero and conj-transpose tiles on demand; padding invariant duplicated on both sides (_pad_V_to_padded vs reader's _padded_shape_LR)."
+   },
+   {
+    "a": "Configuration (gw_config)",
+    "b": "every category",
+    "mechanism": "~90-key cohsex.in flag surface; frozen LorraxConfig passed opaquely; enums ComputeMode/ScreeningSolver/SlabIOBackend/GspaceIO dispatch stage variants, W-solve backend, I/O backend, and psi-cache mode; back-compat aliases keep 3 legacy encodings alive."
+   },
+   {
+    "a": "Memory planners (gflat_memory_model, aot_memory_model, runtime/aot_memory)",
+    "b": "zeta-fit / V_q / chi0 / Sigma kernels",
+    "mechanism": "Planner outputs (band_chunk, r_chunk, gflat_chunk_size, mu/q/G chunks) become STATIC SHAPES of jit kernels; models mirror kernel bodies (hand-copied, drift risk) or import production factories (fit_one_rchunk, build_G \u2014 the safe pattern); gflat planner unconditionally overwrites aot chooser picks at gw_init.py:636."
+   },
+   {
+    "a": "IBZ symmetry machinery",
+    "b": "zeta-fit + V_q + W stages",
+    "mechanism": "Sharding/cascade contract: _resolve_ibz_q_list gates IBZ-only compute on centroid orbit closure (compute_centroid_sym_perm), rebuilt independently at 3+ call sites; unfold_v_q (centroid double-permute + umklapp L-phase + TRS conj) expands IBZ results; env LORRAX_FORCE_FULL_BZ bypasses everywhere; the TRS-blind bug lived exactly on this seam."
+   },
+   {
+    "a": "w_isdf (chi0/W stage)",
+    "b": "ffi.cublasmp",
+    "mechanism": "ScreeningSolver flag selects JAX-native shard_map LU vs batched_fused_w_solve FFI; both must honor P(None,'x','y') one-tile-per-rank sharding and the 2/(sqrt(Nk)*nspin*nspinor) prefactor convention."
+   },
+   {
+    "a": "isdf_fitting (zeta-fit stage)",
+    "b": "ffi.cusolvermp + common/cholesky_2d",
+    "mechanism": "cusolvermp_charge/cusolvermp_lu flags route factor/solve to batched potrf+potrs (charge, SPD) vs LU (transverse, indefinite \u2014 physics fact forcing solver choice) vs in-tree 2D-blocked Cholesky fallback; CusolverMpBatchedLowerL handle crosses the boundary as raw array + metadata rebuilt at isdf_fitting.py:1286."
+   },
+   {
+    "a": "file_io/slab_io",
+    "b": "gw_config",
+    "mechanism": "INVERTED layering: the I/O facade imports gw_config.SlabIOBackend for backend dispatch, and gw_config probes jax backend/mpi4py to auto-route use_ffi_io \u2014 config and I/O substrate mutually entangled."
+   },
+   {
+    "a": "Parallel I/O substrate (SlabIO)",
+    "b": "all HDF5 format writers/readers",
+    "mechanism": "Padding contract: padded slab in memory / logical prefix on disk via offset+global_shape+valid_shape kwargs; Meta.n_rmu_padded and runtime/padding define the arithmetic; every writer (zeta, V_q tiles, sigma_mnk, restart) must pass valid_shape or silently persist pad garbage."
+   },
+   {
+    "a": "psi_G_store",
+    "b": "isdf_fitting scan kernels",
+    "mechanism": "io_callback host-slice contract: _slice_local_tile_bc serves one band-chunk per lax.scan iter at a static zero-padded shape (nk, _bpd_max, ns, ngkmax); the AOT memory model duplicates this layout math in a stub class."
+   },
+   {
+    "a": "greens_function_kernel",
+    "b": "w_isdf + ppm_sigma + cohsex_sigma + aot_memory_model kernels",
+    "mechanism": "Single build_G/build_G_tau primitive shared by chi0 (real tau) and Sigma_c (imaginary tau) via the phases argument; memory-model kernels import the real function, coupling planner validity to its signature."
+   },
+   {
+    "a": "Frequency-treatment axis (minimax_screening)",
+    "b": "chi0/W and Sigma stages",
+    "mechanism": "MinimaxNodes (tau, alpha) pytree dataclass is the hand-off; plus two npz file schemas (shipped assets catalog.json+npz vs disk cache) that tools/generate_minimax_assets regenerates by importing private solver functions."
+   },
+   {
+    "a": "head_correction (Coulomb-head axis)",
+    "b": "cohsex_sigma / ppm_pipeline / bse_io + BGW files",
+    "mechanism": "HeadResolver memoizes head source from eps0mat.h5 (EPSReader.epshead) or dipole.h5 (chi_from_dipole S-tensor) \u2014 external file-format coupling; injection into Sigma via static_head_terms_to_kij call and rank-1 (mu,nu) injectors; wcoul0_source flag selects the physics."
+   },
+   {
+    "a": "gw/coulomb kernels (truncation axis)",
+    "b": "compute_vcoul (V_q stage)",
+    "mechanism": "Duplication coupling, not calls: the live per-sys_dim v(q+G) formulas are inlined in compute_vcoul (kernels' v_qG methods dead), with 'keep in lock-step' comments \u2014 three copies of each truncation formula must agree bit-wise for BGW parity."
+   },
+   {
+    "a": "sc_iteration (SC driver)",
+    "b": "ppm_pipeline",
+    "mechanism": "PRIVATE reach-in: dump_sigma_omega_h5_final stubs ppm_pipeline._write_sigma_omega_h5's argument contract via SimpleNamespace \u2014 parallel knowledge of a private function's kwargs."
+   },
+   {
+    "a": "ppm_pipeline / sc_iteration",
+    "b": "gw_driver_helpers (config category)",
+    "mechanism": "PPMSigmaRuntimeOptions: a 23-field flat mirror of config.ppm+config.debug rebuilt at two call sites \u2014 a config-mirroring contract that must track gw_config field-for-field."
+   },
+   {
+    "a": "kin_ion_io (preprocessing)",
+    "b": "gw_jax + eqp_bgw",
+    "mechanism": "kin_ion.h5 format ((nk_full, nb, nb) c128 Ry); writer uses the duplicate psp config parser and hard-codes the output name while gw_config separately defines kin_ion_file \u2014 same file, two config systems."
+   },
+   {
+    "a": "Centroid toolchain",
+    "b": "gw_init/gw_jax + IBZ cascade",
+    "mechanism": "centroids_frac_*.txt format (loadtxt + '# density:' header that the production loader ignores \u2014 centroid_io, the header-aware reader, is orphaned); orbit-closure of the written centroid set is the runtime gate for the entire downstream IBZ cascade."
+   },
+   {
+    "a": "tagged_arrays (restart state)",
+    "b": "BSE (bse_io)",
+    "mechanism": "isdf_tensors_{n_rmu}.h5 format v2: V_qmunu/W0_qmunu (+W0_ready attr protocol)/vhead/whead is the GW->BSE seam; gw_jax writes W0 post-hoc into a placeholder gw_init created \u2014 a two-writer one-file protocol."
+   },
+   {
+    "a": "gw_output + eqp_bgw (writers)",
+    "b": "BerkeleyGW ecosystem + bse_io",
+    "mechanism": "eqp0/eqp1.dat byte-compatible with BGW sigma_main.f90 (format parity is a test target); read back by bse_io.read_bgw_eqp; degen_average mirrors BGW shiftenergy.f90 tolerance to keep the files comparable."
+   },
+   {
+    "a": "Runtime bootstrap",
+    "b": "every driver + gw/__init__",
+    "mechanism": "Import-order side-effect contract: set_default_env/JAX_ENABLE_X64 must run before 'import jax' anywhere; _LORRAX_JAX_DISTRIBUTED_DONE env sentinel makes init idempotent across re-imports; violating order silently downgrades to f32 or double-inits distributed."
+   },
+   {
+    "a": "sc_iteration",
+    "b": "mixing/acceleration",
+    "mechanism": "rcrop_nojit call on vec(H_qp) with hyperparams from env vars (LORRAX_SC_ACCEL/DEPTH/MIXING/MAX_ITER/TOL_EV) \u2014 a shadow-config flag channel bypassing gw_config (live TODO acknowledges it)."
+   },
+   {
+    "a": "wfn_loader (I/O)",
+    "b": "symmetry_maps (IBZ axis)",
+    "mechanism": "Mutual coupling: loader builds SymMaps from its own metadata, then calls unfold_psi and the PRIVATE _get_umklapp_vector for the full-BZ unfold; the phdf5 backend re-implements the same unfold on-device \u2014 byte-parity between backends is a tested contract."
+   },
+   {
+    "a": "ffi/phdf5/read.py",
+    "b": "file_io/_slab_io_ffi.py",
+    "mechanism": "Lazy UPWARD import of _sharding_to_axis_info (line 76) \u2014 the FFI primitive layer depends on a helper living in its consumer; the shared request/valid_shape normalizers likewise live in _slab_io_ffi and are imported by the sibling backends."
+   }
+  ],
+  "misfits": [
+   "src/gw/gw_init.py \u2014 one 1300-line file hosting stage orchestration, THREE stacked chunk planners, restart-state I/O, cutoff resolution, and bispinor branch logic; nearly every category passes through it. Prime decomposition target: planners to the memory category, restart I/O to tagged_arrays, leaving a thin sequencer.",
+   "src/gw/v_q_tile.py \u2014 physics kernel + embedded 3-tier memory chooser + two hand-rolled IBZ unfold helpers in one file; each feature belongs to a different category (V_q stage / planner / symmetry).",
+   "src/gw/gw_driver_helpers.py \u2014 a 'helpers' grab-bag straddling four categories: config mirror (PPMSigmaRuntimeOptions), runtime init (setup_runtime), profiling glue, and BGW-vcoul comparison override.",
+   "src/common/isdf_fitting.py \u2014 an entire GW pipeline stage living in common/, with embedded memory probes, six hand-keyed jit caches, FFI solver dispatch, and the zeta_q.h5 writer; should be gw/zeta_fit.py with probes and writer extracted.",
+   "src/common/fft_helpers.py \u2014 FFT infrastructure + a memory-planner probe (query_fft_peak_bytes) + a misplaced distributed-Cholesky block chooser whose sole caller is isdf_fitting.",
+   "src/file_io/wfn_loader.py \u2014 I/O reader hosting physics (bispinor small-component lift) and symmetry machinery (psi unfold, private umklapp access); the unfold belongs on the canonical sym-action helper.",
+   "src/file_io/qe_save_reader.py \u2014 format reader embedding a second full IBZ k-grid reduction (kpoint_grid.f90 clone) parallel to symmetry_maps.",
+   "src/gw/eqp_bgw.py \u2014 QP linearization physics fused with a BGW text-format writer; the math is duplicated ~4x across eqp_bgw/gw_output/gw_jax-debug/CLI because it has no single physics home.",
+   "src/gw/wavefunction_bundle.py \u2014 layout-contract hub also owning physics kernels (rotate_wavefunctions for QSGW, project for Sigma_mn) plus a dead project_ri whose live twin sits in ppm_sigma.",
+   "src/gw/kin_ion_io.py \u2014 a psp preprocessing driver filed under gw/, configured by the duplicate psp parser instead of gw_config, output filename hard-coded while gw_config defines the key.",
+   "src/gw/vcoul.py \u2014 superseded shim: half commented-out legacy builder, two zero-caller functions, and a self-declared 'thin compatibility wrapper' whose 4 call sites could import gw/coulomb directly.",
+   "src/gw/experimental/head_wing_schur.py \u2014 production-quality sharded W builder with zero production callers; either promote (replacing part of solve_w) or delete, and remove the then-empty experimental/ package.",
+   "src/common/chi_sos.py \u2014 fully unwired SOS chi0 head/wing backend; five public functions, zero callers; aspirational sibling to chi_from_dipole and the Sternheimer backend.",
+   "src/solvers/{sternheimer_solve,sternheimer_precond,projectors}.py \u2014 DFPT-specific physics living in the generic solvers/ package; solvers/ should hold only matvec-agnostic algorithms.",
+   "src/common/ as a directory \u2014 hosts six different categories (a physics stage, symmetry machinery, FFT infra, caches, diagnostics, and ~20 FFI bench CLIs); 'common' is where the taxonomy goes to die.",
+   "src/psp/get_DFT_mtxels.py \u2014 three categories in one file: live H-mtxel kernel library + stale k=0 debug driver + the full copy-paste cohsex.in parser that three other drivers depend on.",
+   "src/common/load_wfns.py \u2014 deprecated facade (P4-slated for deletion) still on the import path of gw_jax, gw_init, ppm_pipeline, sc_iteration, kin_ion_io, and psp drivers; every body is a thin wrapper over WfnLoader + wfn_transforms.",
+   "src/centroid/pivoted_cholesky.py \u2014 preprocessing tool embedding its own sharded distributed-select kernel and three generations of Gram builders (two test-only).",
+   "src/runtime/padding.py \u2014 the written-down canonical padding contract with exactly one production caller; the ad-hoc padding it was written to replace still lives at jit boundaries (agent/padding-refactor never landed).",
+   "src/file_io/zeta_loader.py vs zeta_reader.py \u2014 unfinished old/new reader migration: verbatim-duplicated mf_header mirrors, duck-typing shim in v_q_g_flat tolerating both; pick ZetaLoader, finish, delete.",
+   "Bispinor axis as a whole \u2014 implemented as parallel-file stage twins (v_q_bispinor, sigma_x_bispinor, transverse zeta channels) plus gw_init branches rather than channel-generic stage kernels; v_q_tile's single kernel with L/R vertex args shows the target pattern."
+  ],
+  "observations": [
+   "The dominant refactor debt is ~30 documented old/new parallel-path pairs (r-space vs G-flat V_q, ZetaReader vs ZetaLoader, compute_cohsex_sigma vs compute_v_h_sigma_x, pseudobands v1/v2, plain vs orbit k-means, three chunk-planner generations, two GN-PPM extractors, dual WFN_qp writers, jit vs nojit rCROP...). Category boundaries are mostly sound; it is the unfinished migrations WITHIN categories that make the tree look chaotic. Refactor rule: finish or revert each migration before moving code between categories.",
+   "The four physics variant axes have wildly unequal architectural maturity, and that ranking is the refactor roadmap: frequency treatment (clean factory, MinimaxNodes contract) > Coulomb truncation (strategy dispatch exists but live formulas are duplicated inline in compute_vcoul) > bispinor (parallel-file stage twins, no home) > IBZ symmetry (smeared over 8+ files with hand-rolled unfolds \u2014 the TRS-bug source). The declared 'one canonical IBZ table + one sym-action helper' unification is the single highest-leverage change.",
+   "File formats are the real inter-stage APIs: zeta_q.h5 (zeta_layout attribute literally dispatches which compute kernel runs), v_q_bispinor.h5, isdf_tensors_{n_rmu}.h5 (GW->BSE seam), kin_ion.h5, WFN.h5, sigma_mnk.h5, eqp*.dat (BGW byte-parity). Refactor order should therefore be schema-first: freeze/version each format module, then reshuffle compute code behind stable formats.",
+   "Memory planning is four systems deep (gw_init closed-form, aot_memory_model fitted, gflat_memory_model analytic \u2014 which clobbers the others at gw_init.py:636 \u2014 and runtime/aot_memory exact-AOT). The exact-AOT approach importing production kernel factories (fit_one_rchunk pattern, build_G import) is the only drift-safe design; hand-mirrored kernel bodies in aot_memory_model/kernels/* are guaranteed to rot.",
+   "There are two Sigma orchestration paths with divergent capabilities: gw_jax.main's inline one-shot (full bispinor/backend kwargs, computes-then-discards COHSEX in PPM modes) vs sigma_dispatch.compute_sigma_xc (proper mode routing, but Gij=None and no bispinor). SC runs and one-shot runs literally execute different code for 'the same' Sigma. Making gw_jax one-shot = run_self_consistency(max_iter=1) through the dispatcher would delete a whole class of parity bugs.",
+   "Configuration has one good spine (gw_config._DEFAULTS) undermined by three leaks: a full duplicate parser in psp/get_DFT_mtxels consumed by four drivers, the PPMSigmaRuntimeOptions 23-field mirror, and a shadow env-var system (LORRAX_SC_*, LORRAX_FORCE_FULL_BZ, LORRAX_V_Q_*, ISDF_*) with an acknowledged TODO to plumb into config. Flag-surface unification is low-risk and unblocks driver consolidation.",
+   "Package names lie about categories: common/ contains a pipeline stage (isdf_fitting), the symmetry hub, and 20 FFI bench CLIs; solvers/ contains DFPT-specific physics; gw/ contains a psp driver (kin_ion_io) and two planner packages; file_io/ readers embed physics (bispinor lift) and symmetry (two unfolds, an IBZ reducer). The purpose-kind taxonomy exists in the code's dependency structure but not in its directory structure.",
+   "Reusability boundary is crisp and worth preserving in the new layout: ffi/*, solvers/{davidson,lanczos,chebyshev,dos,quadrature}, mixing/acceleration, fft_helpers, wfn_transforms, SlabIO+phdf5, runtime/*, and the diagnostics trio (timing/jax_profile/progress) are GW-agnostic and already serve BSE/DFT; everything in gw/ plus isdf_fitting, symmetry_maps, orbit_syms is GW-pipeline-specific. The misfiled members (isdf_fitting in common/, sternheimer in solvers/) are exactly the files that blur this boundary.",
+   "Import-order side effects are load-bearing and fragile: JAX_ENABLE_X64 setdefault appears in 8+ modules, set_default_env must precede jax import, and _LORRAX_JAX_DISTRIBUTED_DONE is an env sentinel. runtime/ was created to centralize this but one bench file still carries a drifted private copy \u2014 any refactor that reorders imports in driver entry files can silently change precision or break distributed init.",
+   "Diagnostics/bench tooling (~25 standalone CLIs) guards production FFI paths but has no shared harness: 4+ drifted copies of distributed-bootstrap boilerplate, cloned HPD builders, near-duplicate test pairs (potrs_rhs_test subset of cusolvermp_batched_test). Because several ARE the only regression gates for FFI ops (cited by ffi/AGENTS.md), consolidate into one parametrized harness rather than deleting."
+  ]
+ },
+ {
+  "categories": [
+   {
+    "name": "1. Driver / pipeline orchestration",
+    "teleology": "Exists to sequence the GW pipeline end-to-end (parse input -> ISDF prep -> chi0/W -> Sigma -> QP/SC -> outputs) and own the tmp/ artifact paths stages communicate through. Contains no math; a new pipeline MODE or stage-ordering change goes here and nowhere else.",
+    "members": [
+     "src/gw/gw_jax.py"
+    ],
+    "notes": "Module import has load-bearing side effects (set_default_env before jax import). Hosts duplicated eqp/degen-averaging math in its debug blocks that belongs downstream (see misfits)."
+   },
+   {
+    "name": "2. Input-flag surface & driver plumbing",
+    "teleology": "Exists to be the single source of truth for cohsex.in keys and their translation into the frozen LorraxConfig threaded through every stage. A new user-facing flag goes here (gw_config._DEFAULTS) \u2014 never as an env var or a second parser.",
+    "members": [
+     "src/gw/gw_config.py",
+     "src/gw/gw_driver_helpers.py",
+     "src/gw/__init__.py"
+    ],
+    "notes": "gw_driver_helpers is a grab-bag (PPM option mirror + NCCL/phdf5 pre-init + BGW-vcoul override closure). Three live legacy/new flag encodings (compute_mode vs do_screened+ppm_model; isdf_memory_mode vs ScreeningSolver; use_ffi_io vs SlabIOBackend). psp/get_DFT_mtxels.py carries a full copy-paste of the parser."
+   },
+   {
+    "name": "3. Preprocessing: ISDF centroid generation",
+    "teleology": "Exists to select the ISDF interpolation points (density-weighted, symmetry-orbit-aware k-means + pivoted-Cholesky pruning) and emit centroids_frac_*.txt. A new sampling-point strategy or density weight goes here.",
+    "members": [
+     "src/centroid/kmeans_isdf.py",
+     "src/centroid/kmeans_cli.py",
+     "src/centroid/kmeans_plot.py",
+     "src/centroid/pivoted_cholesky.py",
+     "src/centroid/charge_density.py",
+     "src/centroid/current_density.py",
+     "src/centroid/centroid_io.py"
+    ],
+    "notes": "current_density is the bispinor-axis member (transverse/current centroids). Orbit-closure of the output gates the downstream IBZ cascade \u2014 a hidden physics contract. centroid_io is an orphan duplicate of file_io/centroids.py."
+   },
+   {
+    "name": "4. Preprocessing: DFT matrix-element drivers (GW inputs)",
+    "teleology": "Exists to produce the DFT-side HDF5 inputs GW consumes: kin_ion.h5 (T+V_loc+V_NL) and dipole.h5 (velocity mtxels for the q->0 head). A new one-body operator matrix-element product goes here.",
+    "members": [
+     "src/gw/kin_ion_io.py",
+     "src/psp/get_DFT_mtxels.py",
+     "src/psp/get_dipole_mtxels.py"
+    ],
+    "notes": "kin_ion_io lives in gw/ but is psp-machinery; it uses psp's duplicate cohsex.in parser, not gw_config. get_DFT_mtxels mixes reusable kernels with a stale k=0-only debug driver."
+   },
+   {
+    "name": "5. DFT operator & pseudopotential kernel library",
+    "teleology": "Exists to apply/build the plane-wave KS Hamiltonian (T, V_loc, V_H, V_xc, Kleinman-Bylander V_NL, dH/dk velocity) from UPF pseudopotentials. New operator physics (e.g. spin-polarized V_xc/B_xc) goes here.",
+    "members": [
+     "src/psp/dft_operators.py",
+     "src/psp/vnl_ops.py",
+     "src/psp/h_dft.py",
+     "src/psp/dft_precond.py",
+     "src/psp/xc.py",
+     "src/psp/scf_potential.py",
+     "src/psp/ionic_gspace.py",
+     "src/psp/gvec_utils.py",
+     "src/psp/operator_checks.py",
+     "src/psp/pseudos.py",
+     "src/psp/species.py",
+     "src/psp/radial_tables.py",
+     "src/psp/radial/radial_jax.py",
+     "src/psp/radial/solid_harmonics.py",
+     "src/psp/radial/build_projectors_qe.py",
+     "src/psp/upf/load_upf.py",
+     "src/psp/upf/normalize.py",
+     "src/psp/upf/upf_model_2_0_1/qe_pp_2_0_1.py",
+     "src/psp/archive/projector_pipeline.py",
+     "src/psp/archive/charge_density.py",
+     "src/psp/archive/build_projectors.py",
+     "src/psp/orbital_magnetization.py"
+    ],
+    "notes": "Known spin-blind V_xc (no B_xc) \u2014 wrong for magnetic systems. Two full VNL implementations (dft_operators autodiff-FD copy vs vnl_ops analytic \u2014 vnl_ops is the good one). compute_ngkmax duplicated (gvec_utils vs dft_operators) with disjoint caller sets. archive/* is dead and unimportable. orbital_magnetization.py is ABSENT from lorrax_D (lives only in the lorrax_B worktree)."
+   },
+   {
+    "name": "6. Standalone NSCF / pseudobands generation",
+    "teleology": "Exists to generate WFN.h5 wavefunctions without QE: Davidson NSCF plus stochastic/CJ pseudoband compression of the empty-band spectrum. A new empty-band compression scheme goes here.",
+    "members": [
+     "src/psp/run_nscf.py",
+     "src/psp/nscf_input.py",
+     "src/solvers/pseudobands.py",
+     "src/solvers/pseudobands_v2.py",
+     "src/psp/kpm_dos.py"
+    ],
+    "notes": "pb_version v1/v2 are a full old/new parallel pair with divergent kwarg spellings. Pseudoband weights flow into the zeta fit as band norms \u2014 a silent convention through the WFN.h5 format. kpm_dos is this stage's diagnostic."
+   },
+   {
+    "name": "7. Sternheimer / DFPT linear-response backend",
+    "teleology": "Exists to compute chi_{G'0}(q) columns and the q=0 S-tensor without sum-over-states (feeds the q->0 head axis). New response-function solvers or derivative tricks go here.",
+    "members": [
+     "src/psp/run_sternheimer.py",
+     "src/solvers/sternheimer_solve.py",
+     "src/solvers/sternheimer_precond.py",
+     "src/solvers/projectors.py",
+     "src/solvers/minres.py",
+     "src/solvers/cg_posdef.py"
+    ],
+    "notes": "Three generations of linear solvers coexist: sternheimer_solve inline CG (live), cg_posdef (fully dead), minres (test-only). run_sternheimer inlines the Q-projector 5x while importing solvers.projectors unused."
+   },
+   {
+    "name": "8. Generic iterative eigensolvers & spectral methods",
+    "teleology": "Exists to provide physics-free matvec solvers (Davidson, Lanczos, KPM/Chebyshev, FEAST contour) shared by NSCF, pseudobands, and BSE. A new generic solver goes here; DFT- or BSE-specific plumbing does not.",
+    "members": [
+     "src/solvers/davidson.py",
+     "src/solvers/lanczos.py",
+     "src/solvers/chebyshev.py",
+     "src/solvers/dos.py",
+     "src/solvers/quadrature.py",
+     "src/solvers/__init__.py"
+    ],
+    "notes": "Five Lanczos variants of one algorithm; three window partitioners across chebyshev/dos; solvers/__init__ facade has zero importers."
+   },
+   {
+    "name": "9. Pipeline stage: ISDF zeta fit",
+    "teleology": "Exists to fit the ISDF interpolation vectors zeta_q from centroid pair densities (pair density -> CCT/ZCT -> distributed Cholesky/LU solve -> G-flat accumulate) and write zeta_q.h5. New fit algebra, channels, or streaming schemes go here.",
+    "members": [
+     "src/common/isdf_fitting.py",
+     "src/common/psi_G_store.py",
+     "src/gw/gw_init.py",
+     "src/common/coulomb_sphere.py",
+     "src/common/isdf_zeta_mode_test.py"
+    ],
+    "notes": "gw_init is homed here as the stage orchestrator but is the repo's worst straddler (also hosts three stacked memory planners, V_q dispatch, restart I/O, bundle build). coulomb_sphere serves both this stage's G-flat writer and the V_q kernel. isdf_zeta_mode_test is this stage's backend-parity guard (passes a removed kwarg \u2014 stale)."
+   },
+   {
+    "name": "10. Pipeline stage: bare-Coulomb V_q",
+    "teleology": "Exists to compute V_q(mu,nu) = sum_G zeta* v(q+G) zeta and g0_mu(q) over IBZ q, including the v(q+G) factory for sys_dim 0/2/3 and dispatch between r-space and G-flat zeta layouts. A new V_q kernel or Coulomb-form change on the body goes here.",
+    "members": [
+     "src/gw/compute_vcoul.py",
+     "src/gw/v_q_tile.py",
+     "src/gw/v_q_g_flat.py",
+     "src/gw/v_q_bispinor.py"
+    ],
+    "notes": "Three parallel V_q compute paths for one einsum (v_q_tile r-space, v_q_tile G-flat, v_q_g_flat) plus dual bispinor orchestrators \u2014 legacy r-space branch is unreachable by the current writer. v_q_bispinor is the bispinor-axis member (7-tile Lorentz structure + HDF5 schema + reader). v_q_tile embeds its own three-tier memory chooser and hand-rolled unfold helpers (misfits)."
+   },
+   {
+    "name": "11. Variant axis: Coulomb truncation & q->0 head correction (3D/2D/0D)",
+    "teleology": "Exists to handle everything the divergent q->0, G=0 Coulomb channel needs: dimension-dispatched truncated kernels, mini-BZ Monte-Carlo averages (vc0, wcoul0), head-source resolution (S-tensor / epshead / override), scalar head PPM fits, and rank-1 head injection into V/W. Any finite-size or truncation feature goes here, for every stage at once.",
+    "members": [
+     "src/gw/head_correction.py",
+     "src/gw/vcoul.py",
+     "src/gw/coulomb/__init__.py",
+     "src/gw/coulomb/base.py",
+     "src/gw/coulomb/bulk_3d.py",
+     "src/gw/coulomb/slab_2d.py",
+     "src/gw/coulomb/box_0d.py",
+     "src/gw/compute_vcoul_0d.py",
+     "src/common/chi_from_dipole.py",
+     "src/common/chi_sos.py"
+    ],
+    "notes": "This axis touches COHSEX, PPM Sigma_c, and BSE. The coulomb/* v_qG methods are dead duplicates of compute_vcoul's sys_dim branches \u2014 only q0_average is live. vcoul.py is a half-commented superseded shim. chi_sos is a fully unwired SOS twin of chi_from_dipole."
+   },
+   {
+    "name": "12. Pipeline stage: chi0 / screened W",
+    "teleology": "Exists to build chi0(q,mu,nu) via minimax tau quadrature over Green's-function pairs and Dyson-solve W=(I-Vchi0)^-1 V, plus the request planner that decides WHICH W(omega) each Sigma scheme needs. New screening physics (RPA variants, frequency points, W solvers) goes here.",
+    "members": [
+     "src/gw/w_isdf.py",
+     "src/gw/screening.py",
+     "src/gw/greens_function_kernel.py",
+     "src/gw/experimental/head_wing_schur.py",
+     "src/gw/experimental/__init__.py",
+     "src/common/w_solve_modes_test.py"
+    ],
+    "notes": "greens_function_kernel is deliberately shared with both Sigma stages (real tau for chi0, imaginary t for Sigma_c) \u2014 one kernel, sign-of-t contract. head_wing_schur has zero production callers (staged head/wing Schur W-builder). w_isdf also hosts quadrature builders and solver-backend dispatch (straddles categories 13 and 21)."
+   },
+   {
+    "name": "13. Variant axis: frequency treatment (minimax quadrature engine)",
+    "teleology": "Exists to produce (tau, alpha) minimax node sets for every frequency scheme \u2014 static COHSEX (1/x), imag-axis GN-PPM probe (x/(x^2+wp^2)), real-axis HL-PPM windows, and Sigma_c crossing/tail windows \u2014 behind table/disk caches. A new frequency treatment means a new target function here, consumed unchanged by chi0/W and Sigma_c.",
+    "members": [
+     "src/common/minimax.py",
+     "src/gw/minimax_screening.py",
+     "src/gw/minimax_config.py"
+    ],
+    "notes": "Old/new GN-PPM extraction paths coexist (host chi-loop vs sharded Wc-pair fit). Two npz schemas for the same payload (shipped tables vs disk cache). minimax.py's _imag_ family is a near-verbatim copy of _nc_ with one target swapped."
+   },
+   {
+    "name": "14. Pipeline stage: static Sigma (Sigma_X / COHSEX / V_H)",
+    "teleology": "Exists to evaluate the static self-energy channels \u2014 bare exchange, SX, COH, Hartree \u2014 as jitted flat-k/flat-q ISDF kernels, including the bispinor transverse Sigma^B built on the same sigma_sx kernel. New static-Sigma channels or vertex insertions go here.",
+    "members": [
+     "src/gw/cohsex_sigma.py",
+     "src/gw/sigma_x_bispinor.py"
+    ],
+    "notes": "sigma_x_bispinor is the bispinor-axis member; it reaches into the private _make_cohsex_kernels (public wrapper is dead). The ~12-line Sigma^B attach stanza is duplicated in both cohsex_sigma drivers; head-attach appears at three sites."
+   },
+   {
+    "name": "15. Pipeline stage: dynamic Sigma_c(omega) via plasmon-pole",
+    "teleology": "Exists to fit the two-point PPM (GN/HL) from W(0)/W(probe) and evaluate Sigma_c(k,omega) on a real-omega grid via tau quadrature with windowed decomposition and streamed accumulation. New dynamical-Sigma models (full-frequency, CD) go here.",
+    "members": [
+     "src/gw/ppm_sigma.py",
+     "src/gw/ppm_pipeline.py"
+    ],
+    "notes": "ppm_pipeline is glue-only (sequencing + head injection + sigma_mnk.h5 write); ppm_sigma owns the kernels. Deliberate jax/numpy mirror pairs and a dead GPU accumulator inside ppm_sigma; two write backends with diverging unit handling in ppm_pipeline."
+   },
+   {
+    "name": "16. Pipeline stage: QP solve, eqp & self-consistency (QSGW)",
+    "teleology": "Exists to turn Sigma into quasiparticle energies and (optionally) iterate: mode-orthogonal Sigma_xc dispatch, H_qp build, diagonal Sigma(E) fixed point, QSGW Hermitisation, band partitioning/scissor for out-of-grid bands, BGW-parity degenerate averaging, and fixed-point acceleration. New SC schemes or QP-equation variants go here.",
+    "members": [
+     "src/gw/sc_iteration.py",
+     "src/gw/sigma_dispatch.py",
+     "src/gw/qsgw_utils.py",
+     "src/gw/scissor.py",
+     "src/gw/band_partition.py",
+     "src/gw/degen_average.py",
+     "src/mixing/acceleration.py",
+     "src/mixing/benchmark_synthetic.py"
+    ],
+    "notes": "One-shot path in gw_jax BYPASSES sigma_dispatch entirely (two parallel top-level Sigma orchestrations with divergent capabilities \u2014 bispinor only on one-shot). SC hyperparameters are env vars, not config. mixing/acceleration: only rcrop_nojit is production; jitted variants dormant."
+   },
+   {
+    "name": "17. Variant axis: bispinor / Breit spin algebra",
+    "teleology": "Exists to hold the cross-stage spin machinery of the bispinor axis: gamma-tilde matrices, (perm,phase) monomial contraction kernels, and the small-component lift. Stage-bound bispinor code (v_q_bispinor, sigma_x_bispinor, current_density) lives in its stage; the shared algebra lives here.",
+    "members": [
+     "src/common/gamma_matrices.py",
+     "src/common/bispinor_init.py",
+     "src/file_io/wfn_loader.py:bispinor small-component lift (_apply_bispinor_lift)"
+    ],
+    "notes": "bispinor_init is a legacy test oracle duplicating wfn_loader's production lift (same hardcoded halfalpha). gamma_double_contract keeps three mathematically identical layout strategies behind a global mode \u2014 pick a winner. The axis as a whole is smeared per-stage (see observations)."
+   },
+   {
+    "name": "18. Variant axis: symmetry / IBZ machinery",
+    "teleology": "Exists to own the space-group + TRS action on every object (k/q tables, SU(2) spinor rotations, centroid & r-grid permutations, IBZ<->full-BZ unfolds for psi, zeta, V_q, W). Per the unified-sym-action principle, ANY new 'rotate X at q' goes here, not in a stage file.",
+    "members": [
+     "src/common/symmetry_maps.py",
+     "src/centroid/orbit_syms.py",
+     "src/common/kq_mapping.py",
+     "src/common/symmetry_test.py"
+    ],
+    "notes": "Current layout fights this hardest: unfold kernels also live in v_q_tile, v_q_g_flat, zeta_loader, and read_bgw_vcoul re-implements q-matching. compute_centroid_sym_perm is rebuilt at 4 call sites instead of cached on SymMaps. This is the declared Phase-2 consolidation target of the TRS-bug fix."
+   },
+   {
+    "name": "19. Infrastructure: sharding, layout & padding contracts",
+    "teleology": "Exists to define the device-array layout law: the 4-copy Wavefunctions bundle + canonical PartitionSpec constants every stage kernel shares, the psi<->r<->G transform kernels with band-axis sharding preserved, the FFT-axes-replicated sharded-FFT factories, and the pad-to-mesh/valid_shape padding contract. A new layout or reshard primitive goes here.",
+    "members": [
+     "src/gw/wavefunction_bundle.py",
+     "src/common/wfn_transforms.py",
+     "src/common/fft_helpers.py",
+     "src/common/gvec_fft_box.py",
+     "src/runtime/padding.py",
+     "src/common/meta.py"
+    ],
+    "notes": "wavefunction_bundle is the sharding contract hub \u2014 its spec constants ARE the inter-stage array-layout contract. runtime/padding is the intended single source of the padding law but is only wired into load_wfns; Bloch-phase formula exists in 4 places despite an 'ONLY place' comment; gvec_fft_box's kernel half is dead."
+   },
+   {
+    "name": "20. Infrastructure: memory planning & chunk choosing",
+    "teleology": "Exists to predict per-rank HBM peaks and pick chunk sizes (band/r/gflat/q/mu) before compilation. A new kernel's memory model or a new chunk knob goes here \u2014 and should extend ONE planner, not add a fourth.",
+    "members": [
+     "src/gw/gflat_memory_model.py",
+     "src/gw/aot_memory_model/__init__.py",
+     "src/gw/aot_memory_model/core.py",
+     "src/gw/aot_memory_model/chooser.py",
+     "src/gw/aot_memory_model/presets.py",
+     "src/gw/aot_memory_model/cost.py",
+     "src/gw/aot_memory_model/sweep.py",
+     "src/gw/aot_memory_model/doe.py",
+     "src/gw/aot_memory_model/predict_cli.py",
+     "src/gw/aot_memory_model/kernels/__init__.py",
+     "src/gw/aot_memory_model/kernels/fit_one_rchunk.py",
+     "src/gw/aot_memory_model/kernels/load_psi_rchunk.py",
+     "src/gw/aot_memory_model/kernels/chi0_tau_step.py",
+     "src/gw/aot_memory_model/kernels/sigma_kij.py",
+     "src/gw/aot_memory_model/kernels/vq_mu_chunk.py",
+     "src/gw/aot_memory_model/kernels/slab_write.py",
+     "src/gw/aot_memory_model/kernels/zct_lr.py",
+     "src/gw/aot_memory_model/kernels/solve_q.py",
+     "src/gw/aot_memory_model/kernels/pair_density.py",
+     "src/gw/aot_memory_model/kernels/cct_lr.py",
+     "src/runtime/aot_memory.py",
+     "src/common/gpu_utils.py",
+     "src/common/fft_helpers.py:query_fft_peak_bytes"
+    ],
+    "notes": "FOUR parallel prediction systems: gw_init's legacy closed form, aot_memory_model NNLS fits, gflat_memory_model analytic peaks (final authority \u2014 clobbers the aot chooser's picks), and runtime/aot_memory exact AOT+cuFFT probe (used only by v_q_tile). The aot kernels/ mirrors of production kernels are the drift-risk tax of this duplication; the composite fit_one_rchunk kernel already subsumes most per-stage ones."
+   },
+   {
+    "name": "21. Infrastructure: distributed dense linear algebra (FFI + in-tree)",
+    "teleology": "Exists to provide multi-GPU/multi-process dense factorizations and solves (potrf/potrs/LU/eigh/gemm/fused W-solve) behind JAX shard_map wrappers, plus their .so loading/registration, MPI/NCCL context lifecycle, and correctness/bench harnesses. A new distributed-linalg op or backend goes here.",
+    "members": [
+     "src/ffi/common/ffi_loader.py",
+     "src/ffi/common/broadcast.py",
+     "src/ffi/cusolvermp/__init__.py",
+     "src/ffi/cusolvermp/batched.py",
+     "src/ffi/cusolvermp/context.py",
+     "src/ffi/cusolvermp/eigh.py",
+     "src/ffi/cusolvermp/profile_batched.py",
+     "src/ffi/cublasmp/__init__.py",
+     "src/ffi/cublasmp/batched.py",
+     "src/ffi/cusolvermg/__init__.py",
+     "src/ffi/cusolvermg/eigh.py",
+     "src/ffi/slate/__init__.py",
+     "src/ffi/slate/context.py",
+     "src/ffi/slate/cholesky.py",
+     "src/ffi/slate/trsm.py",
+     "src/ffi/slate/eigh.py",
+     "src/ffi/slate/batched.py",
+     "src/common/cholesky_2d.py",
+     "src/common/cusolvermp_eigh_test.py",
+     "src/common/cusolvermp_batched_test.py",
+     "src/common/cusolvermp_solve_lu_test.py",
+     "src/common/potrs_rhs_test.py",
+     "src/common/chol_natural_test.py",
+     "src/common/eigh_benchmark.py",
+     "src/common/eigh_block_sweep.py",
+     "src/common/cusolvermg_eigh_test.py",
+     "src/common/cublasmp_gemm_test.py",
+     "src/common/cublasmp_w_solve_test.py",
+     "src/common/slate_batched_test.py",
+     "src/common/slate_cholesky_trsm_test.py",
+     "src/common/slate_chol_trsm_bench.py",
+     "src/common/slate_eigh_test.py",
+     "src/common/slate_trsm_isolated_test.py",
+     "src/common/slate_vs_cusolvermp_bench.py"
+    ],
+    "notes": "Four backends (cusolvermp production, cublasmp fused W-solve, slate AMD-fallback evaluation, cusolvermg experimental) with 3x distributed_eigh, 2x batched cholesky; cholesky_2d is the in-tree JAX fallback potrf. 16 standalone harnesses with copy-pasted bootstrap/builders \u2014 one parametrized harness would replace most. cusolvermp/context.py is really ffi/common-level (cublasmp depends on it)."
+   },
+   {
+    "name": "22. Infrastructure: sharded HDF5 slab I/O (parallel-HDF5)",
+    "teleology": "Exists to move sharded device arrays to/from HDF5 datasets under one padded-memory/logical-disk contract, via three interchangeable backends (allgather+rank0, GPU FFI MPI-IO, CPU mpio) plus the phdf5 C++ FFI primitives and async write/read scaffolding. New bulk-I/O transport goes here; new FORMATS do not.",
+    "members": [
+     "src/file_io/slab_io.py",
+     "src/file_io/_slab_io_ffi.py",
+     "src/file_io/_slab_io_mpi_host.py",
+     "src/file_io/_slab_io_allgather.py",
+     "src/ffi/phdf5/__init__.py",
+     "src/ffi/phdf5/context.py",
+     "src/ffi/phdf5/write.py",
+     "src/ffi/phdf5/read.py",
+     "src/common/async_io.py"
+    ],
+    "notes": "The three backends are deliberate method-for-method mirrors. async_io.AsyncDispatcher was written to replace _slab_io_ffi's inline dispatch loop and the migration never happened. phdf5's own 2-D slab wrappers (write_sharded_slab/read_sharded_slab) are dead parallels of slab_io's construction."
+   },
+   {
+    "name": "23. Infrastructure: artifact format readers & schemas",
+    "teleology": "Exists to own one reader/writer/schema per file format the pipeline flows through: WFN.h5, zeta_q.h5 (+isdf_header), mf_header, QE .save, BGW eps/vcoul, restart isdf_tensors, kin_ion.h5, centroid text. A new artifact format gets exactly one module here; stages consume it through the reader, never raw h5py.",
+    "members": [
+     "src/file_io/wfn_loader.py",
+     "src/file_io/zeta_loader.py",
+     "src/file_io/zeta_reader.py",
+     "src/file_io/isdf_header.py",
+     "src/file_io/mf_header.py",
+     "src/file_io/wfn_writer.py",
+     "src/file_io/qe_save_reader.py",
+     "src/file_io/epsreader.py",
+     "src/file_io/read_bgw_vcoul.py",
+     "src/file_io/tagged_arrays.py",
+     "src/file_io/kin_ion.py",
+     "src/file_io/centroids.py",
+     "src/file_io/paths.py",
+     "src/file_io/__init__.py",
+     "src/common/load_wfns.py",
+     "src/common/wfn_loader_backend_parity_test.py"
+    ],
+    "notes": "wfn_loader embeds symmetry-unfold machinery (category-18 material) and the bispinor lift (category 17). ZetaReader/ZetaLoader are an unfinished old/new migration with a ~50-line copy-pasted header mirror. load_wfns is a deprecated facade slated P4-delete. mf_header schema is hand-triplicated (MfHeader / CrystalData / WFNWriter)."
+   },
+   {
+    "name": "24. Pipeline stage: results output",
+    "teleology": "Exists to serialize final GW results in BGW-compatible and LORRAX formats: sigma_diag.dat, eqp0/eqp1.dat (with the eqp0/eqp1/Z-factor linearization math), sigma_mnk.h5, WFN_qp.h5 + rotation companions, provenance stamps. A new output product or format tweak goes here.",
+    "members": [
+     "src/gw/gw_output.py",
+     "src/gw/eqp_bgw.py",
+     "src/file_io/sigma_output.py",
+     "src/file_io/qp_wfn.py",
+     "src/common/provenance.py"
+    ],
+    "notes": "eqp_bgw contains real QP physics (Delta, Z from central difference) that is duplicated in gw_output.write_results and twice in gw_jax debug blocks \u2014 four copies kept bit-consistent by hand. Dual WFN_qp.h5 writers (SC vs one-shot) with 'same physics, slightly different numerics'."
+   },
+   {
+    "name": "25. Infrastructure: runtime bootstrap & shared plumbing",
+    "teleology": "Exists to make every driver start identically: env defaults before jax import, idempotent jax.distributed init on Perlmutter, CPU fallback, NCCL warmup, persistent compile cache, and shared constants/facades. Any process-startup behavior goes here \u2014 never re-inlined per driver.",
+    "members": [
+     "src/runtime/__init__.py",
+     "src/common/jax_compile_cache.py",
+     "src/common/units.py",
+     "src/common/__init__.py"
+    ],
+    "notes": "JAX_ENABLE_X64 setdefault still repeated in 8+ modules; cusolvermp_eigh_test carries a drifted private bootstrap copy; bse/ never got the RYD_TO_EV cleanup (15 inline copies)."
+   },
+   {
+    "name": "26. Infrastructure: diagnostics & instrumentation",
+    "teleology": "Exists to observe runs without changing them: hierarchical wall-clock timing, XLA profiler trace hooks, BGW-style progress bars. New instrumentation goes here and is consumed via the existing section/annotation idioms.",
+    "members": [
+     "src/common/timing.py",
+     "src/common/jax_profile.py",
+     "src/common/progress.py"
+    ],
+    "notes": "timing and jax_profile are two overlapping instrumentation systems (text table vs trace) \u2014 tolerable pair. progress.scan_progress is written-but-unwired (intended for the scan-inside-shard_map refactor)."
+   }
+  ],
+  "interactions": [
+   {
+    "a": "src/gw/gw_jax.py",
+    "b": "all pipeline stages (9,10,12,14,15,16,24)",
+    "mechanism": "Direct function calls in dataflow order (prepare_isdf_and_wavefunctions -> compute_chi0/solve_w -> compute_cohsex_sigma -> compute_ppm_sigma_pipeline -> run_self_consistency -> write_results); also owns the tmp/ artifact paths (isdf_tensors_{n_rmu}.h5, v_q_bispinor.h5) stages communicate through."
+   },
+   {
+    "a": "src/gw/gw_config.py",
+    "b": "every category",
+    "mechanism": "Frozen LorraxConfig dataclass threaded opaquely; ~90-key _DEFAULTS table is the flag surface. Three legacy/new flag encodings are translated in THREE different modules (gw_config, slab_io._normalize_slab_backend, w_isdf._normalize_screening_solver) \u2014 refactoring any one encoding touches all three."
+   },
+   {
+    "a": "src/gw/wavefunction_bundle.py (cat 19)",
+    "b": "src/gw/w_isdf.py + src/gw/cohsex_sigma.py + src/gw/ppm_sigma.py",
+    "mechanism": "Shared PartitionSpec constants (G_FFT7D_SPEC, V_FFT5D_SPEC, CHI_Q_SPEC...) and the 4-copy psi layout protocol (xn/xr/yr/yn, un-conjugated) \u2014 a sharding contract every stage kernel assumes; changing one spec recompiles/breaks all consumers."
+   },
+   {
+    "a": "src/common/isdf_fitting.py (cat 9)",
+    "b": "src/file_io/zeta_reader.py + src/gw/v_q_g_flat.py (cat 10)",
+    "mechanism": "zeta_q.h5 file-format contract: zeta_q_G (n_q_disk, n_rmu, ngkmax) c128 with sentinel-padded G slots and padded-mu extent, isdf_header.zeta_layout flag dispatching r_space vs G_flat V_q paths, zeta_is_done completion flag."
+   },
+   {
+    "a": "src/gw/gw_init.py",
+    "b": "src/gw/gflat_memory_model.py + src/gw/aot_memory_model/chooser.py",
+    "mechanism": "Call-ORDER contract: plan_gflat_chunks unconditionally overwrites the aot chooser's chunk_r/band_chunk picks (gw_init.py:636 after :484) \u2014 the aot chooser is dead in production purely by sequencing."
+   },
+   {
+    "a": "src/gw/aot_memory_model/kernels/*",
+    "b": "production kernels in isdf_fitting, w_isdf._tau_step, ppm_sigma._sigma_kij, load_wfns, compute_vcoul",
+    "mechanism": "Copy-mirrored kernel bodies (some import the real factory, most hand-reimplement) \u2014 a documented must-keep-in-sync drift coupling; any production kernel change silently invalidates the memory fit."
+   },
+   {
+    "a": "src/gw/gflat_memory_model.py",
+    "b": "src/common/isdf_fitting.py + src/common/wfn_transforms.py + src/common/gamma_matrices.py",
+    "mechanism": "Analytic peak coefficients pinned to HLO/live_arrays slot accounting of specific kernel implementations (cross-ref comments at load_wfns.py:374, gamma_matrices.py:153); changing kernel buffer lifetimes breaks the planner numerically with no test failure."
+   },
+   {
+    "a": "src/gw/w_isdf.py (cat 12)",
+    "b": "src/ffi/cublasmp/batched.py (cat 21)",
+    "mechanism": "ScreeningSolver flag dispatch to batched_fused_w_solve; sharding contract P(None,'x','y') with one-tile-per-rank divisibility and row-major->col-major pre-transpose trick; plus stale symbol names in the C++ pointing at renamed w_isdf functions."
+   },
+   {
+    "a": "src/common/isdf_fitting.py (cat 9)",
+    "b": "src/ffi/cusolvermp/batched.py (cat 21)",
+    "mechanism": "cusolvermp_charge/cusolvermp_lu flags select potrf+potrs (charge, HPD) vs LU (transverse, indefinite CCT); CusolverMpBatchedLowerL opaque handle rebuilt from bare .raw array + metadata at isdf_fitting.py:1286 \u2014 a layout contract crossing the FFI boundary."
+   },
+   {
+    "a": "src/file_io/slab_io.py (cat 22)",
+    "b": "all writers/readers (cats 9,10,23,24)",
+    "mechanism": "offset/global_shape/valid_shape padding contract: padded slab in memory, logical prefix on disk. runtime/padding.valid_shape_from_pad_meta was built to own this but is unwired \u2014 the contract is currently enforced by convention at every call site."
+   },
+   {
+    "a": "src/common/psi_G_store.py",
+    "b": "src/common/isdf_fitting.py",
+    "mechanism": "io_callback host-slice protocol (_slice_local_tile_bc): static zero-padded (nk, _bpd_max, ns, ngkmax) shape contract inside lax.scan; the aot memory model duplicates this layout math in a stub instead of subclassing."
+   },
+   {
+    "a": "src/common/symmetry_maps.py + src/centroid/orbit_syms.py (cat 18)",
+    "b": "src/gw/v_q_g_flat.py + src/gw/v_q_bispinor.py + src/gw/gw_jax.py (W unfold) + src/common/isdf_fitting.py (IBZ write gate)",
+    "mechanism": "The IBZ cascade: orbit-closure gate (compute_centroid_sym_perm) recomputed independently at 3+ sites decides IBZ-only zeta/V_q/W; unfold_v_q sharded double-permute + umklapp L-phase + TRS conj; LORRAX_FORCE_FULL_BZ env var bypasses everything. This is the trs-blind-sym-bug surface and the tightest cross-category coupling in the repo."
+   },
+   {
+    "a": "src/gw/head_correction.py (cat 11)",
+    "b": "src/psp/get_dipole_mtxels.py (cat 4) + src/file_io/epsreader.py (cat 23)",
+    "mechanism": "wcoul0_source flag selects head source by FILE FORMAT: dipole.h5 (dipole_cart/deltaE via chi_from_dipole.compute_S_omega) vs eps0mat.h5 (.epshead via EPSReader); paths hardwired to <input_dir>."
+   },
+   {
+    "a": "src/gw/head_correction.py",
+    "b": "src/gw/coulomb/* via src/gw/vcoul.py",
+    "mechanism": "compute_q0_averages -> get_kernel(meta.sys_dim).q0_average dispatch; sys_dim is a DYNAMIC attr set on Meta by gw_jax (not a dataclass field) \u2014 a stringly runtime contract."
+   },
+   {
+    "a": "src/gw/minimax_screening.py (cat 13)",
+    "b": "src/gw/w_isdf.py + src/gw/ppm_sigma.py",
+    "mechanism": "MinimaxNodes pytree + (tau, alpha) node contract; window recipes (noncrossing/imag/crossing + mixed-sign tau for HL) consumed as-is by chi0 integration and Sigma_c windows; shipped-asset npz schema differs from disk-cache schema for the same payload."
+   },
+   {
+    "a": "src/gw/greens_function_kernel.py",
+    "b": "src/gw/w_isdf.py + src/gw/ppm_sigma.py + src/gw/aot_memory_model/kernels",
+    "mechanism": "One build_G_tau kernel with a sign-of-t convention (real tau = imaginary time for chi0; pure-imaginary t = real time for Sigma_c); aot kernels import the real function, coupling the memory model to its signature."
+   },
+   {
+    "a": "src/gw/sigma_dispatch.py",
+    "b": "src/gw/screening.py",
+    "mechanism": "W_by_role dict contract ('static' = W(0), 'probe' = PPM second point) defined jointly across the two modules \u2014 a new Sigma scheme must extend both in lockstep."
+   },
+   {
+    "a": "src/gw/sc_iteration.py",
+    "b": "src/gw/ppm_pipeline.py",
+    "mechanism": "Private reach-in: dump_sigma_omega_h5_final stubs ppm_pipeline._write_sigma_omega_h5's arg contract via SimpleNamespace \u2014 parallel knowledge of a private signature."
+   },
+   {
+    "a": "src/gw/sigma_x_bispinor.py",
+    "b": "src/gw/cohsex_sigma.py",
+    "mechanism": "Imports private _make_cohsex_kernels and reuses the scalar sigma_sx jit kernel over 9 transverse tiles; the public get_cohsex_kernels wrapper is consequently dead."
+   },
+   {
+    "a": "src/gw/v_q_bispinor.py (cat 10)",
+    "b": "src/gw/sigma_x_bispinor.py (cat 14)",
+    "mechanism": "v_q_bispinor.h5 schema: 7 unique tile datasets + v_qmunu_format footer + hermitian_pairs/zero_tiles JSON attrs; BispinorVqReader synthesizes Hermitian/zero tiles and owns mu-padding \u2014 but sigma_x_bispinor._pad_V_to_padded duplicates the padding invariant (two sources of truth)."
+   },
+   {
+    "a": "src/common/gamma_matrices.py (cat 17)",
+    "b": "src/common/isdf_fitting.py + src/gw/sigma_x_bispinor.py",
+    "mechanism": "(perm, phase) monomial decomposition contract for gamma-tilde contractions; module-GLOBAL gamma_contract_mode set once by gw_init from config \u2014 hidden mutable state coupling the two stages."
+   },
+   {
+    "a": "src/gw/kin_ion_io.py (cat 4)",
+    "b": "src/gw/gw_jax.py + src/gw/eqp_bgw.py",
+    "mechanism": "kin_ion.h5 format contract: dataset 'kin_ion' (nk_full, nb, nb) c128 Ry, loaded via file_io/kin_ion band-block reader; kin_ion_io parses cohsex.in with psp's copy-paste parser and hard-codes the output name gw_config's kin_ion_file key never reaches it."
+   },
+   {
+    "a": "src/gw/eqp_bgw.py",
+    "b": "src/gw/gw_output.py + src/gw/gw_jax.py (freq-debug block)",
+    "mechanism": "eqp0/eqp1/Z-factor recipe duplicated four times and kept bit-consistent BY HAND (gw_jax deliberately recomputes with the writer's recipe); an implicit numeric contract with no shared function."
+   },
+   {
+    "a": "src/file_io/wfn_loader.py (cat 23)",
+    "b": "src/common/psi_G_store.py + src/common/wfn_transforms.py + src/common/gvec_fft_box.py (cats 9,19)",
+    "mechanism": "box_index_dev single shared device buffer (dedup contract that fixed a 1.3 GB/rank replication leak) + G-flat (nk, nb_padded, ns, ngkmax) sentinel-padded psi layout every transform assumes."
+   },
+   {
+    "a": "src/psp/run_nscf.py + src/solvers/pseudobands*.py (cat 6)",
+    "b": "src/common/isdf_fitting.py (cat 9)",
+    "mechanism": "Pseudoband weights stored as band NORMS inside WFN.h5 coefficients; zeta fit pre-divides by band_norms \u2014 a silent physics convention transported through the file format with no schema marker."
+   },
+   {
+    "a": "src/centroid/kmeans_cli.py (cat 3)",
+    "b": "src/gw/gw_init.py + IBZ cascade (cats 9,18)",
+    "mechanism": "centroids_frac_*.txt text format with '# density: scalar|current' header; whether the centroid set is orbit-CLOSED (--orbit default) gates the entire downstream IBZ-only zeta/V_q/W cascade \u2014 a preprocessing choice that flips production code paths."
+   },
+   {
+    "a": "src/file_io/mf_header.py",
+    "b": "src/file_io/qe_save_reader.py + src/file_io/wfn_writer.py",
+    "mechanism": "mf_header schema hand-maintained in triplicate (MfHeader reader / CrystalData producer / WFNWriter._write_header); a schema change must touch all three or silently corrupt artifacts."
+   },
+   {
+    "a": "src/runtime/__init__.py (cat 25)",
+    "b": "every driver main (gw_jax, kmeans_cli, run_nscf, run_sternheimer, bse)",
+    "mechanism": "Import-order side-effect contract: set_default_env must execute before ANY jax import; _LORRAX_JAX_DISTRIBUTED_DONE env sentinel makes init idempotent across re-imports; drivers that inline their own copy (cusolvermp_eigh_test) drift."
+   },
+   {
+    "a": "src/gw/scissor.py + src/gw/band_partition.py",
+    "b": "src/gw/gw_jax.py",
+    "mechanism": "Omega-window in-grid classification is performed twice with DIFFERENT units (eV window at gw_jax:506 vs Ry window at :665) that are only consistent if the windows coincide exactly \u2014 a fragile unit contract at the SC/one-shot seam."
+   },
+   {
+    "a": "src/file_io/tagged_arrays.py (cat 23)",
+    "b": "bse/bse_io.py (out of scope) + src/gw/gw_jax.py",
+    "mechanism": "isdf_tensors_{n_rmu}.h5 restart format v2 is the GW->BSE seam: W0_qmunu with W0_ready attr handshake protocol, vhead/whead head scalars, kgrid attr \u2014 a cross-package file contract."
+   }
+  ],
+  "misfits": [
+   "src/gw/gw_init.py \u2014 the repo's worst multi-category file: zeta-fit stage orchestration (its home) + THREE stacked memory planners (cat 20) + V_q dispatch (cat 10) + restart-state I/O (cat 23) + wavefunction-bundle build (cat 19). Splitting it along these seams is prerequisite to collapsing the planners.",
+   "src/gw/w_isdf.py:quadrature builders (build_static/imag/real_quadrature) \u2014 frequency-axis (cat 13) code hosted inside the chi0/W stage file; also hosts the _ensure_compilation_cache alias that ppm_sigma reaches into.",
+   "src/gw/v_q_tile.py:_choose_v_q_chunks + AOT shrink-retry \u2014 a complete embedded memory chooser (cat 20) inside a physics stage file, stacked on top of the two planner systems it duplicates.",
+   "src/gw/v_q_tile.py:_unfold_g0_ibz_to_full/_unfold_v_q_ij_ibz_to_full, src/gw/v_q_g_flat.py:_resolve_ibz_q_list, src/file_io/zeta_loader.py:_unfold_q_full_bz \u2014 symmetry actions (cat 18) hand-rolled outside symmetry_maps; the declared unified-sym-action consolidation target.",
+   "src/gw/eqp_bgw.py \u2014 QP-linearization physics living in an output writer, with the math duplicated in gw_output.write_results and the gw_jax freq-debug block (4 copies).",
+   "src/gw/gw_driver_helpers.py \u2014 grab-bag straddling config plumbing (PPMSigmaRuntimeOptions 23-field mirror), runtime init (cat 25), and BGW-comparison ingestion (cat 23's read_bgw_vcoul closure).",
+   "src/psp/get_DFT_mtxels.py \u2014 one file hosting a reusable kernel library (cat 5), a stale debug driver, and the third copy of the cohsex.in parser (cat 2).",
+   "src/common/coulomb_sphere.py \u2014 serves both the zeta writer's on-disk G-layout (cat 9/23) and the V_q kernel's gather sphere (cat 10); the |q+G|^2<=cutoff condition must stay consistent across two modules.",
+   "src/common/fft_helpers.py:compute_block_size_for_2d_cholesky \u2014 distributed-linalg block chooser (cat 21) misplaced in the FFT module; sole caller is isdf_fitting.",
+   "src/file_io/wfn_loader.py \u2014 embeds symmetry unfold (cat 18) and the bispinor lift (cat 17) inside a format reader; eager backend slurps whole WFN.h5 for the ~25 metadata-only WFNReader-alias users.",
+   "src/file_io/zeta_loader.py vs src/file_io/zeta_reader.py \u2014 unfinished old/new reader migration; v_q_g_flat carries a duck-typing shim that exists only because both survive.",
+   "src/common/load_wfns.py \u2014 deprecated facade over WfnLoader+wfn_transforms, P4-slated for deletion; get_enk_bandrange is its only heavily-used symbol and should move.",
+   "src/gw/experimental/head_wing_schur.py \u2014 staged W-builder with zero production callers, duplicating solve_w's result and lorrax_A's finite_q_head_interp; promote into cat 12 or delete.",
+   "src/common/chi_sos.py \u2014 fully unwired SOS head/wing backend duplicating chi_from_dipole.compute_S_omega.",
+   "src/centroid/centroid_io.py \u2014 orphan second centroid-txt reader; merge its density-header validation into file_io/centroids.py and delete.",
+   "src/gw/vcoul.py \u2014 half-commented superseded shim; two dead functions, one live Voronoi helper that belongs in gw/coulomb/base.",
+   "src/solvers/cg_posdef.py and src/solvers/minres.py \u2014 two dead generations of the Sternheimer solver next to the live inline CG.",
+   "src/common/bispinor_init.py \u2014 legacy lift kept only as a test oracle for wfn_loader's production copy.",
+   "src/gw/aot_memory_model/chooser.py \u2014 production-dead by call-order clobber (gflat planner overwrites its picks); most per-stage aot kernels are subsumed by the composite fit_one_rchunk kernel.",
+   "gw_jax LORRAX_SC_* / LORRAX_V_Q_* env knobs \u2014 a shadow flag surface outside gw_config._DEFAULTS (live TODO in sc_iteration acknowledges it).",
+   "src/gw/sigma_dispatch.py vs gw_jax one-shot \u2014 two parallel top-level Sigma orchestrations with divergent capabilities (bispinor + Gij only on the path that bypasses the dispatcher).",
+   "src/mixing/acceleration.py \u2014 jitted Anderson/CROP/rCROP cores all dormant; only the plain-Python rcrop_nojit duplicate is production."
+  ],
+  "observations": [
+   "The variant axes are implemented as per-stage FORKS, not orthogonal layers. Bispinor: duplicated Sigma^B stanzas in both static-Sigma drivers, dual V_q orchestrators, a padding invariant owned twice. IBZ symmetry: unfold kernels in five files. Coulomb truncation: v(q+G) formula in three modules per dimension. Each axis-touch currently costs one edit per stage; the refactor should make each axis one module the stages call.",
+   "Memory planning is four parallel systems (gw_init legacy closed-form, aot_memory_model NNLS, gflat_memory_model analytic \u2014 the final authority that clobbers the others \u2014 and runtime/aot_memory exact AOT probe). The exact-probe approach (used only by v_q_tile) plus one analytic model is the plausible survivor; the aot kernels/ mirror-of-production pattern is the maintenance tax that argues for killing the fitted system.",
+   "Old/new parallel paths are the dominant cruft pattern (~30 confirmed instances: ZetaReader/ZetaLoader, r-space/G-flat V_q, pb v1/v2, eager/phdf5 wfn backends, three flag encodings, dual sigma_omega writers, dual eqp entry points, jit/nojit rcrop, plain/orbit kmeans, three gamma contract modes...). This directly violates the project's stated no-redundancy rule and should be the refactor's headline deletion list.",
+   "File-format contracts (WFN.h5, zeta_q.h5+isdf_header, v_q_bispinor.h5, isdf_tensors restart, kin_ion.h5, dipole.h5, sigma_mnk.h5, centroids_frac.txt) are the stable stage boundaries and the safest refactor seams \u2014 code can move freely as long as these stay frozen. Two silent conventions ride on them with no schema marker: pseudoband weights as band norms, and orbit-closure of centroid files gating the IBZ cascade.",
+   "Private-symbol cross-module reach-ins mark every missing public seam: ppm_sigma->w_isdf._ensure_compilation_cache, sigma_x_bispinor->cohsex_sigma._make_cohsex_kernels, sc_iteration->ppm_pipeline._write_sigma_omega_h5, head_wing_schur->w_isdf._get_w_solve_fn, run_sternheimer->vnl_ops._build_vnl_kdata_core, zeta_loader->zeta_reader._do_disk_to_G, phdf5/read->_slab_io_ffi._sharding_to_axis_info (an upward import). Fixing these defines module boundaries almost mechanically.",
+   "Refactor order implied by the interaction graph: (1) unified sym action (cat 18 absorbs the five scattered unfolds \u2014 it sits upstream of zeta, V_q, W, and psi and is where the TRS bug class lives); (2) collapse the memory planners and extract them from gw_init/v_q_tile; (3) delete the old halves of parallel reader/compute paths (ZetaReader-vs-Loader, r-space V_q, legacy bispinor orchestrator); (4) route the one-shot path through sigma_dispatch so there is one Sigma orchestration; (5) move eqp math out of the writers into cat 16.",
+   "The sharding contract is healthily centralized in wavefunction_bundle's spec constants \u2014 the one place where the layout law is already single-source. The padding law is the opposite: runtime/padding was written as the single source but never wired; the contract lives as convention at every SlabIO call site.",
+   "Config hygiene is bimodal: cohsex.in keys have a genuine single source (_DEFAULTS) but env vars form a second, undocumented flag surface (LORRAX_SC_*, LORRAX_V_Q_*, LORRAX_FORCE_FULL_BZ, LORRAX_MEM_*, ~25 total), and two full copy-paste parsers survive in psp. The digest shows env flags are exactly where the SC loop's and V_q's behavior forks \u2014 high-risk invisible state.",
+   "~20 standalone main() harnesses in src/common (FFI correctness/bench) share four drifted copies of the distributed-bootstrap boilerplate and near-identical matrix builders; one parametrized harness importing runtime.init_jax_distributed would replace nearly all and remove the drifted bootstrap copies.",
+   "Category sizes reveal where the physics actually is: the five core GW stages (9,10,12,14,15,16) total ~20 files, while infrastructure (19-23) totals ~80. The refactor's leverage is almost entirely in infrastructure consolidation and axis unification, not in the stage kernels themselves \u2014 the stage-level dataflow (zeta -> V_q -> chi0/W -> Sigma -> QP) is already clean at the call-graph level, obscured mainly by gw_init and the parallel paths."
+  ]
+ }
+]

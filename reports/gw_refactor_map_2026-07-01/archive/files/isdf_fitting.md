@@ -1,0 +1,108 @@
+# src/common/isdf_fitting.py — deep-read notes (2026-07-01)
+
+Repo: `/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D`
+LOC: 2742. Category: **physics: ISDF ζ-fit stage** (pair density → CCT → Cholesky/LU → ζ solve → G-flat writer), with embedded memory-profiling utilities.
+
+## Purpose
+
+Implements the full ISDF zeta-fitting pipeline: build the interpolation
+metric C_q = (CC^T)_q from centroid pair densities, factor it (Cholesky
+for the PSD charge channel γ̃⁰=I, pass-through + ridge-LU for the
+indefinite transverse channels γ̃^i), then stream over r-chunks solving
+C_q ζ_q = Z_q and accumulating ζ into a G-flat buffer written once to
+`zeta_q.h5` (`zeta_q_G` dataset). Also hosts the module-level HBM
+probes (`mem_probe`, nvidia-smi peak tracking) shared with `gw_init`.
+
+## Function table
+
+| Function | Lines | Role |
+|---|---|---|
+| `_mem_report(label)` | 31–40 | Print device `bytes_in_use`/`peak` when `LORRAX_MEM_PROFILE` set. **Zero callers anywhere** (grep `_mem_report` across src/tests/tools/scripts: only the def). DEAD. |
+| `mem_probe(label, only_rank0=True)` | 43–98 | `LORRAX_MEM_DEBUG=1` HBM probe: XLA allocator stats + top-10 `jax.live_arrays()` shapes + nvidia-smi sample. Callers: internal (`fit_zeta_to_h5` P0/P1/P3, r-chunk loop) and `gw.gw_init:1244` (`pre_v_q`/`post_v_q`). |
+| `_nvsmi_used_mb_local_gpu()` | 101–127 | Subprocess `nvidia-smi --id=$CUDA_VISIBLE_DEVICES[0]` → used MB; updates module globals `_NVSMI_PEAK_MB`/`_NVSMI_LAST_MB`. Never raises. |
+| (mid-file imports) | 128–141 | `jax_profile`, `cholesky_2d`, `fft_helpers`, `load_wfns`, `wfn_transforms.to_rchunk_inner`, `io_callback` — imports placed AFTER function defs (leftover from probe-block insertion at top). |
+| `pair_density(psi_rmuT_X, psi_rcol_Y, mesh_xy)` | 175–209 | Open-spin pair density P_k,ab(μ,col) = Σ_n ψ*_{n,k,a}(μ) ψ_{n,k,b}(col). einsum VERBATIM: `'kmna,knbr->kabmr'`. In: (nk,n_rmu,nb,ns)@P(None,'x',None,None) and (nk,nb,ns,n_col)@P(None,None,None,'y'); out (nk,ns,ns,n_rmu,n_col)@P(None,None,None,'x','y'). Cached jit per shape in `_pair_density_cache`. Caller: `centroid.pivoted_cholesky:969,984` ONLY (hot ζ-fit path never materialises P_k_ab; kept for the q=0 centroid-selection Gram which can afford full HBM residency). |
+| `gram_q0_from_pair(P_v_k, P_c_k, k_weights, gamma_L, gamma_R, *, mesh_xy)` | 224–312 | q=0 valence×conduction Gram: G(μ,ν) = Σ_k w_k Σ_{αβα'β'} γ̃^{μL}_{αα'} γ̃^{νL}_{ββ'} P_v*_{αβ}(μ,ν;k) P_c_{α'β'}(μ,ν;k); Hermitian-symmetrized `0.5*(G+G^H)`. γ=None → identity short-circuit via `gamma_double_contract(spin_axes=(1,2))`. Out (n_rmu,n_rmu)@P('x','y'). Caller: `centroid.pivoted_cholesky:991` only. Cache: `_isdf_pipeline_cache`. |
+| `c_q_from_psi_sm(psi_l_X, psi_l_Y, psi_r_X, psi_r_Y, gamma_L, gamma_R, *, kgrid, mesh_xy)` | 349–468 | CCT builder: monolithic shard_map fusing pair density + IFFT(k→R) + γ̃·γ̃ spin contraction + FFT(R→q). einsums VERBATIM: `'kmna,knbr->karmb'` (both P_l and P_r; output order chosen so rank-3→rank-7 reshape is a bitcast — drops one rank-5 HLO slot, 21→13 GiB kernel peak at MoS2 3×3 bispinor). `jnp.fft.ifftn(axes=(0,1,2), norm='forward')` then `gamma_double_contract(spin_axes=(3,6))` then `fftn(norm='forward')`. Out C_q (nq,n_rmu,n_col)@P(None,'x','y'). Callers: `fit_zeta_to_h5` STEP 2 (charge line 2093, transverse 2099); mentioned in tests/test_psi_g_store.py comments. Cache: `_pair_pipeline_sm_cache` keyed on id(mesh)+shapes+γ-identity bools. |
+| `z_q_from_psi_sm(psi_l_X, psi_r_X, psi_G_store, *, band_chunk_ranges, band_range_left/right, r_start_dyn, r_chunk_size, gamma_L/R, kgrid, mesh_xy)` | 471–856 | ZCT builder, Round-6 streaming redesign: `lax.scan` over band-chunks INSIDE one shard_map. Per iter: (1) `io_callback` pulls this rank's 1/P bands of bc from host `PsiGStore._slice_local_tile_bc`; (2) `to_rchunk_inner` IFFT to FULL r-chunk slab (IFFT-first; gather-first would need ~80 GB FFT box); (3) `all_gather(axis_name=('x','y'), axis=1, tiled=True)` over bands, THEN slice r to this y-rank's r_loc slab (order mandatory for band/r coherence); (4) L/R window masks `jnp.where` on global band index (bc_valid handles short final bc); (5) accumulate einsums VERBATIM: `'kmna,knbr->karmb'` into carries (P_l_acc, P_r_acc) shape (nk,ns,r_loc,mu_loc,ns). ψ_X front/back zero-padded so `dynamic_slice` never hits XLA's silent OOB clamp (round6_discussion.md:506 BLOCKER — clamp returns wrong bands the mask can't fix). Post-scan tail = same IFFT→γ̃·γ̃→FFT as c_q. `unroll=1` mandatory (slot aliasing). Per-bc offset tables built as **numpy** (not jnp) constants and lifted inside the Manual-mode body (closure-captured Auto-sharded arrays trip a mesh-context mismatch). Out Z_q (nq,n_rmu,n_zchunk)@P(None,'x','y'). Requires `r_chunk_size % p_y == 0`. Callers: internal (`z_q_phase`), tests/test_zq_from_psi_sm_bit_identity.py, tests/test_band_chunk_size_floor.py (asserts the divisibility ValueError). |
+| tombstone comment | 859–861 | "Backward-compat shim removed — old z_q_from_psi_sm signature (pre-computed psi_l_Y/psi_r_Y) is gone." |
+| `_identity_pad_block_diagonal(M, *, n_rmu_logical, mesh_xy)` | 864–917 | Adds 1 to diagonal on pad positions [n_rmu_logical, n_rmu): M → block_diag(M_log, I_pad). Cholesky/LU of identity-padded matrix has bit-identical logical block (recursion never crosses zero off-diagonal pads; √1=1 exact in IEEE754). Explicitly NOT ridge regularisation. Internal only (factor_c_q:1087). |
+| `_resolve_solver_kind_charge(mesh_xy, override)` | 920–953 | Policy: cuSolverMp distributed potrf on true 2D meshes (px≥2 AND py≥2), in-tree sharded Cholesky otherwise. cohsex.in key `cusolvermp_charge` = off/on/auto. Measured tradeoff documented: MoS2 2×2 mesh chol 3.6 s FFI vs 1.3 s sharded — accepted for large-scale win. |
+| `_resolve_solver_kind_transverse(mesh_xy, override)` | 956–984 | Same policy for transverse getrf/getrs. cohsex.in key `cusolvermp_lu`. Notes cuSolverMp 0.7.2 fixed a 2D-grid LU correctness bug (history in `src/ffi/cusolvermp/cpp/batched_solve_lu_ffi.cc`). |
+| `_resolve_solver_kind(mesh_xy, vertex_mu_L, solver_kind, cusolvermp_charge, cusolvermp_lu)` | 987–1000 | 'auto' dispatcher: μ_L≠0 → transverse resolver, else charge. |
+| `factor_c_q(C_q, mesh_xy, block_size, vertex_mu_L, n_rmu_logical, solver_kind)` | 1003–1162 | L_q = chol(C_q) per q for μ_L=0 (PSD). μ_L≠0: pass-through of identity-padded CCT (indefinite; γ̃^i⊗γ̃^i eigenvalues ±1 → Cholesky NaNs). Branches: (a) cusolvermp → `ffi.cusolvermp.batched_distributed_cholesky(...).raw`; (b) 1×1 mesh → dense `jnp.linalg.cholesky` with ridge `1e-14·|tr|·I` (JAX 0.9 shard_map+scan carry-type failure on 1×1 documented); (c) 2D-blocked tiles via `cholesky_2d_batched` + `dense_to_tiles`/`tiles_to_dense`, tile spec P(None,'x','y',None,None). Callers: `fit_zeta_to_h5:2149`, `bandstructure/htransform.py:27`, `tests/test_padding.py` (4 tests), `src/common/isdf_zeta_mode_test.py:94` (STALE — passes `memory_mode=` kwarg that no longer exists). |
+| `_reshard_zeta_mu_X_r_Y_to_mu_XY(zeta, mesh_xy)` | 1169–1191 | (q,μ_X,r_Y) → (q,μ_XY,r_) single-axis all-to-all for the cuSolverMp branches; lands ζ in the layout `accumulate_rchunk_to_gflat` wants. Docstring records that donate/jit wrapping made no difference (~3 ms). |
+| `_reshard_zeta_r_XY_to_mu_XY(zeta, mesh_xy)` | 1194–1211 | (q,μ_,r_XY) → (q,μ_XY,r_) staged through P(None,'x','y') because SPMD's all-to-all planner handles one mesh axis at a time. Used by the shard_map solve branch. |
+| `solve_zeta(L_q, Z_q, mesh_xy, q_chunk_size, vertex_mu_L, solver_kind, cct_trace_per_q)` | 1214–1530 | ζ_q = C_q⁻¹ Z_q. μ_L=0: two triangular solves L y = Z, L^H ζ = y. μ_L≠0: pivoted LU on (CCT + ε·|tr|/n·I), ε=`LU_RIDGE`=1e-12 (Bunch-Kaufman LDL^T noted as the "right" factorization but not exposed by JAX). Four solver kinds: `cusolvermp_cholesky` (potrs, NRHS padded to %Py), `cusolvermp_lu` (getrf+getrs, ridge from precomputed `cct_trace_per_q` to avoid a per-r-chunk all-reduce ≈17 s on MoS2 3×3 bispinor), `sharded_cholesky`, `lu`. Legacy path: Z reshard P(None,'x','y')→P(None,None,('x','y')) via donated two-step through P('x',None,'y') (Involuntary-full-remat avoidance; measured 31.14→15.57 GB/dev at Si 4×4×4, lorrax_B commit c0307a0); then Python q-batch loop with `donate_argnums` DUS chain — comment records scan(unroll=8) OOMs, scan-no-unroll replicates accumulator (88 GB), fori_loop same; Python loop is the only working structure. Out ζ (nq,n_rmu,n_zchunk)@P(None,('x','y'),None). Callers: internal (`solve_phase`), `src/common/isdf_zeta_mode_test.py:108` (stale). |
+| `_make_fit_one_rchunk_kernel(...)` | 1556–1694 | Factory closing over static structure + PsiGStore; returns `@jax.jit` `_kernel(psi_l_X, psi_r_X, L_q, norms_l, norms_r, r_start_dyn, gamma_perm, gamma_phase, cct_trace_per_q)` = z_q_phase ∘ solve_phase (composed form kept for the AOT memory-model lowering; production calls the attached un-fused `.z_q_phase`/`.solve_phase` attributes for timing). IBZ Phase B: `Z_q[q_irr_idx_j]` gather baked into HLO when `q_irr_full_idx` given; L_q/cct_trace arrive pre-sliced. Norm scaling done as pre-multiply 1/norms (linear in ψ). NOTE: params `band_range_full`, and locals `nk_tot`(1594)/`nspinor`(1606)/`n_rmu`(1605) are unused in the body — `band_range_full` exists only to key the cache. |
+| `fit_one_rchunk(**kwargs)` | 1697–1801 | Cache wrapper: one compile per static config, key includes id(mesh), id(psi_G_store), band tuples, hash(kvecs_frac.tobytes()), is_charge, solver_kind, hash of q_irr_full_idx. μ=1/2/3 share one compile (γ (perm,phase) are runtime args). `cct_trace_per_q=None` → zeros placeholder so jit signature uniform. Runs z_q then solve with `timing.section` + optional `LORRAX_RCHUNK_DEBUG` ms prints. Cache `_fit_one_rchunk_cache` is surgically cleared by `gw_init.py:817-820`. |
+| `_band_norms_slice(band_norms, band_range, nb)` | 1804–1824 | Pseudobands weights → (nb,) divisor `max(1, w_n)`; zero-weight → 1.0 (no div-by-zero); None → ones. |
+| `fit_zeta_to_h5(wfn, sym, meta, centroid_indices, mesh_xy, chunk_r, output_file, psi_rmu_Y, psi_rmuT_X, band_chunk_size=16, q_chunk_size=1, bispinor=True, band_range_left/right, band_norms, *, slab_io_backend, gspace_mode, vertex_mu_L, solver_kind, cusolvermp_charge, cusolvermp_lu, gflat_chunk_size, write_ibz_only=True, zeta_cutoff_ry)` | 1835–2742 | Orchestrator. STEP 1: slice pre-loaded centroid ψ (views) into L=(b0,b3)/R=(b0,b4) windows, apply pseudoband norms. STEP 2: C_q via `c_q_from_psi_sm`; **orbit-closure gate moved BEFORE the IBZ slice** (bug-fix comment 2034-2043: previously ran after factor_c_q → L_q at IBZ while Z_q full-BZ → distributed-potrs shape crash); charge channel falls back to full-BZ on closure failure, transverse loud-fails (V_q orchestrator assumes IBZ ζ̃_T; hint: regen centroids with `centroid.kmeans_cli --density-mode current` or `LORRAX_FORCE_FULL_BZ=1`). IBZ slice via `symmetry_maps.slice_q_full_to_ibz`. STEP 3: `factor_c_q` (+ per-channel `cct_trace_per_q = einsum('qii->q', L_q)` for transverse). STEP 4: rank-0 `_lustre_prestripe` (env `LORRAX_PHDF5_STRIPE_COUNT`=16 / `LORRAX_PHDF5_STRIPE_SIZE_FS`=4M), `copy_mf_header` (mode='w') + `write_isdf_header` (mode='a'); SlabIO creates `zeta_q_G` (n_q_disk, n_rmu, ngkmax) c128 chunks=(1,n_rmu,ngkmax). q-vector convention: `_bgw_wrap_q` (q > kgrid/2 → q−kgrid) THEN /kgrid, matching `gw/v_q_tile.py:1204 _qvec_wrap` phase convention. ζ G-sphere from `coulomb_sphere.compute_per_q_bare_coulomb_components` when `zeta_cutoff_ry` given (REQUIRED for G-flat: line 2319 raises without it); sentinel pad Miller index (-nx/2,-ny/2,-nz/2), pad slots zero-masked before write (WFN.h5 coeffs=0 convention). STEP 5: `build_psi_G_store` (mode = cohsex.in `gspace_mode`: host_cache | file_reread). STEP 6: r-chunk loop → `fit_one_rchunk` → `accumulate_rchunk_to_gflat` (donated in-place add into μ-sharded gflat_acc @P(None,('x','y'),None), per-iter FFT-box chunking via `gflat_chunk_size`, 0 = one-shot). Single collective `zeta_q_G` write after loop (`valid_shape` clips μ pad rows); `mark_zeta_done(output_file)` flips `isdf_header/zeta_is_done` after global sync. Returns nvidia-smi peak bytes. Padded-vs-logical μ contract threaded throughout (meta.n_rmu vs meta.n_rmu_padded; disk stays logical). Caller: `gw.gw_init:708` (charge) and `gw.gw_init:829` (transverse loop). |
+
+## Physics summary
+
+- P_k,ab(μ,ν) = Σ_n ψ*_{n,k,a}(μ) ψ_{n,k,b}(ν)
+- C_q^{μL,νL}(μ,ν) = FFT_{R→q}[ Σ_{αβα'β'} P_l*_{αβ}(μ,ν;R) γ̃^{μL}_{αα'} γ̃^{νL}_{ββ'} P_r_{α'β'}(μ,ν;R) ], P(R) = IFFT_{k→R} P(k)
+- Z_q identical with right index = r-chunk points instead of centroids
+- ζ_q = argmin ‖ζ C − Z‖ solved as C_q ζ_q = Z_q: charge L L^H ζ = Z; transverse (C + 1e-12·|tr C|/n · I)⁻¹ Z via pivoted LU
+- On disk: ζ_μ(q, G) per-q G-sphere {G : |q+G|² ≤ zeta_cutoff_ry}, BGW-wrapped q phase exp(−2πi(q/kgrid)·r) baked by accumulate_rchunk_to_gflat
+
+## Entry points (grep evidence)
+
+- `fit_zeta_to_h5` ← src/gw/gw_init.py:541,708,829
+- `mem_probe` ← src/gw/gw_init.py:1244-1258 (pre_v_q/post_v_q)
+- `factor_c_q` ← src/bandstructure/htransform.py:27; tests/test_padding.py:291,355,389,422; src/common/isdf_zeta_mode_test.py:48 (stale signature)
+- `solve_zeta` ← internal; src/common/isdf_zeta_mode_test.py:48 (stale)
+- `pair_density`, `gram_q0_from_pair` ← src/centroid/pivoted_cholesky.py:858-991
+- `z_q_from_psi_sm` ← internal; tests/test_zq_from_psi_sm_bit_identity.py:35; tests/test_band_chunk_size_floor.py
+- `c_q_from_psi_sm` ← internal (fit_zeta_to_h5 STEP 2)
+- `fit_one_rchunk` / `_fit_one_rchunk_cache` ← internal loop; cache cleared by gw_init.py:817-820; AOT memory model references the kernel by name ("fit_one_rchunk", gw_init.py:474,491) via the composed `_kernel`
+- `_gamma_perm_phase_mu` re-export ← tests/test_zq_from_psi_sm_bit_identity.py:411 imports it FROM isdf_fitting (alias of gamma_matrices.gamma_perm_phase)
+
+## Flags / env consumed
+
+cohsex.in (plumbed via gw_config/gw_init): `gspace_mode`, `cusolvermp_charge`, `cusolvermp_lu`, `gflat_chunk_size`, `zeta_cutoff` (→ zeta_cutoff_ry), `band_chunk_size` (isdf), `q_chunk_size`, `chunk_r`, slab-IO backend selection; `write_ibz_only` gated upstream by `LORRAX_FORCE_FULL_BZ`.
+Env vars read here: `LORRAX_MEM_PROFILE`, `LORRAX_MEM_DEBUG`, `LORRAX_RCHUNK_DEBUG`, `LORRAX_MAX_RCHUNKS`, `LORRAX_PHDF5_STRIPE_COUNT`, `LORRAX_PHDF5_STRIPE_SIZE_FS`, `CUDA_VISIBLE_DEVICES`.
+
+## I/O
+
+- **Writes** `output_file` (zeta_q.h5): `mf_header/*` copied verbatim from source WFN.h5 (`copy_mf_header`); `isdf_header/*` (r_mu_fft_idx (n_rmu,3) i32, fft_grid, density='scalar'|'current', vertex_mu_L, zeta_layout='G_flat', gvec_components (n_q_disk,3,ngkmax) i32, ngk_per_q, zeta_cutoff_ry, zeta_is_done flag); dataset `zeta_q_G` (n_q_disk, n_rmu_logical, ngkmax) complex128, HDF5 chunks (1, n_rmu, ngkmax). Backends: SlabIO PHDF5_FFI / PHDF5_HOST (per-rank parallel write) or H5PY_ALLGATHER (rank-0 h5py). Lustre pre-stripe via `_lustre_prestripe`.
+- **Reads** WFN.h5 indirectly (via `wfn` reader + `PsiGStore`); requires `wfn._filename` for header copy.
+- Subprocess: `nvidia-smi` (memory probes; single post-loop sample — concurrent per-rank nvidia-smi in Shifter observed to hang).
+
+## Dead suspects
+
+1. `_mem_report` (31–40): grep `_mem_report` over src/tests/tools/scripts → only the def in this file. Superseded by `mem_probe` (different env var, richer output).
+2. Imports `make_flat_k_ifftn`, `make_flat_k_fftn` (135–136): never referenced in the file (monolithic shard_map bodies call `jnp.fft.*` directly per the 328-346 comment).
+3. Import `load_centroids_band_chunked` (139): referenced only inside docstrings/comments (1896, 1916, 1941, 2741) — never called.
+4. Unused args/locals in `_make_fit_one_rchunk_kernel`: `band_range_full` param (only cache-key duty in the *caller*), `nk_tot`/`n_rmu`/`nspinor` locals (1594, 1605–1606) assigned, never used in body.
+5. `src/common/isdf_zeta_mode_test.py` (caller, not this file): calls `factor_c_q(A, mesh, memory_mode=mode)` — `memory_mode` kwarg no longer exists → would TypeError; pytest `testpaths=["tests"]` never collects it. Stale test module.
+
+## Redundancy suspects
+
+1. `_track_peak` (2473–2484, nested in fit_zeta_to_h5) vs `_nvsmi_used_mb_local_gpu` (101): two nvidia-smi samplers; `_track_peak` re-imports subprocess and hardcodes `--id=0` (not CUDA_VISIBLE_DEVICES-aware), keeping a separate `_peak_bytes` from the module `_NVSMI_PEAK_MB`.
+2. `mem_probe` vs `_mem_report`: overlapping memory reporters keyed on different env vars (`LORRAX_MEM_DEBUG` vs `LORRAX_MEM_PROFILE`); `_mem_report` dead.
+3. `LU_RIDGE = 1e-12` defined twice inside `solve_zeta` (lines 1335 and 1374) — one per branch; and the legacy `'lu'` branch's `_ridge_indef_solve` recomputes `jnp.trace(L)` per q, ignoring the `cct_trace_per_q` precompute that exists precisely to avoid the per-r-chunk trace all-reduce (only the cusolvermp_lu branch uses it).
+4. Six module-level jit caches (`_pair_density_cache`, `_pair_pipeline_sm_cache`, `_isdf_pipeline_cache`, `_chol_2d_cache`, `_solve_cache`, `_fit_one_rchunk_cache`) with hand-rolled tuple keys, several keyed on `id(mesh_xy)`/`id(psi_G_store)` — id-recycling hazard after GC and inconsistent naming (`_isdf_pipeline_cache` holds only the q=0 Gram).
+5. Duplicated identity-γ default construction (`perm = arange(ns)`, `phase = ones(ns)`) appears three times (c_q 455-464, z_q 840-849, plus perm/phase args in gram_q0 300-309).
+6. Two parallel ζ reshard helpers `_reshard_zeta_mu_X_r_Y_to_mu_XY` / `_reshard_zeta_r_XY_to_mu_XY` (deliberate — different source layouts — but a refactor could unify).
+
+## Weird code
+
+1. **Imports at lines 128–141**, after three function defs and module globals — the mem-probe block was inserted above the original import section. Also `from common import jax_profile` (absolute) amid relative `from .` imports.
+2. **Mixed indentation**: ~570 tab-indented lines (pair_density through z_q_from_psi_sm, fit_one_rchunk signature region) vs 4-space elsewhere in the same file.
+3. **Stale SVD-pseudoinverse comments**: fit_zeta_to_h5 STEP 2 (2022–2025) and STEP 3 (2131–2135) claim `solve_zeta` "uses an SVD pseudoinverse with rcond cutoff" for transverse null modes; actual code is ridge (1e-12·|tr|/n) + pivoted LU — no SVD anywhere in the file. Hypothesis: comments predate the LU redesign.
+4. **Magic constants**: ridge `1e-14·|tr|` (1119, 1×1-mesh Cholesky), `LU_RIDGE=1e-12` (1335/1374), stripe defaults 16/"4M" (2336-2338), sentinel Miller index (-nx/2,-ny/2,-nz/2) for G-pad slots.
+5. **Silent-OOB-clamp defense** (599–636, 683–706): dynamic_slice on ψ band axis front+back zero-padded because XLA silently clamps OOB starts to `axis_size - slice_size`, which would deliver *physically wrong bands* the L/R mask cannot recover (round6_discussion.md:506 BLOCKER). Load-bearing index gymnastics — do not "simplify" away.
+6. **numpy-not-jnp closure constants** (594–598, 678–681): per-bc tables kept as np arrays and lifted to jnp INSIDE the Manual-mode shard_map body — closure-captured Auto-sharded jax.Arrays trip a mesh-context mismatch. Convention constraint for any refactor.
+7. **Python q-loop is load-bearing** (1511–1521): comment documents scan(unroll=8) OOM, plain scan → 88 GB accumulator replication, fori_loop same WhileOp issue; only the Python DUS+donation chain works. Same class of finding at 800–806 (`unroll=1` mandatory in z_q scan).
+8. **`LORRAX_MAX_RCHUNKS` early break** (2638–2645) still falls through to the final G-flat write + `mark_zeta_done` — a truncated profiling run produces a `zeta_q.h5` flagged trustable (`zeta_is_done=True`) with partially-accumulated coefficients. Hypothesis: acceptable for profiling but a restart-path footgun.
+9. **Misleading name** `q_irr_frac` holds FULL-BZ wrapped q-vectors when `write_ibz_only=False` (2235–2241).
+10. **Fragile sharding-equality check** (1457–1459): `getattr(Z_q.sharding, 'spec', None) == _target_sharding.spec` to skip the reshard — spec equality without mesh comparison.
+11. **Stale line-number cross-references elsewhere**: gflat_memory_model.py cites "isdf_fitting.py:625-627 (P_l_acc/P_r_acc)" (now ~721-724), ":2443/:2442-2496" (now ~2509/2554+); gw_init.py:779 cites ":1442 TypeError"; zeta_reader.py cites ":1656"; zeta_loader.py ":1689"; pivoted_cholesky.py docstrings reference nonexistent names `fit_zeta_chunked_to_h5`, `compute_pair_density_spin_traced`, `isdf_fitting.py:838-847`. Any renumbering refactor should sweep these.
+12. Tombstone comments: 859–861 (removed back-compat shim), 2169-2171 ("P_k_mumu was already deleted above" — no such variable exists anymore in this function).
+13. `jax.clear_caches()` mid-pipeline (2175) to drop array-holding jit caches before the chunk loop — global side effect on all compiled fns, relies on re-tracing being cheap.
+
+## Cross-module deps
+
+common.gamma_matrices (gamma_perm_phase, gamma_double_contract), common.cholesky_2d, common.fft_helpers (compute_block_size_for_2d_cholesky; flat-k FFT helpers imported dead), common.wfn_transforms (to_rchunk_inner, accumulate_rchunk_to_gflat), common.psi_G_store (build_psi_G_store, _PSI_G_FLAT_SPEC, _slice_local_tile_bc), common.symmetry_maps (slice_q_full_to_ibz), common.coulomb_sphere, common.load_wfns (dead import), common.timing, common.jax_profile, common.progress, common.Meta, centroid.orbit_syms (compute_centroid_sym_perm closure gate), ffi.cusolvermp (batched_distributed_cholesky/potrs/solve_lu, CusolverMpBatchedLowerL), gw.gw_config (SlabIOBackend), file_io.slab_io, file_io.mf_header, file_io.isdf_header (IsdfHeader, write_isdf_header, mark_zeta_done), file_io._slab_io_ffi (_lustre_prestripe), file_io._slab_io_allgather (_to_host).

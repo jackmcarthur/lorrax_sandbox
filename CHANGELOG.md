@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-07-09: gw_refactor_map report dir consolidated — HANDOFF.md is the fresh-session entry point [reports only]
+
+`reports/gw_refactor_map_2026-07-01/` reduced to 10 live docs + `archive/`. Read order for a
+fresh session: **HANDOFF.md first**, then STATUS.md + NEXT_TARGETS.md (both updated 2026-07-09:
+TIER-0★A static_limit and TIER-0★B device-invariance marked DONE with the correct padded-μ root
+cause; driver-transparency B→C added as the new top item; zeta_loader/zeta_reader merge marked
+UNBLOCKED by `tests/test_mu_pad_invariance.py`). Executed plans, audit catalogs, verify scripts,
+raw audit JSON, and run-debris dirs moved to `archive/` with a per-file README explaining why;
+stale cross-references in kept docs + this file repointed. No source changes.
+
 ## 2026-07-08: ppm_invalid_mode=static_limit implemented + made DEFAULT (BGW mode 3) — WS6 last physics item [D, source]
 
 On lorrax_D `agent/memplanner-cleanup` (fdf89c2 + follow-ups). Invalid PPM poles (Ω²<0) are now,
@@ -43,7 +53,7 @@ SC-GN-PPM compiles/iter 91/8/**2** → 91/6/**0** (steady state now 0 compiles /
 matching COHSEX); SC RMS trajectories bit-identical. Stale "only COHSEX is wired" comments
 fixed (SC-GN-PPM verified e2e). templates/cohsex.in + docs_gwjax/COHSEX_INPUT.md + skills
 updated to the new keys. Validation runs + before/after compile tables:
-`reports/gw_refactor_map_2026-07-01/g0w0_sc_toggle_impl/README.md`. Suite: full pass
+`reports/gw_refactor_map_2026-07-01/archive/g0w0_sc_toggle_impl/README.md`. Suite: full pass
 (golden gates bit-identical; +16 new tests: 15 config-unit + 1 fixed-point freeze).
 
 ## 2026-07-08: Padding consolidation executed — PADDING_AUDIT items 1–7, net −553 lines [D, source]
@@ -141,7 +151,7 @@ SC-GN-PPM steady state = **exactly 2 retrace+recompiles per iteration**, both fr
 **Findings:** SC IS wired for GN-PPM (ran 3 iters end-to-end; `gw_config.py:51,190` comments stale);
 streamed `kij_stream` × SC/fixed_point silently degrades (static Σ in the eigh, eqp1 Z lost);
 pre-SC one-shot W+Σ pass is redundant for SC runs; static-mode eqp0 writer vs freq_debug disagree on
-Σ_SX−Σ_X (flagged, unverified). Runs + parser: `reports/gw_refactor_map_2026-07-01/g0w0_sc_toggle_audit/`.
+Σ_SX−Σ_X (flagged, unverified). Runs + parser: `reports/gw_refactor_map_2026-07-01/archive/g0w0_sc_toggle_audit/`.
 No LORRAX source changes.
 
 ## 2026-07-08: BGW invalid_gpp_mode reference set (Si 4×4×4) — LORRAX ppm_invalid_mode validation targets
@@ -3111,7 +3121,7 @@ What still looks worth improving:
 - *Keep one MPI rank per GPU. Do not ever run one mpi rank per node with 4 GPUs or so forth.*
 
 ## 2026-07-01 — Regression-gate audit (lorrax_D, agent/docs-tighten == main e7b6c7d)
-- Full audit: `reports/gw_refactor_map_2026-07-01/GATE_AUDIT.md` (inventory, GPU run, coverage matrix, golden-gate recommendations).
+- Full audit: `reports/gw_refactor_map_2026-07-01/archive/GATE_AUDIT.md` (inventory, GPU run, coverage matrix, golden-gate recommendations).
 - Suite run on 1×A100 (pool `lx-alloc-jackm`): **5 failed / 250 passed / 20 skipped in 10:48**.
 - **The COHSEX e2e gate is RED on main**, twice over: (1) driver crashes in one-shot `write_qp_wfn_h5` (full-BZ U (9,30,30) vs wfn.nkpts=4; `debug.write_wfn_h5` default true) before the eqp compare; (2) with the writer disabled, sigSX/sigCOH drifted vs `eqp_ref.dat` (MAE 3.5 meV, max 12.5 meV sigTOT, all 270 rows > tol, VH exact) — plateau-shaped, W-side; candidates fc1602a/882ed4a. Needs bisect + either fix or reference re-freeze.
 - Other 4 failures are environment mismatch (container JAX 0.5.3 vs pyproject jax>=0.9: reshard `jax.jit` kwargs form; aot_memory libcufft probe ×3).
