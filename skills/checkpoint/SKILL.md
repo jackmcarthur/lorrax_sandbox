@@ -19,8 +19,15 @@ requirements — you must be on an `agent/<initiative>` branch before reaching t
 
 ### 1. Run the test suite (if source was modified)
 
-Run the full suite on GPUs (never the login node).  **Fast path (4-GPU
-parallel, ~3-7 min):** pytest-xdist distributes tests across workers and
+Run the full suite on GPUs (never the login node).  The standard
+invocation is PLAIN — serial, 1 GPU, ~4 min (2026-07-09 suite redesign;
+see `reports/test_suite_redesign_2026-07-09/`):
+
+```bash
+cd sources/lorrax_<X> && LORRAX_NGPU=1 lxrun python3 -m pytest -q tests
+```
+
+Optional fast path (4-GPU parallel via pytest-xdist; never required):
 `tests/conftest.py` pins each worker to its own GPU.  Do NOT use plain
 `lxrun` for this — it couples srun task count to `LORRAX_NGPU`, so 4 GPUs
 means 4 tasks each running the whole suite.  Use one srun task with 4
@@ -34,30 +41,25 @@ srun --jobid=$SLURM_JOBID --mpi=cray_shasta -N1 -n1 --gres=gpu:4 --overlap \
   python3 -m pytest -q -n 4 --dist load tests
 ```
 
-Serial fallback (1 GPU, ~8-13 min — use if xdist is unavailable or the
-parallel run shows worker-crosstalk suspicion):
-
-```bash
-cd sources/lorrax_<X> && LORRAX_NGPU=1 lxrun python3 -m pytest -q tests
-```
+Note: under xdist the session-scoped e2e state (gnppm/bispinor) rebuilds
+per worker — correct but partially redundant; serial is the contract.
 
 For quick mid-series iteration only (NOT a checkpoint gate):
-`-m "not regression"` runs the ~245 unit tests (~1-2 min) without the
-13 e2e gates.  A checkpoint always runs the full suite.
+`-m "not regression"` runs the unit tests (~1 min) without the e2e
+gates.  A checkpoint always runs the full suite.
 
-**Golden gates — these MUST pass.** A checkpoint is not valid unless all three are green:
+**Golden gates — these MUST pass.** A checkpoint is not valid unless all four are green:
 
 - `tests/test_gw_jax_regression.py::test_gw_jax_matches_reference[cohsex]`
-- `tests/test_gw_jax_regression.py::test_gw_jax_matches_reference[gnppm]`
-- `tests/test_gw_jax_regression.py::test_ibz_full_bz_equivalence`
+- `tests/test_gw_jax_regression.py::test_gw_jax_matches_reference[si_cohsex_3d]`
+- `tests/test_gw_jax_regression.py::test_gnppm_matches_reference`
+- `tests/test_invariance_gates.py::test_ibz_equals_full_bz`
 
-A clean run reports **0 failed**. Four tests are expected to **skip**, not fail —
-`tests/active/test_reshard_all_to_all.py` (one) and `tests/test_aot_memory.py`
-(three GPU cuFFT tests) are conditionally skipped on the Shifter container's JAX
-0.5.3 (pyproject pins ~0.9); their skipif conditions auto-clear once the env
-matches, so they still catch regressions. Any other failure — or a skip of a
-golden gate — is real: fix it before proceeding, or note it in the report and
-CHANGELOG and do NOT commit broken code.
+A clean run reports **0 failed** (a handful of `deselected` is normal —
+the `extra`-marked tooling suites are excluded by pyproject addopts; run
+them with `-m extra` when working on those tools). Any failure — or a
+skip of a golden gate — is real: fix it before proceeding, or note it in
+the report and CHANGELOG and do NOT commit broken code.
 
 ### 2. Commit to the feature branch (if source was modified)
 

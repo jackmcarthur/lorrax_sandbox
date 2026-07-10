@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-07-10: Test-suite redesign — 3-tier architecture, 578→~220 s plain 1-GPU run, fixtures shrunk, bispinor gate → GN-PPM [D, source]
+
+On lorrax_D `agent/driver-transparency` (5 commits, `df5befe`..`f3a982a`).
+Report: `reports/test_suite_redesign_2026-07-09/`.  The suite now meets the
+plain-invocation contract: `LORRAX_NGPU=1 lxrun python3 -m pytest -q tests`
+= **176 passed / 24 deselected in 218-258 s** (two runs), no xdist/srun
+overrides (xdist stays optional; worker→GPU pin kept; 4-GPU `-n 4` verified).
+
+- **Tier 1** (4 frozen e2e pins): si_cohsex_3d (BGW anchor, untouched),
+  cohsex (kept — only IBZ-stored WFN ⇒ only e2e ψ-unfold), gnppm (shrunk
+  642→399 orbit-closed centroids, ncond 54→20, nband 80→46; re-frozen;
+  IBZ-cascade activation now log-asserted), bispinor (upgraded static
+  COHSEX → **bispinor GN-PPM** — runs at HEAD once `whead_imfreq` is
+  provided, a lost-wiring find; 640/668→256/209 centroids, 116→40 s).
+- **Tier 2** (7 invariance gates, self-checking): restart≡fresh (NEW),
+  μ-pad flips, kij↔kij_stream, SC-iter1≡one-shot, fixed-point rotations,
+  IBZ≡full-BZ — all but the bispinor pad flip run as `restart = true`
+  variants from a COPY of the gnppm session state (session-scoped pytest
+  fixture; the ζ-fit/V_q happen once).  Measured on the shrunk fixtures:
+  restart, SC-1, and BOTH pad flips are bit-identical; kij_stream 4.5e-13;
+  IBZ≡full exactly 0.
+- **Tier 3**: 37 unit files → 17 (+5 behind a new `-m extra` marker,
+  deselected via pyproject addopts).  Deleted: planner-refit archaeology,
+  io_callback nesting smoke, rchunk/gflat pair, pivoted-Cholesky, 690-line
+  kmeans suite (→ ONE hex smoke test).  Merged: symmetry/TRS ×3 → 
+  test_symmetry_unfold; zeta loader+reader+mf_isdf+slab_io → test_file_io;
+  minimax ×2; wfn_loader ×2; per_q_sphere→V_q; psi_g_store→zq.  Full
+  triage + pin-mapping tables (all 13 old gates accounted) in the report.
+- Fixes: `charge_density.py` missing `import jax` in the wfn_ibz ρ
+  fallback (df5befe).  Checkpoint skill updated (plain invocation is the
+  standard; golden-gate names refreshed).  KNOWN_SANDBOX_ERRORS: module
+  load in non-login shells entry.
+
 ## 2026-07-09 (evening): pushed to origin/main; SC-driver move; I/O cleanliness batch (zeta merge #7); 4-GPU parallel test suite [D, source]
 
 **origin/main fast-forwarded to `d03c857`** (66 commits: the whole memplanner-cleanup program

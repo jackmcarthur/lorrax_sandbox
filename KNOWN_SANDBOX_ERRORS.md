@@ -28,6 +28,13 @@ incorrect sandbox scaffolding is the human's job.
 
 ## Issues
 
+### 2026-07-09: `module load lorrax_D lorrax_agent` fails in non-login shells (agent Bash contexts)
+- **Where**: `CLAUDE.md` compute instructions (`cd $LORRAX_SANDBOX && module use modulefiles && module load lorrax_D lorrax_agent && lxattach`).
+- **What happened**: in a non-login agent shell, `modulefiles/` (sandbox) contains only `lorrax_agent`; the `lorrax_D` base module lives in `~/modulefiles`, which is only on MODULEPATH via the login profile. Additionally, sourcing Lmod init manually and evaluating the module output in a plain non-interactive shell glob-mangles the `lxrun` shell function body (`$((nodes * 4))` — the `*` expands against CWD contents), producing a corrupted function.
+- **Expected**: the documented two-liner should work from any shell.
+- **Workaround**: run everything through `bash -l` (login shell) and `module use ~/modulefiles` explicitly before `module use modulefiles`. Also note: an `lxalloc` held by a harness *background task* dies when the harness reaps the task, killing the allocation mid-run — start detached allocations with `setsid nohup ... lxalloc ... &` instead.
+
+
 ### 2026-07-08: compare-skill `parse_sigma_hp` silently returns zero blocks on `frequency_dependence 1` (HL-GPP) logs
 - **Where**: `skills/compare/SKILL.md` §2a `parse_sigma_hp`, used against `runs/Si/00_si_4x4x4_60band/02*_bgw_hl_*/sigma_hp.log`.
 - **What happened**: HL-GPP (`freq_dep=1`) sigma_hp.log has an 11-column band row (`n Emf Eo X SX-X CH Sig KIH Eqp0 Eqp1 Znk` — no primed CH`/Sig`/Eqp0`/Eqp1` columns). The parser's `len(p) >= 15` gate rejects every row, so it returns an empty list with no error. The documented column table in the skill only describes the 15-column (`freq_dep=3` / `exact_static_ch 0`) layout.
