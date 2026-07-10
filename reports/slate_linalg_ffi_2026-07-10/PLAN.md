@@ -31,12 +31,19 @@ selectable from the input file._
   (commit scripts to `src/ffi/slate/scripts/`): (a) `gpu_backend=cuda` build, (b) CPU
   path — either the same build exercised host-only or a `gpu_backend=none` second build
   (consult SLATE INSTALL.md + NERSC docs; decide + document). Verify smoke tests vs both.
-- **P3 (me + agent)** — config integration: `slate` as a value on the distributed-linalg
-  axes with graceful absence (probe the .so; fall back with a printed note), wired at the
-  same dispatch points cusolvermp uses (solve_w / cholesky_2d call sites). Unit contract
-  tests only — no golden re-freezes (backend choice must not change physics beyond tol).
-- **P4** — CPU-node validation: `LORRAX_PARTITION=cpu lxalloc`, run the contract tests +
-  one small COHSEX gate with the slate backend on CPU.
+- **P3 (me, after P1 releases the worktree)** — config integration. REVISED after P2:
+  introduce the PORTABLE axis `distributed_cholesky = off | cusolvermp | slate`
+  (deprecated alias: `cusolvermp_charge`, via the existing deprecation machinery) and
+  `distributed_lu = off | cusolvermp` (alias `cusolvermp_lu`; SLATE getrf wrapper doesn't
+  exist yet, so `slate` is NOT a valid LU value tonight).  Graceful absence: probe the
+  .so at config resolve, fall back to in-tree with a printed note.  Wire `slate` at the
+  cholesky_2d/charge dispatch point.  Unit contract tests only — no golden re-freezes.
+- **P4 — REVISED SCOPE (P2 verdict: the FFI is GPU-only today)**: CPU validation of the
+  SLATE *library* is DONE (P2 testers on a Milan node).  A CPU-capable FFI is a ~1-2 day
+  port (host handler variants + CUDA-free .so target + per-platform loader) — documented
+  in the report, NOT tonight.  P4 tonight = GPU-node e2e validation of
+  `distributed_cholesky = slate` through the input file on the gnppm fixture (Σ within
+  gate tolerance vs the default backend) + absence-fallback behavior check.
 - **P5** — full suite, checkpoint (report + CHANGELOG), leave branch unpushed for owner
   review in the morning.
 

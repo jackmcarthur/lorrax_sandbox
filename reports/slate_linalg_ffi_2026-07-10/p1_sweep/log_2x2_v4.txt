@@ -1,0 +1,53 @@
+[lxrun] JID 55745579 · 1 nodes · 3:29:14 left · 1/1 free · incoming: lx-D
+  1  nid001097  free   —              —      —  ← starting lx-D  python3 -u /pscratch/sd/
+== sweep mesh=2x2 world=4 devices=4 ==
+[lorrax cusolverMp] library 0.7.2, NCCL 2.26.3, comm path: NCCL, grid: 2x2 (row-major)
+CELL op=mp_chol mesh=2x2 dtype=complex128 case=n64_rhs96 status=PASS res=5.338e-16 det=bit note=res_x=5.3e-16 res_L=3.5e-16 eigmin=48.30
+CELL op=mp_chol mesh=2x2 dtype=float64 case=n64_rhs96 status=PASS res=4.305e-16 det=bit note=res_x=4.3e-16 res_L=2.6e-16 eigmin=51.74
+CELL op=mp_chol mesh=2x2 dtype=complex128 case=n64_rhs16_smallNRHS status=PASS res=5.751e-16 det=bit note=res_x=5.8e-16 res_L=3.5e-16 eigmin=48.30
+E0710 03:25:06.880258  719981 pjrt_stream_executor_client.cc:3077] Execution of replica 0 failed: INTERNAL: cusolverMpPotrf (q=1) failed: status=7
+E0710 03:25:06.880258  719983 pjrt_stream_executor_client.cc:3077] Execution of replica 0 failed: INTERNAL: cusolverMpPotrf (q=1) failed: status=7
+E0710 03:25:06.880256  719985 pjrt_stream_executor_client.cc:3077] Execution of replica 0 failed: INTERNAL: cusolverMpPotrf (q=1) failed: status=7
+E0710 03:25:06.880255  719987 pjrt_stream_executor_client.cc:3077] Execution of replica 0 failed: INTERNAL: cusolverMpPotrf (q=1) failed: status=7
+Traceback (most recent call last):
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/reports/slate_linalg_ffi_2026-07-10/p1_sweep/sweep.py", line 107, in cell
+    out = fn()  # dict: status/res/det/note
+          ^^^^
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/reports/slate_linalg_ffi_2026-07-10/p1_sweep/sweep.py", line 175, in <lambda>
+    lambda: one("complex128", "edge", 2, n_edge, 2 * Py))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/reports/slate_linalg_ffi_2026-07-10/p1_sweep/sweep.py", line 153, in one
+    X1, Ln = solve()
+             ^^^^^^^
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/reports/slate_linalg_ffi_2026-07-10/p1_sweep/sweep.py", line 148, in solve
+    L = batched_distributed_cholesky(A, mesh=mesh)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src/ffi/cusolvermp/batched.py", line 165, in batched_distributed_cholesky
+    L_raw_T = jit_potrf(A)
+              ^^^^^^^^^^^^
+jaxlib.xla_extension.XlaRuntimeError: INTERNAL: cusolverMpPotrf (q=1) failed: status=7
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+CELL op=mp_chol mesh=2x2 dtype=complex128 case=edge_n4 status=ERROR res=- det=- note=XlaRuntimeError: INTERNAL: cusolverMpPotrf (q=1) failed: status=7
+CELL op=mp_chol mesh=2x2 dtype=complex128 case=nondiv_n67_expectRAISE status=RAISE res=- det=- note=ValueError: N=67 must be divisible by Px=2.
+CELL op=mp_chol mesh=2x2 dtype=complex128 case=nondiv_rhs_expectRAISE status=RAISE res=- det=- note=ValueError: Mrhs=3 must be divisible by Py=2.
+[lorrax cuBLASMp] library 0.5.1, comm path: NCCL
+NVSHMEM v3.2.5
+/dvs/p4/build/sw/rel/gpgpu/toolkit/r12.8/main_nvshmem/src/host/init/init.cu:995: non-zero status: 27 nvshmem detect topo failed 
+
+/dvs/p4/build/sw/rel/gpgpu/toolkit/r12.8/main_nvshmem/src/host/init/init.cu:995: non-zero status: 27 nvshmem detect topo failed 
+
+/dvs/p4/build/sw/rel/gpgpu/toolkit/r12.8/main_nvshmem/src/host/init/init.cu:995: non-zero status: 27 nvshmem detect topo failed 
+
+/dvs/p4/build/sw/rel/gpgpu/toolkit/r12.8/main_nvshmem/src/host/init/init.cu:995: non-zero status: 27 nvshmem detect topo failed 
+
+CELL op=blasmp_gemm mesh=2x2 dtype=complex128 case=NN status=PASS res=3.035e-16 det=bit note=
+CELL op=blasmp_gemm mesh=2x2 dtype=complex128 case=TN status=PASS res=3.066e-16 det=bit note=
+CELL op=blasmp_gemm mesh=2x2 dtype=complex128 case=CN status=PASS res=3.065e-16 det=bit note=
+E0710 03:25:08.295001  719985 pjrt_stream_executor_client.cc:3077] Execution of replica 0 failed: INTERNAL: cublasMpMatmul (q=0) failed: status=6
+E0710 03:25:08.296647  719987 pjrt_stream_executor_client.cc:3077] Execution of replica 0 failed: INTERNAL: cublasMpMatmul (q=0) failed: status=6
+[2026-07-10T10:37:06.720] error: *** STEP 55745579.0 ON nid001097 CANCELLED AT 2026-07-10T10:37:06 DUE to SIGNAL Killed ***
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+srun: error: nid001097: tasks 0,2-3: Killed
+srun: Terminating StepId=55745579.0
+srun: error: nid001097: task 1: Killed

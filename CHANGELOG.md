@@ -1,5 +1,60 @@
 # Changelog
 
+## 2026-07-10 (overnight): block-cyclic FFI stability program + SLATE CPU/GPU portability [D, source — branch agent/slate-linalg-ffi, UNPUSHED]
+
+Overnight autonomous program (2 worker agents + orchestrator), 7 commits, final suite
+**205 passed / 0 failed** (plain 1-GPU, 4:02).  Full record:
+`reports/slate_linalg_ffi_2026-07-10/` (executive summary at top).
+
+Headlines: every block-cyclic linalg FFI swept (mesh × dtype × divisibility ×
+determinism) into a permanent skipif-gated contract suite; **cuBLASMp found dead in
+production since 2026-05-10** (CAL-ABI stage drift) and fixed; **SLATE distributed_eigh
+eigenvector defect root-caused (stale MOSI tiles, not layout) and fixed**; scripted
+SLATE builds for Perlmutter GPU AND CPU nodes (testers pass both); portable input-file
+axes `distributed_cholesky = auto|off|cusolvermp|slate` / `distributed_lu` with
+deprecated cusolvermp_* aliases and loud-failure optional-dependency semantics;
+e2e slate ≡ default at 2-4e-6 eV.  Open follow-ups: FFI host-handler port (~1-2 d,
+spec'd) for CPU-node execution, SLATE getrf, slate::trsm back-solve, hang-guard
+geometries documented.
+
+## 2026-07-10 (overnight): block-cyclic linalg FFI hardening — sweep, 9-item failure catalog, cuBLASMp restored, SLATE eigh fixed, contract suite [D, source]
+
+P1 of the overnight FFI program (`reports/slate_linalg_ffi_2026-07-10/`,
+PLAN.md; P2 = SLATE build hardening, same report).  Branch
+`agent/slate-linalg-ffi`, 4 commits after P2's `981f1ac`.  Sweep of every
+distributed-linalg FFI (cusolvermp potrf/potrs/getrf+getrs/syevd,
+cusolvermg, cublasmp gemm/fused-W-solve, slate potrf/trsm/heev/batched)
+over 1×1/2×2/4×1/1×4 process meshes × c128/f64 × divisible/non-divisible/
+tiny sizes; every cell = numpy-residual + bit-determinism.  Headlines:
+
+- **cuBLASMp had been dead on EVERY mesh since 2026-05-10** (the 0.7.2
+  cuSOLVERMp stage ships no libcublasmp → RUNPATH fell back to CAL-ABI
+  0.4.0 while cuSOLVERMp used NCCL → grid create status=6; this killed
+  `screening_solver = cublasmp_ffi`).  Restored: staged cuBLASMp 0.5.1
+  (+nvshmem) via new `stage_cublasmp_redist.sh`, version dispatch now
+  asks the loaded library, libcal linked explicitly.  1e-16..1e-14 on
+  1×1/2×2 post-fix.
+- **SLATE `distributed_eigh` eigvec artifact ROOT-CAUSED + FIXED**: not
+  a layout transform — the FFI read stale device tiles (heev's
+  back-transform leaves valid Z on host; needed `tileGetForReading`),
+  plus a use-after-free race, an XLA-input-buffer mutation, and the
+  missing local-transpose pair.  Now returns TRUE eigenvectors,
+  `A@Q == Q@diag(W)` ≤4e-14 on 1×1 and 2×2.
+- **SLATE trsm with rectangular RHS aborted all ranks** (square-nb X
+  tiles + uncatchable OpenMP-task exception) — fixed with
+  per-dimension X tiles; m≠n verified at 4e-16 on 1×1/2×2/4×1.
+- Library limits guarded with clear errors instead of hangs/status
+  codes: cusolverMpPotrf + cuBLASMp = square meshes only (mb==nb);
+  cusolverMpSyevd non-square mesh DEADLOCKS; cuBLASMp op(B)≠N on
+  multi-rank grids is rank-divergent (deadlock); SLATE 1×q grids
+  SIGABRT (lld≠nb stride assert — root of the historical batched-1×4
+  assert); `block_size` overrides on multi-rank meshes were silently
+  wrong (new `validate_tile_layout`).
+- **`tests/test_ffi_linalg_contract.py`**: 21 contract tests (~19 s,
+  1 GPU, skipif-clean without the FFI stack) + CLI mode for multi-rank
+  meshes.  Suite: **197 passed / 0 failed (4:03)**.
+- cusolvermg: confirmed bench-only (no live consumer) — kept.
+
 ## 2026-07-10: Test-suite redesign — 3-tier architecture, 578→~220 s plain 1-GPU run, fixtures shrunk, bispinor gate → GN-PPM [D, source]
 
 On lorrax_D `agent/driver-transparency` (5 commits, `df5befe`..`f3a982a`).

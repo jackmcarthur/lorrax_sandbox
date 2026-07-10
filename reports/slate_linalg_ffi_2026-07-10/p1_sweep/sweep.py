@@ -139,6 +139,8 @@ def run_mp_chol(mesh, mesh_str, Px, Py):
         rng = np.random.default_rng(7)
         A_np = make_hpd(rng, nq, n, dtype)
         B_np = make_rhs(rng, (nq, n, mrhs), dtype)
+        eigmin = float(min(np.linalg.eigvalsh(A_np[q]).min()
+                           for q in range(nq)))
 
         def solve():
             A = put(A_np, mesh, (None, "x", "y"))
@@ -158,7 +160,8 @@ def run_mp_chol(mesh, mesh_str, Px, Py):
             np.linalg.norm(Ln[q] @ np.conj(Ln[q].T) - A_np[q]) /
             max(np.linalg.norm(A_np[q]), 1.0) for q in range(nq))
         return check(max(res_x, res_l), 1e-11, det_ok,
-                     note=f"res_x={res_x:.1e} res_L={res_l:.1e}")
+                     note=f"res_x={res_x:.1e} res_L={res_l:.1e} "
+                          f"eigmin={eigmin:.2f}")
 
     for dt in ("complex128", "float64"):
         cell("mp_chol", mesh_str, dt, "n64_rhs96",
@@ -170,14 +173,30 @@ def run_mp_chol(mesh, mesh_str, Px, Py):
     n_edge = 2 * max(Px, Py)
     cell("mp_chol", mesh_str, "complex128", f"edge_n{n_edge}",
          lambda: one("complex128", "edge", 2, n_edge, 2 * Py))
-    # non-divisible N -> wrapper must refuse (RAISE is the pass condition)
+    # non-divisible N -> wrapper must refuse (RAISE is the pass condition).
+    # Replicated inputs so the wrapper's own validation fires, not device_put.
     if max(Px, Py) > 1:
-        cell("mp_chol", mesh_str, "complex128", "nondiv_n66_expectRAISE",
-             lambda: one("complex128", "nondiv", 2, 66, 32))
-    # non-divisible NRHS -> refuse
+        def _nondiv():
+            from ffi.cusolvermp import batched_distributed_cholesky as bc
+            A = put_rep(make_hpd(np.random.default_rng(0), 2, 67,
+                                 "complex128"), mesh)
+            bc(A, mesh=mesh)
+            return {"status": "FAIL", "note": "no exception raised"}
+        cell("mp_chol", mesh_str, "complex128", "nondiv_n67_expectRAISE",
+             _nondiv)
     if Py > 1:
-        cell("mp_chol", mesh_str, "complex128", "nondiv_rhs%d_expectRAISE" % (Py + 1),
-             lambda: one("complex128", "nondiv_rhs", 2, 64, Py + 1))
+        def _nondiv_rhs():
+            from ffi.cusolvermp import (batched_distributed_cholesky as bc,
+                                        batched_distributed_potrs as bp)
+            rng = np.random.default_rng(0)
+            A = put(make_hpd(rng, 2, 64, "complex128"), mesh,
+                    (None, "x", "y"))
+            L = bc(A, mesh=mesh)
+            B = put_rep(make_rhs(rng, (2, 64, Py + 1), "complex128"), mesh)
+            bp(L, B, mesh=mesh)
+            return {"status": "FAIL", "note": "no exception raised"}
+        cell("mp_chol", mesh_str, "complex128", "nondiv_rhs_expectRAISE",
+             _nondiv_rhs)
 
 
 def run_mp_lu(mesh, mesh_str, Px, Py):
@@ -213,8 +232,15 @@ def run_mp_lu(mesh, mesh_str, Px, Py):
     cell("mp_lu", mesh_str, "complex128", f"edge_n{n_edge}",
          lambda: one("complex128", 2, n_edge, 2 * Py))
     if Py > 1:
+        def _nondiv_rhs():
+            from ffi.cusolvermp import batched_distributed_solve_lu as slu
+            rng = np.random.default_rng(0)
+            A = put_rep(make_herm(rng, 2, 64, "complex128"), mesh)
+            B = put_rep(make_rhs(rng, (2, 64, Py + 1), "complex128"), mesh)
+            slu(A, B, mesh=mesh)
+            return {"status": "FAIL", "note": "no exception raised"}
         cell("mp_lu", mesh_str, "complex128", "nondiv_rhs_expectRAISE",
-             lambda: one("complex128", 2, 64, Py + 1))
+             _nondiv_rhs)
 
 
 def _eigh_interpretations(A_np, W_np, Q_np):
@@ -229,6 +255,13 @@ def _eigh_interpretations(A_np, W_np, Q_np):
 
 
 def run_mp_eigh(mesh, mesh_str, Px, Py):
+    if Px != Py and "mp_eigh_rect" not in FORCE:
+        # 4x1 / 1x4: cusolverMpSyevd with mb != nb DEADLOCKS (no error
+        # status — one rank rejects, others park in a collective).
+        # Found 2026-07-10; catalog as HANG, run only with --force.
+        cell("mp_eigh", mesh_str, "-", "nonsquare_SKIP_known_hang",
+             lambda: {"status": "XFAIL", "note": "syevd mb!=nb deadlock"})
+        return
     from ffi.cusolvermp import distributed_eigh
 
     def one(dtype, n):
@@ -324,10 +357,20 @@ def run_blasmp_gemm(mesh, mesh_str, Px, Py):
                max(np.linalg.norm(D_ref), 1.0))
         return check(res, 1e-12, det_ok)
 
-    for (ta, tb) in (("N", "N"), ("T", "N"), ("C", "N"), ("N", "C")):
+    multi = Px * Py > 1
+    combos = [("N", "N"), ("T", "N"), ("C", "N")]
+    if not multi or "gemm_transb" in FORCE:
+        # transb != N on multi-rank grids: cuBLASMp rank-divergent
+        # INVALID_VALUE -> deadlock.  The wrapper now rejects it; these
+        # cells document the RAISE.
+        combos += [("N", "C"), ("N", "T"), ("C", "C")]
+    for (ta, tb) in combos:
         cell("blasmp_gemm", mesh_str, "complex128", f"{ta}{tb}",
              lambda ta=ta, tb=tb: one("complex128", ta, tb,
                                       1.3 - 0.7j, 0.4 + 0.2j))
+    if multi:
+        cell("blasmp_gemm", mesh_str, "complex128", "NC_expectRAISE",
+             lambda: one("complex128", "N", "C", 1.3 - 0.7j, 0.4 + 0.2j))
     cell("blasmp_gemm", mesh_str, "float64", "TN",
          lambda: one("float64", "T", "N", 1.5, 0.5))
 
@@ -396,14 +439,23 @@ def run_slate_chol(mesh, mesh_str, Px, Py):
     for dt in ("complex128", "float64"):
         cell("slate_chol", mesh_str, dt, "n64_m64",
              lambda dt=dt: one(dt, 64, 64))
-    cell("slate_chol", mesh_str, "complex128", "n64_m32",
-         lambda: one("complex128", 64, 32))
+    if "rect" not in SKIP:
+        cell("slate_chol", mesh_str, "complex128", "n64_m32",
+             lambda: one("complex128", 64, 32))
+        cell("slate_chol", mesh_str, "complex128", "n64_m128",
+             lambda: one("complex128", 64, 128))
     n_edge = 2 * max(Px, Py)
     cell("slate_chol", mesh_str, "complex128", f"edge_n{n_edge}",
          lambda: one("complex128", n_edge, n_edge))
     if max(Px, Py) > 1:
-        cell("slate_chol", mesh_str, "complex128", "nondiv_n66_expectRAISE",
-             lambda: one("complex128", 66, 64))
+        def _nondiv():
+            from ffi.slate import distributed_cholesky as dc
+            A = put_rep(make_hpd(np.random.default_rng(0), 1, 67,
+                                 "complex128")[0], mesh)
+            dc(A, mesh=mesh)
+            return {"status": "FAIL", "note": "no exception raised"}
+        cell("slate_chol", mesh_str, "complex128", "nondiv_n67_expectRAISE",
+             _nondiv)
 
 
 def run_slate_batched(mesh, mesh_str, Px, Py):
@@ -474,8 +526,34 @@ def run_slate_eigh(mesh, mesh_str, Px, Py):
          lambda: one("complex128", 64, "diag"))
 
 
+def run_mp_chol_edge(mesh, mesh_str, Px, Py):
+    """Pin the small-size failure boundary of cusolverMpPotrf."""
+    from ffi.cusolvermp import (batched_distributed_cholesky,
+                                batched_distributed_potrs)
+
+    def one(n):
+        rng = np.random.default_rng(43)
+        A_np = make_hpd(rng, 2, n, "complex128")
+        B_np = make_rhs(rng, (2, n, max(2 * Py, 4)), "complex128")
+        A = put(A_np, mesh, (None, "x", "y"))
+        B = put(B_np, mesh, (None, "x", "y"))
+        L = batched_distributed_cholesky(A, mesh=mesh)
+        X = gather(batched_distributed_potrs(L, B, mesh=mesh))
+        res = max(
+            np.linalg.norm(A_np[q] @ X[q] - B_np[q]) /
+            max(np.linalg.norm(B_np[q]), 1.0) for q in range(2))
+        return check(res, 1e-11)
+
+    for n in (4, 8, 16, 32):
+        if n % Px or n % Py:
+            continue
+        cell("mp_chol_edge", mesh_str, "complex128",
+             f"n{n}_mb{n//Px}_nb{n//Py}", lambda n=n: one(n))
+
+
 OPS = {
     "mp_chol": run_mp_chol,
+    "mp_chol_edge": run_mp_chol_edge,
     "mp_lu": run_mp_lu,
     "mp_eigh": run_mp_eigh,
     "mg_eigh": run_mg_eigh,
@@ -487,11 +565,20 @@ OPS = {
 }
 
 
+SKIP = ()
+FORCE = ()
+
+
 def main():
+    global SKIP, FORCE
     ap = argparse.ArgumentParser()
     ap.add_argument("--mesh", default=None, help="PxQ, e.g. 2x2")
     ap.add_argument("--ops", default=",".join(OPS))
+    ap.add_argument("--skip", default="", help="substring case filters")
+    ap.add_argument("--force", default="", help="run known-hang cells")
     args = ap.parse_args()
+    SKIP = tuple(s for s in args.skip.split(",") if s)
+    FORCE = tuple(s for s in args.force.split(",") if s)
 
     world = jax.process_count()
     if args.mesh:
