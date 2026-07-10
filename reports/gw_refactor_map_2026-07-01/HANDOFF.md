@@ -5,8 +5,9 @@ Everything else in this directory is either one of the 8 live docs indexed below
 archived history under `archive/`._
 
 ## State of the world
-- Branch: **`agent/memplanner-cleanup`** on `sources/lorrax_D`, all pushed. Never commit to main.
-- Test suite: **257 passed / 9 skipped / 0 failed**. Terminology used throughout these docs:
+- Branch: **`agent/driver-transparency`** on `sources/lorrax_D` (3 commits atop
+  `agent/memplanner-cleanup`@9925d43, NOT yet pushed). Never commit to main.
+- Test suite: **258 passed / 9 skipped / 0 failed** (13 gates — SC-iter1≡one-shot added 2026-07-09). Terminology used throughout these docs:
   a **"gate"** = a regression test that runs a small end-to-end GW calculation and compares
   against a frozen reference output. There are 12 of these, covering: BGW-anchored Si 3D COHSEX,
   MoS2 COHSEX + GN-PPM, bispinor, IBZ-vs-full-BZ equivalence, host-vs-streamed accumulator
@@ -48,17 +49,15 @@ archived history under `archive/`._
 8. `MORNING_SUMMARY.md` — the 2026-07-08 overnight record (most recent detailed session log)
 
 ## Remaining work, ranked
-1. **Driver transparency revision** — the user's active interest: make gw_jax.main() read
-   as the 12-line physics scaffold. Spec: IDEAL_SCAFFOLD_VS_LORRAX.md §5, two phases.
-   Phase B = pure code motion, ~350 lines out of main() (the IBZ slice/unfold block into a
-   solve_w wrapper; restart flush, debug writers, degeneracy-averaging into helpers) —
-   output must be bit-identical, the existing tests verify that. Phase C = the real
-   unification: the one-shot path starts consuming the same screening/sigma dispatch the
-   self-consistent loop already uses (deleting a duplicate pipeline); fit_ppm lifts to top
-   level; the three QP-solver branches collapse into one solve_qp(). Acceptance for C:
-   self-consistency iteration 1 must equal the one-shot result on a fixture. Three things
-   deliberately NOT to do (physics reasons in the spec): don't materialize G(t), don't turn
-   the q→0 head into a pipeline stage, don't evaluate W on a frequency grid.
+1. ✅ DONE (2026-07-09, `agent/driver-transparency` 3102994+160d22d+cece78c) — **Driver
+   transparency B + C executed**: main() 991→637 L and reads as the scaffold; one-shot
+   consumes the SC dispatch (duplicate pipeline deleted); solve_qp(); SC-iter1 ≡ one-shot
+   GATED (tests/test_sc_oneshot_equivalence.py) — the gate found + fixed 2 real SC bugs
+   (converged-U rotate-back; iteration-0 eigh ULP noise). Sub-driver audit also executed
+   (minimax builders → engine; gw_driver_helpers deleted; 5 dead symbols removed).
+   See reports/driver_transparency_2026-07-09/. **NEW OPEN ITEM:** GN-PPM amplifies 1-ulp
+   WFN-energy noise to 1.28 eV in Σ_c (measured, deterministic) — conditioning decision
+   needed (Fix-3 family).
 2. **On-pole PPM census robustness — needs a physics decision from the user** (called
    "Fix-3" in ROOT_CAUSE.md): bands sitting on a PPM pole are still device-count-sensitive,
    because a handful of PPM modes sit near the validity threshold (Ω² ≈ 0) and flip

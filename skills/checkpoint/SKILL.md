@@ -19,11 +19,31 @@ requirements — you must be on an `agent/<initiative>` branch before reaching t
 
 ### 1. Run the test suite (if source was modified)
 
-Run the full suite on a GPU (never the login node):
+Run the full suite on GPUs (never the login node).  **Fast path (4-GPU
+parallel, ~3-7 min):** pytest-xdist distributes tests across workers and
+`tests/conftest.py` pins each worker to its own GPU.  Do NOT use plain
+`lxrun` for this — it couples srun task count to `LORRAX_NGPU`, so 4 GPUs
+means 4 tasks each running the whole suite.  Use one srun task with 4
+GPUs visible:
+
+```bash
+cd sources/lorrax_<X>
+srun --jobid=$SLURM_JOBID --mpi=cray_shasta -N1 -n1 --gres=gpu:4 --overlap \
+  --immediate=10 --job-name=lx-pytest $LORRAX_SHIFTER \
+  src/ffi/common/cpp/in_container.sh env XLA_PYTHON_CLIENT_PREALLOCATE=false \
+  python3 -m pytest -q -n 4 --dist load tests
+```
+
+Serial fallback (1 GPU, ~8-13 min — use if xdist is unavailable or the
+parallel run shows worker-crosstalk suspicion):
 
 ```bash
 cd sources/lorrax_<X> && LORRAX_NGPU=1 lxrun python3 -m pytest -q tests
 ```
+
+For quick mid-series iteration only (NOT a checkpoint gate):
+`-m "not regression"` runs the ~245 unit tests (~1-2 min) without the
+13 e2e gates.  A checkpoint always runs the full suite.
 
 **Golden gates — these MUST pass.** A checkpoint is not valid unless all three are green:
 

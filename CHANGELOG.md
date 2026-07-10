@@ -1,5 +1,74 @@
 # Changelog
 
+## 2026-07-09 (evening): pushed to origin/main; SC-driver move; I/O cleanliness batch (zeta merge #7); 4-GPU parallel test suite [D, source]
+
+**origin/main fast-forwarded to `d03c857`** (66 commits: the whole memplanner-cleanup program
++ the driver-transparency line).  Four new commits on `agent/driver-transparency`, each
+suite-gated (258 passed / 9 skipped):
+
+- **`60ca703` SC machinery → `sc_iteration.run_sc_driver`**: main()'s last machinery slab
+  (partition, SCInputs, loop, dumps, QP→DFT rotate-back) moved out; run_sc_driver returns a
+  DFT-basis SigmaResult so SC and one-shot share ONE post-Σ seam.  gw_jax.py = 502 lines,
+  every block a physics stage call or input-flag pivot.
+- **`cece78c`** (earlier) sub-driver audit: minimax builders → engine, gw_driver_helpers
+  deleted, 5 dead symbols removed.
+- **`eec4de8` I/O cleanliness** (audit in reports/driver_transparency_2026-07-09/):
+  zeta_loader/zeta_reader **MERGED** (NEXT_TARGETS #7 CLOSED, −381 L; fixes the
+  advisory-backend bug — ZetaLoader's SlabIO now receives backend=; the dead eager/phdf5
+  string axis deleted); the v_q_g_flat load-vs-read_zeta_G_slab duck-typing deleted (one
+  padded-μ read shape — the merge had flipped production onto the un-padded path, caught by
+  test_mu_pad_invariance); FFI async write loop → common.async_io.AsyncDispatcher (single
+  source; write-behind semantics unchanged); **explicit `slab_io` input key** (all 3 backends
+  reachable: phdf5_ffi / phdf5_host / h5py_allgather; use_ffi_io stays the legacy auto-route);
+  dead I/O API deleted (slab free funcs + accumulate_slab ×4 + cache alias, −190 L).
+  Audit verdicts kept as-is: reads are parallel in ALL backends (no rank-0+broadcast
+  anywhere); mpi_host sync writes + no ζ-read prefetch are deliberate (documented).
+- **`d03c857` 4-GPU parallel test suite**: pytest-xdist + conftest worker→GPU pin (must
+  OVERRIDE SLURM's gres CUDA_VISIBLE_DEVICES — first rollout ran every gate on a 4-device
+  mesh and all 13 gates failed on their 1-GPU-frozen refs).  Measured 404 s cold-compile
+  parallel vs 470-580 s warm serial (warm parallel ≈ 200-250 s; critical path =
+  bispinor_pad4 gate 203 s).  checkpoint SKILL updated with the invocation + the lxrun
+  task/GPU-coupling caveat; `-m "not regression"` documented as the 1-2 min unit-only loop.
+
+Deferred: FFI create_dataset drops `chunks` (live write asymmetry — needs a perf-validated
+fix); mem_probe → gpu_utils; duration-aware xdist scheduling for the 203 s straggler.
+
+## 2026-07-09: Driver transparency B+C executed — main() IS the scaffold; SC-iter1 ≡ one-shot GATED; 2 SC bugs fixed; GN-PPM ULP amplification measured [D, source]
+
+On lorrax_D **`agent/driver-transparency`** (base 9925d43), three commits, full suite green
+after each (final: **258 passed / 9 skipped**, all 12 prior e2e gates bit-identical).
+Report: `reports/driver_transparency_2026-07-09/`.
+
+**Phase B (`3102994`, pure moves):** the IBZ slice/solve/unfold block →
+`screening.compute_static_w`; restart W0+head flush → `gw_output.persist_w0_and_head`;
+freq-debug table → `gw_output.write_freq_debug`; one-shot WFN_qp dump →
+`gw_output.write_qp_wfn_oneshot`; degen averaging → `degen_average.average_sigma_components`;
+one `enk_dft` fetch (was 4×). Bit-identical.
+
+**Phase C (`160d22d`, the unification):** one-shot main() now consumes the SAME
+`screening_requests_for → compute_screening → compute_sigma_xc` pipeline as the SC loop —
+the inlined duplicate deleted; `qsgw_utils.solve_qp` = update_H[Σ; qp_solver]; dispatch
+gained bispinor pass-through + streamed-Σ_c branch; static W in SC now IBZ-solved; the mode
+enum is load-bearing (explicit `x_only` used to silently run COHSEX). **NEW GATE**
+`tests/test_sc_oneshot_equivalence.py`: SC-iteration-1 ≡ one-shot at 1e-6 on
+sigma_diag+eqp0+eqp1. The gate caught **two real pre-existing SC bugs**: (1) the output seam
+rotated Σ back to DFT with the CONVERGED U (one iteration ahead — wrong before the fixed
+point; tens of eV at max_iter=1) → `SCState.last_sigma_basis_U`; (2) iteration-0
+`eigh(diag(E_DFT))` roundtrips eigenvalues at ~1 ulp and **GN-PPM amplifies that to
+0.44 eV in Σ_c** → exact eigensystem for the exactly-diagonal carry.
+**Measured pathology (open):** +1 ulp on every WFN energy → max|ΔΣ_c(ω)| = **1.28 eV**
+(bit-deterministic rerun = 0.0; census/windows/nodes unchanged — near-threshold pole-mode
+fit values). Same family as device-invariance Fix-3; needs a conditioning decision.
+
+**Sub-driver audit executed (`cece78c`):** DELETED `get_cohsex_kernels`,
+`get_effective_chunk_size`+`meta.chunk_size`+`chunk_size` key (write-only no-op chain),
+`gw_init.get_bandranges` (dup), `flatten_V_qmunu` (legacy shim), the compile-cache triple
+alias; MOVED the minimax quadrature builders w_isdf → minimax_screening (w_isdf now pure
+χ₀/W, 759→534 L); `gw_driver_helpers.py` DELETED via fan-out (profile_section →
+common/jax_profile, `resolve_input_path` → file_io.paths, build_bgw_v_grid_fn →
+compute_vcoul, setup_runtime → gw_jax-local). Deferred: mem_probe → gpu_utils.
+`gw_jax.py` 991 → **637 lines**.
+
 ## 2026-07-09: gw_refactor_map report dir consolidated — HANDOFF.md is the fresh-session entry point [reports only]
 
 `reports/gw_refactor_map_2026-07-01/` reduced to 10 live docs + `archive/`. Read order for a

@@ -22,7 +22,11 @@ they are smaller — they are the linchpins.
 
 ## TIER 0★ — current top priorities (updated 2026-07-09)
 
-### ★ Driver transparency revision (B → C) — NEW TOP ITEM (2026-07-09)
+### ★ ✅ DONE (2026-07-09, agent/driver-transparency 3102994/160d22d/cece78c) — Driver transparency revision (B → C)
+_Executed both phases + the sub-driver audit; SC-iter1≡one-shot gate added (caught 2 real
+SC bugs); gw_jax.py 991→637 L; gw_driver_helpers deleted; minimax builders → engine
+(also closes #10). Report: reports/driver_transparency_2026-07-09/. New open item:
+GN-PPM ULP amplification (1.28 eV / ulp, measured) — physics decision needed._
 - **What:** make `gw_jax.main()` read as the twelve-line physics scaffold. Spec:
   **IDEAL_SCAFFOLD_VS_LORRAX.md §5**, recommendation "B then C, each gated".
   - **Phase B — pure moves, ~350 L out of main():** the 90-line IBZ slice/unfold
@@ -223,7 +227,7 @@ DebugConfig keys (unverified — a separate pass; some may be live debug plumbin
   surface the doc rewrite (#12) has to cover.
 - **Size:** Small. **Gate prereq:** none (delete-only, run full suite after).
 
-### 10. Move `w_isdf.build_*_quadrature` → the minimax engine (B1 out of A4)
+### 10. ✅ DONE (2026-07-09, cece78c, part of the driver-transparency audit batch) — Move `w_isdf.build_*_quadrature` → the minimax engine (B1 out of A4)
 - **What:** MAP §4 #9 — `build_static_quadrature` / `build_imag_quadrature` /
   `build_real_quadrature` are B1 frequency code hosted inside the A4 stage file.
 - **Files:** `gw/w_isdf.py` → `gw/minimax.py` (or `minimax_screening.py`).
