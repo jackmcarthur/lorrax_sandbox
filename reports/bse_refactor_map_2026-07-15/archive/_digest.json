@@ -1,0 +1,871 @@
+[
+ {
+  "slug": "bse_jax_driver",
+  "purpose": "CLI entry point and dispatcher for the BSE stage: solves the TDA Bethe-Salpeter Hamiltonian H = D + V − W in Ry, where D[b,c,v,k] = (ε_c[k,c] − ε_v[k,v])·X, V is the q=0 bare exchange applied in the ISDF centroid basis as (1/nk)·M†·V_q0·M with spin-traced pair amplitudes M[k,c,v,μ] = Σ_s ψ*_c ψ_v(r_μ), and W is the screened direct term applied as an FFT convolution (1/nk)Σ_{k'} W_{μν}(k−k') between per-vertex spinor-resolved pair densities. Routes to FEAST (default), KPM Chebyshev DOS, or the validated Lanczos/Davidson preview (_preview_lanczos), loading all tensors from the gw_jax ISDF restart (isdf_tensors_*.h5), applying BGW eqp1.dat QP corrections and rank-1 q=0 head injection, and writing BGW-compliant eigenvectors.h5 (valence flip + Ry→eV at the write boundary only). Also hosts a file-local jit'd matvec trio (apply_bse_hamiltonian/apply_V/apply_W) that is dead and non-executable, superseded by bse_serial/bse_ring_comm/bse_simple.",
+  "category_guess": "pipeline stage — BSE eigensolver driver / CLI dispatcher (plus dead legacy matvec variant inside the same file)",
+  "entry_points": [
+   {
+    "symbol": "python -m bse.bse_jax (__main__, lines 349-626)",
+    "callers": "runs/Si/B_centroid_sweep_2026-04-27/run_bse_sweep.sh:46 (lxrun python3 -u -m bse.bse_jax -i cohsex.in --bse --tda --lanczos); runs/Si/04_si_4x4x4_bse/01_lorrax_bse_vcoul/bse_profile.out:2 (run_module:bse.bse_jax); src/bse/STATUS.md:100 and src/bse/BGW_COMPARE.md:58 recipes"
+   },
+   {
+    "symbol": "facade re-exports: apply_bse_hamiltonian_single_device, solve_bse, compute_pair_amplitude",
+    "callers": "src/bse/test_bse.py:34-38 'from .bse_jax import (apply_bse_hamiltonian_single_device, solve_bse, compute_pair_amplitude)'; compute_pair_amplitude used at test_bse.py:226"
+   },
+   {
+    "symbol": "apply_bse_hamiltonian / apply_V / apply_W / apply_D (file-local jit trio, lines 67-160)",
+    "callers": "NONE FOUND — grep -rn 'apply_bse_hamiltonian\\b' src tests tools scripts → only bse_jax.py:46/68 and a pseudocode sketch context/README.md:130; bse_ring_comm.py:25 imports the bse_serial variants, not these; bse/__init__.py is empty"
+   },
+   {
+    "symbol": "_preview_lanczos",
+    "callers": "internal only: bse_jax.py:609 (__main__ --lanczos branch); comment references davidson_absorption.py:90, test_davidson_bse.py:72"
+   },
+   {
+    "symbol": "_main_random_demo",
+    "callers": "internal only: bse_jax.py:504 (--debug-parallelism)"
+   }
+  ],
+  "features": [
+   "solver dispatch CLI — bse_jax.py:__main__ 349-626",
+   "sharded Lanczos/Davidson preview driver — bse_jax.py:_preview_lanczos 203-345",
+   "EQP override (BGW eqp1.dat semantics) — bse_jax.py:_preview_lanczos 242-261",
+   "eigenvector output — bse_jax.py:333-345 → bse_io.write_eigenvectors_stream",
+   "legacy jit'd sharded TDA matvec (DEAD) — bse_jax.py:67-160",
+   "random-data serial demo — bse_jax.py:_main_random_demo 163-200",
+   "import-time distributed bootstrap + x64 — bse_jax.py:7-12"
+  ],
+  "n_claims": 10
+ },
+ {
+  "slug": "matvec_simple_serial_wexact",
+  "purpose": "Three files of the LORRAX ISDF-BSE matvec family (Henneke-2020 algorithm): bse_serial.py is the single-device reference TDA Hamiltonian H·X = (ε_c−ε_v)·X + V-term − W-term where the V (exchange) term is a centroid-basis contraction S[b,ν,k]=Σ_cv M[k,c,v,ν]X[b,c,v,k], U=V_q0·S, HX_V=conj(M)·U/nk, and the W (screened-direct) term is an FFT convolution U[k]=(1/√nk)Σ_k' W_{k−k'}[μ,ν]T[k'] on pair slabs T[b,μ,ν,t,s,k]=Σ_cv ψ_c[k,c,t,μ]conj(ψ_v[k,v,s,ν])X. bse_simple.py is the production distributed version of the identical math — plain jit + einsums + with_sharding_constraint on the (x,y) mesh (default --matvec-kind=simple), with XLA generating all collectives. bse_w_exact.py is a standalone CLI computing exact W_c(ω) columns in the ISDF centroid basis via shifted GMRES solves (z−H)x=f with the TDA or full non-TDA Casida matrix, one column per unit density source δ_{ν,ν0}, written to Wc_exact.h5 as the reference for the pseudopole-W program.",
+  "category_guess": "pipeline stage (bse_serial = reference kernel, bse_simple = production matvec) + diagnostics (bse_w_exact = exact-W debug CLI, currently broken at HEAD)",
+  "entry_points": [
+   {
+    "symbol": "bse_simple.build_bse_simple_matvec",
+    "callers": "src/bse/bse_lanczos.py:157-158 (solve_bse_sharded, matvec_kind=='simple'); src/bse/absorption_haydock.py:203-204; src/bse/davidson_absorption.py:39,122; src/bse/test_davidson_bse.py:42,101; doc refs bse_davidson_helpers.py:6,92,184"
+   },
+   {
+    "symbol": "bse_serial.apply_bse_hamiltonian_single_device",
+    "callers": "src/bse/bse_ring_comm.py:25,934 (ring correctness reference); src/bse/bse_lanczos.py:26,57,77 (serial solve_bse); src/bse/feast_sweep.py:27,102; src/bse/bse_jax.py:29,186; src/bse/test_bse.py:35,191,202,276; production evidence: runs/Si/04_si_4x4x4_bse/01_lorrax_bse_vcoul/profile_bse/compile_summary.json:625-633 cites bse_serial.py:72-75"
+   },
+   {
+    "symbol": "bse_serial.compute_pair_amplitude",
+    "callers": "src/bse/bse_ring_comm.py:25,958; src/bse/test_bse.py:37,226; bse_jax.py re-exports the name but defines its own copy at :94-95"
+   },
+   {
+    "symbol": "bse_serial.apply_D",
+    "callers": "src/bse/bse_ring_comm.py:25,959,977 (correctness check only)"
+   },
+   {
+    "symbol": "bse_serial.apply_bse_hamiltonian_single_device_jit",
+    "callers": "NONE FOUND (import/__all__ re-export only: bse_jax.py:30,49; grep -rn single_device_jit src tests → def + import + __all__)"
+   },
+   {
+    "symbol": "bse_serial.symmetrize_W_q",
+    "callers": "NONE FOUND (import/__all__ re-export only: bse_jax.py:31,63; grep -rn 'symmetrize_W_q(' src tests tools scripts → definition only)"
+   },
+   {
+    "symbol": "bse_w_exact.main",
+    "callers": "__main__ guard bse_w_exact.py:177-178 (python -m bse.bse_w_exact); no pyproject entry (pyproject.toml:36-41 note); no invocations in sandbox runs/*.sh|yaml, skills/, scripts/ (grep → empty); format contract referenced by pseudopoles_eval.py:23-29,131 and tests/archive/projects/test_isdf/sweep_12v12c_plot.py:38; listed docs/architecture/codebase.md:115"
+   }
+  ],
+  "features": [
+   "TDA BSE matvec (serial reference) — src/bse/bse_serial.py:apply_bse_hamiltonian_single_device (38-80)",
+   "W(q) hermitization helper — src/bse/bse_serial.py:symmetrize_W_q (12-24)",
+   "Production distributed TDA matvec (plain-jit) — src/bse/bse_simple.py:build_bse_simple_matvec (46-184)",
+   "Exact W_c(ω) columns via Casida shifted solves — src/bse/bse_w_exact.py:main (50-174)"
+  ],
+  "n_claims": 12
+ },
+ {
+  "slug": "bse_ring_comm",
+  "purpose": "Distributed BSE-Hamiltonian matvec kernels on a 2D (x,y) device mesh: conduction bands + ISDF centroid axis mu sharded on x, valence bands + centroid axis nu on y, with hand-rolled lax.ppermute rings / all_gather inside shard_map. Implements the TDA action HX = D + V - W with D[b,c,v,k]=(eps_c[k,c]-eps_v[k,v])X, the q=0 exchange V via S[b,nu,k]=Sum_{cvs} conj(psi_c[k,c,s,nu]) psi_v[k,v,s,nu] X[b,c,v,k]/sqrt(Nk), U=V_q0 S, VX=Sum_mu conj(M[k,c,v,mu])U/sqrt(Nk), and the direct W via T[b,mu,nu,t,s,k]=Sum_{cv} psi_c[k,c,t,mu] conj(psi_v[k,v,s,nu]) X, an ortho-normed 3D FFT convolution U(k)=(1/sqrt(Nk))Sum_{k'}W(k-k')T(k'), and back-projection through conj(psi_c), psi_v; also a full (non-TDA) two-block matvec S=[[A,B],[-B^H,-A^H]] and density-space probe operators for the W-exact/pseudopole tooling. It is the solver-agnostic core consumed by Lanczos/Haydock/Davidson/FEAST/KPM, and make_bse_shardings is the sharding vocabulary for the whole bse/ package.",
+  "category_guess": "pipeline stage (distributed BSE matvec kernels) + variant axis (ring/gather/simple comm strategies, TDA vs full-BSE)",
+  "entry_points": [
+   {
+    "symbol": "build_bse_ring_matvec",
+    "callers": "src/bse/bse_lanczos.py:162, src/bse/absorption_haydock.py:206, src/bse/bse_feast.py:486,734, src/bse/bse_kpm.py:122, src/bse/bse_w_exact.py:104, src/bse/bse_pseudopoles.py:233, src/bse/feast_zolo_sweep.py:121, src/bse/feast_ellipse_mixed_sweep.py:96; production XLA dumps in runs/Si/04_si_4x4x4_bse/C_lorrax_bse_bgweqp/profile_sharded_v2/xla_dump reference bse_ring_comm.py source lines"
+   },
+   {
+    "symbol": "build_bse_ring_matvec_full",
+    "callers": "src/bse/bse_feast.py:494, src/bse/bse_kpm.py:131, src/bse/bse_w_exact.py:106, src/bse/bse_pseudopoles.py:242 (all use_tda=False paths)"
+   },
+   {
+    "symbol": "make_bse_shardings",
+    "callers": "bse_jax.py:23, bse_simple.py:67, bse_lanczos.py:139, bse_feast.py:501,733, bse_kpm.py:27, bse_pseudopoles.py:258, bse_w_exact.py:113, absorption_haydock.py:163, davidson_absorption.py:78, feast_zolo_sweep.py:120, feast_ellipse_mixed_sweep.py:95, test_davidson_bse.py:63"
+   },
+   {
+    "symbol": "create_mesh_2d",
+    "callers": "src/bse/bse_jax.py:229, src/bse/absorption_haydock.py:162, src/bse/davidson_absorption.py:76, src/bse/test_davidson_bse.py:62"
+   },
+   {
+    "symbol": "build_realspace_random_transition_generator",
+    "callers": "src/bse/bse_w_exact.py:110"
+   },
+   {
+    "symbol": "build_density_snapshot_operator",
+    "callers": "src/bse/bse_w_exact.py:112, src/bse/bse_pseudopoles.py:266"
+   },
+   {
+    "symbol": "ring_matvec_smoke_test",
+    "callers": "src/bse/bse_jax.py:487 (CLI --ring-test)"
+   },
+   {
+    "symbol": "ring_matvec_correctness_check",
+    "callers": "src/bse/bse_jax.py:493 (CLI --ring-check, --components)"
+   },
+   {
+    "symbol": "apply_bse_hamiltonian_ring",
+    "callers": "NONE FOUND — only import + __all__ re-export at bse_jax.py:19,47 (and stale sandbox copy scripts/bse_src_patches/bse_jax.py:12); grep of src/tests/tools/scripts/docs + sandbox runs/skills/scripts finds no call site"
+   },
+   {
+    "symbol": "apply_W_ring",
+    "callers": "only bse_ring_comm.py:335 inside the dead apply_bse_hamiltonian_ring — transitively dead"
+   }
+  ],
+  "features": [
+   "2D mesh + BSE sharding vocabulary — src/bse/bse_ring_comm.py:create_mesh_2d,make_bse_shardings",
+   "TDA ring matvec factory — src/bse/bse_ring_comm.py:build_bse_ring_matvec",
+   "Full (non-TDA) matvec factory — src/bse/bse_ring_comm.py:build_bse_ring_matvec_full",
+   "q=0 exchange ring contraction — src/bse/bse_ring_comm.py:apply_V_ring",
+   "Density-space probe operators — src/bse/bse_ring_comm.py:build_realspace_random_transition_generator,build_density_snapshot_operator",
+   "Diagnostics CLIs — src/bse/bse_ring_comm.py:ring_matvec_smoke_test,ring_matvec_correctness_check"
+  ],
+  "n_claims": 10
+ },
+ {
+  "slug": "lanczos_family",
+  "purpose": "Lanczos-family eigensolvers for the TDA BSE. solvers/lanczos.py is physics-blind infra: four Hermitian lowest-eigenpair solvers (Python-loop simple, fori_loop jit with partial reorth, block-jit, and a lax.while_loop convergence-driven block variant) given only a matvec. bse/bse_lanczos.py wraps them with the BSE physics: it wires the TDA Hamiltonian H = D + V - W, with D[b,c,v,k] = (eps_c[k,c]-eps_v[k,v])X, V via ISDF pair amplitudes M[k,c,v,mu] = sum_s conj(psi_c[k,c,s,mu])psi_v[k,v,s,mu] contracted through V_q0[mu,nu] with 1/sqrt(Nk) on each side, and W via the T[b,mu,nu,t,s,k] tensor convolved with W_R = ifft_q(W_q) over the k-grid (ortho FFTs), then dispatches single-device (solve_bse) or 2D-mesh sharded (solve_bse_sharded, which also hosts the Davidson dispatch). Eigenvalues are exciton energies in Ry (BGW eV conversion and valence-axis flip live only at the bse_io writer). TDA-only and Hermitian-assumed; the CLI hard-gates --lanczos behind --tda.",
+  "category_guess": "pipeline stage (BSE eigensolve driver) layered on generic solver infra (solvers.lanczos); audited at HEAD adc2197 = e18d0e5 for both files (git diff empty)",
+  "entry_points": [
+   {
+    "symbol": "solve_bse",
+    "callers": "src/bse/bse_jax.py:195 (--debug-parallelism demo), src/bse/bse_jax.py:325 (_preview_lanczos single-device branch), src/bse/test_bse.py:245; re-export bse_jax.py:37/62"
+   },
+   {
+    "symbol": "solve_bse_sharded",
+    "callers": "src/bse/bse_jax.py:228 (import) / :283 (call, multi-device branch). Production: runs/Si/B_centroid_sweep_2026-04-27/run_bse_sweep.sh:46 'lxrun python3 -u -m bse.bse_jax -i cohsex.in --bse --tda --lanczos'; recommended cmd src/bse/STATUS.md:100-105"
+   },
+   {
+    "symbol": "lanczos_eig_jit",
+    "callers": "src/bse/bse_lanczos.py:87 (serial), :273 (sharded bs=1 fixed); re-exports src/solvers/__init__.py:3, bse_jax.py:35/57"
+   },
+   {
+    "symbol": "block_lanczos_eig_jit",
+    "callers": "src/bse/bse_lanczos.py:300 (sharded bs>1 fixed) — only caller"
+   },
+   {
+    "symbol": "block_lanczos_eig_jit_converged",
+    "callers": "src/bse/bse_lanczos.py:267 (bs=1 rtol>0), :293 (bs>1 rtol>0) — only callers"
+   },
+   {
+    "symbol": "simple_lanczos_eig",
+    "callers": "src/bse/bse_lanczos.py:92 (use_jit_lanczos=False, via test_bse.py --no-jit-lanczos); src/solvers/dos.py:85,90 (estimate_spectrum -> compute_dos:147 -> solvers/pseudobands.py:38, GW pseudobands + KPM/FEAST bounds)"
+   },
+   {
+    "symbol": "block_lanczos_eig",
+    "callers": "src/bse/bse_lanczos.py:83 gated on solve_bse(use_block=True); grep 'use_block' repo-wide: only test_bse.py:257 use_block=False and the default bse_lanczos.py:42 — NO TRUE CALLER. Re-exported solvers/__init__.py:19, bse_jax.py:34/52"
+   },
+   {
+    "symbol": "_build_block_tridiag",
+    "callers": "internal only: src/solvers/lanczos.py:427, 537, 569"
+   },
+   {
+    "symbol": "pytest coverage",
+    "callers": "NONE FOUND — grep -rn 'lanczos|solve_bse' tests/ (incl. tests/multi_device, tests/regression) -> empty; only __main__ harnesses src/bse/test_bse.py and src/bse/test_davidson_bse.py"
+   }
+  ],
+  "features": [
+   "single-device TDA BSE Lanczos solve — src/bse/bse_lanczos.py:solve_bse (30-97)",
+   "sharded BSE Lanczos with hoisted W_R — src/bse/bse_lanczos.py:solve_bse_sharded (100-313), _full_run (246-304)",
+   "Davidson dispatch — src/bse/bse_lanczos.py:188-231",
+   "scalar jit Lanczos — src/solvers/lanczos.py:lanczos_eig_jit (214-300)",
+   "block jit Lanczos (fixed and convergence-driven) — src/solvers/lanczos.py:block_lanczos_eig_jit (330-438), block_lanczos_eig_jit_converged (441-582), _build_block_tridiag (303-327)",
+   "reference Python-loop solvers — src/solvers/lanczos.py:simple_lanczos_eig (138-211), block_lanczos_eig (28-135)"
+  ],
+  "n_claims": 11
+ },
+ {
+  "slug": "bse_io_eigvecs",
+  "purpose": "BSE data-plane I/O: loaders that turn the canonical gw_jax restart bundle (isdf_tensors_*.h5: flat-q V_qmunu/W0_qmunu (nq,mu,mu), psi_full_y (nk,nb,nspinor,n_rmu), enk_full, G0_mu_nu=zeta(q=0,mu,G=0), vhead/whead) into the psi/eps/V/W tensors the BSE solvers consume — one sharded (x,y)-mesh slab loader and one whole-array single-device ring loader. Physics: band slicing val=arange(n_occ-n_val,n_occ) (v=0 deepest, LORRAX-internal), q=0 Coulomb-head reinstatement as rank-1 V_q0[mu,nu] += v_scalar*conj(G0[mu])*G0[nu] (BGW mini-BZ 1/q^2 average, vhead=BGW wcoul0 in Ry), BGW eqp1.dat QP substitution enk_qp[k,b]=e_qp_ibz[irr_idx_k[k],b]/13.6056980659, and flat-q->3D-k W reshape W_q[mu,nu,i,j,l]=W_flat[i*nky*nkz+j*nkz+l,mu,nu]. Also two BGW-format eigenvectors.h5 writers: the streaming one converts Ry->eV and flips the valence axis (file[0,i,k,c,v]=vec[k,c,nv-1-v], BGW BSE/input_fi.f90:407 convention); the legacy one does neither.",
+  "category_guess": "pipeline stage (BSE input assembly + BGW-compat eigenvector output); the sharded/ring loader pair is also a variant axis",
+  "entry_points": [
+   {
+    "symbol": "load_bse_data_from_restart_sharded",
+    "callers": "bse_jax.py:227, bse_feast.py:24, bse_pseudopoles.py:35, feast_sweep.py:26, feast_zolo_sweep.py:24, feast_ellipse_mixed_sweep.py:19, bse_kpm.py:29, bse_w_exact.py:14, bse_ring_comm.py:24, absorption_haydock.py:50, davidson_absorption.py:34-37, test_davidson_bse.py:40"
+   },
+   {
+    "symbol": "_load_ring_subset",
+    "callers": "bse_jax.py:27 (used :296 single-device path), bse_ring_comm.py:24; production evidence runs/Si/04_si_4x4x4_bse/01_lorrax_bse_vcoul/profile_bse/compile.log:2 traces (_load_ring_subset)"
+   },
+   {
+    "symbol": "write_eigenvectors_stream",
+    "callers": "bse_jax.py:39, call at bse_jax.py:335 (--write-eigs); workflow documented src/bse/BGW_COMPARE.md:59-62 'python -m bse.bse_jax ... --write-eigs 100'"
+   },
+   {
+    "symbol": "apply_eqp_corrections",
+    "callers": "bse_jax.py:243, davidson_absorption.py:34, absorption_haydock.py:178, test_davidson_bse.py:77"
+   },
+   {
+    "symbol": "resolve_n_occ",
+    "callers": "bse_jax.py:243, davidson_absorption.py:36, absorption_haydock.py:175"
+   },
+   {
+    "symbol": "read_bgw_eqp",
+    "callers": "internal (apply_eqp_corrections bse_io.py:706); tests/test_eqp_bgw.py:78,83; named in src/gw/eqp_bgw.py:51 docstring"
+   },
+   {
+    "symbol": "_find_restart_file",
+    "callers": "same 10+ importers as the loaders: bse_jax.py:27, bse_feast.py:24, bse_pseudopoles.py:35, bse_ring_comm.py:24, absorption_haydock.py:50, feast_*.py, bse_kpm.py:29, bse_w_exact.py:14, test_davidson_bse.py:40, davidson_absorption.py:34"
+   },
+   {
+    "symbol": "_pad_axis_to_multiple",
+    "callers": "bse_jax.py:259, davidson_absorption.py:105, absorption_haydock.py:178, test_davidson_bse.py:77 (all discard 2nd retval) + both loaders internally"
+   },
+   {
+    "symbol": "BSEData",
+    "callers": "NONE FOUND (grep across src/tests/tools/scripts/docs of lorrax_D and sandbox runs/skills/scripts: only the definition bse_io.py:18)"
+   },
+   {
+    "symbol": "write_eigenvectors_h5",
+    "callers": "src/bse/test_bse.py:39,361 (--write-eigenvectors flag); CLI python -m bse.write_eigenvectors (main, write_eigenvectors.py:176-235) — no run-dir/skill invocations found (sandbox 'write_eigenvectors' hits are the unrelated BGW absorption.inp keyword)"
+   },
+   {
+    "symbol": "generate_kpts_grid",
+    "callers": "bse_io.py:34,42 (stream writer, production), test_bse.py:39,360"
+   }
+  ],
+  "features": [
+   "Sharded restart loader — src/bse/bse_io.py:load_bse_data_from_restart_sharded (358-536) + _read_psi_mu_sharded/_read_vq0_sharded/_read_wq_sharded (174-355)",
+   "Single-device ring loader — src/bse/bse_io.py:_load_ring_subset (767-932)",
+   "q=0 head injection (rank-1 in ISDF basis) — src/bse/bse_io.py:463-513 (sharded), 804-836 (ring), _parse_head_overrides (667-695)",
+   "n_occ resolution — src/bse/bse_io.py:resolve_n_occ (603-664)",
+   "BGW eqp1.dat reader + IBZ unfold — src/bse/bse_io.py:read_bgw_eqp (539-581), apply_eqp_corrections (698-753)",
+   "Streaming BGW eigenvectors.h5 writer — src/bse/bse_io.py:write_eigenvectors_stream (23-105)",
+   "Legacy in-memory eigenvectors.h5 writer + CLI — src/bse/write_eigenvectors.py:write_eigenvectors_h5 (21-153), main (176-235)",
+   "MP k-grid generator — src/bse/write_eigenvectors.py:generate_kpts_grid (156-173)"
+  ],
+  "n_claims": 13
+ },
+ {
+  "slug": "feast_core",
+  "purpose": "FEAST interior-eigenvalue solver for the sharded ISDF-BSE Hamiltonian H = D + V − W (D_term[b,c,v,k] = (eps_c[k,c] − eps_v[k,v])·X[b,c,v,k]; exchange V and screened-direct W applied via the ring/all-gather ISDF matvec from bse_ring_comm). It estimates spectral bounds with a short Lanczos run (α = Re⟨q,Hq⟩ recurrence, adaptive E_max stop), builds eV energy windows (default, user, or KPM-DOS-derived), approximates the spectral projector P = (1/2πi)∮(zI−H)⁻¹dz with ellipse-trapezoid or Zolotarev rational quadrature, filters random/Ritz vectors through diagonal-preconditioned FGMRES shifted solves y = (z/s − H)⁻¹x (nodes/weights eV, H in Ry, s = 13.6056980659), and extracts eigenpairs by overlap-whitened Rayleigh-Ritz with full-space residuals Re[c†(G − 2λH + λ²S)c]/Re[c†Sc]. Despite the 'setup utilities' docstring it is the DEFAULT solver path of the BSE driver: bse_jax.main dispatches to bse_feast.main whenever --lanczos is not given. Handles both TDA (Hermitian, conjugate-symmetry contour, real-vector assumption) and full non-TDA ([[A,B],[−B†,−A†]], conjugate-doubled nodes, complex vectors); non-TDA is the CLI default.",
+  "category_guess": "pipeline stage (default BSE eigensolver stage reached via bse_jax dispatch) with a diagnostics/report layer; also the shared kernel library for the feast/pseudopole sweep diagnostics",
+  "entry_points": [
+   {
+    "symbol": "main",
+    "callers": "src/bse/bse_jax.py:540-543 (default dispatch when --lanczos absent); __main__ guard bse_feast.py:1319-1320; 'uv run python -m bse.bse_feast' in src/bse/context/feast_accuracy_notes.md:75; sandbox patch copy lorrax_sandbox/scripts/bse_src_patches/bse_jax.py:392-395"
+   },
+   {
+    "symbol": "run_feast_ritz",
+    "callers": "bse_feast.py:1282 (main); src/bse/feast_sweep.py:31,173"
+   },
+   {
+    "symbol": "estimate_spectral_bounds_sharded",
+    "callers": "src/bse/bse_kpm.py:28; feast_sweep.py:33; feast_zolo_sweep.py:29; feast_ellipse_mixed_sweep.py:25; bse_pseudopoles.py:23"
+   },
+   {
+    "symbol": "build_preconditioner_diagonal_sharded",
+    "callers": "src/bse/bse_w_exact.py:22; bse_pseudopoles.py:22; feast_zolo_sweep.py:30; feast_ellipse_mixed_sweep.py:26"
+   },
+   {
+    "symbol": "gmres_solve_sharded_jit",
+    "callers": "src/bse/bse_w_exact.py:13,139"
+   },
+   {
+    "symbol": "_get_feast_runner / _build_gmres_data_fp32 / _cast_with_sharding / _rayleigh_ritz / _build_ritz_vectors / _zolotarev_step_poles_weights / _create_mesh_xy / _parse_window_arg (private reach-ins)",
+    "callers": "bse_pseudopoles.py:15-25,203,590,645-646; feast_zolo_sweep.py:26-34; feast_ellipse_mixed_sweep.py:21-29; bse_kpm.py:28,361; feast_sweep.py:32,570"
+   },
+   {
+    "symbol": "feast_zolotarev_quadrature / feast_ellipse_quadrature / build_default_windows_eV / WindowSpec / RY_TO_EV_DEFAULT",
+    "callers": "bse_pseudopoles.py:16-17,24,618; bse_w_exact.py:13; all sweep modules"
+   },
+   {
+    "symbol": "QuadratureSpec / RitzResult / format_feast_report / _apply_shifted_matvec / _get_gmres_solver",
+    "callers": "NONE FOUND outside this module (repo-wide grep); used internally by main/run_feast_ritz"
+   },
+   {
+    "symbol": "pytest coverage",
+    "callers": "NONE FOUND — grep -rn feast tests/ src/bse/test_bse.py src/bse/test_davidson_bse.py is empty; src/bse/__init__.py is a bare docstring (no re-exports); no hits in depth-<=3 runs/**/*.sh (38 files)"
+   }
+  ],
+  "features": [
+   "Spectral-bound Lanczos — bse_feast.py:estimate_spectral_bounds_sharded (695-846)",
+   "FEAST contour filter + GMRES — bse_feast.py:_get_feast_runner (217-270), _get_gmres_solver (120-200), run_feast_ritz (463-684)",
+   "Quadrature rules — bse_feast.py:feast_ellipse_quadrature (965-973), feast_zolotarev_quadrature (916-962), _zolotarev_step_poles_weights (858-913)",
+   "Rayleigh-Ritz extraction — bse_feast.py:_rayleigh_ritz (306-422), _build_ritz_vectors (425-460), run_feast_ritz (647-678)",
+   "Jacobi diagonal preconditioner — bse_feast.py:build_preconditioner_diagonal_sharded (75-117)",
+   "Window selection + report — bse_feast.py:build_default_windows_eV (849-855), format_feast_report (980-1058), main (1073-1316)",
+   "TDA vs full-BSE switch — bse_feast.py:run_feast_ritz (485-501, 556-568, 595-597), main (1131-1132, 1177)"
+  ],
+  "n_claims": 10
+ },
+ {
+  "slug": "feast_experiments",
+  "purpose": "Four standalone `python -m bse.*` experiment drivers from the FEAST BSE-eigensolver development phase. They solve/validate the TDA-BSE eigenproblem H X = E X with H = D + V − W in the ISDF basis (D_{cvk} = eps_c[k,c] − eps_v[k,v]; pair amplitude M[k,c,v,μ] = Σ_s conj(ψ_c[k,c,s,μ])ψ_v[k,v,s,μ]; V/W applied via V_q0[μν] and FFT-convolved W_q(μν)), using the FEAST contour filter P ≈ Σ_j 2·Re[w_j (z_j I − H)^{-1} X] with ellipse quadrature z_j = c + r_x cosθ_j + i γ r_x sinθ_j, w_j = (1/2n)(r_y cosθ_j + i r_x sinθ_j) or Zolotarev step-difference poles ([w_L, −w_R] for h(λ)=step(λ−a)−step(λ−b)), followed by Rayleigh-Ritz extraction, sweeping n_quad/γ/rho_scale/n_ritz/feast_iter/gmres_tol against exact dense-diag eigenvalues. Windows/bounds are in eV while the matvec runs in Ry; the runner rescales z and w by ry_to_ev, keeping residues invariant (LORRAX-internal band order, no BGW valence flip). Three of the four are broken at HEAD (IndentationError; stale _get_feast_runner/run_feast_ritz APIs) and all four have zero callers — their functionality was absorbed into bse_feast.main().",
+  "category_guess": "diagnostics — FEAST parameter-exploration sweep drivers, stale/abandoned (deleted as dead in a0da0a5, restored already-broken in fe5e3e8 same day 2026-04-29); superseded by bse_feast.main()'s --quadrature/n_quad-schedule/rho_scale",
+  "entry_points": [
+   {
+    "symbol": "python -m bse.feast_sweep / feast_sweep.main",
+    "callers": "Only its own docstring (src/bse/feast_sweep.py:8). find/grep over sandbox runs/, skills/, scripts/ (*.sh,*.py,*.md,*.yaml,*.in) and lorrax_D src/tests/tools/scripts/docs/pyproject: NO HITS. bse/__init__.py is a bare docstring, no re-exports."
+   },
+   {
+    "symbol": "feast_sweep.EXACT_EIGENVALUES_EV",
+    "callers": "src/bse/feast_zolo_sweep.py:36, src/bse/feast_ellipse_mixed_sweep.py:31 — the only inbound imports of anything in this group, both from within the group itself"
+   },
+   {
+    "symbol": "feast_zolo_sweep.main",
+    "callers": "NONE FOUND (only __main__ guard at feast_zolo_sweep.py:332-333)"
+   },
+   {
+    "symbol": "feast_ellipse_mixed_sweep.main",
+    "callers": "NONE FOUND — and unreachable: py_compile fails with IndentationError at line 113. Only external mention is documentation: reports/gw_refactor_map_2026-07-01/archive/files/solvers_iterative.md:364-366 lists feast_ellipse_mixed_sweep.py:24 as a quadrature import site."
+   },
+   {
+    "symbol": "bse_feast_dense_debug.main",
+    "callers": "NONE FOUND (only __main__ guard at bse_feast_dense_debug.py:177-178); self-contained numpy, no LORRAX imports, still compiles"
+   }
+  ],
+  "features": [
+   "Dense FEAST sanity check (numpy) — src/bse/bse_feast_dense_debug.py:feast_filter_with_iteration (81-133), make_test_matrix (38-49), svd_rayleigh_ritz (52-78)",
+   "Exact dense TDA-BSE diagonalization reference — src/bse/feast_sweep.py:build_full_bse_matrix (61-115)",
+   "FEAST parameter grid sweep vs cost — src/bse/feast_sweep.py:run_sweep (146-223), generate_configs (226-255), print_report (342-486), main (557-629)",
+   "Zolotarev quadrature sweep with adjustable transition width — src/bse/feast_zolo_sweep.py:_zolotarev_quadrature_custom (63-81), run_sweep (107-238)",
+   "Mixed-quadrature two-iteration ellipse sweep — src/bse/feast_ellipse_mixed_sweep.py:run_sweep (83-230)"
+  ],
+  "n_claims": 11
+ },
+ {
+  "slug": "kpm_chebyshev_dos",
+  "purpose": "Stochastic Kernel Polynomial Method (KPM) density-of-states for the BSE Hamiltonian, plus the physics-free Chebyshev/DOS library underneath it. bse_kpm rescales the BSE operator to H_tilde=(H-c)/h with spectrum in [-1,1], runs the three-term Chebyshev recurrence T_p = 2*H_tilde*T_{p-1} - T_{p-2} on masked Rademacher vectors over the padded (b=1,c,v,k) transition space, estimates mu_p = (1/(R*D)) sum_r Re<x_r|T_p(H_tilde)|x_r>, Jackson-damps with sigma_p = [(M-p+1)cos(pi*p/(M+1)) + sin(pi*p/(M+1))/tan(pi/(M+1))]/(M+1), and reconstructs rho(E) = [mu_0 + 2*sum_p mu_p T_p(e~)]/(pi*h*sqrt(1-e~^2)). The resulting DOS drives equal-mass spectral-window placement (trapezoid CDF quantiles) for the FEAST and pseudopole BSE solvers; solvers/dos.py additionally serves the pseudobands initiative (DOS-weighted window partition per Altman SI Eq. S36 metric n_eff*sigma^{2k}/eps_bar^{2k+1}). NOTE: the entire BSE KPM path is broken at HEAD by a phantom kwarg (see claims); also the stated audit base e18d0e5 differs from the checkout HEAD adc2197 but git diff over all seven touched files between the two commits is empty.",
+  "category_guess": "diagnostics / planning stage — KPM DOS is a spectral-windowing feeder for FEAST (bse_feast --windows-kpm) and bse_pseudopoles, not the main BSE solve; solvers/chebyshev.py and solvers/dos.py are generic solver infra shared with psp/kpm_dos and solvers/pseudobands*",
+  "entry_points": [
+   {
+    "symbol": "bse_kpm.main (python -m bse.bse_kpm)",
+    "callers": "bse_kpm.py:406-407 `if __name__ == \"__main__\": main()`; bse_jax.py:513-536 `from . import bse_kpm ... bse_kpm.main(kpm_argv)` under --kpm-dos; sandbox patch copy scripts/bse_src_patches/bse_jax.py:364-388"
+   },
+   {
+    "symbol": "bse_kpm.run_kpm_dos",
+    "callers": "bse_feast.py:1200-1219 `kpm_result = bse_kpm.run_kpm_dos(...)` under --windows-kpm; bse_pseudopoles.py:620-637 same pattern"
+   },
+   {
+    "symbol": "bse_kpm.make_bse_h_tilde / make_bse_random_vector",
+    "callers": "internal only: bse_kpm.py:202-203; repo-wide grep for both names hits no other file"
+   },
+   {
+    "symbol": "chebyshev.{jackson_coefficients,chebyshev_moments,reconstruct_dos}",
+    "callers": "bse_kpm.py:216,230,244; solvers/dos.py:166,170,175; psp/kpm_dos.py:244,259,266; solvers/pseudobands.py:82; pseudobands_v2.py:72,284; re-exported solvers/__init__.py:4-9"
+   },
+   {
+    "symbol": "chebyshev.partition_windows",
+    "callers": "bse_kpm.py:253 only (+ solvers/__init__.py:9 re-export)"
+   },
+   {
+    "symbol": "chebyshev.make_chebyshev_recurrence",
+    "callers": "chebyshev.py:156 (internal); psp/kpm_dos.py:228 (warm-up); solvers/__init__.py:6 re-export"
+   },
+   {
+    "symbol": "dos.compute_dos",
+    "callers": "solvers/pseudobands.py:308, solvers/pseudobands_v2.py:512"
+   },
+   {
+    "symbol": "dos.estimate_spectrum",
+    "callers": "NONE FOUND outside its own module — only dos.py:147 (inside compute_dos) + solvers/__init__.py:11 re-export; grep 'estimate_spectrum' over src/tests/tools/scripts hits nothing else"
+   },
+   {
+    "symbol": "dos.{dos_weighted_windows,geometric_windows,compute_window_partition}",
+    "callers": "solvers/pseudobands.py:328, :332, :417; docs solvers/docs/ritz_pseudobands_implementation.md:96,106"
+   },
+   {
+    "symbol": "tests",
+    "callers": "NONE FOUND — grep -rn 'kpm|chebyshev|solvers.dos' tests/ matches only test_sternheimer_solvers.py (different solvers modules); no runs/*.sh or skills/ hits in bounded sandbox search"
+   }
+  ],
+  "features": [
+   "BSE KPM DOS driver — src/bse/bse_kpm.py:run_kpm_dos (101-320)",
+   "TDA vs full-BSE operator selection — src/bse/bse_kpm.py:run_kpm_dos:121-138,181-199 + make_bse_random_vector:84-97",
+   "On-device Chebyshev recurrence + stochastic trace — src/solvers/chebyshev.py:make_chebyshev_recurrence (55-95), chebyshev_moments (102-172)",
+   "Jackson damping + DOS reconstruction + equal-mass windows — src/solvers/chebyshev.py:jackson_coefficients (31-48), reconstruct_dos (179-222), partition_windows (229-291)",
+   "Generic matrix-free DOS (pseudobands infra) — src/solvers/dos.py:compute_dos (100-188), dos_weighted_windows (191-295), geometric_windows (344-358), compute_window_partition (307-341)",
+   "Spectral bounds via sibling-module reach-in — src/bse/bse_kpm.py:159-166,140,361 -> src/bse/bse_feast.py:695-847,686,281"
+  ],
+  "n_claims": 12
+ },
+ {
+  "slug": "pseudopoles",
+  "purpose": "Windowed pseudopole compression of the correlation screened interaction W_c(omega) in the ISDF r_mu basis, built from the BSE/Casida Hamiltonian: density-biased random seeds (eta -> V eta -> f = d^dag(V eta), non-TDA rhs [f, -fbar]), FEAST contour filtering sum_j w_j (z_j - H)^{-1} x via sharded GMRES, Euclidean whitening, Rayleigh-Ritz in a brightness subspace (eigendecomposition of C_w^H C_w where C_w columns are V(dX+d*Y) density responses), J-metric normalization N_p = ||X_p||^2 - ||Y_p||^2 for the non-Hermitian Casida structure S = [[A,B],[-B*,-A*]], anti-resonant pole doubling (omega -> [Omega, -Omega], d -> [d, conj(d)], w -> [+1, -1] reproducing chi(z) = sum_s [F F^H/(z-Omega) - F* F^T/(z+Omega)]), plus a stochastic tail. Output H5 poles feed W_c[mu,nu](z) = sum_p w_p d_p[mu] conj(d_p[nu])/(z - omega_p) (pseudopoles_eval) and a p_keep convergence sweep vs exact-W references (pseudopoles_sweep). The producer is un-importable at HEAD: three pieces of wiring (two bse_ring_comm functions, the v_couples_k matvec kwarg, the use_nohead loader kwarg) were lost in the src/isdf/bse_isdf -> src/bse consolidation and never restored when the files were resurrected as 'active dev'.",
+  "category_guess": "pipeline stage (experimental W_c(omega) compression for downstream Sigma/chi, the low-scaling real-axis endgame) — currently dead-in-place due to lost wiring, with two working host-side diagnostics (eval/sweep); NOT dead code per the restore commit fe5e3e8 (\"active dev\") and the parsed-but-unread-is-lost-wiring rule",
+  "entry_points": [
+   {
+    "symbol": "bse_pseudopoles.main (python -m bse.bse_pseudopoles)",
+    "callers": "NONE FOUND — only __main__ guard at bse_pseudopoles.py:698. grep -rn 'bse_pseudopoles' src tests tools scripts → self-refs only; sandbox skills/scripts grep → empty; runs/Si/04_si_4x4x4_bse run scripts (*.sh/*.md/*.log) grep → empty; pyproject.toml:36 notes lorrax-bse script was removed; src/bse/__init__.py is a bare docstring (no re-exports). Un-runnable anyway: ImportError at line 31."
+   },
+   {
+    "symbol": "run_pseudopoles / write_pseudopoles_h5",
+    "callers": "bse_pseudopoles.py:659 and :678 (own main) only"
+   },
+   {
+    "symbol": "pseudopoles_eval.main (python -m bse.pseudopoles_eval)",
+    "callers": "__main__ guard pseudopoles_eval.py:177 only; imports cleanly (numpy/h5py, no jax)"
+   },
+   {
+    "symbol": "pseudopoles_eval.load_pseudopoles / reconstruct_Wc_columns",
+    "callers": "tests/archive/projects/test_isdf/sweep_12v12c_plot.py:9 — 'from bse_isdf.pseudopoles_eval import load_pseudopoles, reconstruct_Wc_columns' — STALE pre-consolidation package path, broken at HEAD (archived project)"
+   },
+   {
+    "symbol": "pseudopoles_sweep.main (python -m bse.pseudopoles_sweep)",
+    "callers": "__main__ guard pseudopoles_sweep.py:338; self-documented usage in its own docstring lines 8-14; no external callers found"
+   },
+   {
+    "symbol": "module mention in docs",
+    "callers": "docs/architecture/codebase.md:117 (directory listing only)"
+   }
+  ],
+  "features": [
+   "FEAST pseudopole construction (Steps A-G) — bse_pseudopoles.py:run_pseudopoles (212-487)",
+   "Window selection (3 modes) — bse_pseudopoles.py:main (603-652)",
+   "Pseudopoles H5 writer — bse_pseudopoles.py:write_pseudopoles_h5 (490-547)",
+   "W_c(omega) column evaluation — pseudopoles_eval.py:reconstruct_Wc_columns (95-117) + main",
+   "p_keep convergence sweep — pseudopoles_sweep.py:main (243-335)",
+   "fp32 GMRES fast path — bse_pseudopoles.py:_feast_filter (158-200)"
+  ],
+  "n_claims": 14
+ },
+ {
+  "slug": "davidson_family",
+  "purpose": "Exact-diagonalization arm of the LORRAX BSE stage: converge the lowest n_eig eigenpairs of the TDA BSE Hamiltonian H = D + V - W in the ISDF pair basis (D[b,c,v,k]=(eps_c[k,c]-eps_v[k,v])X, V = (1/Nk) M* V_q0 M exchange with spin-traced pair amplitude M[k,c,v,mu]=sum_s psi_c*[k,c,s,mu] psi_v[k,v,s,mu], W = FFT-diagonal screened direct term), the LORRAX analogue of BGW absorption.x diagonalization mode. solvers/davidson.py is a shape-agnostic Hermitian block Davidson (QE cegterg-style: ellipsis-einsum Gram projection, Cholesky generalized eigh, CGS2 re-orth, restart at m_max) shared with the DFT NSCF driver; bse_davidson_helpers supplies the lowest-(E_c-E_v)-transition initial subspace and the 1/(dE - lambda + eps) diagonal preconditioner; davidson_absorption is the CLI that produces BGW-format eigenvalues_b{1,2,3}.dat with per-state dipole projections; bse_preconditioner is an older mostly-dead diagonal-preconditioner module whose only live export is energy_diff_cv_k.",
+  "category_guess": "pipeline stage (BSE eigensolver) layered on shared solver infra — solvers/davidson.py also drives psp/run_nscf DFT NSCF; bse_preconditioner.py is ~90% dead (superseded by bse_feast's sharded reimplementation)",
+  "entry_points": [
+   {
+    "symbol": "python -m bse.davidson_absorption (main)",
+    "callers": "own docstring usage line 14; production: runs/Si/C_bse_davidson_profile_2026-04-29/manifest.yaml:27 ('Converged 100 eigvals in 18 iter / 209 s on 4xA100') + davidson_absorption.out; no src importers"
+   },
+   {
+    "symbol": "solvers.davidson.davidson",
+    "callers": "src/bse/davidson_absorption.py:31, src/bse/test_davidson_bse.py:38, src/bse/bse_lanczos.py:189 (solver_kind=='davidson', reached via bse_jax --solver davidson, bse_jax.py:462), src/psp/run_nscf.py:46 (DFT NSCF); re-exported src/solvers/__init__.py:2"
+   },
+   {
+    "symbol": "solvers.davidson.warmup_davidson_jit",
+    "callers": "davidson_absorption.py:170, test_davidson_bse.py:243, bse_lanczos.py:216, psp/run_nscf.py:197"
+   },
+   {
+    "symbol": "solvers.davidson._to_host (private)",
+    "callers": "reach-in import src/bse/test_davidson_bse.py:295"
+   },
+   {
+    "symbol": "bse_davidson_helpers.init_bse_subspace / bse_diagonal_precond",
+    "callers": "src/bse/bse_lanczos.py:190,204,207; src/bse/test_davidson_bse.py:43,226,236; src/bse/davidson_absorption.py:33,156,165"
+   },
+   {
+    "symbol": "bse_preconditioner.energy_diff_cv_k",
+    "callers": "src/bse/bse_feast.py:22,108,829; src/bse/bse_jax.py:40,90; src/bse/bse_serial.py:9,34,56"
+   },
+   {
+    "symbol": "bse_preconditioner.{BSEPreconditionerTerms,_pair_amplitude,compute_v_diagonal,compute_w_diagonal,extract_w_q0,build_preconditioner_terms,build_shifted_preconditioner}",
+    "callers": "NONE FOUND — grep over src/tests/tools/scripts/docs + sandbox runs/skills/scripts; only docstring mention bse_davidson_helpers.py:156"
+   }
+  ],
+  "features": [
+   "shape-agnostic block Davidson — src/solvers/davidson.py:davidson (226-352), _ritz_and_residuals (87-124)",
+   "compile warmup at all subspace sizes — src/solvers/davidson.py:warmup_davidson_jit (185-219)",
+   "BSE initial subspace — src/bse/bse_davidson_helpers.py:init_bse_subspace (61-138)",
+   "dE diagonal preconditioner — src/bse/bse_davidson_helpers.py:bse_diagonal_precond (145-203)",
+   "Davidson absorption CLI — src/bse/davidson_absorption.py:main (56-212)",
+   "legacy H-diagonal utilities (dead) — src/bse/bse_preconditioner.py (22-158)"
+  ],
+  "n_claims": 12
+ },
+ {
+  "slug": "absorption_spectra",
+  "purpose": "BSE absorption-spectrum output stage (958 LOC over 4 files): converts a solved TDA BSE Hamiltonian into epsilon_2(omega)/epsilon_1(omega)/JDOS and BGW-format .dat files via two routes plus a comparison tool. Eigenvector route: eps2^a(w) = 16pi^2/(V_cell*N_k*n_spin*n_spinor) * Sum_S |Sum_{kcv} A[S,k,c,v]*d[a,k,c,v]|^2 * (eta/pi)/((w-E_S)^2+eta^2), with d[a,k,c,v] = <c|v_a|v>/(E_c-E_v) sliced from dipole.h5 (host numpy, no jax). Haydock route: 3-polarisation block Lanczos on the sharded TDA matvec HX = D + V - W (lax.scan, alpha_n = Re<s_n|H s_n>, beta_n = ||r_n||), then backward continued fraction g(z)=1/(z-a_0-b_0^2/(z-a_1-...)), eps2 = -pref*||d||^2*Im g(w+i*eta)/pi. eigvals_to_eps2 re-broadens any BGW-format eigenvalues.dat at arbitrary eta/truncation for fair BGW-vs-LORRAX comparison. All math in Ry, file I/O in eV; prefactor verified identical to BGW BSE/absh.f90:46.",
+  "category_guess": "pipeline stage (post-BSE optics/spectra output); eigvals_to_eps2 doubles as BGW-compat diagnostics",
+  "entry_points": [
+   {
+    "symbol": "python -m bse.absorption_haydock (main, absorption_haydock.py:298)",
+    "callers": "src/bse/STATUS.md:108-111 and src/bse/BGW_COMPARE.md:49-53 document the CLI; outputs consumed by runs/Si/C_bse_davidson_profile_2026-04-28/compare/make_fair_comparison.py:32 (loads absorption_haydock_b1_eh.dat)"
+   },
+   {
+    "symbol": "python -m bse.absorption_eigvecs (main, absorption_eigvecs.py:90)",
+    "callers": "src/bse/STATUS.md:114, src/bse/BGW_COMPARE.md:63-66 (cookbook step 2b)"
+   },
+   {
+    "symbol": "python -m bse.eigvals_to_eps2 (_main, eigvals_to_eps2.py:113)",
+    "callers": "src/bse/BGW_COMPARE.md:74-78 (canonical rebroadening tool); library imports: runs/Si/C_bse_davidson_profile_2026-04-29/make_comparison.py:18 (read_bgw_eigvals, compute_eps2), runs/Si/C_bse_davidson_profile_2026-04-28/compare/make_fair_comparison.py:25 (compute_eps2_from_files)"
+   },
+   {
+    "symbol": "absorption_common library (load_dipole_h5, slice_dipole_to_bse_window, write_eigenvalues_dat, lorentzian_broaden, ...)",
+    "callers": "absorption_eigvecs.py:26-36; absorption_haydock.py:41-49; src/bse/davidson_absorption.py:32; runs/Si/C_bse_davidson_profile_2026-04-28/compare/dipole_isolate.py:20 and absorption_compare.py:27"
+   },
+   {
+    "symbol": "compute_oscillator_strengths (absorption_eigvecs.py:50)",
+    "callers": "NONE FOUND (grep -rn compute_oscillator_strengths over src/tests/tools/scripts/docs and sandbox runs -> definition only; main() uses compute_eps2's returned f_Sa instead)"
+   },
+   {
+    "symbol": "run_haydock (absorption_haydock.py:135)",
+    "callers": "only main() in the same file (absorption_haydock.py:329); repo-wide grep finds no other caller"
+   },
+   {
+    "symbol": "load_eigenvectors_h5 / build_dipole_vector_bse",
+    "callers": "single-consumer each: absorption_eigvecs.py:119 and absorption_haydock.py:198 respectively (repo-wide grep)"
+   }
+  ],
+  "features": [
+   "Haydock continued-fraction absorption — absorption_haydock.py:run_haydock (135-295), haydock_recursion_block (54-94), absorption_from_haydock (97-118)",
+   "Sum-over-states absorption from eigenvectors.h5 — absorption_eigvecs.py:compute_dipole_projections (39-47), compute_eps2 (64-75), main (90-194)",
+   "BGW eigenvalues.dat rebroadening / comparison tool — eigvals_to_eps2.py:read_bgw_eigvals (43-55), compute_eps2 (74-94), _main (113-174)",
+   "BGW-compat file formats — absorption_common.py:load_eigenvectors_h5 (26-67), write_absorption_dat (148-163), write_eigenvalues_dat (166-190), write_absorption_h5 (193-225)",
+   "Independent-particle JDOS column — absorption_eigvecs.py:compute_jdos (78-87); absorption_haydock.py:jdos_from_dipole (121-132)",
+   "eqp corrections + q=0 head coupling (haydock route) — absorption_haydock.py:177-185 -> bse_io.apply_eqp_corrections (698) and bse_io.load_bse_data_from_restart_sharded (358-537)"
+  ],
+  "n_claims": 12
+ },
+ {
+  "slug": "aux_solvers",
+  "purpose": "Five auxiliary-solver files in the physics-free solvers/ package, spanning two unrelated programs. (1) Sternheimer linear-response primitives — projected/preconditioned MINRES (Paige–Saunders), subspace projectors P_U = U·U† and Q_{k−q} = 1 − P_val, the TPA preconditioner P⁻¹_{v,G} = TPA(T_G/K̄²_v) with TPA(x)=(27+18x+12x²+8x³)/(27+18x+12x²+8x³+16x⁴), and the production level-shifted-CG primitive solving A_v·δu = −b with A_v(x) = H_{k−q}x − ε_{v,k}x + α_pv·P_val^{k−q}(x) (QE cgsolve_all convention, custom-JVP-wrapped for ∂χ/∂q) — all serving psp/run_sternheimer.py's χ_{G'0}(q,ω=0) head/wing column, NOT the BSE or GW pipelines. (2) FEAST ellipse contour quadrature for the spectral projector P = (1/2πi)∮(zI−H)⁻¹dz: upper-half midpoint nodes z_j = c + r_x cosθ_j + i r_y sinθ_j, weights w_j = (1/2N)(r_y cosθ_j + i r_x sinθ_j), θ_j = π(2j−1)/(2N) — the only file on the BSE path, consumed by bse/bse_feast.py (which conjugate-augments nodes+weights for full/non-TDA BSE).",
+  "category_guess": "infra (iterative-solver library): quadrature.py = BSE FEAST eigensolver support; sternheimer_solve/precond + projectors = psp orbital-mag/W0 linear-response primitives (not BSE, not gw/); minres.py and most of projectors.py = superseded/test-only dead weight",
+  "entry_points": [
+   {
+    "symbol": "minres / MinresInfo",
+    "callers": "NONE in production. tests/test_sternheimer_solvers.py:170,192,234 (pytestmark=extra, deselected by default); sandbox runs/MoS2/02_mos2_3x3_nosym/B_sternheimer_smoke/stern_diag{3,4,5}.py. Superseded per run_sternheimer.py:1174-1176 'CG avoids MINRES pseudo-convergence-NaN pitfall'"
+   },
+   {
+    "symbol": "make_P_val / make_P_precond / make_P_rest",
+    "callers": "tests/test_sternheimer_solvers.py:68-110 only (+ sandbox stern_check_H.py:16, stern_trace_cg.py:16, stern_diag_nopre.py:17 for make_P_val). No src/ callers"
+   },
+   {
+    "symbol": "make_Q_kminq",
+    "callers": "src/psp/run_sternheimer.py:73 (UNUSED import — no call in file; Q inlined as einsums at :973-980, :330-333); psp/tests/test_sternheimer_jvp.py:61,128; tests/test_sternheimer_solvers.py:87-102,193-198"
+   },
+   {
+    "symbol": "feast_ellipse_quadrature",
+    "callers": "src/solvers/__init__.py:14 re-export; src/bse/bse_feast.py:20 (wrapped :965-973, used :592,:1243); src/bse/bse_pseudopoles.py:17 and src/bse/feast_ellipse_mixed_sweep.py:24 (both via bse_feast wrapper)"
+   },
+   {
+    "symbol": "compute_per_band_kinetic",
+    "callers": "src/psp/run_sternheimer.py:75,1239; psp/tests/test_sternheimer_jvp.py:62,131; tests/test_sternheimer_solvers.py:137"
+   },
+   {
+    "symbol": "tpa_preconditioner_diag",
+    "callers": "src/psp/run_sternheimer.py:76,979 (vmap over k),1386; psp/tests/test_sternheimer_jvp.py:62,132"
+   },
+   {
+    "symbol": "make_tpa_preconditioner",
+    "callers": "tests/test_sternheimer_solvers.py:148,235 only in repo; sandbox stern_diag{4,5,cg2}.py. Production uses array form tpa_preconditioner_diag"
+   },
+   {
+    "symbol": "SternheimerOp",
+    "callers": "src/psp/run_sternheimer.py:78,314,352,415,571,653-654"
+   },
+   {
+    "symbol": "sternheimer_solve",
+    "callers": "src/psp/run_sternheimer.py:78,363,465,553,583,730,779; psp/tests/test_sternheimer_jvp.py:243"
+   },
+   {
+    "symbol": "cond_subspace_sos_solve",
+    "callers": "src/psp/run_sternheimer.py:776-777 (--sos-only mode) — single caller"
+   },
+   {
+    "symbol": "_apply_A_inline (private reach-in)",
+    "callers": "src/psp/run_sternheimer.py:315,343,414-469 (k.p tangent RHS + residual diagnostics)"
+   }
+  ],
+  "features": [
+   "Level-shifted CG Sternheimer primitive — src/solvers/sternheimer_solve.py:_sternheimer_core (220-311), SternheimerOp (53-126), _apply_A_inline (133-151)",
+   "custom_jvp implicit differentiation — src/solvers/sternheimer_solve.py:_sternheimer_solve_jvp (345-379)",
+   "Schur / truncated-SoS warm start — src/solvers/sternheimer_solve.py:_schur_initial_guess (188-217), cond_subspace_sos_solve (171-185)",
+   "TPA (Teter-Payne-Allan) preconditioner — src/solvers/sternheimer_precond.py:tpa_preconditioner_diag (83-95), compute_per_band_kinetic (60-76), _tpa (48-53)",
+   "Subspace projectors — src/solvers/projectors.py:_apply_P_U (37-47), factories (54-108)",
+   "Projected preconditioned MINRES (superseded) — src/solvers/minres.py:minres (78-141), _minres_core (148-291)",
+   "FEAST ellipse quadrature — src/solvers/quadrature.py:feast_ellipse_quadrature (17-61)"
+  ],
+  "n_claims": 8
+ },
+ {
+  "slug": "pseudobands",
+  "purpose": "Spectral compression of a Hermitian operator's high-energy manifold into weighted \"pseudobands\" (LORRAX-native analogue of BGW parabands): a KPM DOS partitions [E_start, E_max] into windows; per window, either random-phase combinations of exact eigenstates (xi_a = (1/sqrt(n)) sum_i exp(i theta_ai) psi_i, exact <xi|H|xi> = mean(E)) or Chebyshev-Jackson filtered blocks (step coefficients gamma_0 = 1 - arccos(b)/pi, gamma_n = -(2/(pi n)) sin(n arccos b), telescoped recurrence T_n = 2 H~ T_{n-1} - T_{n-2}) are Galerkin-Ritz-diagonalized, and each of the k pseudobands gets weight w = sqrt(n_eff/k) absorbed into the stored coefficients (BGW-parabands norm convention). pseudobands.py (v1) is the hybrid stochastic+CJ-Ritz version; pseudobands_v2.py adds shifted-boundary quadratic partition-of-unity windows (n_eff = int w_j(E)^2 rho(E) dE * dim) and Gauss-quadrature (moment->Jacobi->Golub-Welsch) energy nodes for Davidson windows. Both are physics-agnostic over a flat dim = nspinor*ngkmax vector space; the only production caller is psp.run_nscf (writes WFN_pseudobands.h5), with no BSE consumer yet. Files are byte-identical between stated audit base e18d0e5 and working HEAD adc2197.",
+  "category_guess": "pipeline stage (mean-field band-compression front-end between Davidson NSCF and WFN.h5; v1/v2 is also a variant axis selected by pb_version)",
+  "entry_points": [
+   {
+    "symbol": "ritz_pseudobands (v1)",
+    "callers": "src/psp/run_nscf.py:341 'from solvers.pseudobands import ritz_pseudobands as _pb_func' (only when pb_version != 2; call sites :367-372, :409-416); src/solvers/__init__.py:12 're-export'. No tests, no tools/scripts, no python -m invocations (no __main__ block; grep over sandbox runs/skills/scripts found only the BGW-parabands run dir runs/Si_pseudobands and skills/profiling_stack's '-m psp.run_nscf' chain)"
+   },
+   {
+    "symbol": "ritz_pseudobands_v2",
+    "callers": "src/psp/run_nscf.py:339 (default pb_version=2; call sites :359-365, :397-407); src/solvers/__init__.py:13 re-export. No tests/tools/scripts callers"
+   },
+   {
+    "symbol": "PseudobandsResult (v1)",
+    "callers": "src/solvers/__init__.py:12 re-export; consumed structurally by run_nscf.py:355-427 (Phi_out/E_out/n_det/dos/windows). v2 defines a same-named, different-schema dataclass that is NOT re-exported (grep solvers/__init__.py)"
+   },
+   {
+    "symbol": "python -m solvers.pseudobands / pseudobands_v2",
+    "callers": "NONE FOUND (grep 'if __name__' in both files -> empty; production invocation is python3 -m psp.run_nscf per skills/profiling_stack/SKILL.md:101-105)"
+   },
+   {
+    "symbol": "_telescoping_filter, _galerkin_ritz*, _gauss_from_moments, _place_windows_v2, _shifted_boundary_coefficients, _cj_window_on_grid, _boundary_coefficients, _stochastic_pseudobands",
+    "callers": "module-internal only (repo-wide grep over src/tests/tools hits only inside the two files)"
+   }
+  ],
+  "features": [
+   "v1 hybrid stochastic + CJ-Ritz pseudobands — src/solvers/pseudobands.py:ritz_pseudobands (250-507)",
+   "v2 Galerkin-Ritz + Gauss-quadrature energies — src/solvers/pseudobands_v2.py:ritz_pseudobands_v2 (460-755)",
+   "telescoping Chebyshev filter — pseudobands.py:_telescoping_filter (101-145) and verbatim copy pseudobands_v2.py:119-147",
+   "equal-error window placement with state floor — pseudobands_v2.py:_place_windows_v2 (382-453)",
+   "universal drop rule — pseudobands.py:464-469; pseudobands_v2.py:707-717",
+   "weight-absorbed BGW-parabands output convention — pseudobands.py:471,493; pseudobands_v2.py:719,741"
+  ],
+  "n_claims": 11
+ },
+ {
+  "slug": "tests_gates",
+  "purpose": "src/bse/test_bse.py and src/bse/test_davidson_bse.py are argparse CLI smoke scripts (not pytest tests) that exercise the TDA BSE stack H_TDA·X = D + V − W, where D[b,c,v,k]=(ε_c[k,c]−ε_v[k,v])X[b,c,v,k], the q=0 exchange V is built from spin-traced ISDF pair amplitudes M[k,c,v,μ]=Σ_s ψ_c*[k,c,s,μ]ψ_v[k,v,s,μ] contracted through V_q0[μ,ν] (k-diagonally — see claims), and the direct W term is a k-grid FFT convolution of the spinor-resolved encode T[b,μ,ν,t,s,k] with W_R. test_bse benchmarks the single-device matvec and Lanczos against a legacy restart schema (now broken); test_davidson_bse runs the sharded plain-jit matvec + block Davidson on a 2D (x,y) mesh and compares eigenvalues (meV) and gauge-invariant |A^S|² densities (cosine similarity) against a BGW eigenvectors.h5, with zero asserts in either file. The repo-wide gate audit shows neither file is collected by pytest (testpaths=[\"tests\"]) and the entire pytest-collected BSE surface is one read_bgw_eqp round-trip test; every other bse module is ungated.",
+  "category_guess": "diagnostics (manual CLI smoke/comparison scripts + gate-coverage audit; not pipeline stages)",
+  "entry_points": [
+   {
+    "symbol": "bse.test_bse.main (python -m bse.test_bse)",
+    "callers": "docs only: src/bse/context/README.md:145,156,180 'uv run python -m bse.test_bse -i input.in'; own docstring lines 4,11. NOT pytest-collected (pyproject.toml:60 testpaths=[\"tests\"]). NONE FOUND in sandbox runs/skills/scripts: find runs -maxdepth 4 (*.sh|*.md|*.yaml) | xargs grep test_bse -> empty; grep skills/ scripts/ docs/ tools/ CHANGELOG.md -> empty"
+   },
+   {
+    "symbol": "bse.test_davidson_bse.main (python -m bse.test_davidson_bse)",
+    "callers": "own docstring line 15 (LORRAX_NGPU=4 lxrun python3 -u -m bse.test_davidson_bse ...); referenced as design mirror (comments only, no import) by src/bse/davidson_absorption.py:9,91,121. NONE FOUND in run scripts or skills (same greps as above)"
+   },
+   {
+    "symbol": "test_matvec / test_pair_amplitude / test_lanczos (test_bse module-level test_* functions)",
+    "callers": "only test_bse.main lines 345-354; not pytest-collectable (required positional arg 'data' would raise fixture-not-found if ever collected)"
+   },
+   {
+    "symbol": "tests/test_eqp_bgw.py::test_reader_skips_provenance_header (only pytest-collected BSE coverage)",
+    "callers": "tests/test_eqp_bgw.py:78 'from bse.bse_io import read_bgw_eqp'; collected via pyproject.toml:59-60 testpaths=[\"tests\"]; pure numpy, no gpu marker, runs on any hardware"
+   }
+  ],
+  "features": [
+   "single-device BSE matvec benchmark — src/bse/test_bse.py:test_matvec (lines 171-215)",
+   "pair-amplitude smoke — src/bse/test_bse.py:test_pair_amplitude (218-235)",
+   "Lanczos eigensolve smoke — src/bse/test_bse.py:test_lanczos (238-285)",
+   "legacy eigenvectors.h5 writer hookup — src/bse/test_bse.py:main:357-371 -> src/bse/write_eigenvectors.py:21-153",
+   "sharded data load + matvec build — src/bse/test_davidson_bse.py:_load_data_and_matvec (53-134)",
+   "EQP override (BGW eqp1.dat) — src/bse/test_davidson_bse.py:76-93",
+   "block Davidson run + warmup — src/bse/test_davidson_bse.py:main:225-266",
+   "BGW comparison (eigenvalues + densities) — src/bse/test_davidson_bse.py:141-180, 273-303",
+   "CLI-only ring gates (audit) — src/bse/bse_ring_comm.py:853-996, src/bse/bse_jax.py:486-508"
+  ],
+  "n_claims": 11
+ },
+ {
+  "slug": "context_docs",
+  "purpose": "Prior-knowledge ledger for the BSE module: STATUS.md records the validated Si 4x4x4 8v-x-8c LORRAX-vs-BGW absorption match (eigenvalues ~3 meV at the ISDF floor, Sigma|d|^2 = 2314.177 machine-match, Haydock peak within 1.5%) plus the BGW-compat index conventions (valence-axis flip, Ry-vs-eV); BGW_COMPARE.md is the cookbook of six conventions any fair comparison must satisfy. The context/ docs carry the physics the code implements — spinor TDA H_BSE = D + V − W with ISDF pair density rho_cv ~ Sigma_mu zeta_mu M_cv(mu,k), the W term as a k−k' FFT convolution per Henneke Eq 4-6 with net 1/Nk normalization — plus three generations of parallel-matvec design (the distributed-X ring scheme was adopted; the 6-axis mesh and block-sharded proposals were not) and FEAST/pseudopole theory and accuracy findings (error dominated by filter response at window boundaries, not GMRES). All files are >=2 months old; five load-bearing claims have rotted vs HEAD (matvec default, V-as-W placeholder, TDA-only, sharding table, FEAST CLI/gamma) and are flagged for verifier re-check.",
+  "category_guess": "diagnostics — prior-knowledge/comparison-convention documentation (validated-results ledger, BGW-compat cookbook, design history); no runtime role",
+  "entry_points": [
+   {
+    "symbol": "src/bse/BGW_COMPARE.md",
+    "callers": "src/bse/eigvals_to_eps2.py:24 (docstring: 'Used by ``BGW_COMPARE.md`` as the canonical reproduce-BGW-absorption tool'); src/bse/STATUS.md:4-9 (mandatory-read pointer)"
+   },
+   {
+    "symbol": "src/bse/STATUS.md",
+    "callers": "src/bse/BGW_COMPARE.md:121 ('For history and project status, see STATUS.md'); no code/skill/CHANGELOG references (grep 'bse/STATUS' over skills/, CLAUDE.md, CHANGELOG.md → empty)"
+   },
+   {
+    "symbol": "src/bse/context/*.md (all 8 files)",
+    "callers": "NONE FOUND outside repo clones — sandbox-wide grep for the doc basenames hit only tmp_clone_slate_check/, blitz_workspaces/blitz{4,5,6}/, lorrax_D_old/ copies; cross-references among themselves (README.md:259-260 cites bse_isdf_instructions.md and gpt5.2suggestion.md; parallel_bse_algos.md cites Henneke Eq 4-5/4-6/2-32)"
+   }
+  ],
+  "features": [
+   "Six BGW-comparison conventions — src/bse/BGW_COMPARE.md:6-34 (mechanics in psp/get_dipole_mtxels.py:470, bse_io.py:603-698, gw/gw_config.py:339-340)",
+   "Validated 8×8 Si Haydock ledger — src/bse/STATUS.md:36-94; runs/Si/04_si_4x4x4_bse/C_lorrax_bse_bgweqp/",
+   "Index-ordering BGW-compat spec — src/bse/STATUS.md:25-34 (implemented bse_io.py:40,98-100)",
+   "Spinor TDA matvec algorithm spec — src/bse/context/README.md:7-90 (code: bse_simple.py:77-175)",
+   "FEAST rational-filter pseudopole theory + accuracy model — src/bse/context/bse_feast_instructions.md + feast_accuracy_notes.md (code: bse_feast.py)",
+   "Distributed-X ring/reduce-scatter matvec design (ADOPTED) — src/bse/context/parallel_bse_algos.md (code: bse_ring_comm.py:46-63, _ring_sum_valence)",
+   "Non-TDA windowed pseudopole recipe (ADOPTED) — src/bse/context/tda_and_pseudopoles.md (code: bse_pseudopoles.py:79-451)",
+   "Henneke 2020 source paper (verbatim conversion) — src/bse/context/Henneke-2020-…md:308,454,464,482"
+  ],
+  "n_claims": 18
+ },
+ {
+  "slug": "kernel_dataflow_trace",
+  "purpose": "End-to-end BSE dataflow in LORRAX: the exciton Hamiltonian H^BSE = D + K^x − K^d is assembled on the coarse GW k-grid entirely from the GW restart bundle tmp/isdf_tensors_{n_rmu}.h5 — D from enk_full (Ry, optionally overwritten by BGW eqp1.dat via SymMaps IBZ→full-BZ unfold), the direct kernel from W0_qmunu (static screened W in the ISDF μν centroid basis, applied as a q=k−k' convolution via an ortho 3-D FFT pair with per-element form (1/Nk)Σ_{k'c'v'}[Σ_tμ ψ*_c(k)ψ_c(k')]W_{μν}(k−k')[Σ_sν ψ_v(k)ψ*_v(k')]X(k')), the exchange from the V_qmunu[q=0] tile with the q→0 head reinstated as a rank-1 (head/V_cell)·conj(G0)⊗G0 update. Trial vectors X(b,c,v,k) are sharded P(None,'x','y',None) on a 2-D device mesh with ψ held in dual μ-on-x / ν-on-y copies; solvers are TDA Lanczos/block-Lanczos/Davidson (plus FEAST/KPM/pseudopole diagnostics), and spectra come from Haydock continued fractions or eigenvector sum-over-states against dipole.h5, written in BGW-compatible formats (eV, valence-axis flip at file boundaries only).",
+  "category_guess": "pipeline stage (post-GW BSE solve + spectra), with a diagnostics constellation (FEAST/KPM/pseudopoles/w_exact sweeps) around a single kernel",
+  "entry_points": [
+   {
+    "symbol": "python -m bse.bse_jax (CLI: FEAST default / --lanczos / --kpm-dos)",
+    "callers": "src/bse/STATUS.md:100-105 and src/bse/BGW_COMPARE.md:58-62 recommended commands; no *.sh under sandbox runs/ (runs/Si/04_si_4x4x4_bse/00_lorrax_bse holds outputs only, driven interactively)"
+   },
+   {
+    "symbol": "python -m bse.absorption_haydock",
+    "callers": "STATUS.md:108-111, BGW_COMPARE.md:49-53"
+   },
+   {
+    "symbol": "python -m bse.absorption_eigvecs",
+    "callers": "STATUS.md:114-116, BGW_COMPARE.md:63-66"
+   },
+   {
+    "symbol": "python -m bse.eigvals_to_eps2",
+    "callers": "BGW_COMPARE.md:78-83 ('the canonical reproduce-BGW-absorption-at-custom-eta tool')"
+   },
+   {
+    "symbol": "bse.bse_io.read_bgw_eqp",
+    "callers": "tests/test_eqp_bgw.py:78 — only pytest-collected bse import"
+   },
+   {
+    "symbol": "bse_feast.main / bse_kpm.main",
+    "callers": "delegated from bse_jax.__main__ (bse_jax.py:536, 543); also standalone -m mains"
+   },
+   {
+    "symbol": "python -m bse.{bse_w_exact,bse_pseudopoles,feast_sweep,feast_zolo_sweep,feast_ellipse_mixed_sweep,pseudopoles_eval,bse_feast_dense_debug,davidson_absorption,write_eigenvectors,test_bse,test_davidson_bse}",
+    "callers": "own __main__ blocks; test_bse.py:3-4 docstring run-command; tests/archive/projects/test_isdf/sweep_12v12c_plot.py:9 references stale pre-rename 'bse_isdf.pseudopoles_eval'"
+   },
+   {
+    "symbol": "gw.head_correction.apply_q0_head_rank1{,_sharded}",
+    "callers": "bse_io.py:504, 818 — the only 'from gw.' imports in bse/"
+   },
+   {
+    "symbol": "bse_jax.apply_bse_hamiltonian (+ its apply_D/apply_V/apply_W)",
+    "callers": "NONE FOUND (grep 'apply_bse_hamiltonian\\b' src tests tools scripts → only def, __all__, context/README.md doc)"
+   },
+   {
+    "symbol": "bse_ring_comm.apply_bse_hamiltonian_ring / bse_serial.symmetrize_W_q / bse_io.BSEData",
+    "callers": "NONE FOUND beyond bse_jax __all__ re-exports (greps in audit transcript)"
+   }
+  ],
+  "features": [
+   "Restart-bundle loaders (sharded + 1-device) — src/bse/bse_io.py:load_bse_data_from_restart_sharded (358-536), _load_ring_subset (767-932), resolve_n_occ (603-664)",
+   "TDA matvec ×4 (simple/ring/gather/serial) — src/bse/bse_simple.py:build_bse_simple_matvec; bse_ring_comm.py:build_bse_ring_matvec (340-484); bse_serial.py:apply_bse_hamiltonian_single_device (38-80)",
+   "Non-TDA Casida matvec — src/bse/bse_ring_comm.py:build_bse_ring_matvec_full (487-716)",
+   "Eigensolvers — src/bse/bse_lanczos.py:solve_bse_sharded (100-313); bse_davidson_helpers.py; solvers/lanczos.py, solvers/davidson.py",
+   "Spectra: Haydock + eigenvector + rebroaden — src/bse/absorption_haydock.py:run_haydock (135-296); absorption_eigvecs.py; eigvals_to_eps2.py; absorption_common.py",
+   "BGW-compat eigenvector I/O — src/bse/bse_io.py:write_eigenvectors_stream (23-105); absorption_common.py:load_eigenvectors_h5 (26-67)",
+   "eqp corrections — src/bse/bse_io.py:read_bgw_eqp (539-581), apply_eqp_corrections (698-753)",
+   "FEAST/KPM/pseudopole/W_c-exact diagnostics — src/bse/bse_feast.py, bse_kpm.py, bse_pseudopoles.py, bse_w_exact.py (+ 3 sweep scripts, dense debug)"
+  ],
+  "n_claims": 14
+ },
+ {
+  "slug": "flags_surface",
+  "purpose": "Complete user-facing input surface of the LORRAX BSE stack (src/bse + src/solvers): the CLI flags, cohsex.in keys, and env vars that steer the sharded iterative solution of H·X = D·X + V·X − W·X (bse_jax.py:86), where ΔE[c,v,k]=eps_c[k,c]−eps_v[k,v] scales X, the exchange term contracts pair densities M[k,c,v,μ]=Σ_s conj(ψ_c[k,c,s,μ])ψ_v[k,v,s,μ] against the q=0 Coulomb block V_q0[μ,ν], and the direct term applies W(q=k−k′) via 3-D FFT convolution over the k-grid. Unlike gw/, BSE has no LorraxConfig section: every CLI is argparse-driven, and the only cohsex.in keys read are wfn_file, vhead, whead_0freq via two private ad-hoc parsers in bse_io.py (gw_config/read_lorrax_input is never imported). All energies are Ry internally with explicit --ry-to-ev/--units-ev-per-ry conversion flags; valence-axis flip and Ry→eV on eigenvector write are deliberate BGW-compat conventions (STATUS.md \"Index ordering\"), not bugs.",
+  "category_guess": "config — cross-cutting input/flag surface for the BSE pipeline stage (plus diagnostics-only sweep CLIs)",
+  "entry_points": [
+   {
+    "symbol": "python -m bse.bse_jax (__main__, bse_jax.py:349-626)",
+    "callers": "runs/Si/04_si_4x4x4_bse/C_lorrax_bse_bgweqp/lorrax_bse_bgweqp_headfix2.out:2 'python3 -u -m bse.bse_ja…' (+13 more hits in runs/); src/bse/STATUS.md:100-105 recommended usage"
+   },
+   {
+    "symbol": "python -m bse.davidson_absorption (main, davidson_absorption.py:56)",
+    "callers": "runs/Si/C_bse_davidson_profile_2026-04-29/REPORT.md + make_comparison.py ('python3 -u -m bse.davidson_absorption'); docstring davidson_absorption.py:14"
+   },
+   {
+    "symbol": "python -m bse.absorption_haydock (main, absorption_haydock.py:298)",
+    "callers": "src/bse/STATUS.md:108-111 (canonical vs-BGW absorption route); src/bse/BGW_COMPARE.md cookbook"
+   },
+   {
+    "symbol": "python -m bse.absorption_eigvecs (main, absorption_eigvecs.py:90)",
+    "callers": "src/bse/STATUS.md:114-116"
+   },
+   {
+    "symbol": "bse_feast.main (bse_feast.py:1073)",
+    "callers": "bse_jax.py:540-604 (default non---lanczos route builds argv and calls it); __main__ bse_feast.py:1319"
+   },
+   {
+    "symbol": "bse_kpm.main (bse_kpm.py:323)",
+    "callers": "bse_jax.py:512-537 (--kpm-dos route); __main__ bse_kpm.py:406"
+   },
+   {
+    "symbol": "python -m bse.bse_pseudopoles / pseudopoles_eval / pseudopoles_sweep / bse_w_exact",
+    "callers": "__main__ blocks only; tests/archive/projects/test_isdf/sweep_12v12c_plot.py:9,33,38 references them under the old bse_isdf package name; no live runs/skills/scripts invocations found"
+   },
+   {
+    "symbol": "python -m bse.feast_sweep / feast_zolo_sweep / feast_ellipse_mixed_sweep / bse_feast_dense_debug",
+    "callers": "NONE FOUND outside their own __main__ (grepped runs/, skills/, scripts/, tools/, docs/)"
+   },
+   {
+    "symbol": "python -m bse.test_bse / test_davidson_bse / write_eigenvectors / eigvals_to_eps2",
+    "callers": "__main__ only; write_eigenvectors_h5 imported by test_bse.py:39; eigvals_to_eps2 named canonical tool in its docstring (eigvals_to_eps2.py:25 'Used by BGW_COMPARE.md'); NOT in pytest path (a0da0a5 commit message)"
+   },
+   {
+    "symbol": "src/solvers/* CLIs",
+    "callers": "NONE — no argparse or __main__ in any solvers file (grep); library-only, re-exported via solvers/__init__.py; pytest imports via tests/test_sternheimer_solvers.py"
+   },
+   {
+    "symbol": "bse.bse_io.read_bgw_eqp",
+    "callers": "tests/test_eqp_bgw.py:78"
+   }
+  ],
+  "features": [
+   "kernel-mode selection (RPA vs full BSE, TDA vs non-TDA) — src/bse/bse_jax.py:515,542,606-616; bse_w_exact.py:103-106 (matvec vs matvec_full); bse_kpm.py:378-379 (non-TDA doubles dim)",
+   "matvec strategy selection — src/bse/bse_jax.py:446-459,622 → bse_lanczos.py:155-164; absorption_haydock.py:201-208",
+   "eigensolver selection — src/bse/bse_jax.py:406-469 → bse_lanczos.py:solve_bse_sharded:100-188",
+   "FEAST contour eigensolve + windowing — src/bse/bse_feast.py:main:1073-1316, _create_mesh_xy:686",
+   "KPM Chebyshev DOS — src/bse/bse_kpm.py:main:323-403, run_kpm_dos; delegated from bse_jax --kpm-dos",
+   "QP corrections from BGW — src/bse/bse_io.py:apply_eqp_corrections:698-753; bse_jax.py:242-261; davidson_absorption.py:93-109; absorption_haydock.py:177-185",
+   "cohsex.in consumption (ad-hoc) — src/bse/bse_io.py:_parse_wfn_path:584, _parse_head_overrides:667, _find_restart_file:756, head inject via gw.head_correction.apply_q0_head_rank1_sharded:504",
+   "BGW-format eigenvector output — src/bse/bse_io.py:write_eigenvectors_stream:23; write_eigenvectors.py:main:176",
+   "absorption post-processing routes — src/bse/absorption_eigvecs.py:90, absorption_haydock.py:298 (device gate 158-161), davidson_absorption.py:56, eigvals_to_eps2.py:114",
+   "pseudopole Wc compression + validation — src/bse/bse_pseudopoles.py:550, pseudopoles_eval.py:128, pseudopoles_sweep.py:243, bse_w_exact.py:50",
+   "mesh/padding control — src/bse/bse_feast.py:_create_mesh_xy:686; bse_ring_comm.py:create_mesh_2d:31; bse_io.py:442,877 → runtime/padding.py:58"
+  ],
+  "n_claims": 14
+ },
+ {
+  "slug": "bgw_fine_grid_reference",
+  "purpose": "Reference deep-read of BerkeleyGW's coarse-to-fine BSE machinery (kernel.x + absorption.x) that LORRAX's single-grid BSE lacks. Physics: fine states are expanded in coarse ones via overlap coefficients d_{n,k_fi}^{m,k_co} = Σ_{G,spinor} c_fi(G,n)·conj(c_co(G+G_umk,m)) with G_umk = nint(k_fi−k_co) (R&L Eq. 39); the coarse kernel K^d = Σ_GG' M*_cc'(G) W_GG'(q) M_v'v(G') is stored as head/wing/body with the divergent factors stripped (head stored as 1, wing multiplied by |q_co|), then interpolated as K_fi = Σ dvv_k·conj(dcc_k)·K_co·conj(dvv_k')·dcc_k' and re-multiplied by analytic w_eff = ⟨v(q_fi)⟩_mBZ·ε⁻¹₀₀(q_fi) (head, wcoul0/(8π) at q=0) and 1/q_fi (wing) at the fine q = k−k'. Also documents ε⁻¹-diagonal tabulation over q+G points (epsdiag), the mini-BZ Monte-Carlo v(q) average with analytic small-sphere correction, finite-Q (valence-shifted, exchange at v(G−Q), COM momentum = −Q), the CSI clustered-subsampling replacement below a |q| cutoff, and the non-TDA coupling-block interpolation (conjugation swap + primed-index swap, requires extended_kernel). Deliverable: reports/bse_refactor_map_2026-07-15/archive/files/bgw_fine_grid_reference.md.",
+  "category_guess": "pipeline stage (external reference crib sheet — BGW fine-grid BSE interpolation pipeline that LORRAX bse/ does not yet implement)",
+  "entry_points": [
+   {
+    "symbol": "intwfn (BSE/intwfn.f90:74)",
+    "callers": "diag.f90:261, haydock.f90:171, inteqp.f90:133 (grep 'call intwfn' over BSE/*.f90)"
+   },
+   {
+    "symbol": "intwfn_sub (BSE/intwfn.f90:1078)",
+    "callers": "diag.f90:283 (only under xct%subsample_line)"
+   },
+   {
+    "symbol": "mtxel_t (BSE/mtxel_t.f90:36)",
+    "callers": "intwfn.f90:529,533 and intwfn.f90:1544,1548"
+   },
+   {
+    "symbol": "intkernel (BSE/intkernel.f90:69)",
+    "callers": "diag.f90:583,588,593,598; haydock.f90:518"
+   },
+   {
+    "symbol": "interpolate (BSE/intkernel.f90:1266, private)",
+    "callers": "intkernel.f90:991,996,1003,1008,1017,1022,1029,1034"
+   },
+   {
+    "symbol": "epsdiag/read_epsdiag/write_epsdiag (BSE/epsdiag.f90:46)",
+    "callers": "intkernel.f90:194-197"
+   },
+   {
+    "symbol": "vcoul_generator (Common/vcoul_generator.f90:62)",
+    "callers": "intkernel.f90:429,434; kernel_main.f90:279,309,338"
+   },
+   {
+    "symbol": "minibzaverage_3d_oneoverq2 (Common/minibzaverage.f90:35)",
+    "callers": "vcoul_generator.f90:399,405,414,447"
+   },
+   {
+    "symbol": "fixwings (Common/fixwings.f90:61)",
+    "callers": "Sigma/sigma_main.f90:1797-1826 ONLY — grep 'fixwings' over BSE/*.f90 finds zero call sites; BSE does its own wing scaling"
+   },
+   {
+    "symbol": "program setup_subsampling_csi (BSE/setup_subsampling_csi.f90:32)",
+    "callers": "standalone executable (setup_subsampling_csi.x); emits subsample.inp scaffolding"
+   },
+   {
+    "symbol": "programs absorption/kernel/inteqp",
+    "callers": "absorption.f90:17, kernel.f90:15, inteqp.f90:19 (top-level executables)"
+   }
+  ],
+  "features": [
+   "dcc/dvv coarse-to-fine WFN expansion — BSE/intwfn.f90:intwfn + BSE/mtxel_t.f90:mtxel_dmm (lines 179-188)",
+   "coarse kernel head/wing/body/exchange storage — BSE/mtxel_kernel.f90:528-559,1016-1059,844-887 + kernel_main.f90:363 + w_sum.f90/g_sum.f90/gx_sum.f90",
+   "fine-grid kernel interpolation + singular re-add — BSE/intkernel.f90:intkernel (841-1201) + interpolate (1266-1574)",
+   "epsdiag ε⁻¹-head tabulation + interpolation — BSE/epsdiag.f90:epsdiag (395-500) + intkernel.f90:331-347",
+   "mini-BZ v(q) average + wcoul0 — Common/vcoul_generator.f90:62 + Common/minibzaverage.f90:35-90",
+   "finite-Q BSE — BSE/mtxel_kernel.f90:673-699 + kernel_main.f90:276-297 + input_fi_q.f90:320-361 + diag.f90:489-495",
+   "CSI clustered subsampling — BSE/intkernel.f90:485-569,924-1000 + intwfn.f90:intwfn_sub (1078-1792) + setup_subsampling_csi.f90",
+   "TDA vs full BSE — BSE/intkernel.f90:1014-1091,1266-1281 + diag.f90:448-453,677-681 + inread.f90:618-623",
+   "spin/nspinor handling — BSE/mtxel_t.f90:179-188 + intkernel.f90:242-247,1296-1365,1649-1655"
+  ],
+  "n_claims": 4
+ }
+]

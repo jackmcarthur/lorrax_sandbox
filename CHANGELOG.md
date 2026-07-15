@@ -1,5 +1,243 @@
 # Changelog
 
+## 2026-07-15: BSE refactor map — 45-agent audit + 5 feature designs [D, reports only, no source changes]
+
+`reports/bse_refactor_map_2026-07-15/` — the BSE analogue of the GW refactor map:
+18 deep-readers over src/bse (~7.7 kL) + src/solvers (~3.9 kL), all 207 reader
+claims adversarially verified (88 confirmed-bug / 20 dead / 23 refactor-target),
+two independent teleological sorts, and 5 designs for the missing physics
+(fine-grid interpolation, SR/LR Coulomb split, head+wings W interpolation,
+solver/FEAST program, finite-Q H^BSE). BSE tree byte-identical e18d0e5..HEAD.
+
+- **Showstopper 1**: every BSE load path is broken against restarts written by
+  current gw_jax (B3 8-D-only V_q0 reader, B4 missing kgrid attr, B5 head
+  injection before layout shim) — package only runs on legacy-era h5 files.
+- **Showstopper 2**: the q=0 exchange kernel is k-block-diagonal in ALL four
+  matvecs; physical K^x is dense in (k,k'). Triple-confirmed (Henneke deriv.,
+  2-k dense-reference numerical diff, BGW kernel_main.f90). Si 3 meV gate was
+  exchange-insensitive; ring-vs-serial check is circular.
+- Non-TDA-with-W never executed (malformed B-block einsum); KPM broken at HEAD;
+  FEAST default route runs the RPA kernel with fixed n_ritz=4 (the
+  clustered-eigenvalue failure); bse_pseudopoles = lost wiring, not dead.
+- Zero pytest-collected BSE coverage. Attack order in MAP.md §7: gates →
+  loader repair → B1/B2/B6/B7 physics fixes → delete pass → single-source →
+  solver program → feature designs. 10 design decisions queued for Jack
+  (report.md "Decisions needed").
+
+## 2026-07-15: suite-speedup phase 1 — cache audit + bispinor fixture regen at 25 Ry [D, source — branch agent/suite-speedup (stacked on agent/ppm-fit-conditioning), NOT pushed]
+
+User goal: plain suite <60 s for the dev loop. Report:
+`reports/suite_speedup_2026-07-15/`. Commit `d1847d9`.
+
+- **Cache audit**: the persistent XLA compile cache is ACTIVE and already
+  saving ~90 s on the gnppm gate alone (27 s warm vs 117 s disabled). Not a
+  lever. Corollary: post-source-change suite walls are cold-cache outliers
+  (this morning's 660 s was Fix-3 recompiles; warm = ~390 s → 373.6 s now).
+- **Bispinor fixture regen** (`runs/MoS2/D_25Ry_bispinor_fixture_2026-07-15/`):
+  ecutwfc 60→25 Ry, grid 30×30×120 → 20×20×75, WFN.h5 52.6→14.8 MB, transverse
+  orbit set 209→208. Golden re-frozen: 3 fresh runs bit-identical, PAD=4 twin
+  bit-identical, orbit/cascade properties preserved. **Chunking coverage
+  (user requirement): 3 r-chunks in all 4 ζ-fit channels at the standard
+  30 GB budget, and the gate now log-asserts ≥2 chunks per channel.**
+- **Floor diagnosis corrected**: 3.6× fewer grid points bought only 9% of
+  in-suite bispinor wall (87.2→79.3 s) — the per-gate floor is subprocess
+  launch + per-process retrace (grid-independent), refuting the 07-09
+  "r-chunk streaming floor" claim at fixture scale. The <60 s path is the
+  one-process variant runner (next) + a dev/checkpoint invocation split.
+- **One-process Tier-2 variant bundle** (`a506a71`): all 7 gnppm variants
+  (restart baseline, pad12, kij_stream, sc_iter1, fixed_point, IBZ legs A+B)
+  run in ONE subprocess via `tests/run_variant_bundle.py` — import + retrace
+  amortized, env knobs applied/restored in-process (read-at-call-time
+  verified), per-variant failure isolation, module-cache safety audited.
+  Tier-2 chain ~114 → ~71 s.
+- Suite: **207 passed / 0 failed — 390 s (start of day) → 283.0 s** warm.
+  <60 s full-suite is not reachable with 4 fresh e2e pipelines + the FFI
+  matrix serial; dev-loop split options in the report (user decision).
+- Stale-tool note: `psp.get_DFT_mtxels` main() debug driver crashes on a
+  ψ/ρ-grid broadcast before its kin_ion writer (NEXT_TARGETS #12 fodder);
+  `gw.kin_ion_io` is the canonical kin_ion.h5 generator.
+
+## 2026-07-15: Fix-3 PPM census determinism — magnitude-based mode classification [D, source — branch agent/ppm-fit-conditioning, NOT pushed]
+
+Closes the last open refactor-map code item (HANDOFF Remaining #2). The GN-PPM
+validity cut `|Wc0−Wc_probe| > 1e-14` thresholded a *cancellation* — every
+dispersion-free element's denominator sits at the FP noise floor by
+construction, so device-count reduction order flipped modes valid↔invalid and
+one garbage-huge Ω moved the window max-Ω → minimax node counts → Σ_c (the
+4g↔16g residual, ROOT_CAUSE.md). Replaced with relative magnitude gates in
+`fit_gn_ppm_from_wc_pair` (commit `218aeb8`):
+
+- **dead**: `|Wc0| ≤ 1e-12·per-q max|Wc0|` — roundoff elements whose
+  Ω² = noise/noise must never enter the valid census;
+- **stiff**: `|Wc0−Wc_probe| ≤ 1e-8·|Wc0|` — no resolvable dispersion; within
+  the one-pole model denom→0 ⇔ Ω→∞, where the pole formula reduces EXACTLY to
+  the static-COHSEX treatment (`static_limit`, the default) — so the invalid
+  routing is analytic, not a fallback. No crossfade/ramp needed: the branches
+  agree to O(1e-8) at the boundary.
+
+New `tests/test_ppm_fit_classification.py`: four-class contract, exact pole
+recovery, pad-birth, ±1-ulp classification stability (incl. an element parked
+on the old absolute cut). Suite 207 passed / 0 failed; golden gates unchanged
+(zero fixture modes reclassify — evidence is the unit pin, not a re-freeze).
+Report: `reports/ppm_fit_conditioning_2026-07-15/`. Still open, physics-side:
+on-pole Σ(E_dft) is inherently ill-conditioned (1.28 eV/ulp measured) —
+document in the manual, don't engineer around it.
+
+Next initiative queued (user request): suite wall now 11 min (FFI contract
+tests added ~31 tests since the 220 s redesign benchmark); target <60 s via
+compile-cache audit, one-process restart variants, bispinor fixture regen at
+lower ecut (gate fixture is production-sized: 60 Ry, 30×30×120 grid).
+
+## 2026-07-13: manual chapters 8-13 + appendices A-G drafted [B, source — agent/manual, PUSHED 84b8c2a]
+
+All remaining chapters drafted in the locked register: Ch 8 bispinor (formalism/
+four-density ISDF/assembly/status; factor_c_q indefinite-transverse-LU confirmed
+at HEAD), Ch 9 (DFT ops, BSE matvec + solver table, htransform), Ch 10 (workflow/
+outputs/restart), Ch 11 input reference regenerated from gw_config.py by extractor
+agent (sys_dim 0/2/3 corrected vs agent claim; deprecated-alias + derived-default
+tables), Ch 12 (planner/linalg limits/IO/troubleshooting), Ch 13 (module map,
+distribution model, host-memory, testing tiers), appendices A-G (sym unfolds +
+reduced-vs-not ledger; q->0 with BOTH GN normalizations; minimax tables; formats;
+BGW cookbook; bibliography working set). Verify-TODOs: App B wings, App D dataset
+shapes, App G citations, 8.4 Breit magnitudes, 3.1 tutorial numbers, 7.6 periodic
+gate. Manual now covers the full outline; next = user revision rounds + figure/
+number generation (needs allocations).
+
+## 2026-07-11: GPU backend timing matrix 00-02 executed — cusolvermp+slate green, in-tree BLOCKED by JAX-0.9 pcast [C, runs only]
+
+`runs/MoS2/C_bispinor_backend_timing_2026-07-11/` (MoS2 3×3 bispinor GN-PPM,
+2×2 mesh / 4 GPUs, JID 55791797).  All variants need `LORRAX_FORCE_FULL_BZ=1`:
+the manifest's `--no-orbit` 208 transverse set loud-fails the transverse ζ_T
+IBZ orbit-closure check (`isdf_fitting.py:345`) — no auto-fallback for
+transverse channels, env var is the documented bypass.
+
+- **00 in-tree: FAILED (env incompat)** — `lax.pcast` (`common/cholesky_2d.py:186`,
+  commit `c7e6695` "fix(jax-0.9)") does not exist in the GPU container's JAX
+  0.7.2; every `path=sharded_cholesky` run dies in charge-channel `factor_c_q`,
+  both BZ modes.  Logged in `KNOWN_SANDBOX_ERRORS.md` (2026-07-11).
+- **01 cusolvermp: complete** — WALL 80 s (recorded 58.6 s); `path=cusolvermp_cholesky`
+  charge chol 3.70 s, `path=cusolvermp_lu` transverse solves ~3.0 s/channel.
+- **02 slate: complete** — WALL 74 s (recorded 54.4 s); `path=slate_cholesky`
+  charge chol 4.48 s, in-tree per-q `path=lu` transverse solves ~1.5 s/channel
+  (2× faster than cusolvermp_lu at this tiny size).
+- **Correctness**: 01 vs 02 `sigma_diag.dat` max|delta| = **0.000e+00**.
+  00-vs-01/02 diffs impossible (00 has no sigma_diag.dat).
+- `shared/diff_sigma.py` fixed: `np.loadtxt` can't read sigma_diag.dat's
+  labeled format; now regex-extracts decimal floats from non-comment lines.
+
+## 2026-07-11: ScaLAPACK host backend for distributed_lu — Cray LibSci, zero new deps [C, source — branch agent/ffi-host-platform, PUSHED to origin/main 4085672]
+
+**Later same day — e2e backend matrix + two bugs found and fixed** (report
+section "e2e backend timing + equivalence matrix"; run set
+`runs/MoS2/C_bispinor_backend_timing_2026-07-11/`): MoS2 bispinor GN-PPM,
+2×2 mesh, 7 variants.  GPU {sharded, cusolvermp, slate} and CPU {sharded,
+slate} × {per-q lu, scalapack} ALL bit-identical (`max|Δ|=0.000e+00`) after:
+(1) `1421db1` — `lax.pcast` (jax-0.9-only, main commit c7e6695) broke
+multi-rank sharded_cholesky under container jax 0.7.2; version-guarded.
+(2) `4085672` — XLA CPU runs independent ffi_calls CONCURRENTLY → per-q
+host-slate potrf MPI collectives raced on the shared comm (intermittent
+one-q-tile corruption, 2 of 3 runs); shared host-handler mutex; 6/6
+post-fix e2e determinism trials bit-clean.  Wall: GPU 73–80 s, CPU 271–274 s
+(solver axes are noise at fixture scale — z_q_build dominates).  scalapack
+LU was bit-exact from its first e2e run.  Also KSE'd: the §3.5 native venv
+CPU recipe is broken (jax-0.9.1 tiled=False at minimax_screening.py:44).
+
+Extends the 2026-07-10 host-platform port (same branch, commit `f0b17f3` +
+review-fix guards).  Report section appended to
+`reports/ffi_host_platform_2026-07-10/`.
+
+- **Where ScaLAPACK lives on NERSC**: inside Cray LibSci (`libsci_gnu_mpi`) —
+  NOT MKL (whose ScaLAPACK targets Intel MPI, wrong ABI for Cray MPICH).
+  `liblorrax_ffi_host.so` already linked libsci for SLATE's BLAS, so the
+  backend adds **zero link dependencies** (readelf NEEDED unchanged).
+- **`distributed_lu = scalapack`**: fused per-q `pXgetrf`+`pXgetrs`
+  (`ffi/scalapack/`), BLACS grid on the slate ctx's rank-remapped comm ("C"
+  order = JAX mesh coords), square blocks `g = N/max(Px,Py)` → square + BOTH
+  1-D mesh orientations (incl. 1×q, which slate's stride assert forbids).
+  Explicit-only, host-only (GPU backend rejected at config parse), same
+  `solve_zeta` branch as `cusolvermp_lu` (import switch only).
+- **Validation**: contract file 35 passed (mixed platforms, 1 process); CLI
+  2×2/4×1/1×4 under `JAX_PLATFORMS=cpu` all `0 failures`, in-container AND
+  bare-metal Milan CPU node (12/12 pytest there); full suite **217 passed /
+  0 failed (5:36)**, golden gates green.
+- **Adversarial review** (index-math mandate): 1 confirmed seam defect —
+  scalapack-on-GPU-backend failed loudly but only AFTER the C_q build; fixed
+  with parse-time rejection + resolver device check.  All numeric checks
+  (BLACS mapping, numroc extents, ipiv, donation aliasing, int32, shared
+  branch) refuted with explicit derivations.
+
+## 2026-07-10: USER MANUAL started — outline + chapters 1/4/5/6 drafted [B, source — branch agent/manual, UNPUSHED]
+
+New top-level `manual/` in lorrax (one .md per section, LaTeX math). Approved
+outline + editorial threads (T1 two-sums rule, T2 one-picture-three-resolutions,
+T3 knob-per-figure, T4 BGW boxes, T5 spinor-first) in `manual/00_outline.md`,
+including the pre-writing blockers for Ch. 7 (GN B-normalization contradiction,
+three-vs-six-window reconciliation, fresh periodic Sigma(w) gate) and the
+freq-doc source map (minimax-quadrature.md -> ctsp_revised.md -> physics.md 6.9
+-> GN guide -> Kim-2020 transcripts). Drafted: Ch 1 (intro incl. LORRAX-vs-BGW
+pros/cons), Ch 4 (GW in r-space: two-sums rule, Nk log Nk, time-integration
+heuristics, QP solvers + rCROP citation Wan & Miedlar), Ch 5 (ISDF: pair-density
+ansatz, sigma^0 spinor trace, C_q zeta_q = Z_q stated via P_k, orbit closure,
+rank), Ch 6 (Coulomb: truncation, miniBZ MC average, 4x-Ecut pair bandwidth vs
+BGW cap, q->0 pointer). lorrax_B also rebased: agent/bxc-vscf-magnetic onto main
+adc2197 (clean). Docs dead-weight audit done earlier this session (dev/plans all
+landed, ENVIRONMENT_COMPREHENSIVE overlaps installation/, multihost.md ~90%
+generic JAX tutorial, hl-gpp-derivation.md is a raw chat transcript in nav).
+3-lens review round EXECUTED same session (code-fidelity /
+physics-pedagogy / genre-structure agents) -> adjudication -> fixes applied in
+0d5822d. Headline: bare_coulomb_cutoff DEFAULT IS NOW ecutwfc upstream (matches
+BGW; old 4x-default memory was stale, memory file updated); qp_solver enum
+strings fixed; chi0 spin prefactor made spinor-consistent; COHSEX split
+un-double-counted; crossing-floor = imposed broadening; 0D box downgraded to
+kernel-only (v_q_g_flat raises for sys_dim=0). Report:
+reports/lorrax_manual_2026-07-10/. CONTINUED same session: Ch 2 (installation,
+cluster-tier phdf5+distributed-linalg framing), Ch 3 (Si tutorial + GN-PPM
+upgrade + MoS2 teaser), Ch 7 (full freq-integration chapter) drafted — commits
+85d3189, 4102a95. Ch-7 blockers 1+2 RESOLVED from code: GN model is
+W_c = 2B*Omega/(w^2-Omega^2) with B = -W_c(0)*Omega/2 (physics.md 6.9 has the
+WRONG normalization, flagged for upstream fix); shipped sigma windows = three
+(core/a_stripe/b_slab, T = w_max+1.5xi, A_core = 2T/xi), six-window note is
+unshipped design. STYLE round 2026-07-11: register locked to Jack's prose (manual/STYLE.md;
+1.1 + 2.1 user-revised as references), PRL-density sweep of ch 1-7, 1.2/1.3
+archived. Install-doc sweep: pre-JAX-0.9 advice purged (cuda12 extra, 0.5.x pins,
+lorrax-bse, load_wfns refs). agent/manual MERGED TO MAIN and pushed (c7a30ff,
+also merges origin FFI-host work). Remaining for manual: Ch 8/9, Parts III/IV,
+appendices;
+blocked items = periodic Sigma(w) gate run (7.6 numbers), tutorial reference
+numbers (3.1), T3 figures — all need 1-GPU allocations.
+
+## 2026-07-10: FFI host-platform port — SLATE distributed linalg on the JAX CPU backend [C, source — branch agent/ffi-host-platform, PUSHED to origin/main 4085672]
+
+Executes the P2 "FFI CPU story" follow-up from `reports/slate_linalg_ffi_2026-07-10/`.
+Report: `reports/ffi_host_platform_2026-07-10/` (PLAN + full validation matrix).
+lorrax_C fast-forwarded to origin/main `adc2197` first; its in-tree GPU FFI rebuilt
+from pristine main and re-verified (23/23 contract, 2×2 CLI clean) before any edits.
+
+- **All five slate FFI ops now run on the JAX CPU backend**: host handlers in
+  `slate/cpp/host_ffi.cc` (`fromScaLAPACK` on host buffers — same block-cyclic
+  layout as `fromDevices`, so every transpose/rank-remap/validation carries —
+  `Target::HostTask`, memcpy staging), compiled into a separate **CUDA-free
+  `liblorrax_ffi_host.so`** (`common/cpp/host/build_host.sh`, Cray PE, slate
+  `gpu_backend=none` + MPI only; readelf-gated; XLA FFI headers staged from the
+  CONTAINER's jaxlib — runtime match, the host venv's 0.9.1 headers are too new).
+- **jaxlib-style per-platform registration**: same target names under
+  `platform="CUDA"` and `platform="cpu"`; wrappers resolve the library from the
+  MESH's device platform (`ensure_registered`); `distributed_cholesky = slate`
+  passes through on CPU backends (never auto-picked; loud on absence).
+- **Validation**: contract file 31 passed (23 CUDA + 8 cpu) mixed in one process;
+  multi-rank CLI 2×2 `0 failures` on BOTH backends; bare-metal Milan CPU node —
+  clean ldd, 7/7 pytest, 2×2 + 4×1 CLI clean on jax 0.9.1 (forward-compat OK);
+  full suite **213 passed / 0 failed (4:15)**, golden gates green.
+- **Adversarial review workflow** (4 finders → per-finding refutation, 15 agents):
+  6 confirmed findings, all fixed (`d30cfa4`) or documented — headline: three
+  classes of platform-blind `get_lib()` callers repointed by the loader change
+  (slate lifecycle helpers, five multi-rank drivers whose distributed init
+  silently broke, WfnLoader's phdf5 probe on CPU backends), plus the dual-lib
+  `libslate.so.2` soname caveat now documented.  Mixed-platform testing also
+  caught a batched-wrapper jit-cache key missing device identity (`ec08b04`).
+- Open: ScaLAPACK host backend for `distributed_lu` (joins the same .so + loader
+  tables); two PRE-EXISTING `test_qp_solver_config` failures under a CPU backend.
+
 ## 2026-07-10 (overnight): block-cyclic FFI stability program + SLATE CPU/GPU portability [D, source — branch agent/slate-linalg-ffi, UNPUSHED]
 
 Overnight autonomous program (2 worker agents + orchestrator), 7 commits, final suite
@@ -3291,3 +3529,9 @@ What still looks worth improving:
 - FFI rebuilt against the new gpu install in a SEPARATE build dir (`LORRAX_FFI_BUILD_DIR` knob added to `build.sh`; runtime override `LORRAX_FFI_SO`): `common.slate_cholesky_trsm_test` + `slate_batched_test` PASS at ~1e-16 on 2×2. In-tree `build/` .so untouched.
 - CPU verdict for the FFI: GPU-only today (CUDA-typed handlers, `platform="CUDA"` registration, .so dlopen fails at libnccl on CPU nodes). Port = host handler variants (`fromScaLAPACK` + HostTask) + CUDA-free `liblorrax_ffi_host.so` + per-platform loader, est. 1–2 days — documented in `reports/slate_linalg_ffi_2026-07-10/report.md` §P2, deferred.
 - Sandbox: login-node shifter bind-mount transient failure logged in KNOWN_SANDBOX_ERRORS.md (workaround: build via compute node).
+
+## 2026-07-11 — CPU-backend distributed-linalg timing matrix (lorrax_C agent/ffi-host-platform, MoS2 3×3 bispinor GN-PPM, 4 MPI ranks 2×2, Milan)
+- Extends `runs/MoS2/C_bispinor_backend_timing_2026-07-11` with CPU variants 03–07 (own allocation JID 55793024). All ran e2e via the **shifter container on the CPU node** (raw srun + `--module=mpich`, `JAX_PLATFORMS=cpu`, `MPICH_GPU_SUPPORT_ENABLED=0`, `LORRAX_FORCE_FULL_BZ=1`); the documented native-venv CPU path (§3.5 / lxrun `LORRAX_PARTITION=cpu`) is **broken for multi-rank GN-PPM** under venv jax 0.9.1 — `process_allgather(tiled=False)` at `gw/minimax_screening.py:44` raises `ValueError: ... only supports tiled=True` in `fit_ppm` (after all ζ fits). Logged in KNOWN_SANDBOX_ERRORS.md with the working container recipe.
+- Wall times (≈identical; solver cells are tiny at this scale): 03 intree 273 s, 04 slate 274 s, 05 scalapack 274 s, 06 slate+scalapack 271 s, 07 slate-repeat 272 s (GPU equivalents: 73–80 s). Dominant cost is `zeta_fit.chunk.z_q_build` (~44 s ×4 channels); charge cholesky itself: sharded 0.73 s vs slate host 1.56 s; transverse solve: per-q lu 4.4 s vs scalapack 3.1 s.
+- **Correctness (vs 03 baseline, `shared/diff_sigma.py`)**: 05 scalapack_lu = **0.000e+00** (bit-identical to per-q lu — host ScaLAPACK LU validated); 07 slate-repeat = **0.000e+00**; but **04 = 9.484e-01 and 06 = 6.523e-01 eV (04 vs 06 = 1.598)** — the HOST SLATE cholesky (`Target::HostTask`, `liblorrax_ffi_host.so`) **intermittently corrupts exactly one q tile** (q idx 5: GN invalid-mode count 1372 healthy vs 11554/64486 corrupted; sigX identical, only screened W/sigC affected). GPU slate (variant 02) was bit-identical, and 1 of 3 host-slate runs (07) is clean → host-handler-specific flake (suspect threading/race in the host potrf/trsm batched loop), NOT a systematic layout bug. `distributed_cholesky=slate` on CPU should be considered UNRELIABLE until root-caused; `distributed_lu=scalapack` is good.
+- mpi4py absent from every reachable env → `use_ffi_io=true` on CPU always falls back to `H5PY_ALLGATHER` (uniform across variants, io-only).

@@ -1,0 +1,602 @@
+[
+ {
+  "categories": [
+   {
+    "tier": "A",
+    "name": "A0 ingest — restart-bundle loaders, EQP overrides, q=0 head injection",
+    "members": [
+     "src/bse/bse_io.py:load_bse_data_from_restart_sharded",
+     "src/bse/bse_io.py:_read_psi_mu_sharded",
+     "src/bse/bse_io.py:_read_vq0_sharded",
+     "src/bse/bse_io.py:_read_wq_sharded",
+     "src/bse/bse_io.py:_load_ring_subset",
+     "src/bse/bse_io.py:resolve_n_occ",
+     "src/bse/bse_io.py:read_bgw_eqp",
+     "src/bse/bse_io.py:apply_eqp_corrections",
+     "src/bse/bse_io.py:463-513 (sharded q=0 head injection)",
+     "src/bse/bse_io.py:804-836 (ring q=0 head injection, duplicate of above)",
+     "src/bse/bse_io.py:_find_restart_file"
+    ],
+    "note": "Single most-imported file in bse/ (10+ direct importers for the sharded loader and _find_restart_file alone). Two independent, near-identical copies of q=0 head-rank-1 injection (sharded vs ring loader) — same duplication smell flagged elsewhere in the sandbox's 'no redundancy' convention; should be one helper called twice, not two hand-copies."
+   },
+   {
+    "tier": "A",
+    "name": "A1 H^BSE kernel build & matvec application (D + V − W; factory-returns-closure pattern; TDA + non-TDA/full variants)",
+    "members": [
+     "src/bse/bse_serial.py:apply_bse_hamiltonian_single_device",
+     "src/bse/bse_serial.py:apply_D",
+     "src/bse/bse_serial.py:compute_pair_amplitude",
+     "src/bse/bse_simple.py:build_bse_simple_matvec",
+     "src/bse/bse_ring_comm.py:build_bse_ring_matvec",
+     "src/bse/bse_ring_comm.py:build_bse_ring_matvec_full",
+     "src/bse/bse_ring_comm.py:apply_V_ring"
+    ],
+    "note": "'kernel build' and 'matvec' are the same step in this codebase (a build_* factory returns the applied closure); no separate assembly stage exists. bse_serial.py is the correctness reference every other matvec is checked against (bse_ring_comm.py:934-996)."
+   },
+   {
+    "tier": "A",
+    "name": "A2 eigen/spectral solve — Lanczos/Davidson (TDA-only) + FEAST (default, TDA+full) + KPM DOS window feeder",
+    "members": [
+     "src/bse/bse_lanczos.py:solve_bse",
+     "src/bse/bse_lanczos.py:solve_bse_sharded",
+     "src/bse/bse_lanczos.py:_full_run",
+     "src/bse/bse_davidson_helpers.py:init_bse_subspace",
+     "src/bse/bse_davidson_helpers.py:bse_diagonal_precond",
+     "src/bse/davidson_absorption.py:main",
+     "src/bse/bse_feast.py (whole file: estimate_spectral_bounds_sharded, run_feast_ritz, _rayleigh_ritz, _build_ritz_vectors, feast quadrature wrappers, build_default_windows_eV, main)",
+     "src/bse/bse_kpm.py:run_kpm_dos",
+     "src/bse/bse_kpm.py:make_bse_h_tilde",
+     "src/bse/bse_kpm.py:make_bse_random_vector",
+     "src/bse/bse_kpm.py:main",
+     "src/bse/bse_preconditioner.py:energy_diff_cv_k"
+    ],
+    "note": "bse_feast.py's own docstring calls itself 'setup utilities' but it is the DEFAULT solver path (bse_jax dispatches here whenever --lanczos is absent) — a self-description mismatch worth fixing. bse_kpm.py straddles A2 (feeds FEAST/pseudopole window placement via private reach-in imports, bse_feast.py:695-847/281/686 <- bse_kpm.py:159-166,140,361) and E (also runnable as a standalone diagnostic). davidson_absorption.py duplicates most of what bse_jax.py's --lanczos --solver davidson path already reaches, plus its own dipole-projection/output logic baked in — a second, partially-redundant end-to-end driver (see notes)."
+   },
+   {
+    "tier": "A",
+    "name": "A2b W_c(omega) pseudopole compression — screened-interaction spectral compression for downstream Sigma/chi (broken import wiring at HEAD, explicitly 'active dev' not dead)",
+    "members": [
+     "src/bse/bse_pseudopoles.py:run_pseudopoles",
+     "src/bse/bse_pseudopoles.py:write_pseudopoles_h5",
+     "src/bse/bse_pseudopoles.py:main",
+     "src/bse/bse_pseudopoles.py:_feast_filter",
+     "src/bse/pseudopoles_eval.py:load_pseudopoles",
+     "src/bse/pseudopoles_eval.py:reconstruct_Wc_columns",
+     "src/bse/pseudopoles_eval.py:main",
+     "src/bse/bse_w_exact.py:main"
+    ],
+    "note": "bse_pseudopoles.py has an ImportError at line 31 — two bse_ring_comm functions, the v_couples_k matvec kwarg, and the use_nohead loader kwarg were lost in a package consolidation and never restored. This is lost wiring for a real physics stage (the low-scaling real-axis endgame), not dead code — do not delete when cleaning up."
+   },
+   {
+    "tier": "A",
+    "name": "A3 spectra — Haydock continued fraction, sum-over-states, BGW rebroadening",
+    "members": [
+     "src/bse/absorption_haydock.py:run_haydock",
+     "src/bse/absorption_haydock.py:haydock_recursion_block",
+     "src/bse/absorption_haydock.py:absorption_from_haydock",
+     "src/bse/absorption_haydock.py:jdos_from_dipole",
+     "src/bse/absorption_haydock.py:main",
+     "src/bse/absorption_eigvecs.py:compute_dipole_projections",
+     "src/bse/absorption_eigvecs.py:compute_eps2",
+     "src/bse/absorption_eigvecs.py:compute_jdos",
+     "src/bse/absorption_eigvecs.py:main",
+     "src/bse/absorption_common.py (load_dipole_h5, slice_dipole_to_bse_window, lorentzian_broaden, load_eigenvectors_h5, write_absorption_dat, write_eigenvalues_dat, write_absorption_h5)",
+     "src/bse/eigvals_to_eps2.py:read_bgw_eigvals",
+     "src/bse/eigvals_to_eps2.py:compute_eps2",
+     "src/bse/eigvals_to_eps2.py:_main"
+    ],
+    "note": "absorption_eigvecs.py:compute_oscillator_strengths (line 50) is dead within an otherwise-live file — main() recomputes oscillator strengths inline via compute_eps2's return instead of calling it; a Tier-F pocket inside a Tier-A file."
+   },
+   {
+    "tier": "A",
+    "name": "A4 output writers — BGW-format eigenvectors.h5",
+    "members": [
+     "src/bse/bse_io.py:write_eigenvectors_stream",
+     "src/bse/write_eigenvectors.py:write_eigenvectors_h5",
+     "src/bse/write_eigenvectors.py:main",
+     "src/bse/write_eigenvectors.py:generate_kpts_grid"
+    ],
+    "note": "write_eigenvectors.py is the legacy in-memory writer (does neither the Ry->eV conversion nor the valence-axis flip that write_eigenvectors_stream performs at the boundary); its only surviving caller is the Tier-E smoke script test_bse.py, so it is a de-facto Tier-F candidate wearing an A4 badge — worth deleting once test_bse.py is retired or repointed."
+   },
+   {
+    "tier": "A",
+    "name": "A_driver — CLI entry point / stage dispatcher",
+    "members": [
+     "src/bse/bse_jax.py:__main__ (lines 349-626)"
+    ],
+    "note": "See Tier F and Tier E for the dead matvec trio and diagnostic branches fused into this same 626-line file — the single worst-smeared file in the package (A + D + E + F all present)."
+   },
+   {
+    "tier": "B",
+    "name": "B1 TDA vs full (non-TDA/Casida) BSE",
+    "members": [
+     "src/bse/bse_ring_comm.py:build_bse_ring_matvec_full",
+     "src/bse/bse_feast.py:main (1131-1132, 1177)",
+     "src/bse/bse_feast.py:run_feast_ritz (485-501, 556-568, 595-597)",
+     "src/bse/bse_kpm.py:run_kpm_dos (121-138, 181-199, dim doubling)",
+     "src/bse/bse_pseudopoles.py (non-TDA rhs [f,-fbar]; J-metric N_p=||X||^2-||Y||^2)",
+     "src/bse/bse_w_exact.py (103-106, matvec vs matvec_full selection)",
+     "src/bse/bse_jax.py CLI --tda flag (hard-gates --lanczos; Lanczos/Davidson family is TDA-only, Hermitian-assumed)"
+    ],
+    "note": "Full/non-TDA is the CLI default in bse_feast.py (the actual default solver path) while the Lanczos/Davidson family is TDA-only — an asymmetric variant axis, not a clean toggle available uniformly to every solver."
+   },
+   {
+    "tier": "B",
+    "name": "B2 matvec communication strategy (serial / simple-plain-jit / ring-ppermute+allgather)",
+    "members": [
+     "src/bse/bse_serial.py",
+     "src/bse/bse_simple.py",
+     "src/bse/bse_ring_comm.py",
+     "src/bse/bse_jax.py:446-459,622 (selection)",
+     "src/bse/bse_lanczos.py:155-164 (--matvec-kind dispatch)"
+    ],
+    "note": "Three parallel matvec implementations of the identical D+V-W math, deliberately kept for correctness cross-checking (bse_ring_comm.py:934-996 checks against bse_serial); bse_simple.py is production default."
+   },
+   {
+    "tier": "B",
+    "name": "B3 screened-interaction (W) source",
+    "members": [
+     "default: W0_qmunu from GW ISDF restart, consumed via bse_io.py loaders + FFT convolution in A1 matvecs",
+     "src/bse/bse_w_exact.py (exact, shifted-GMRES Casida columns)",
+     "src/bse/bse_pseudopoles.py (compressed/pole representation)",
+     "src/bse/pseudopoles_eval.py",
+     "src/bse/pseudopoles_sweep.py"
+    ],
+    "note": "Only the default source is wired end-to-end today; the exact and pole sources are validation/future-production alternates, both currently broken or unreachable in production (see Tier A2b, Tier E)."
+   },
+   {
+    "tier": "B",
+    "name": "B4 spin/bispinor pair-amplitude convention (embryonic axis — currently a fixed spin-trace, no runtime toggle; where a future bispinor BSE lift would hook in, mirroring GW's B3)",
+    "members": [
+     "src/bse/bse_serial.py:compute_pair_amplitude (M[k,c,v,mu]=sum_s psi_c* psi_v, hardcoded spin sum)",
+     "src/bse/bse_ring_comm.py (same convention in build_bse_ring_matvec{,_full})",
+     "src/bse/bse_simple.py:build_bse_simple_matvec (same)",
+     "src/bse/bse_lanczos.py (same, via M tensor in solve_bse_sharded)"
+    ],
+    "note": "Unlike GW's genuine bispinor runtime toggle, BSE has no bispinor mode at all yet — this is a latent axis, flagged because the digest for GW explicitly warns that spin/bispinor toggles belong at exactly this seam (pair-amplitude construction), not scattered later."
+   },
+   {
+    "tier": "B",
+    "name": "B5 fine-grid k-interpolation / finite-Q (future axis; unbuilt in LORRAX, BGW reference only)",
+    "members": [
+     "reports/bse_refactor_map_2026-07-15/archive/files/bgw_fine_grid_reference.md (BGW intwfn.f90 dcc/dvv expansion, intkernel.f90 interpolation, finite-Q shift, CSI subsampling)"
+    ],
+    "note": "No LORRAX bse/ code implements this; the file is a crib sheet for a capability that does not yet exist, kept separate from A/E because it documents an unbuilt variant axis rather than a diagnostic of existing code."
+   },
+   {
+    "tier": "C",
+    "name": "2D mesh + BSE sharding vocabulary",
+    "members": [
+     "src/bse/bse_ring_comm.py:create_mesh_2d",
+     "src/bse/bse_ring_comm.py:make_bse_shardings"
+    ],
+    "note": "The single most-imported infra symbol in the package (13 direct importers, confirmed by repo grep) — yet it lives inside the same file as two live matvec factories, one diagnostics pair, and two fully dead functions. Should be its own module."
+   },
+   {
+    "tier": "C",
+    "name": "Generic iterative eigensolvers (matvec-blind; shared with DFT NSCF)",
+    "members": [
+     "src/solvers/lanczos.py (simple_lanczos_eig, lanczos_eig_jit, block_lanczos_eig, block_lanczos_eig_jit, block_lanczos_eig_jit_converged, _build_block_tridiag)",
+     "src/solvers/davidson.py:davidson",
+     "src/solvers/davidson.py:warmup_davidson_jit",
+     "src/solvers/davidson.py:_ritz_and_residuals"
+    ],
+    "note": "davidson.py serves both bse_lanczos.py and psp/run_nscf.py (DFT NSCF) — genuine cross-pipeline infra. block_lanczos_eig confirmed by grep to have no live caller (gated behind use_block=True which nothing sets) — Tier F candidate within this Tier C file."
+   },
+   {
+    "tier": "C",
+    "name": "Chebyshev/KPM DOS core + generic matrix-free DOS/window partitioning",
+    "members": [
+     "src/solvers/chebyshev.py (make_chebyshev_recurrence, chebyshev_moments, jackson_coefficients, reconstruct_dos, partition_windows)",
+     "src/solvers/dos.py (compute_dos, estimate_spectrum, dos_weighted_windows, geometric_windows, compute_window_partition)"
+    ],
+    "note": "chebyshev.py is the single shared core correctly reused by bse_kpm.py, solvers/dos.py, psp/kpm_dos.py, and solvers/pseudobands*.py — a genuine single-source success, unlike the head-injection duplication in bse_io.py."
+   },
+   {
+    "tier": "C",
+    "name": "FEAST ellipse quadrature (generic contour-integral rule)",
+    "members": [
+     "src/solvers/quadrature.py:feast_ellipse_quadrature"
+    ],
+    "note": "The only solvers/ file genuinely on the BSE critical path among the five 'aux_solvers' files; bse_feast.py wraps and conjugate-augments it for full-BSE."
+   },
+   {
+    "tier": "C",
+    "name": "Generic spectral compression (pseudobands; operator-agnostic Ritz/Chebyshev compression, GW/DFT-only consumer today, not yet wired to BSE)",
+    "members": [
+     "src/solvers/pseudobands.py:ritz_pseudobands",
+     "src/solvers/pseudobands_v2.py:ritz_pseudobands_v2"
+    ],
+    "note": "Physics-agnostic over a flat dim=nspinor*ngkmax vector space; only production caller is psp/run_nscf.py. Belongs to the mean-field pipeline today, but architecturally reusable for a future BSE trial-space compression (large nc/nv) — a placeholder note for scope creep if that's ever pursued."
+   },
+   {
+    "tier": "C",
+    "name": "Sternheimer/psp linear-response solver library (off the BSE dataflow entirely; shares the solvers/ package directory only)",
+    "members": [
+     "src/solvers/sternheimer_solve.py",
+     "src/solvers/sternheimer_precond.py",
+     "src/solvers/projectors.py",
+     "src/solvers/minres.py"
+    ],
+    "note": "None of these four files serve BSE. minres.py is explicitly superseded ('CG avoids MINRES pseudo-convergence-NaN pitfall', run_sternheimer.py:1174-1176) and has zero production callers — the strongest Tier-F candidate in this whole group, but it belongs to a different program (psp Sternheimer, not BSE) so its deletion is out of scope for a BSE-only refactor pass."
+   },
+   {
+    "tier": "D",
+    "name": "BSE CLI flag surface (no LorraxConfig section; every entry point is its own argparse)",
+    "members": [
+     "src/bse/bse_jax.py",
+     "src/bse/bse_feast.py:main",
+     "src/bse/bse_kpm.py:main",
+     "src/bse/davidson_absorption.py:main",
+     "src/bse/absorption_haydock.py:main",
+     "src/bse/absorption_eigvecs.py:main",
+     "src/bse/eigvals_to_eps2.py:_main",
+     "src/bse/bse_pseudopoles.py:main",
+     "src/bse/pseudopoles_eval.py:main",
+     "src/bse/pseudopoles_sweep.py:main",
+     "src/bse/bse_w_exact.py:main",
+     "src/bse/write_eigenvectors.py:main",
+     "src/bse/test_bse.py",
+     "src/bse/test_davidson_bse.py"
+    ],
+    "note": "Unlike gw/ (single LorraxConfig threaded everywhere), BSE has 14 independent argparse surfaces with no shared config object — a structural gap relative to the GW side of the codebase."
+   },
+   {
+    "tier": "D",
+    "name": "Ad-hoc cohsex.in consumption (private per-file parsers, bypass gw_config.read_lorrax_input)",
+    "members": [
+     "src/bse/bse_io.py:_parse_wfn_path",
+     "src/bse/bse_io.py:_parse_head_overrides",
+     "src/bse/bse_io.py:_find_restart_file"
+    ],
+    "note": "Only wfn_file, vhead, whead_0freq are ever read from cohsex.in by BSE, and via two hand-rolled parsers rather than the canonical gw_config reader used everywhere else in LORRAX."
+   },
+   {
+    "tier": "D",
+    "name": "QP correction override surface (BGW eqp1.dat semantics, reused across every entry point)",
+    "members": [
+     "src/bse/bse_io.py:apply_eqp_corrections",
+     "src/bse/bse_io.py:read_bgw_eqp"
+    ],
+    "note": "Consumed identically at bse_jax.py:243, davidson_absorption.py:34, absorption_haydock.py:178, test_davidson_bse.py:77 — a genuine single-sourced config concern, in contrast to the duplicated head-injection in A0."
+   },
+   {
+    "tier": "E",
+    "name": "FEAST parameter-exploration sweeps (dev-phase; 3 of 4 broken/unreachable at HEAD)",
+    "members": [
+     "src/bse/feast_sweep.py",
+     "src/bse/feast_zolo_sweep.py",
+     "src/bse/feast_ellipse_mixed_sweep.py",
+     "src/bse/bse_feast_dense_debug.py"
+    ],
+    "note": "feast_ellipse_mixed_sweep.py fails py_compile (IndentationError) — literally unreachable. All four have zero external callers; functionality was absorbed into bse_feast.main()'s own --quadrature/--rho-scale flags. Strong candidates to fold into Tier F on the next cleanup pass, but kept as E per the digest's own framing (stale sweep tooling, not superseded-and-deleted)."
+   },
+   {
+    "tier": "E",
+    "name": "Manual smoke/comparison CLIs (argparse, not pytest-collected)",
+    "members": [
+     "src/bse/test_bse.py",
+     "src/bse/test_davidson_bse.py"
+    ],
+    "note": "Confirmed: pyproject.toml testpaths=[\"tests\"] excludes src/bse entirely; the only pytest-collected BSE coverage anywhere is tests/test_eqp_bgw.py::test_reader_skips_provenance_header. Neither file has a single assert."
+   },
+   {
+    "tier": "E",
+    "name": "In-file diagnostic/demo entry points embedded in production modules",
+    "members": [
+     "src/bse/bse_jax.py:_main_random_demo (163-200, --debug-parallelism)",
+     "src/bse/bse_ring_comm.py:ring_matvec_smoke_test (853-996)",
+     "src/bse/bse_ring_comm.py:ring_matvec_correctness_check (853-996)",
+     "src/bse/pseudopoles_sweep.py:main"
+    ],
+    "note": "These are the clearest A/E straddles — diagnostics that live physically inside otherwise-production files rather than a separate diagnostics module."
+   },
+   {
+    "tier": "E",
+    "name": "Prior-knowledge / validated-results documentation ledger (no runtime role; closest available bucket for narrative records)",
+    "members": [
+     "src/bse/STATUS.md",
+     "src/bse/BGW_COMPARE.md",
+     "src/bse/context/*.md"
+    ],
+    "note": "Not diagnostics in the runtime sense, but the only tier that fits a validated-numbers ledger + design-history record. Flagged as stale: 5 load-bearing claims (matvec default, V-as-W placeholder, TDA-only, sharding table, FEAST CLI/gamma) have rotted vs HEAD per the digest and need verifier re-check before trusting them."
+   },
+   {
+    "tier": "F",
+    "name": "Fully dead code (zero callers anywhere in src/tests/tools/scripts/docs, repo-wide grep)",
+    "members": [
+     "src/bse/bse_jax.py:apply_bse_hamiltonian (67-160)",
+     "src/bse/bse_jax.py:apply_V (67-160)",
+     "src/bse/bse_jax.py:apply_W (67-160)",
+     "src/bse/bse_jax.py:apply_D (67-160)",
+     "src/bse/bse_ring_comm.py:apply_bse_hamiltonian_ring",
+     "src/bse/bse_ring_comm.py:apply_W_ring",
+     "src/bse/bse_serial.py:apply_bse_hamiltonian_single_device_jit",
+     "src/bse/bse_serial.py:symmetrize_W_q",
+     "src/bse/bse_io.py:BSEData",
+     "src/bse/bse_preconditioner.py:BSEPreconditionerTerms",
+     "src/bse/bse_preconditioner.py:_pair_amplitude",
+     "src/bse/bse_preconditioner.py:compute_v_diagonal",
+     "src/bse/bse_preconditioner.py:compute_w_diagonal",
+     "src/bse/bse_preconditioner.py:extract_w_q0",
+     "src/bse/bse_preconditioner.py:build_preconditioner_terms",
+     "src/bse/bse_preconditioner.py:build_shifted_preconditioner",
+     "src/solvers/lanczos.py:block_lanczos_eig (confirmed by grep: reachable only via bse_lanczos.py:83 behind use_block=True, which nothing in the repo ever sets to True)"
+    ],
+    "note": "bse_jax.py's dead trio is the most dangerous instance: it sits at the top of the file's __all__ and docstring surface, so a reader skimming bse_jax.py would reasonably assume it's the live matvec, when the real production matvecs live in three other files entirely (bse_serial/bse_ring_comm/bse_simple)."
+   }
+  ],
+  "notes": "Worst misfits, ranked:\n\n1. src/bse/bse_jax.py (626 L) — the single worst-smeared file in bse/. Contains A_driver (CLI dispatch to Lanczos/Davidson/FEAST/KPM), a fully DEAD matvec trio (apply_bse_hamiltonian/apply_V/apply_W/apply_D, lines 67-160, zero callers) sitting right next to the real dispatch logic where a reader would mistake it for the live path, a Tier-E diagnostic demo (_main_random_demo, --debug-parallelism), Tier-E ring-test/ring-check CLI plumbing, and the largest single argparse flag surface in the package (Tier D). Split: dead trio -> delete; demo/ring-test dispatch -> a diagnostics module; keep only the real dispatch + flags in bse_jax.py.\n\n2. src/bse/bse_ring_comm.py (996 L) — second worst. Houses two live matvec factories (A1, TDA + non-TDA), the package's single most-imported infra symbols (create_mesh_2d/make_bse_shardings, C, 13 importers), two diagnostic CLIs (E: ring_matvec_smoke_test/ring_matvec_correctness_check), two fully dead functions (F: apply_bse_hamiltonian_ring, apply_W_ring), and density-space probe operators that only serve the B3 W-source alternates (build_realspace_random_transition_generator, build_density_snapshot_operator). Five categories in one file. The sharding vocabulary (create_mesh_2d/make_bse_shardings) is the highest-priority extraction target — it has more fan-out than anything else in the package and has no reason to live inside a matvec-kernel file.\n\n3. src/bse/bse_io.py (932 L) — A0 ingest + A4 output writer + D (private ad-hoc cohsex.in parsing that bypasses the canonical gw_config reader used everywhere else in LORRAX) + F (dead BSEData dataclass) all in one file, plus a genuine duplication bug-smell: q=0 head-rank-1 injection is hand-copied once for the sharded loader (463-513) and again for the ring loader (804-836) instead of being one shared helper — exactly the kind of redundancy the sandbox's project conventions flag as a defect to fix, not a variant to keep.\n\n4. src/bse/bse_preconditioner.py (158 L) — worst dead-to-live ratio in the package: one 3-line function (energy_diff_cv_k) is genuinely load-bearing (imported by bse_serial.py, bse_jax.py, bse_feast.py), while the other seven exports (BSEPreconditionerTerms, build_preconditioner_terms, build_shifted_preconditioner, compute_v_diagonal, compute_w_diagonal, extract_w_q0, _pair_amplitude) have zero callers anywhere in the repo. The file should be renamed/relocated to hold only energy_diff_cv_k; everything else deleted.\n\n5. src/bse/davidson_absorption.py — a second, largely-parallel end-to-end driver (load -> Davidson solve -> dipole projection -> BGW eigenvalues_b{1,2,3}.dat write) that substantially duplicates the --lanczos --solver davidson route already reachable through bse_jax.py, but with its own bespoke output stage bolted on. Worth auditing whether this should collapse into bse_jax's dispatch (one driver, one output path) rather than remain a standalone CLI with overlapping-but-not-identical behavior — the same \"no redundancy in refactors\" pattern flagged in the GW map's eqp_bgw/gw_output/gw_jax duplication (their #5 target).\n\n6. bse_feast.py self-describes as \"setup utilities\" in its docstring while actually being the DEFAULT solver path (bse_jax dispatches here whenever --lanczos is absent) — a documentation/reality mismatch that will mislead any agent reading the docstring before the callgraph.\n\n7. Cross-cutting: BSE has no analogue of GW's single LorraxConfig object — 14 separate argparse surfaces (Tier D) with no shared config type, and the only cohsex.in keys BSE reads (wfn_file, vhead, whead_0freq) go through private per-file parsers in bse_io.py rather than the canonical gw_config.read_lorrax_input used by the rest of the codebase. This is the BSE-side counterpart of the GW map's \"shadow env-flag surface bypasses LorraxConfig\" finding — same disorder, different mechanism.\n\n8. The pseudopole/exact-W family (bse_pseudopoles.py, pseudopoles_eval.py, bse_w_exact.py) is explicitly a live physics stage with LOST WIRING (ImportError at bse_pseudopoles.py:31 — two bse_ring_comm functions and two kwargs never restored after a package consolidation), not dead code. Any cleanup pass must not delete this under a \"zero callers -> dead\" heuristic; the fix is restoring the three missing wiring pieces, not archival.\n\n9. src/bse/write_eigenvectors.py — functionally superseded by bse_io.py:write_eigenvectors_stream (missing the Ry->eV conversion and valence-axis flip the streaming writer performs), but kept alive solely by test_bse.py (itself a non-pytest smoke script). A soft-dead file wearing a Tier-A4 badge."
+ },
+ {
+  "categories": [
+   {
+    "tier": "A1",
+    "name": "Ingest: restart-bundle loaders, EQP override, q=0 head injection",
+    "members": [
+     "src/bse/bse_io.py:load_bse_data_from_restart_sharded",
+     "src/bse/bse_io.py:_read_psi_mu_sharded",
+     "src/bse/bse_io.py:_read_vq0_sharded",
+     "src/bse/bse_io.py:_read_wq_sharded",
+     "src/bse/bse_io.py:_load_ring_subset",
+     "src/bse/bse_io.py:resolve_n_occ",
+     "src/bse/bse_io.py:read_bgw_eqp",
+     "src/bse/bse_io.py:apply_eqp_corrections",
+     "src/bse/bse_io.py:_pad_axis_to_multiple",
+     "src/bse/bse_io.py:_find_restart_file"
+    ],
+    "note": "Two loader entry points (sharded slab vs single-device ring) are each imported by 10+ other bse files - this is the highest-fan-in file in the package. gw.head_correction.apply_q0_head_rank1{,_sharded} (bse_io.py:504,818) is the only cross-package 'from gw.' dependency anywhere in bse/."
+   },
+   {
+    "tier": "A2",
+    "name": "Kernel apply / production matvec (H·X = D+V−W, ring strategy = default)",
+    "members": [
+     "src/bse/bse_ring_comm.py:build_bse_ring_matvec",
+     "src/bse/bse_ring_comm.py:_encode_T",
+     "src/bse/bse_ring_comm.py:_ring_sum_valence",
+     "src/bse/bse_ring_comm.py:_ring_sum_conduction",
+     "src/bse/bse_ring_comm.py:apply_V_ring",
+     "src/bse/bse_preconditioner.py:energy_diff_cv_k"
+    ],
+    "note": "energy_diff_cv_k is the one live export of bse_preconditioner.py (used by bse_feast.py, bse_jax.py, bse_serial.py) - see Tier F for the rest of that file, which is dead."
+   },
+   {
+    "tier": "B",
+    "name": "Matvec-strategy + TDA/non-TDA variant axis (simple / serial-reference / full-Casida)",
+    "members": [
+     "src/bse/bse_simple.py:build_bse_simple_matvec",
+     "src/bse/bse_serial.py:apply_bse_hamiltonian_single_device",
+     "src/bse/bse_serial.py:apply_D",
+     "src/bse/bse_serial.py:compute_pair_amplitude",
+     "src/bse/bse_ring_comm.py:build_bse_ring_matvec_full",
+     "src/bse/bse_jax.py:__main__ --matvec-kind selector (lines ~446-459,622)",
+     "src/bse/bse_lanczos.py:155-164 (matvec_kind dispatch)"
+    ],
+    "note": "bse_serial.apply_bse_hamiltonian_single_device doubles as the ring matvec's correctness-check reference (bse_ring_comm.py:934,958-977,977 apply_D). Adding a new kernel term (e.g. a Rytova-Keldysh correction) means touching bse_serial + bse_simple + bse_ring_comm together - three parallel implementations of the same math is the real co-change cost of this axis."
+   },
+   {
+    "tier": "A3a",
+    "name": "Eigensolve: Lanczos/block-Lanczos family",
+    "members": [
+     "src/bse/bse_lanczos.py:solve_bse",
+     "src/bse/bse_lanczos.py:solve_bse_sharded",
+     "src/bse/bse_lanczos.py:_full_run",
+     "src/solvers/lanczos.py:simple_lanczos_eig",
+     "src/solvers/lanczos.py:lanczos_eig_jit",
+     "src/solvers/lanczos.py:block_lanczos_eig_jit",
+     "src/solvers/lanczos.py:block_lanczos_eig_jit_converged",
+     "src/solvers/lanczos.py:_build_block_tridiag"
+    ],
+    "note": "solvers/lanczos.py is physics-blind infra shared only within this family for BSE purposes (solvers.dos.estimate_spectrum also calls simple_lanczos_eig, a pseudobands-side use, see Tier C note)."
+   },
+   {
+    "tier": "A3b",
+    "name": "Eigensolve: block-Davidson family",
+    "members": [
+     "src/solvers/davidson.py:davidson",
+     "src/solvers/davidson.py:warmup_davidson_jit",
+     "src/solvers/davidson.py:_ritz_and_residuals",
+     "src/bse/bse_davidson_helpers.py:init_bse_subspace",
+     "src/bse/bse_davidson_helpers.py:bse_diagonal_precond",
+     "src/bse/davidson_absorption.py:main"
+    ],
+    "note": "solvers/davidson.py is shared verbatim with psp/run_nscf.py's DFT NSCF diagonalization - a BSE-only Davidson change must not regress the DFT driver."
+   },
+   {
+    "tier": "A3c",
+    "name": "Eigensolve: FEAST contour filter (default solver reached by bse_jax when --lanczos absent)",
+    "members": [
+     "src/bse/bse_feast.py:main",
+     "src/bse/bse_feast.py:run_feast_ritz",
+     "src/bse/bse_feast.py:estimate_spectral_bounds_sharded",
+     "src/bse/bse_feast.py:build_preconditioner_diagonal_sharded",
+     "src/bse/bse_feast.py:_get_feast_runner",
+     "src/bse/bse_feast.py:_get_gmres_solver",
+     "src/bse/bse_feast.py:gmres_solve_sharded_jit",
+     "src/bse/bse_feast.py:_rayleigh_ritz",
+     "src/bse/bse_feast.py:_build_ritz_vectors",
+     "src/bse/bse_feast.py:feast_zolotarev_quadrature",
+     "src/bse/bse_feast.py:_zolotarev_step_poles_weights",
+     "src/bse/bse_feast.py:build_default_windows_eV",
+     "src/bse/bse_feast.py:format_feast_report"
+    ],
+    "note": "Docstring says 'setup utilities' but this is the production default path (bse_jax.py:540-543); zero pytest coverage (confirmed: grep for 'feast' under tests/ and src/bse/test_*.py is empty)."
+   },
+   {
+    "tier": "B",
+    "name": "FEAST window-selection variant: KPM-derived windows",
+    "members": [
+     "src/bse/bse_kpm.py:main",
+     "src/bse/bse_kpm.py:run_kpm_dos",
+     "src/bse/bse_kpm.py:make_bse_h_tilde",
+     "src/bse/bse_kpm.py:make_bse_random_vector"
+    ],
+    "note": "Consumed by bse_feast.py under --windows-kpm and by bse_pseudopoles.py; reaches into bse_feast.py's private estimate_spectral_bounds_sharded/_parse_window_arg (bse_kpm.py:28,361) - a private-symbol reach-in across the A3c/B boundary."
+   },
+   {
+    "tier": "B",
+    "name": "W-source variant: pseudopole-compressed W_c(ω) (future low-scaling endgame, currently broken)",
+    "members": [
+     "src/bse/bse_pseudopoles.py:run_pseudopoles",
+     "src/bse/bse_pseudopoles.py:write_pseudopoles_h5",
+     "src/bse/bse_pseudopoles.py:main",
+     "src/bse/bse_pseudopoles.py:_feast_filter",
+     "src/bse/pseudopoles_eval.py:load_pseudopoles",
+     "src/bse/pseudopoles_eval.py:reconstruct_Wc_columns"
+    ],
+    "note": "VERIFIED BROKEN, three independent breaks: (1) bse_pseudopoles.py:29-30 imports build_density_drive_operators and build_density_readout_operator_full from bse_ring_comm.py - neither symbol exists there (only build_realspace_random_transition_generator and build_density_snapshot_operator do) -> ImportError at module load; (2) bse_pseudopoles.py:239,248 call build_bse_ring_matvec(..., v_couples_k=...) but that function's signature (bse_ring_comm.py:340-347) has no such parameter -> TypeError; (3) bse_pseudopoles.py:599 calls load_bse_data_from_restart_sharded(..., use_nohead=...) but that signature (bse_io.py:358-368) has no such parameter -> TypeError. This is lost wiring from the src/isdf -> src/bse consolidation, not intentional deletion - restore-worthy, not delete-worthy."
+   },
+   {
+    "tier": "A4",
+    "name": "Spectra: absorption post-processing (Haydock / sum-over-states / BGW rebroadening)",
+    "members": [
+     "src/bse/absorption_haydock.py:run_haydock",
+     "src/bse/absorption_haydock.py:haydock_recursion_block",
+     "src/bse/absorption_haydock.py:absorption_from_haydock",
+     "src/bse/absorption_haydock.py:jdos_from_dipole",
+     "src/bse/absorption_eigvecs.py:compute_dipole_projections",
+     "src/bse/absorption_eigvecs.py:compute_eps2",
+     "src/bse/absorption_eigvecs.py:compute_jdos",
+     "src/bse/absorption_eigvecs.py:main",
+     "src/bse/absorption_common.py",
+     "src/bse/eigvals_to_eps2.py:read_bgw_eigvals",
+     "src/bse/eigvals_to_eps2.py:compute_eps2",
+     "src/bse/eigvals_to_eps2.py:_main"
+    ],
+    "note": "absorption_eigvecs.py:compute_oscillator_strengths (line 50) is unreferenced dead weight inside an otherwise live file - main() uses compute_eps2's returned f_Sa instead (Tier F straddle)."
+   },
+   {
+    "tier": "A5",
+    "name": "Output writers: BGW-format eigenvectors.h5",
+    "members": [
+     "src/bse/bse_io.py:write_eigenvectors_stream",
+     "src/bse/write_eigenvectors.py:write_eigenvectors_h5",
+     "src/bse/write_eigenvectors.py:main",
+     "src/bse/write_eigenvectors.py:generate_kpts_grid"
+    ],
+    "note": "Two independent eigenvectors.h5 writers with DIFFERENT conventions: write_eigenvectors_stream (production, called from bse_jax.py:335) does Ry->eV and the valence-axis flip; write_eigenvectors_h5 (legacy, only reached via test_bse.py) does neither. A change to one convention silently desyncs the other - classic no-redundancy violation."
+   },
+   {
+    "tier": "C",
+    "name": "Generic solver infra shared package-wide (physics-free)",
+    "members": [
+     "src/solvers/lanczos.py (minus block_lanczos_eig)",
+     "src/solvers/davidson.py",
+     "src/solvers/chebyshev.py",
+     "src/solvers/dos.py",
+     "src/solvers/quadrature.py:feast_ellipse_quadrature"
+    ],
+    "note": "solvers/__init__.py docstring literally claims 'no physics dependencies' for this whole package, but davidson.py also drives psp/run_nscf.py DFT NSCF, and chebyshev.py/dos.py also drive psp/kpm_dos.py and solvers/pseudobands*.py - a BSE developer changing these risks the DFT and pseudobands consumers too. quadrature.py is the ONE file in this group whose sole production consumer is bse/ (via bse_feast.py's wrapper)."
+   },
+   {
+    "tier": "C",
+    "name": "BSE-specific mesh/sharding vocabulary",
+    "members": [
+     "src/bse/bse_ring_comm.py:create_mesh_2d",
+     "src/bse/bse_ring_comm.py:make_bse_shardings"
+    ],
+    "note": "Imported by essentially every other bse/ solver file (bse_jax, bse_simple, bse_lanczos, bse_feast x2, bse_kpm, bse_pseudopoles, bse_w_exact, absorption_haydock, davidson_absorption, test_davidson_bse) - a change to the sharding spec here has the widest blast radius in the package, yet it lives inside the same file as the A2/B matvec kernels (see bse_ring_comm misfit note)."
+   },
+   {
+    "tier": "C",
+    "name": "Colocated non-BSE infra parked in solvers/ (out of scope)",
+    "members": [
+     "src/solvers/minres.py",
+     "src/solvers/projectors.py",
+     "src/solvers/sternheimer_solve.py",
+     "src/solvers/sternheimer_precond.py",
+     "src/solvers/pseudobands.py",
+     "src/solvers/pseudobands_v2.py"
+    ],
+    "note": "minres/projectors/sternheimer_* serve only psp/run_sternheimer.py's chi_G'0(q) linear-response solve - zero BSE callers, confirmed by digest grep. pseudobands.py/_v2.py serve only psp/run_nscf.py (BGW-parabands analogue) - also zero BSE callers today, though their KPM-windowing math is the same family as bse_kpm/bse_pseudopoles windowing (a latent, unexploited connection worth noting, not yet a real dependency)."
+   },
+   {
+    "tier": "D",
+    "name": "CLI flag / config surface (no shared LorraxConfig for BSE)",
+    "members": [
+     "src/bse/bse_jax.py:__main__ argparse block (lines 349-626) + argv-forwarding to bse_feast/bse_kpm",
+     "src/bse/bse_feast.py:main argparse (1073-1316)",
+     "src/bse/bse_kpm.py:main argparse",
+     "src/bse/davidson_absorption.py:main argparse",
+     "src/bse/absorption_haydock.py:main argparse",
+     "src/bse/absorption_eigvecs.py:main argparse",
+     "src/bse/eigvals_to_eps2.py:_main argparse",
+     "src/bse/bse_io.py:_parse_head_overrides",
+     "src/bse/bse_io.py:_find_restart_file (cohsex.in wfn_file lookup)"
+    ],
+    "note": "Unlike gw/ (LorraxConfig + gw_config.read_lorrax_input), BSE has no shared config object: every CLI module re-implements its own argparse, and bse_io.py reads only wfn_file/vhead/whead_0freq out of cohsex.in via two private ad-hoc parsers. bse_jax.py's dispatch to bse_feast/bse_kpm is argv-string reconstruction (build a list of CLI flag strings and re-parse), not a shared in-memory config object - fragile to keep in sync when flags are renamed."
+   },
+   {
+    "tier": "E",
+    "name": "FEAST/pseudopole diagnostic sweeps and exact-W reference",
+    "members": [
+     "src/bse/bse_w_exact.py:main",
+     "src/bse/pseudopoles_sweep.py:main",
+     "src/bse/feast_sweep.py:run_sweep",
+     "src/bse/feast_sweep.py:build_full_bse_matrix",
+     "src/bse/feast_sweep.py:EXACT_EIGENVALUES_EV",
+     "src/bse/feast_zolo_sweep.py:run_sweep",
+     "src/bse/bse_feast_dense_debug.py:feast_filter_with_iteration",
+     "src/bse/bse_ring_comm.py:ring_matvec_smoke_test",
+     "src/bse/bse_ring_comm.py:ring_matvec_correctness_check"
+    ],
+    "note": "bse_w_exact.py's own imports are all clean (verified: build_realspace_random_transition_generator, build_density_snapshot_operator, gmres_solve_sharded_jit, build_preconditioner_diagonal_sharded all exist with matching names) - it is functional-but-unused, unlike bse_pseudopoles.py which is genuinely broken (Tier B note). Zero of these files are reachable from any run script, skill, or CHANGELOG entry."
+   },
+   {
+    "tier": "E",
+    "name": "Manual smoke-test CLIs (not pytest-collected)",
+    "members": [
+     "src/bse/test_bse.py:test_matvec",
+     "src/bse/test_bse.py:test_pair_amplitude",
+     "src/bse/test_bse.py:test_lanczos",
+     "src/bse/test_bse.py:main",
+     "src/bse/test_davidson_bse.py:_load_data_and_matvec",
+     "src/bse/test_davidson_bse.py:main"
+    ],
+    "note": "Neither file is under pyproject.toml testpaths=[\"tests\"]; the only pytest-collected BSE coverage anywhere is tests/test_eqp_bgw.py::test_reader_skips_provenance_header (a pure-numpy round-trip of bse_io.read_bgw_eqp). Zero asserts in either manual script."
+   },
+   {
+    "tier": "E",
+    "name": "Prior-knowledge / comparison-convention documentation",
+    "members": [
+     "src/bse/STATUS.md",
+     "src/bse/BGW_COMPARE.md",
+     "src/bse/context/*.md (8 files)"
+    ],
+    "note": "All >=2 months stale; digest flags 5 load-bearing claims as rotted vs current HEAD (matvec default, V-as-W placeholder, TDA-only, sharding table, FEAST CLI/gamma). Read for physics context, not for current API surface."
+   },
+   {
+    "tier": "E",
+    "name": "External BGW fine-grid/finite-Q reference (roadmap for an axis LORRAX doesn't implement yet)",
+    "members": [
+     "reports/bse_refactor_map_2026-07-15/archive/files/bgw_fine_grid_reference.md"
+    ],
+    "note": "Documents BerkeleyGW's coarse-to-fine interpolation (intwfn/intkernel/epsdiag) and finite-Q BSE machinery. This is where 'future: fine-grid interp, finite-Q' (named in the Tier B axis list) would land - currently there is no corresponding LORRAX source, so no code category exists for it yet."
+   },
+   {
+    "tier": "F",
+    "name": "Dead code",
+    "members": [
+     "src/bse/bse_jax.py:apply_bse_hamiltonian (lines 67-160, + apply_D/apply_V/apply_W helpers - file-local jit trio, zero callers anywhere)",
+     "src/bse/bse_ring_comm.py:apply_bse_hamiltonian_ring",
+     "src/bse/bse_ring_comm.py:apply_W_ring (only called from the dead apply_bse_hamiltonian_ring)",
+     "src/bse/bse_serial.py:apply_bse_hamiltonian_single_device_jit",
+     "src/bse/bse_serial.py:symmetrize_W_q",
+     "src/bse/bse_io.py:BSEData",
+     "src/bse/bse_preconditioner.py:BSEPreconditionerTerms",
+     "src/bse/bse_preconditioner.py:_pair_amplitude",
+     "src/bse/bse_preconditioner.py:compute_v_diagonal",
+     "src/bse/bse_preconditioner.py:compute_w_diagonal",
+     "src/bse/bse_preconditioner.py:extract_w_q0",
+     "src/bse/bse_preconditioner.py:build_preconditioner_terms",
+     "src/bse/bse_preconditioner.py:build_shifted_preconditioner",
+     "src/solvers/lanczos.py:block_lanczos_eig",
+     "src/bse/feast_ellipse_mixed_sweep.py (whole file - uncompilable, IndentationError at line 113)",
+     "src/bse/absorption_eigvecs.py:compute_oscillator_strengths"
+    ],
+    "note": "solvers/lanczos.py:block_lanczos_eig is gated behind use_block=True at bse_lanczos.py:42/83, but repo-wide grep for 'use_block' finds only test_bse.py:257 passing False - no code path ever sets it True, so it is unreachable in practice despite being 'wired up'."
+   }
+  ],
+  "notes": "Worst misfit: src/bse/bse_ring_comm.py is a genuine four-way straddle - it holds the production A2 matvec kernel (build_bse_ring_matvec), the B-tier non-TDA variant (build_bse_ring_matvec_full), the C-tier cross-package sharding vocabulary (create_mesh_2d, make_bse_shardings, used by 10+ other files), AND E-tier manual CLI gates (ring_matvec_smoke_test, ring_matvec_correctness_check) - plus F-tier dead weight (apply_bse_hamiltonian_ring/apply_W_ring). A single 996-line file spans four tiers.\n\nSecond misfit: src/bse/bse_pseudopoles.py is classified Tier B (a genuine forward-looking production axis, explicitly marked 'active dev' by its own restore commit) but is VERIFIED completely non-functional at HEAD - an ImportError plus two TypeErrors from wiring lost in the src/isdf->src/bse consolidation (see category note for exact line numbers). It reads as dead code by every reachability grep but is not a delete candidate - it is lost wiring for a real roadmap feature (cf. the 'parsed-but-unread is not dead config' pattern).\n\nThird misfit: src/bse/bse_preconditioner.py is ~90% dead (7 unreferenced functions/classes) but its one live export, energy_diff_cv_k, is load-bearing across bse_feast.py, bse_jax.py, and bse_serial.py - a file that is simultaneously F-tier by line count and A2-tier by actual runtime importance.\n\nFourth misfit: src/bse/bse_jax.py is nominally the D-tier CLI dispatcher, but 94 of its lines (67-160) are a completely dead, non-executable second implementation of the TDA matvec (apply_bse_hamiltonian/apply_D/apply_V/apply_W) that duplicates bse_serial/bse_ring_comm/bse_simple with zero callers - dead A/B-shaped code sitting inside the D-tier entry-point file.\n\nFifth misfit: the solvers/ package's own docstring claims 'no physics dependencies' (Tier C by self-description) but half its files (davidson.py, chebyshev.py, dos.py, pseudobands*.py) are consumed only by psp/ (DFT NSCF, pseudobands), not by bse/ at all, while the sternheimer_*/minres/projectors files serve psp/run_sternheimer.py exclusively - a BSE maintainer doing `ls src/solvers/` sees a package that is roughly half foreign territory with no subpackage boundary to signal it.\n\nArchitectural note not captured by any single category: LORRAX's BSE has no separate 'kernel build' step distinct from 'matvec' (unlike the prompt's 6-slot dataflow template) - V_q0/W_q tensors are ingested once (A1) and then applied on-the-fly inside every matvec call (A2/B), so 'kernel build' and 'matvec' are fused by construction; there is no intermediate assembled-H object anywhere in the package."
+ }
+]
