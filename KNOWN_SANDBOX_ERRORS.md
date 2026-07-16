@@ -166,6 +166,19 @@ Round 8 `agent_o_allocator_audit.md` corrects this: under BFC + preallocated, tr
 
 ## 2026-06-15 — JAX version triple-mismatch: pyproject pins >=0.9.0/cuda13, Shifter image ships ~0.8/cuda12, skill says 0.7.2
 
+- **2026-07-11 update**: container version VERIFIED from the image filesystem:
+  `nvcr.io/nvidia/jax:25.04-py3` ships **jax 0.5.3.dev20250415 + jax_cuda12
+  plugins** (not 0.7.2, not 0.8 — both stale claims; SKILL.md:136 corrected).
+  The pcast landmine below is FIXED on lorrax_C `agent/ffi-host-platform`
+  (`1421db1`, version-guarded shim) — sharded_cholesky/1-D meshes are safe
+  again on that branch.  NEW second landmine found the same day: the venv's
+  jax 0.9.1 rejects `process_allgather(..., tiled=False)` at
+  `minimax_screening.py:44` (multi-rank only; container jax accepts it) —
+  see the 2026-07-11 §3.5 entry.  Bumping LORRAX_IMAGE to a jax-0.9/cuda13
+  NGC build remains the open environment task; note both FFI .so's
+  (liblorrax_ffi.so, liblorrax_ffi_host.so) must then be rebuilt against the
+  new container's XLA FFI headers (build.sh / build_host.sh handle this).
+
 Three in-repo sources disagree on the JAX version, and current `main` (`e85be60`)
 added a JAX-0.9-only symbol with no fallback. Surfaced while planning the rebase of
 an old-main checkout to `e85be60` for the CrI3 6×6 GN-PPM study.
@@ -423,3 +436,35 @@ non-B checkout actually exercised lorrax_B.
 - **Where**: `src/ffi/common/cpp/run_shifter.sh` in login-node mode (no `SLURM_JOBID`), documented in `src/ffi/slate/README.md` as "login node — doesn't need an allocation".
 - **What**: `shifter --volume=$HOME/software/lorrax_nvhpc:/lorrax_nvhpc ...` failed with `BIND MOUNT FAILED from /var/udiMount//global/homes/... to /var/udiMount/lorrax_nvhpc` / `FAILED to setup image` on login node (2026-07-10 ~02:15). Not a config error — the identical invocation succeeds when routed through a compute node (`SLURM_JOBID` set, srun mode). Likely transient udiRoot state on that login node.
 - **Workaround**: run container builds through an allocation: `SLURM_JOBID=<jid> SLURM_OVERLAP=1 LORRAX_NGPU=1 LORRAX_NTASKS=1 bash src/ffi/common/cpp/run_shifter.sh bash src/ffi/common/cpp/build.sh`.
+
+### 2026-07-11: lorrax_C in-tree sharded cholesky broken under container JAX 0.7.2 (`lax.pcast` missing)
+- **FIXED on agent/ffi-host-platform (`1421db1`)**: version-guarded identity shim (jax <= 0.8 has no VMA tracking, identity is exact). Entry kept for other checkouts still on plain main.
+- **Where**: `sources/lorrax_C/src/common/cholesky_2d.py:186` (`_chol_2d_local` → `lax.pcast`), hit via `isdf/core.py:factor_c_q` whenever `distributed_cholesky = off` selects `path=sharded_cholesky`.
+- **What**: commit `c7e6695` (2026-06-13, "fix(jax-0.9): VMA pcast + tiled=True for multi-process CPU compat") uses `jax.lax.pcast`, which only exists in JAX ≥0.9. The GPU Shifter container pinned by the lorrax_C/lxrun stack (nvcr.io/nvidia/jax:25.04-py3, JAX 0.7.2 per `skills/execute_workflow/SKILL.md`) has no `lax.pcast`, so every in-tree-cholesky GW run dies in fit_zeta with `AttributeError: module jax.lax has no attribute pcast` (observed 2026-07-11, MoS2 3x3 bispinor fixture, 4 GPUs, JID 55791797; `runs/MoS2/C_bispinor_backend_timing_2026-07-11/00_lorrax_gpu_intree/gw.out`).
+- **Consequence**: the `distributed_cholesky = off` baseline cannot run on the GPU container until either the container moves to JAX ≥0.9 or the source gains a version-guarded fallback (pre-c7e6695 code used a plain `jnp.zeros` panel init). cusolvermp/slate backends are unaffected (they bypass `cholesky_2d.py`).
+
+### 2026-07-11: documented native CPU MPI recipe (§3.5 + lorrax_agent CPU branch) cannot run multi-rank GW e2e
+- **Where**: `sources/lorrax_C/docs/ENVIRONMENT_COMPREHENSIVE.md` §3.5 ("CPU multi-process MPI runs (production-quality)") and the `lorrax_agent` overlay's `LORRAX_PARTITION=cpu` `lxrun` branch (native srun, no container — despite some references describing the CPU path as containerized).
+- **What broke (verified 2026-07-11, MoS2 3×3 bispinor GN-PPM, 4 ranks 2×2, Milan)**: three independent staleness issues.
+  1. **jax 0.9.1 incompatibility (fatal)**: the lorrax_C venv now has jax 0.9.1; `gw/minimax_screening.py:44` (`_scalar_to_host_float`) calls `multihost_utils.process_allgather(..., tiled=False)` on a committed (non-fully-addressable) scalar, which jax 0.9.1 rejects: `ValueError: Gathering global non-fully-addressable arrays only supports tiled=True`. Every multi-rank GN-PPM/minimax run dies in `fit_ppm` AFTER all ζ fits (~4.4 min wasted). Single-rank unaffected (`process_count()==1` branch). The container jax (0.5.3.dev, nvcr 25.04) accepts it — so GPU runs never see this. Source fix needed (tiled=True or pre-replicated fetch); not applied here (no-source-mod session).
+  2. **mpi4py is not installed** in the lorrax_C venv (nor isdf_site, nor the container), contradicting §3.5's "Required dependencies (one-time, inside the venv)". `use_ffi_io=true` on CPU therefore always falls back to `H5PY_ALLGATHER` (rank-0 serial writes) with a `[config]` warning; the documented `PHDF5_HOST` route is unreachable.
+  3. **Undefined/mismatched variables in §3.5**: the recipe uses `$LORRAX_VENV` (set by NO module; the venv lives at `$LORRAX_ROOT/.venv`) and `PYTHONPATH=$LORRAX_SRC/src` (the base lorrax_X module sets `LORRAX_SRC=<repo>/src`, so this points at `<repo>/src/src`, which does not exist; correct is `PYTHONPATH=$LORRAX_SRC` or `$LORRAX_SRC:$LORRAX_SITE:<deps>`).
+- **Working alternative (validated e2e ×5 this session)**: run the shifter container on the CPU node — raw srun, no lxrun:
+  `srun --jobid=$JID --mpi=cray_shasta -N1 -n4 -c32 --cpu-bind=cores shifter --image=nvcr.io/nvidia/jax:25.04-py3 --module=mpich --volume=<nvhpc,phdf5,slate stages> --env=PYTHONPATH=<src:site:deps> --env=LD_LIBRARY_PATH=/lorrax_slate/lib:/lorrax_phdf5/lib:/opt/udiImage/modules/mpich:/opt/udiImage/modules/mpich/dep --env=MPICH_GPU_SUPPORT_ENABLED=0 --env=JAX_PLATFORMS=cpu python3 -u -m gw.gw_jax -i cohsex.in`
+  (drop `--module=gpu` and the `libmpi_gtl_cuda` LD_PRELOAD on CPU nodes). `liblorrax_ffi_host.so` resolves fully in-container: CUDA-free SLATE via its RUNPATH (`$HOME/software/slate_builds/cpu`), libsci from `/lorrax_slate`, MPICH from `/lorrax_phdf5`. See `runs/MoS2/C_bispinor_backend_timing_2026-07-11/manifest.yaml` execution notes.
+
+## 2026-07-15: lorrax_agent module eval glob-expands `*` under non-interactive shells
+
+`module load lorrax_D lorrax_agent` from a non-interactive/harness shell (incl.
+`#!/bin/bash -l` scripts under salloc) emits the lorrax_agent shell functions
+through Lmod's `sh` init eval WITHOUT noglob: every literal `*` in the function
+bodies (`$((nodes * 4))` in lxalloc/lxrun) glob-expands against the cwd, the
+eval dies with `syntax error near unexpected token 'then'`, and NO functions or
+env vars (incl. LORRAX_SHIFTER) are defined. Interactive login shells are fine.
+Workaround: don't load modules in scripted contexts — hardcode the shifter
+invocation (copy LORRAX_SHIFTER from an interactive shell / this entry's
+sibling script reports/bse_refactor_map_2026-07-15/cleanup_verify/) and call
+srun directly, or call lx_pool.py by absolute path for pool coordination.
+Possible fix: quote-safe emission in modulefiles/lorrax_agent/1.0.lua
+(set -f around the eval, or emit functions via a sourced .sh file instead of
+inline eval).

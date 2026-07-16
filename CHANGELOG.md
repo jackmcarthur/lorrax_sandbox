@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-07-15: BSE exchange adjudication (DENSE) + cleanup phase 1 (13 commits) [D, source — branch agent/bse-cleanup in worktree sources/worktrees/lorrax_D_bse_cleanup, NOT pushed]
+
+Follow-up to the BSE refactor map, after Jack challenged the B1 finding and set
+priorities (fix-broken-first; V/W recover-or-generate; GW-infra proximity).
+
+- **Exchange kernel ADJUDICATED: dense in (k,k'), unanimous** — 3-agent
+  adversarial round; the k-diagonal steelman failed (defensible only Nk=1);
+  BGW's own bsemat.h5 (Si run) has off-diag k-block exchange the same order as
+  diagonal (0.27-0.29 vs 0.39 max). Jack's momentum-shift-0 point is correct
+  for the interaction line and orthogonal to delta_kk' (that structure belongs
+  to the direct term). Finite-Q: Q-block-diagonal, dense within a block,
+  v(Q+G) keeps G=0. Fix = k-summed encode (cheaper than the bug); Q=0 becomes
+  the Q->0 case of one unified path. reports/.../archive/adjudication/VERDICT.md.
+- **Cleanup phase 1 executed** on agent/bse-cleanup (base origin/main c7a30ff,
+  worktree — lorrax_D's own tree busy with another session): 13 commits, net
+  +312/-2192. Repairs: B3/B4/B5 loader flat-q normalization single-sourced,
+  B2 non-TDA einsum, B6 padding, B7 eqp-window x3->1, KPM phantom kwarg,
+  pseudopoles lost wiring restored, W0 bare-V loud warning, doc drift. Deletes:
+  verified Tier-F (bse_jax matvec trio, ring pair, symmetrize_W_q, BSEData,
+  preconditioner scaffolding, write_eigenvectors.py, stale test_bse loader);
+  feast sweep harnesses archived to reports/.../archive/experiments/.
+  Independent reviewer: exchange k-structure untouched (B1 fix is Phase 2),
+  findings minor. CLEANUP_LOG.md has the ledger + deferred consolidations.
+- **Recover-or-generate scout**: GW producers already library-shaped
+  (prepare_isdf_and_wavefunctions / compute_screening / persist_w0_and_head are
+  pure kwarg functions) — wiring plan at archive/designs/recover_or_generate_vw.md.
+- Revised program: reports/bse_refactor_map_2026-07-15/PLAN.md (supersedes MAP §7).
+- KSE'd: lorrax_agent module eval glob-expands `*` under non-interactive
+  shells (lxrun/lxalloc unusable from scripts; workaround documented).
+- Runtime verification (import smoke + plain 1-GPU suite from the worktree):
+  launched via fresh salloc; result recorded in
+  reports/bse_refactor_map_2026-07-15/cleanup_verify/.
+
 ## 2026-07-15: BSE refactor map — 45-agent audit + 5 feature designs [D, reports only, no source changes]
 
 `reports/bse_refactor_map_2026-07-15/` — the BSE analogue of the GW refactor map:
