@@ -36,7 +36,7 @@ reference from THOSE arrays so the check is apples-to-apples (no independent
 Coulomb recompute; px=py=1 ⇒ band pad multiple 1, μ pad shared by both sides).
 `WFN.h5` is present in the fixture dir (kgrid resolution for flat-q).
 
-## 2. Dense H builder — explicit (k,k′) quadrature in numpy
+## 2. Dense H builder — brute-force dense assembly in numpy (explicit (k,k′) loops, direct W(k−k′) tile lookup — no FFT, no integral anywhere)
 
 Flat pair index `I=(c,v,k)` matching the code's `X[b,c,v,k]` layout. `Nk=nk`,
 `q(k,k') = (k−k') mod (nkx,nky,nkz)` (C-order flatten). All from the SETTLED
