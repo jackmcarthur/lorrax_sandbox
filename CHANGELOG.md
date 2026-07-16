@@ -1,5 +1,42 @@
 # Changelog
 
+
+## 2026-07-16: Si sym-centroid BSE-degeneracy experiment — centroids are NOT the degeneracy lever [A, runs only]
+
+Orbit-closed ISDF centroids do NOT restore exact BSE degeneracy (old/sym split
+ratio 1.004-1.018, still ~500-2000 ueV vs BGW ~2 ueV; 792 orbit-closed vs 960
+literal centroids near-identical). Cause is downstream: psi IBZ->full-BZ unfold
+and/or zeta-fit covariance (the deferred unified-sym-action Phase-2 work), now
+with a concrete Si-manifold-splitting observable to gate it.
+runs/Si/A_bse_sym_centroid_degeneracy_2026-07-16/report.md.
+
+## 2026-07-16: W(0) resolvent cross-check — GW screened Coulomb validated to ~2e-9 [agent/bse-phase2, lorrax_A, source, NOT pushed]
+
+Owner-requested cross-validation: `W(0) - v = v(0 - H_RPA)^{-1} v` (Casida
+resolvent, ω=0) reproduces the restart's head-less `W0_qmunu - V_qmunu` q=0 tile
+to the GW minimax-integration floor. Run on the gnppm gate restart (MoS2 3×3,
+nval=26/ncond=20, full χ0 window), 1 GPU. **8 probe columns: max rel_err =
+2.41e-9, median 2.24e-9; GMRES resid ~3e-10 (an order below → quadrature-limited,
+not solver-limited). It closes at the minimax-noise level.** Report:
+`reports/bse_refactor_map_2026-07-15/PHASE2_LOG.md` §"W(0) resolvent cross-check";
+run dir `runs/MoS2/A_bse_w0_resolvent_2026-07-16/`.
+
+Three fixes on `bse_w_exact`'s path (all validated bit-for-bit against a dense
+RPA reference):
+- **`bse_feast.ensure_W_R`** — single-sourced the `W_q→W_R` conversion (the stale
+  `data["W_R"]` KeyError in the shifted-matvec chain); the 3 inline copies in
+  FEAST/spectral-bound are gone, `bse_w_exact` reuses it.
+- **`build_bse_ring_matvec_full(screening=True)`** — the RPA test-charge screening
+  H uses the RING kernel `V=K^A` in BOTH symplectic blocks (density-density
+  bubble), NOT the excitonic `V_B` (which overshoots W by 1.79×). One matvec,
+  physics-flagged; the existing `screening=False` optical-BSE path is unchanged.
+- **`bse_io.load_bse_data_from_restart_sharded(inject_head=False)`** — head-less
+  body load for body-vs-body diagnostics.
+- **`bse_w_exact` rewrite** — correct symplectic combination `rhs=[f;-f]`, readout
+  `X+Y` (old `[f;f]`/`X+Y` gave identically 0 at ω=0); shared per-column resolver
+  used by both `--out` and the new `--compare-w0`; band-window parity forced to the
+  full χ0 window. Gate: `tests/test_bse_w0_resolvent.py`.
+
 ## 2026-07-16: BSE Phase 2 COMPLETE on agent/bse-phase2 (lorrax_A) — B1 dense exchange + trial-stack matvec [A, source, NOT pushed]
 
 Four self-contained commits off main 6bd4dc9; report

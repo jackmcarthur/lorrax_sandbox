@@ -188,3 +188,109 @@ values). All consumer paths execute through the stack matvec.
    falls back to copy in some solve paths) — perf-only; fold into solver P1.
 
 Artifacts: `cleanup_verify/bse_multidev_check.py` + `evals_1x1_bs*.txt`.
+
+## W(0) resolvent cross-check (2026-07-16, agent/bse-phase2)
+
+Owner-requested cross-validation: confirm the GW static screened Coulomb obeys
+the Casida resolvent identity
+
+    W(0) - v  =  v (0 - H_RPA)^{-1} v
+
+in the ISDF centroid basis, reproducing the restart's `W0_qmunu - V_qmunu` q=0
+tile to the GW numerical-integration noise.  Diagnostic: `src/bse/bse_w_exact.py
+--compare-w0` (shifted GMRES on the non-TDA Casida via `bse_feast`).  Fixture:
+the gnppm gate restart (MoS2 3x3, nspinor=2, nval=26/ncond=20, 399 centroids,
+`W0_ready=True`), 1 GPU.  Run dir `runs/MoS2/A_bse_w0_resolvent_2026-07-16/`.
+
+### What the resolvent path needed (three fixes on this lineage)
+
+1. **Stale `data["W_R"]` (KeyError).**  `_apply_shifted_matvec` reads the 8th
+   matvec arg `data["W_R"]`, which the restart loader never emits (only `W_q`).
+   Single-sourced the `W_q -> W_R` conversion into `bse_feast.ensure_W_R` and
+   repointed all four call sites (FEAST main + fp32, spectral-bound Lanczos,
+   `bse_w_exact`); the 3 inline copies are gone.
+
+2. **The kernel is RPA test-charge screening, not the exciton BSE.**  The
+   non-TDA symplectic H that reproduces W is `[[D+V, V],[-V, -D-V]]` with the
+   RING coupling `V = K^A = (1/Nk)<M_t|v|M_t'>` in BOTH blocks (density-density
+   RPA bubble).  The existing `build_bse_ring_matvec_full` B-block used the
+   excitonic `V_B` (conjugated pairing, Henneke 2-20) — the correct optical-BSE
+   kernel, but a *different response*: it overshoots the q=0 tile by ~1.8x
+   (measured: ratio 1.794, std 0.003).  Added a `screening=True` flag to that
+   builder selecting the ring `K^A` B-block (single matvec, physics-flagged;
+   asserts `include_W=False`).
+
+3. **Symplectic combination (was zero at omega=0).**  The old `bse_w_exact` used
+   `rhs=[f;f]` + readout `X+Y`, which gives IDENTICALLY 0 at omega=0 in the
+   non-interacting limit (`1/(0-D)+1/(0+D)=0`).  Correct RPA density super-vertex
+   is `rhs=[f;-f]` (same `f`, minus on the anti-resonant Y block) with readout
+   `s=X+Y`, `w_c = v(M s)`.  Derivation: with `H=[[A,B],[-B,-A]]` the response
+   operator is `diag(-1,1)(0-H)`, so `(0-H)^{-1}[f;-f]` yields `X=Y=-(A+B)^{-1}f`
+   and `A+B = D+2K^A` — exactly the folded static RPA `-(1/Nk)M(D/2+K^A)^{-1}M`.
+   Cross-checked bit-for-bit densely (below).
+
+### Convention lock-in (dense, head-less q=0 tile, exact static 1/(e_c-e_v))
+
+| dense construction | relerr vs disk W0-V | diag ratio |
+|--------------------|--------------------:|-----------:|
+| full RPA `(I-Vχ0)^{-1} Vχ0 V` | **2.34e-9** | 1.00000 |
+| folded `-(1/Nk) M (D/2+K^A)^{-1} M†` | **2.16e-9** | 1.00000 |
+| symplectic ring `B=K^A`, `[f;-f]`, `X+Y` | **2.16e-9** | 1.00000 |
+| symplectic exciton `B=K^B` (old kernel) | 7.9e-1 | 1.79406 |
+| symplectic `B=0` (TDA) | 5.1e0 | 6.12 |
+
+Both `χ0 = -2/Nk Σ_{cvk} M conj(M)/(e_c-e_v)` convention and the RPA Dyson
+`W=(I-Vχ0)^{-1}V` (matching `w_isdf.solve_w`) are confirmed by the 2.3e-9 match.
+The exciton and TDA kernels do NOT reproduce W — the owner's "non-TDA, not TDA"
+call is right, with the ring (not V_B) B-block.
+
+### Sharded result — `bse_w_exact --compare-w0 --n-cols 8 --seed 7` (1 GPU)
+
+chi0 window `n_val=26 n_cond=20` (full occ x cond, = GW `compute_screening`);
+`gmres(max_iter=200, tol=1e-10)`; head-less bodies both sides.
+
+| nu | \|\|(W0-V)_col\|\| | rel_err | max\|Δ\| | gmres_resid |
+|-----:|------------:|---------:|---------:|------------:|
+| 179 | 6.601e+07 | 2.157e-09 | 3.92e-02 | 2.37e-10 |
+| 375 | 6.601e+07 | 2.157e-09 | 3.92e-02 | 2.37e-10 |
+|  63 | 4.729e+07 | 2.349e-09 | 3.13e-02 | 3.83e-10 |
+| 267 | 4.729e+07 | 2.349e-09 | 3.13e-02 | 3.82e-10 |
+| 373 | 9.699e+06 | 2.173e-09 | 5.30e-03 | 3.90e-10 |
+| 247 | 8.586e+06 | 2.408e-09 | 5.80e-03 | 4.31e-10 |
+| 357 | 7.212e+06 | 2.303e-09 | 4.68e-03 | 3.97e-10 |
+| 272 | 1.702e+07 | 1.924e-09 | 8.16e-03 | 2.50e-10 |
+
+**max rel_err = 2.41e-9, median = 2.24e-9; max gmres_resid = 4.3e-10** (12
+GMRES iters/column).
+
+### Interpretation — does it close at the minimax-noise level?
+
+**Yes.**  The resolvent uses the EXACT static denominator `1/(e_c-e_v)`; the disk
+`W0_qmunu` is `W(0)` from `χ0(iω)` on the minimax Laplace nodes evaluated at ω=0.
+So `rel_err` IS the GW minimax-quadrature error of `1/x` over `[E_gap, E_max]` —
+here a very tight **~2e-9** (this fixture's energy range is modest).  The GMRES
+residual (~3e-10) sits an order of magnitude below `rel_err`, so the closure is
+quadrature-limited, NOT solver-limited: the two are cleanly separated, exactly as
+the report format requires.  The identity `W0 = v(0-H_RPA)^{-1}v + v` holds.
+
+Degenerate pairs (nu 179/375, 63/267 share norms) are symmetry-related centroids
+— expected on the D3h MoS2 mesh.
+
+Artifacts: `runs/MoS2/A_bse_w0_resolvent_2026-07-16/` (fixture restart, module-free
+`lxrun_free.sh`, `explore_*.py`/`verify_sharded.py` dense-vs-sharded harnesses).
+Gate: `tests/test_bse_w0_resolvent.py` (closure < 1e-6 on the gnppm fixture).
+
+## Symmetry-centroid degeneracy experiment (2026-07-16)
+
+**Do orbit-closed (symmetry-obeying) centroids restore exact BSE degeneracies
+on Si? NO.** Old/sym intra-manifold splitting ratio 1.004–1.018; sym splittings
+remain 500–2000 μeV vs BGW ~2 μeV (the 4v4c doublet reproduces the historical
+~485 μeV datum). The sym arm used FEWER centroids (792 orbit-closed vs 960
+literal) with near-identical splittings — neither symmetry closure nor count is
+the lever. **The symmetry violation enters downstream of centroid placement:
+the ψ IBZ→full-BZ unfold and/or the ζ-fit are not symmetry-covariant** — this
+is the deferred unified-sym-action / ψ-side Phase-2 work, now with a concrete
+observable (Si manifold splitting) to gate it. Full table + setup:
+`runs/Si/A_bse_sym_centroid_degeneracy_2026-07-16/report.md`. Side product: a
+vectorised dense-H builder (bit-equal to `_build_dense_H`, rel-err 4.8e-17)
+worth folding into the gate for larger windows.
