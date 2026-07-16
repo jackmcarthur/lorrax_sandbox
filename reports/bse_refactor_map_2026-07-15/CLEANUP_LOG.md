@@ -112,3 +112,25 @@ run once a pool exists.
   scaffolding, the module holds only `energy_diff_cv_k`. Could fold into
   bse_serial (its main consumer) to drop a file, but that touches bse_feast's
   import too; minor, left as-is.
+
+## Runtime verification — COMPLETE (2026-07-15, post-executor)
+
+Fresh 1-GPU salloc runs (module-free srun+shifter; see KNOWN_SANDBOX_ERRORS
+2026-07-15 for why lxrun was bypassed), logs in `cleanup_verify/`:
+
+1. **Import smoke**: all touched modules import clean on the branch
+   (bse_io, bse_ring_comm, bse_kpm, restored bse_pseudopoles, all drivers +
+   test_bse). `verify.log`.
+2. **Plain 1-GPU suite on the branch**: 173 passed / 34 skipped /
+   1 failed + 9 errors — ALL failures in GW gnppm/bispinor-fixture gates.
+   `pytest.log`.
+3. **Same gate subset at base origin/main c7a30ff** (detached worktree):
+   IDENTICAL 1 failed + 9 errors → not branch-caused. Root cause:
+   fresh worktrees lack the .gitignored `liblorrax_ffi.so` build artifact.
+   `base_gates.log`.
+4. **Gate subset re-run on the branch with the .so staged from lorrax_D**:
+   **11/11 PASSED** (test_gw_jax_regression incl. cohsex + si_cohsex_3d +
+   gnppm + bispinor_gnppm; all test_invariance_gates incl. ibz_equals_full_bz).
+   `branch_gates_with_ffi.log`.
+
+⇒ All four golden gates green on `agent/bse-cleanup`; checkpoint valid.

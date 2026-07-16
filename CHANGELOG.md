@@ -29,9 +29,11 @@ priorities (fix-broken-first; V/W recover-or-generate; GW-infra proximity).
 - Revised program: reports/bse_refactor_map_2026-07-15/PLAN.md (supersedes MAP §7).
 - KSE'd: lorrax_agent module eval glob-expands `*` under non-interactive
   shells (lxrun/lxalloc unusable from scripts; workaround documented).
-- Runtime verification (import smoke + plain 1-GPU suite from the worktree):
-  launched via fresh salloc; result recorded in
-  reports/bse_refactor_map_2026-07-15/cleanup_verify/.
+- Runtime verification COMPLETE: import smoke clean; plain 1-GPU suite
+  173 passed; the 10 gnppm/bispinor gate errors reproduced IDENTICALLY at
+  origin/main (fresh worktrees lack the .gitignored liblorrax_ffi.so — KSE'd);
+  with the .so staged, gate subset = **11/11 passed incl. all four golden
+  gates**. Checkpoint valid. reports/bse_refactor_map_2026-07-15/cleanup_verify/.
 
 ## 2026-07-15: BSE refactor map — 45-agent audit + 5 feature designs [D, reports only, no source changes]
 

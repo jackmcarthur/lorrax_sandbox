@@ -468,3 +468,14 @@ srun directly, or call lx_pool.py by absolute path for pool coordination.
 Possible fix: quote-safe emission in modulefiles/lorrax_agent/1.0.lua
 (set -f around the eval, or emit functions via a sourced .sh file instead of
 inline eval).
+
+## 2026-07-15: fresh git worktrees lack liblorrax_ffi.so — gnppm/bispinor gates error
+
+The compiled FFI library (`src/ffi/common/cpp/build/liblorrax_ffi.so`) is a
+.gitignored build artifact, so ANY fresh worktree/clone fails every
+gnppm/bispinor-fixture test (9 errors + si_cohsex_3d failure in
+test_gw_jax_regression + test_invariance_gates) with "liblorrax_ffi.so not
+found" — identically at origin/main and on feature branches (verified both,
+reports/bse_refactor_map_2026-07-15/cleanup_verify/). NOT a code regression.
+Fix: copy the .so from the main checkout into the same relative path in the
+worktree (or rebuild) before running the full suite.
