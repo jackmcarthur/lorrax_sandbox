@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-07-16: BSE cleanup MERGED+PUSHED to origin/main; lorrax_A repurposed as the BSE seat [A, infra + push]
+
+- `agent/bse-cleanup` fast-forwarded onto **origin/main c7a30ff → 6bd4dc9**
+  (the 13 cleanup commits, Jack-approved). Cleanup worktree + branch ref
+  dissolved; lorrax_D untouched (other session on agent/suite-speedup).
+- **lorrax_A repurposed** (was dormant on agent/cri3-ppm-maxbands, 4 wks; no
+  tracked WIP, branch ref preserved): now on main 6bd4dc9. Its modulefile was
+  DANGEROUSLY stale (FFI stage-dirs → purged $SCRATCH paths = hard shifter
+  mount failure; old allocator block) — replaced with lorrax_D's, only the two
+  root-path lines differ (backup in reports/.../cleanup_verify/). Current
+  liblorrax_ffi.so staged over the May build.
+- Gate validation on lorrax_A: first run FAILED cohsex — a gitignored May-era
+  `tests/regression/cohsex_debug/tmp` restart survived the reset and the
+  session fixture reused it (fresh worktrees don't have this; beware when
+  repurposing dormant checkouts). After cleaning stale gitignored state:
+  **11/11 gates green** (16:17 warm). Also restored tmp/env_D.sh (tracked file
+  caught by the tmp/ cleanup).
+- Phase 2 (dense-reference gate → B1 dense-exchange fix → trial-stack matvec
+  per Jack's spec: scan-over-trials inside shard_map, ONE donated
+  T(mu,nu,t,s,k) per step — no n_trials axis on intermediates — RPA/BSE
+  toggle, W-tile seam for future W(omega)/ladders) is IN FLIGHT on
+  agent/bse-phase2 in lorrax_A; designs at
+  reports/bse_refactor_map_2026-07-15/archive/designs/{dense_reference_gate,trial_stack_matvec}.md.
+
 ## 2026-07-15: BSE exchange adjudication (DENSE) + cleanup phase 1 (13 commits) [D, source — branch agent/bse-cleanup in worktree sources/worktrees/lorrax_D_bse_cleanup, NOT pushed]
 
 Follow-up to the BSE refactor map, after Jack challenged the B1 finding and set
