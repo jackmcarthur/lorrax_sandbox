@@ -1,0 +1,36 @@
+run_id: si_bse_sym_centroid_degeneracy_2026-07-16
+system: Si
+pipeline: lorrax_only      # derived from the tests/regression/si_cohsex_debug fixture
+platform: perlmutter
+
+variant_of: null
+# Read-only inputs symlinked from tests/regression/si_cohsex_debug/ (WFN.h5,
+# kin_ion.h5, dipole.h5, eqp_si_ref.dat, cohsex_si_test.in). Si 4x4x4, no-SOC,
+# 8 IBZ k-points, nband=60, nval=8, ntran=48 (Fd-3m, full Oh).
+reuse_from_parent: [tests/regression/si_cohsex_debug/WFN.h5, tests/regression/si_cohsex_debug/kin_ion.h5]
+overrides:
+  purpose: >
+    Does the symmetry-obeying (orbit-aware, default) ISDF centroid path
+    restore exact degeneracies in dense BSE eigenvalues vs the old literal
+    (--no-orbit) k-means path? Historical datum (src/bse/STATUS.md 2026-04-28):
+    Si lowest-3 exciton triplet split ~485 ueV in LORRAX vs ~2 ueV in BGW,
+    attributed to non-symmetric ISDF centroid placement.
+  centroids_target: 960
+  seed: 42
+  oversample: 1.0
+  bse_window: 2v2c (n_val=2, n_cond=2); dense H = D + Kx - Kd, eigvalsh
+  dense_H_builder: reused tests/test_bse_dense_reference.py::_build_dense_H
+
+steps:
+  work_old:  { state: complete, note: "old literal centroids (--no-orbit), 960 grid points; COHSEX restart + eqp" }
+  work_sym:  { state: complete, note: "symmetry-obeying centroids (orbit-aware, n_sym=48), 792 orbit-closed; COHSEX restart + eqp" }
+
+# RESULT: symmetry-obeying centroids do NOT restore exact BSE degeneracy.
+# Intra-manifold splitting old/sym ratio = 1.004-1.018 across 4v4c/6v6c/8v8c.
+#   4v4c lowest doublet: 518.5 ueV (sym) vs 520.7 ueV (old)
+#   8v8c lowest size-8:  2030.9 ueV (sym) vs 2054.3 ueV (old)
+# BGW reference for these manifolds is ~2 ueV (historical STATUS.md).
+# Centroid asymmetry is NOT the cause of the degeneracy breaking; it enters
+# downstream (psi full-BZ unfold and/or zeta-fit covariance -> Phase-2 psi-side sym).
+# Vectorised dense-H builder validated bit-equal to _build_dense_H (rel-err 4.8e-17).
+# Windows swept via analyze_fast_all.py on the SAME restarts (no gw_jax re-run).
