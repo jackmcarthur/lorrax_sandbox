@@ -1,5 +1,50 @@
 # Changelog
 
+## 2026-07-16: BSE Phase 2 COMPLETE on agent/bse-phase2 (lorrax_A) — B1 dense exchange + trial-stack matvec [A, source, NOT pushed]
+
+Four self-contained commits off main 6bd4dc9; report
+`reports/bse_refactor_map_2026-07-15/PHASE2_LOG.md`. Full plain 1-GPU suite:
+**218 passed / 12 skipped / 0 failed** (orchestrator run, incl. all golden
+gates + the new BSE gates with xfails flipped). Multi-device differential
+(1x1 vs 2x2 mesh, 4 GPU): the stack matvec is **bit-level device-count
+invariant** (bs=1 max|Δ|=1.5e-16; at bs=4 the true Ritz values are
+bit-identical across meshes and only the known block-Lanczos GHOST values
+differ ~7e-5 — the pre-existing solver_program P1 defect, reproduction
+numbers in PHASE2_LOG). Physics review confirmed the dense exchange
+per-element; memory review confirmed no n_trials axis on any intermediate
+(peak temp flat: 183 MB at 1/4/8 trials vs ring's linear 1.5 GB at 8).
+Merge/push decision pending Jack.
+
+- **`6d52999` dense-reference gate** — `tests/test_bse_dense_reference.py` +
+  `bse_dense_state` fixture (piggybacks `gnppm_session`; MoS2 3×3, 2v2c, N=36).
+  Explicit `⟨cvk|H|c'v'k'⟩` from the same head-injected arrays the matvecs use.
+- **`d7b51a1` B1 fix (dense k-summed exchange)** — the Q=0 exchange is DENSE in
+  (k,k′); every matvec kept k as a batch axis (only the (k,k) diagonal, scaled
+  1/Nk). Fixed single-sourced in `bse_serial`, `bse_simple` (+`sh.S_k0`),
+  `apply_V_ring` (transitively the non-TDA B-block). serial/simple/ring now
+  bit-exact to the dense H (relerr ~1e-15). Physical shift on the fixture:
+  exchange-sensitive states move up to ~25 meV, lowest exciton pair splits a few
+  meV; insensitive states unchanged. Preconditioner diagonal + density helpers
+  untouched (not H-exchange paths).
+- **`11bab32` trial-stack matvec** — `src/bse/bse_stack_matvec.py`
+  `build_bse_stack_matvec(..., kernel='bse'|'rpa')`: W-term = ONE shard_map,
+  body = `lax.scan` over trials ⇒ one `T(μ,ν,t,s,k)` alive regardless of
+  n_trials. `memory_analysis()`: stack temp FLAT 183.4 MB at n_trials∈{1,4,8}
+  (≈2× the 91.7 MB one-T bound); ring temp LINEAR 184/734/1468 MB. Bit-exact vs
+  dense + simple (bse & rpa). `fft_helpers`: factored `local_{i,}fftn3` (one
+  source; scan body calls kernel directly, shard_map can't nest).
+- **`5d3819f` consumer wiring** — `solve_bse_sharded` (block-Lanczos + Davidson)
+  and FEAST TDA (GMRES + `_rayleigh_ritz` batched subspace) repointed to the
+  stack matvec (dtype-adaptive drop-in). Ring/gather/simple retirement NOTED not
+  executed. Smoke: both run end-to-end; solve_bse_sharded bs=1 lowest-4 ==
+  dense reference.
+- **Findings/deferred**: (a) iterative Lanczos (single + block) return ghost /
+  below-λ_min Ritz values on the head-injected operator (V/W tiles ~1e5
+  near-cancel D) — a solver-conditioning issue, orthogonal to B1; spectrum gate
+  materialises the matvec instead. (b) BGW `bsemat.h5` §4 off-diagonal gate
+  needs absent Si data. (c) non-TDA B2 unfixed. (d) W(ω)/ladder seam designed,
+  not built. Scratch/diagnostics under `tmp_phase2/`.
+
 ## 2026-07-16: BSE cleanup MERGED+PUSHED to origin/main; lorrax_A repurposed as the BSE seat [A, infra + push]
 
 - `agent/bse-cleanup` fast-forwarded onto **origin/main c7a30ff → 6bd4dc9**
