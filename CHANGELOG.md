@@ -1,6 +1,29 @@
 # Changelog
 
 
+## 2026-07-16: W-column resolvent — device-resident W(mu_X, nu_Y) tile + 2x2 seed-bug fix [agent/bse-phase2, lorrax_A, source, NOT pushed]
+
+Sharding-quality upgrade of the `bse_w_exact` W-column path (the future
+Lanczos-chain `W(omega)` engine). One single-sourced function
+`apply_screening_resolvent_block` (SEED zeta->pair `gen` | SOLVE scan-of-GMRES,
+per-column-independent | PROJECT pair->zeta reduce-scatter) emits the screened
+Coulomb as a device tile `W(mu_X, nu_Y) = P('x','y')` — mirroring the Sigma_PPM
+reduce-scatter (`ppm_tau_kernel`), no replicated `(mu,nu)`, output no longer
+host-stacked. `build_density_snapshot_operator` gained `scatter_nu_on_y`
+(default off = old `(b,mu_X)` for `bse_pseudopoles`; on = W-tile). Gate now
+asserts the PartitionSpec.
+
+Found + fixed a **pre-existing multi-device bug** exposed by the first 2x2 run:
+`build_realspace_random_transition_generator` did the centroid contraction as a
+local x-slice with the conduction index pre-sliced, dropping off-rank mu on
+px>1 (~50% wrong; only ever run on 1 GPU before). Fixed to full-c +
+`psum_scatter('x', scatter=c)` like `apply_V_ring` (no-op at px=1).
+
+Validation (gnppm fixture): 1x1 and 2x2 now **bit-identical** (max rel_err
+3.203e-9, gmres_resid 4.2e-10), device-count invariant, matches the pre-refactor
+1-GPU baseline on overlapping columns. Gate + 14/14 BSE gates pass.
+`reports/bse_refactor_map_2026-07-15/PHASE2_LOG.md` §"W-column sharding".
+
 ## 2026-07-16: Si sym-centroid BSE-degeneracy experiment — centroids are NOT the degeneracy lever [A, runs only]
 
 Orbit-closed ISDF centroids do NOT restore exact BSE degeneracy (old/sym split

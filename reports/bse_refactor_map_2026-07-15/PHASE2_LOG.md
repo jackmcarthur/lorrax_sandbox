@@ -280,6 +280,67 @@ Artifacts: `runs/MoS2/A_bse_w0_resolvent_2026-07-16/` (fixture restart, module-f
 `lxrun_free.sh`, `explore_*.py`/`verify_sharded.py` dense-vs-sharded harnesses).
 Gate: `tests/test_bse_w0_resolvent.py` (closure < 1e-6 on the gnppm fixture).
 
+## W-column sharding (2026-07-16, agent/bse-phase2)
+
+Sharding-quality upgrade of the W-column resolvent path so it emits a
+device-resident `W(mu_X, nu_Y)` tile on the square processor grid and becomes a
+single-sourced engine for the future Lanczos-chain `W(omega)` model.  Exemplar:
+the Sigma_PPM reduce-scatter (`gw.ppm_tau_kernel._make_project_ri_reduce_scatter`,
+which emits `sigma(m_X, n_Y)`).
+
+**New single engine** `bse_w_exact.apply_screening_resolvent_block(G_zeta, z, ...)`
+— three named stages that the Lanczos model reuses verbatim (docstring carries
+the plug-in): (1) SEED zeta->pair (`gen`, batched over the whole probe block),
+(2) SOLVE per-column-independent shifted GMRES via `lax.scan` over the probe
+axis (one Krylov subspace alive; bit-identical to the old per-column Python loop
+because each column's norm/LSQ reductions are global-per-single-column), (3)
+PROJECT pair->zeta reduce-scatter -> `W(mu_X, nu_Y) = sh.V`.  `_resolve_wc_columns`
+is now a thin unit-column wrapper over it; `--compare-w0` and the gate share the
+one implementation.
+
+**Before -> after layout.**
+
+| stage | before | after |
+|-------|--------|-------|
+| probe columns | Python `for nu` loop, one GMRES dispatch + one host `device_get` per column | one batched seed + `scan` of GMRES + one batched projection (3 dispatches) |
+| output | host `np.stack` -> `(nu, mu)` numpy (implicit all-gather to host) | device tile `W(mu_X, nu_Y) = P('x','y')`, no replicated `(mu, nu)` |
+| projection | `snapshot` `psum('y')` -> `(nu, mu_X)` replicated on nu | `psum_scatter('y', scatter=nu)` fused reduce+scatter -> `(mu_X, nu_Y)` |
+
+`build_density_snapshot_operator` gained a build-time `scatter_nu_on_y` flag
+(default False keeps the `(b, mu_X)` contract that `bse_pseudopoles` relies on;
+True is the W-tile reduce-scatter).  Gate now asserts `W_tile.sharding.spec ==
+P('x','y')`.
+
+**Pre-existing multi-device bug found + fixed (the seed boundary).**
+`--compare-w0` had only ever run on 1 GPU.  On 2x2 the OLD code returned
+`rel_err ~0.5` (max|Delta| ~ column norm) while GMRES still converged
+(resid ~9e-11) — bit-identical to the new code on 2x2, proving the refactor is
+value-faithful and the defect is upstream.  Cause:
+`build_realspace_random_transition_generator` did the centroid (mu) contraction
+as a LOCAL x-slice einsum with the conduction index pre-sliced to the x-rank's
+block, so on px>1 each c-block received only its aligned mu-slice (~50% of the
+sum).  Fix mirrors `apply_V_ring`: full c, local-mu partial, then
+`psum_scatter('x', scatter=c)` to complete the mu sum across x AND scatter c —
+a no-op at px=1 (values unchanged), correct at px>1.
+
+**Validation (gnppm fixture, MoS2 3x3, nval=26/ncond=20, 399->400 centroids).**
+
+| leg | max rel_err | median | max gmres_resid |
+|-----|------------:|-------:|----------------:|
+| 1x1 (6 cols) | 3.203e-9 | 2.253e-9 | 4.22e-10 |
+| 2x2 (6 cols)  | 3.203e-9 | 2.253e-9 | 4.22e-10 |
+
+Per-column bit-identical 1x1 vs 2x2 (179/375 -> 2.157e-9, 63 -> 2.349e-9,
+253 -> 2.467e-9, 204 -> 3.203e-9, 337 -> 2.064e-9) — device-count invariant.
+Overlapping columns match the pre-refactor 1-GPU baseline above (179/375
+2.157e-9, 63 2.349e-9) bit-for-bit.  No OOM/memory blowup (2x2 resolve 19.8 s;
+the seed's full-c transient equals the one `apply_V_ring` already carries every
+matvec).  Gate `tests/test_bse_w0_resolvent.py` passes (33 s) with the added
+PartitionSpec assertion; core BSE gates 14/14 (50 s).
+
+Runners: module-free srun+shifter, 1 GPU `runs/MoS2/A_bse_w0_resolvent_2026-07-16/lxrun_free.sh`
+(4-GPU = same with `--gres=gpu:4`, `--px 2 --py 2`).
+
 ## Symmetry-centroid degeneracy experiment (2026-07-16)
 
 **Do orbit-closed (symmetry-obeying) centroids restore exact BSE degeneracies
