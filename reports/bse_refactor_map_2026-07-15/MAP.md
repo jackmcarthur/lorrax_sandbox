@@ -202,6 +202,13 @@ first; per-claim verifier reasoning in `_raw_verdicts.json`). The structural one
   exchange-insensitive and `ring_matvec_correctness_check` compares ring vs serial
   — the same wrong formula on both sides. **No independent dense reference exists
   in the tree.** Fix is its own PR, gated (below), before any fine-grid/finite-Q work.
+  **ADJUDICATED 2026-07-15 — DENSE, unanimous** (owner challenged the finding; a
+  3-agent adversarial round — k-diagonal steelman FAILED, dense steelman, and an
+  empirical dump of BGW's own bsemat.h5 showing off-diagonal k-block exchange the
+  same order as the diagonal — settled it; the owner's momentum-shift-0 point is
+  correct for the interaction line and orthogonal to δ_kk′; at finite Q the
+  kernel is Q-block-diagonal and dense within each block, v(Q+G) keeps G=0).
+  See `archive/adjudication/VERDICT.md`. Fix greenlit — PLAN.md Phase 2.
 - **B2 — non-TDA B-block einsum malformed** (`'kvsM,bvksN->bMNtsk'`, output `t`
   unbound; bse_ring_comm:183,551) → full-BSE-with-W crashes at first apply; only
   ever ran as RPA. (Fix: `kvtM`.)
@@ -265,6 +272,10 @@ Consolidated open questions for Jack: see `report.md` §"Decisions needed".
 ---
 
 ## 7. Recommended attack order
+
+> **Superseded by `PLAN.md` (2026-07-15 revision, after owner review): fix-broken
+> first, B1 adjudicated dense and greenlit, recover-or-generate V/W added,
+> GW-infra alignment mandate added. The ordering below is the original synthesis.**
 
 0. **Gate first** (the GW program's core lesson): dense-reference kernel gate +
    fresh-restart e2e pytest gate + BGW anchor + pad-mask gate (§5). Nothing moves
