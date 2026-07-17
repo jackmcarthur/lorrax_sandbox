@@ -586,3 +586,10 @@ Artifacts (run dir `runs/MoS2/A_bse_w0_resolvent_2026-07-16/finite_q/`):
 `lstsq_pad_test.py` / `scan_vs_loop.py` (GMRES defect isolation),
 `matvec_check.py` (sharded-vs-dense matvec 1e-16), module-free
 `lxrun_freshcache.sh`.
+
+### Finite-q addendum: full-suite confirmation (orchestrator)
+
+The finite-q agent skipped the full suite on a blast-radius argument, but
+kgrid_shift_map lives in GW-shared common/symmetry_maps.py — so the full plain
+1-GPU suite was re-run at HEAD 6ca714b: **221 passed / 12 skipped / 0 failed**
+(5:16), golden gates included. cleanup_verify/finite_q_full_suite.log.
