@@ -1,6 +1,23 @@
 # Changelog
 
 
+## 2026-07-16: W-column resolvent perf — jit the seed/project shard_map boundaries [agent/bse-phase2, lorrax_A, source, NOT pushed]
+
+Profiled `apply_screening_resolvent_block` (the W(ω) Lanczos engine). Hot spot
+was NOT the GMRES/matvec (2.4% at 1×1) but the two reshard boundaries `gen`
+(SEED) and `snapshot` (PROJECT), which were *bare* `shard_map`s — re-traced +
+re-lowered to HLO on EVERY eager call (~2.5/2.8 s) while the matvec was already
+`jax.jit`-cached. Fix: `jax.jit(in_shardings,out_shardings)` on both builders in
+`bse_ring_comm.py` (single-source; also speeds the `bse_pseudopoles` FEAST-seed
+path). Isolated: gen **3050×**, snapshot **1069×**. End-to-end warm: 1×1 **4.62→0.75 s
+(6.2×)**, 2×2 **18.44→12.07 s (1.53×)** (2×2 remainder is the shared ring
+matvec's collective latency, out of scope). Value-faithful: gate 14 passed/1
+deselected, closure rel_err = recorded to 4 sig figs; device invariance
+preserved at its true pre-existing level (bare 1×1-vs-2×2 5.64e-12 → jitted
+6.31e-12, inherent psum order); jit fp reassociation ≈8e-12 rel, 400× below the
+2.4e-9 closure. No numerics knob changed. `reports/bse_refactor_map_2026-07-15/PHASE2_LOG.md`
+§"W-column resolvent profiling".
+
 ## 2026-07-16: W-column resolvent — device-resident W(mu_X, nu_Y) tile + 2x2 seed-bug fix [agent/bse-phase2, lorrax_A, source, NOT pushed]
 
 Sharding-quality upgrade of the `bse_w_exact` W-column path (the future

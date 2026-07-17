@@ -379,3 +379,116 @@ V0/W0 ISDF tiles are ~3% non-covariant under the centroid permutation (worst
 on nonsymmorphic ops; q=0 head injection worsens V0 to ~8%); contracts to
 ~1e-4 in kernel blocks. Filed for the tile/head-injection path (fits the
 w_head_wings / GW-infra alignment work).
+
+## W-column resolvent profiling (2026-07-16, agent/bse-phase2)
+
+Performance audit + tuning of `apply_screening_resolvent_block` (and the
+`--compare-w0` path), the future Lanczos-chain W(ω) engine.  Fixture: gnppm
+restart (MoS2 3×3, nspinor=2, nval=26/ncond=20, 399→400 centroids), 8 probe
+columns, z=0, GMRES(max_iter=200, tol=1e-10) = 11 iters/col.  All times are warm
+min-of-N after warmup (`profile_resolvent.py`); COLD includes first-compile.
+
+### Hot-spot table — BEFORE (warm min, % of stage sum)
+
+| stage (op)          | 1×1 time | 1×1 % | 2×2 time | 2×2 % |
+|---------------------|---------:|------:|---------:|------:|
+| SEED (`gen`)        | 1.84 s   | 46.4  | 4.06 s   | 26.8  |
+| SOLVE (scan-GMRES)  | 0.095 s  |  2.4  | 9.78 s   | 64.6  |
+| PROJECT (`snapshot`)| 2.03 s   | 51.2  | 1.30 s   |  8.6  |
+| **e2e (warm)**      | **4.62 s** |     | **18.44 s** |     |
+
+**Root cause — the GMRES/matvec was never the bottleneck.**  `gen` and
+`snapshot` were *bare* `shard_map`s: an eager `shard_map` call re-traces and
+re-lowers to HLO **every call** (the trace is not memoized), so they cost
+~2–4 s apiece while doing trivial compute.  The BSE ring matvec is already
+`jax.jit`-wrapped, so SOLVE dispatches its cached executable (~1 ms/matvec at
+1×1).  Isolated micro-benchmark (single call, 1×1):
+
+| op        | bare      | jax.jit  | speedup |
+|-----------|----------:|---------:|--------:|
+| `gen`     | 2536 ms   | 0.83 ms  | **3050×** |
+| `snapshot`| 2773 ms   | 2.60 ms  | **1069×** |
+
+At 2×2 the picture shifts: the un-jitted boundaries still re-lower (SEED 4.06 s,
+PROJECT 1.30 s), but SOLVE now dominates (64.6 %) because the ring matvec's
+collectives (ppermute rings + psum_scatter over 4 GPUs) cost ~20 ms/call on this
+tiny per-device problem — latency-bound, not compute-bound.
+
+### Fix (commit) — jit the seed/project reshard boundaries
+
+`build_realspace_random_transition_generator` and
+`build_density_snapshot_operator` now return `jax.jit(shard_map, in_shardings=…,
+out_shardings=…)` (same house style as the matvec's own `jax.jit`).  Caches the
+compiled executable so repeated calls dispatch instead of re-lowering.  Single
+source — also speeds the `bse_pseudopoles` FEAST-seed path that calls the same
+builders.
+
+### Hot-spot table — AFTER (warm min)
+
+| stage (op)          | 1×1 time | (Δ) | 2×2 time | (Δ) |
+|---------------------|---------:|----:|---------:|----:|
+| SEED (`gen`)        | 0.0025 s | 740× | 0.020 s | 204× |
+| SOLVE (scan-GMRES)  | 0.095 s  |  —  | ~11 s    |  —  |
+| PROJECT (`snapshot`)| 0.0022 s | 920× | 0.0054 s| 241× |
+| **e2e (warm)**      | **0.75 s** | **6.2×** | **12.07 s** | **1.53×** |
+
+At 1×1 the resolvent is now ~40× faster in device work (stage-sum 0.10 s vs
+3.96 s); e2e is 6.2× (a residual ~0.65 s host-orchestration gap remains, below).
+At 2×2 the win is 1.53× — the fix removed the 5.36 s of SEED+PROJECT re-lowering;
+what remains (SOLVE ~11 s, 99.8 %) is the shared ring matvec's collective cost,
+out of scope for this pass (see below).
+
+### Numerics faithfulness (adversarially checked)
+
+- **Gate: 14 passed / 1 deselected** (`test_bse_w0_resolvent` +
+  `test_bse_stack_matvec` + `test_bse_dense_reference`), `W_tile.sharding.spec ==
+  P('x','y')` holds.  Per-column closure rel_err after = recorded before to all
+  4 reported sig figs (e.g. 179→2.157e-9, 63→2.349e-9, 272→1.924e-9; max
+  2.4078e-9), gmres_resid ~4e-10.
+- **Device invariance survives at its true (pre-fix) level.**  The "1×1-vs-2×2
+  bit-identical" property was never raw-bit-identical: the *bare* pre-fix tile
+  already differed **5.64e-12** relative across meshes (inherent multi-device
+  `psum` reduction order — at py>1 the ν-sum is split+recombined, a different fp
+  association than the single-device einsum).  The jitted tile differs
+  **6.31e-12** — the same level.  The claim always meant device-count-invariant
+  *to reported precision*, which is preserved.
+- **jit perturbation is XLA eager-vs-jit fp reassociation, not my shardings.**
+  Plain `jax.jit(shard_map)` and the sharded-jit give *identical* results
+  (gen 1.271e-13, snap 1.118e-8-abs ≈ 1e-15 rel vs bare — same at 1×1 and 2×2).
+  End-to-end same-mesh change bare→jitted ≈ 8e-12 rel (1e-13 at the `gen` source,
+  amplified through 11 GMRES iters) — ~400× below the 2.4e-9 physics closure and
+  6 orders below the 1e-6 gate tolerance.  No numerics knob or precision changed.
+
+### Deliberately NOT done (with reasons)
+
+1. **Column-batched / block-GMRES matvec.**  The matvec IS underutilized —
+   batch-scaling shows ~10× throughput headroom (1×1: b=1 1.06 ms → b=32 0.09
+   ms/col; 2×2: b=1 20.7 ms → b=8 1.06 ms/col).  But (a) at 1×1 SOLVE is 2.4 % —
+   irrelevant; (b) at 2×2 SOLVE dominates yet the lever is the *shared* ring
+   matvec (FEAST, spectral-bound Lanczos, every BSE solver), whose collective
+   latency a resolvent-local batch cannot touch without a per-column-reduction
+   block-GMRES.  That rewrite risks the bit-level closure and violates
+   no-redundancy: `gmres_solve_sharded_jit` is shared with FEAST and its global
+   norms/LSQ are correct only per-single-column (TDA batch axis 0 vs non-TDA axis
+   1 differ).  The design chose scan for "one Krylov subspace alive"; kept.
+2. **Eliminate the per-column true-residual recompute** (one extra matvec/col).
+   Measured 3.1 % of SOLVE at 1×1 (= 0.08 % of e2e), in the noise at 2×2.  It is
+   a required diagnostic (gate asserts resid<1e-6); swapping it for the GMRES LS
+   estimate would change a reported value and touch the shared FEAST return
+   signature.  Not worth it.
+3. **z as a runtime arg (compile-once across shifts).**  The Lanczos W(ω) model
+   replaces stage-2 (scan-GMRES) with block-Lanczos + tiny per-ω tridiagonal
+   solves; a z-generic GMRES optimizes a path the model won't use.  Stages 1/3
+   (the reshard boundaries this commit jits) are what the model reuses verbatim.
+4. **One jit over the whole `apply_screening_resolvent_block`** (would close the
+   ~0.65 s/1×1 host-orchestration gap between e2e 0.75 s and stage-sum 0.10 s).
+   Cross-stage fusion could perturb fp further; the per-boundary jit is the
+   minimal, targeted change.  Candidate once the W(ω) model's numerics tolerance
+   is fixed.
+
+Artifacts (run dir `runs/MoS2/A_bse_w0_resolvent_2026-07-16/`): `profile_resolvent.py`
+(stage/hotspot/batch-scaling harness), `probe_jit_shardmap.py` (bare-vs-jit
+micro-bench + faithfulness), `probe_bitid.py` + `run_bitid.sh` (stash-bracketed
+device-invariance baseline), `validate_after.py`, `prof_{1,2}gpu_{before,after}.log`,
+`gate_after.log`.  Runners: module-free srun+shifter (`lxrun_free.sh`, 4-GPU =
+`lxrun_free_4gpu.sh`).
