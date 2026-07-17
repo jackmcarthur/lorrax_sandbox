@@ -395,6 +395,14 @@ is long-ranged). Interpolating ζ directly (skip the solve) therefore also fails
 → phys 0.17 / 1.34 / 4.87. This is the single root cause of both failures — the
 master-ζ shortcut (§3.2C) and ingredient-interp+solve here.
 
+**(4b) Final 6×6 split (landed post-write-up, confirming):** separating the two
+ingredients at nR=19 shows **Z-interpolation is the dominant error source**
+(V med 2.4e5 via interp-Z vs 878 via interp-C-only) — consistent with the
+mechanism: `Z_q = C_q ζ_q` inherits ζ's non-compactness, so BOTH paths into the
+solve carry the delocalized object. The aggressive-rank-cut sweep at 6×6 was
+reaped at end-of-allocation; it was purely confirmatory (the 3×3 sweep already
+established no-window, and the mechanism is density-independent).
+
 **Verdict.** The ingredient-interpolation middle path is **not viable at accessible
 grid densities.** `C_R`'s falloff is real but `C_q` is the wrong object to
 interpolate — the object you must produce, `ζ_q` (hence `V_Q`), does not inherit the
