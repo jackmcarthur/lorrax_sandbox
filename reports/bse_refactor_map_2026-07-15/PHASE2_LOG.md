@@ -593,3 +593,93 @@ The finite-q agent skipped the full suite on a blast-radius argument, but
 kgrid_shift_map lives in GW-shared common/symmetry_maps.py — so the full plain
 1-GPU suite was re-run at HEAD 6ca714b: **221 passed / 12 skipped / 0 failed**
 (5:16), golden gates included. cleanup_verify/finite_q_full_suite.log.
+
+## Audit follow-up: P3 pair-amp hoist + P5 donation drop + c64 flag (2026-07-16)
+
+Three approved items from the matvec efficiency audit
+(`archive/matvec_efficiency_audit/JOINT_FINDINGS.md` §1/§3/§4/§6). Landed on
+`agent/bse-phase2` in `sources/lorrax_A` (module-free srun+shifter, 1 GPU A100).
+Owner-excluded P2 (`apply_V_ring` rewrite) and P-NT (nt-aware dispatch) untouched.
+
+### P3 — hoist the V-term pair amplitudes out of the per-iteration matvec
+
+`M_X`(μ on x)/`M_Y`(ν on y) `= Σ_s conj(ψ_c)ψ_v` (`compute_pair_amplitude`) were
+rebuilt inside EVERY matvec (`bse_stack_matvec:138,143`; the equivalent
+`apply_V_ring` decode einsum) — the matvec is a per-iteration black-box jit whose
+ψ args XLA cannot hoist across calls (audit P3 CONFIRMED). Now computed ONCE at
+load (`bse_io.load_bse_data_from_restart_sharded` → `data["M_X"]/["M_Y"]`, the
+single source) and threaded as matvec args across ALL sharded matvecs — stack,
+simple, ring, ring-full — with a uniform 11-arg signature (append `M_X,M_Y` to the
+existing 9). `apply_V_ring` now slices this rank's y-block out of the hoisted
+full-v `M_X` (was: slice ψ_v then GEMM — same values, one fewer GEMM/iter);
+`bse_feast` `_apply_shifted_matvec`/`_rayleigh_ritz`/`_build_gmres_data_fp32`,
+`bse_lanczos`, `absorption_haydock`, `davidson_absorption`, `bse_kpm`,
+`bse_pseudopoles` all carry M from `data`. Per-variant-unused args (`psi_c_Y` in
+stack/simple, `M_Y` in the ring, `psi_v_X` where not the B-encode) are retained
+for a calling convention shared by the FEAST GMRES/Ritz drivers — additive diff,
+no `_apply_shifted_matvec` branch, no `apply_V_ring` structural change (keeps P2
+conflict-free).
+
+**Finite-q coupling (caught by the gate).** `bse_w_exact.build_finite_q_data`
+rolls ψ_c/ε_c by +q; the hoisted M's shallow-copied from `data` were then STALE
+(built from unshifted ψ_c) → wrong screening operator (GMRES converged, closure
+rel_err 2.66 at q=(0,1,0)). Fixed: recompute `M_X`/`M_Y` from the ROLLED ψ_c in
+`build_finite_q_data`. The `test_wq_resolvent_matches_restart_finite_q` gate flipped
+red→green on that recompute.
+
+**Memory.** Peak-neutral (both M's already lived inside every matvec call); only
+the between-matvec floor rises by ~2·M/p (audit §2b). At the audit's inflated 1×1
+regime `M_X = M_Y = 471 MB` each.
+
+**Timing (before/after, warm min-of-50, 1 GPU c128, inflated nc48/nv48/ns2/nk16/μ800).**
+The stack matvec == one block-Lanczos iteration; BEFORE recomputes M each call from
+its ψ args (psi passed as jit ARGS → no constant-folding, faithful to the pre-hoist
+matvec), AFTER receives the precomputed M's:
+
+| nt | BEFORE min (ms) | AFTER min (ms) | Δ per matvec |
+|---:|----------------:|---------------:|--------------|
+| 1  | 15.11 | 13.67 | **+1.45 ms (+9.6%)** |
+| 4  | 48.59 | 47.17 | **+1.42 ms (+2.9%)** |
+
+The saving is a FIXED ~1.4 ms/matvec (M is X-independent — two 471 MB pair-amp
+GEMMs removed from the hot loop), so it is 9.6% of the nt1 (single-vector / GMRES
+contour / spectral-bound-Lanczos) matvec and 2.9% of the nt4 (block-Lanczos) matvec
+— matches the audit's "~10% of matvec bytes, zero comms" prediction. `after` vs
+`before` **relerr 7.6e-17 (nt1) / 4.1e-16 (nt4) = bit-identical** (machine ε).
+
+### P5 — drop cosmetic `donate_argnums` (audit §3)
+
+Removed the declined donations at `bse_lanczos:240` (W_q) and
+`absorption_haydock:221` (W_q) — `W_R=ifft(W_q)` is a fresh buffer with no aliasable
+same-shape output — and `bse_ring_comm` `apply_W_from_T`'s `donate T` (output `WX`
+shape ≠ T shape). The last appears in BOTH ring builders
+(`build_bse_ring_matvec` + `build_bse_ring_matvec_full`) → **4 sites** (the audit
+listed 361/581 as one site; I dropped both — same cosmetic donation, keeping one
+would be an inconsistent half-fix). All were declined (no fallback copy, §3). Full
+1-GPU suite: the BSE "Some donated buffers were not usable" warnings are GONE (the
+3 residual warnings are FFI `test_ffi_linalg_contract` cusolvermp, unrelated).
+
+### Item 3 — c64 flag comment ONLY (audit §4)
+
+Comment at the stack W-term dtype seam (`bse_stack_matvec._w_stack`, the `sqrt_nk`
+line the whole W-term dtype inherits from): complex64 mixed precision would ~halve
+the 655 MB T-tensor and every ~7 HBM round-trip (measured ~2× W-term bandwidth
+lever), DELIBERATELY left at c128 per owner decision (2026-07-16), pointer to
+JOINT_FINDINGS §4. No behavioral change; no c64 anywhere.
+
+### Bit-identity / tolerance honesty
+
+No BSE gate asserts bit-identity — the dense-reference and stack-matvec gates use
+`relerr < 1e-9` between paths (stack vs dense vs simple; ring vs dense). No tolerance
+was touched. The production path passes M as a runtime jit arg computed by the SAME
+einsum as the old inside-matvec M → bit-identical; the direct before/after check is
+relerr ~1e-16. (A 1e-12 "drift" in a v1 timing harness was a compile-time constant-
+fold artifact from closing ψ over the jit — absent when ψ are real jit args.)
+
+### Validation (module-free srun+shifter, 1 GPU A100, job 56012954)
+
+- BSE gates: `test_bse_dense_reference` + `test_bse_stack_matvec` +
+  `test_bse_w0_resolvent` — **all green** (incl. finite-q after the M recompute fix;
+  W(0) closure 2.467e-9 unchanged).
+- **Full plain 1-GPU suite: 221 passed / 12 skipped / 0 failed (5:22)** — identical
+  pass count to the pre-change baseline; all four golden GW gates + the BSE gates.

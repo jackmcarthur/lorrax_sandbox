@@ -1,6 +1,31 @@
 # Changelog
 
 
+## 2026-07-16: BSE matvec efficiency follow-up — P3 pair-amp hoist + P5 donation drop + c64 flag [agent/bse-phase2, lorrax_A, source, NOT pushed]
+
+Three approved items from the matvec efficiency audit (`reports/bse_refactor_map_2026-07-15/archive/matvec_efficiency_audit`).
+
+- **P3 (hoist M_X/M_Y):** the V-term exchange pair amplitudes `M = Σ_s conj(ψ_c)ψ_v`
+  were rebuilt inside EVERY solver iteration's matvec (a per-iteration black-box jit,
+  ψ un-hoistable by XLA). Now computed ONCE at load (`bse_io` → `data["M_X"]/["M_Y"]`,
+  single source, μ-on-x / ν-on-y) and threaded as matvec args across ALL sharded
+  matvecs (stack, simple, ring, ring-full) via a uniform 11-arg signature; `apply_V_ring`
+  slices the y-block of the hoisted M_X. Peak-neutral; between-matvec floor +~2M/p.
+  **Warm min timing (inflated nc48/nv48/nk16/μ800, 1 GPU): −1.4 ms/matvec fixed =
+  +9.6% at nt1 (single-vector/GMRES) / +2.9% at nt4 (block-Lanczos)**; before/after
+  bit-identical (relerr ~1e-16). Finite-q defect caught+fixed: `build_finite_q_data`
+  now recomputes M from the rolled ψ_c (stale q=0 M gave closure rel_err 2.66).
+- **P5 (drop cosmetic donations):** removed the always-declined `donate_argnums` on
+  W_q (`bse_lanczos`, `absorption_haydock`) and T (`apply_W_from_T`, both ring builders,
+  4 sites) — silences the "donated buffers not usable" warnings, changes nothing (§3).
+- **c64 flag (comment only):** noted the deferred complex64 W-term ~2× bandwidth lever
+  at the dtype seam (`bse_stack_matvec._w_stack`), OFF per owner decision, ptr §4.
+
+Validation (module-free srun+shifter, 1 GPU): BSE gates (dense-reference, stack-matvec,
+W0+finite-q resolvent) green; **full plain 1-GPU suite 221 passed / 12 skipped / 0 failed**
+(golden GW gates included). Owner-excluded P2/P-NT untouched.
+
+
 ## 2026-07-16: Finite-q W_q resolvent — generate + validate at every symmetry-reduced q [agent/bse-phase2, lorrax_A, source, NOT pushed]
 
 Generalized the W(0) resolvent engine (`apply_screening_resolvent_block`) to
