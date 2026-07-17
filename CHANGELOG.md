@@ -1,6 +1,53 @@
 # Changelog
 
 
+## 2026-07-17: Primer-response prototype campaign (C1/C2/C3) — frame-transport counterproposal KILLED; §3.5 no-window FALLS under physical metric + wrapped labeling [analysis, no source change]
+
+Three parallel prototypes of the ARBITRARY_Q_PRIMER_RESPONSE counterproposal
+(whitened/half-inverse locality + parallel transport + sewing), MoS2 3×3 (+6×6),
+adjudicated under the owner's physical pair-amplitude metric (gap-window
+B-block + TDA exciton swap). Synthesis:
+`runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/CAMPAIGN_REPORT.md`;
+verdict table + supersession notice appended as §10 of
+`reports/bse_refactor_map_2026-07-15/archive/designs/arbitrary_q_bse.md`.
+
+- **C2 (mechanism, null test 4.4e-14): CLEAN KILL** by the response's own
+  sec-10C criterion — transported whitened tails ROUGHER than raw ζ
+  (Φ~_R 1.89/1.60 vs C_R 2.3e-2/6.7e-4), adjacent-q whitened subspaces at the
+  random floor (0.098/0.054 at 3×3/6×6), holonomy at the random ceiling;
+  sewing/gauge/densification change nothing. End-to-end transported-Φ interp
+  B ≈ 0.96 (200× worse than the plain rankcut ladder). Frame concept dead —
+  eigenframe chaos of a gapless C_q spectrum; smoothness lives in the
+  frame-free ingredients (C_q, Z_q).
+- **C3 (§3.5 re-base, null test 6.6e-13): NEGATIVE as scheme** (best B ~1.14–1.19,
+  18 meV in §3.5's own labeling), but proved the owner's junk-inertness point:
+  κ1e6 truncation on TRUE data = 90% of tile Frobenius, 7.6e-4 of B, 0.01 meV
+  excitons; the full-rank tile is ~100% junk; tile/random-pair metrics void as
+  bars. Its INTERP rows are superseded by the wrap correction (below); its
+  "stored-fit TRS junk" diagnostic is VOID (wrap-trap artifact — wrapped
+  stored-fit TRS = 1e-15).
+- **The decisive cross-check (C2, A/B 155×):** `zeta_q.h5 mf_header/rk` is
+  unwrapped while stored spheres are BGW-wrapped (KNOWN_SANDBOX_ERRORS
+  2026-07-17); the §3.5 harness + C3 re-base inherited it (5/9 training fields
+  seam-scrambled). In production labeling the §3.5 ladder shows a genuine
+  window: **rankcut 1e-4 → B 0.47% med / 3.2% max on-grid LOO** (exciton
+  5.4 meV at 1e-2) while the tile stays 100% destroyed. **§3.5's
+  "no regularisation window" FALLS**; rankcut ingredient interp is the
+  campaign's surviving candidate — ON-GRID ONLY, pending the 3×3-subgrid →
+  6×6-complement off-grid-with-truth test + Si negative control (never ran).
+- **C1 (target-frame V^SR interp): INCOMPLETE** — 17-gate battery passed
+  (production disk-match 1.9e-15, spin-traced pair-row Gram, conjugation
+  flavors, leverage bound 0.189≤1), aborted at the psi_full_y trap
+  (Bloch-phase hypothesis, one-line fix unverified; KNOWN_SANDBOX_ERRORS item
+  2). Headline deprioritized (its bundle is the one C2 killed); harness
+  re-pointed at the off-grid test of the surviving scheme.
+- Production default unchanged: per-Q ζ refit. Production mapping for the
+  surviving scheme (gated on off-grid pass): N_μ² P('x','y') sharding;
+  `src/ffi/cusolvermp/eigh.py::distributed_eigh` (SLATE host twin),
+  `src/ffi/cublasmp/batched.py::batched_distributed_gemm`, Cholesky/potrs rung
+  if needed. No LORRAX source touched (read-only campaign).
+
+
 ## 2026-07-17: Arbitrary-q ingredient-interpolation falloff study — verdict NO [analysis, no source change]
 
 Settled the follow-up the `arbitrary_q_bse.md` design doc reserved (header +
@@ -3921,3 +3968,9 @@ What still looks worth improving:
 - Wall times (≈identical; solver cells are tiny at this scale): 03 intree 273 s, 04 slate 274 s, 05 scalapack 274 s, 06 slate+scalapack 271 s, 07 slate-repeat 272 s (GPU equivalents: 73–80 s). Dominant cost is `zeta_fit.chunk.z_q_build` (~44 s ×4 channels); charge cholesky itself: sharded 0.73 s vs slate host 1.56 s; transverse solve: per-q lu 4.4 s vs scalapack 3.1 s.
 - **Correctness (vs 03 baseline, `shared/diff_sigma.py`)**: 05 scalapack_lu = **0.000e+00** (bit-identical to per-q lu — host ScaLAPACK LU validated); 07 slate-repeat = **0.000e+00**; but **04 = 9.484e-01 and 06 = 6.523e-01 eV (04 vs 06 = 1.598)** — the HOST SLATE cholesky (`Target::HostTask`, `liblorrax_ffi_host.so`) **intermittently corrupts exactly one q tile** (q idx 5: GN invalid-mode count 1372 healthy vs 11554/64486 corrupted; sigX identical, only screened W/sigC affected). GPU slate (variant 02) was bit-identical, and 1 of 3 host-slate runs (07) is clean → host-handler-specific flake (suspect threading/race in the host potrf/trsm batched loop), NOT a systematic layout bug. `distributed_cholesky=slate` on CPU should be considered UNRELIABLE until root-caused; `distributed_lu=scalapack` is good.
 - mpi4py absent from every reachable env → `use_ffi_io=true` on CPU always falls back to `H5PY_ALLGATHER` (uniform across variants, io-only).
+
+## 2026-07-17 — C2 primer-response prototype: global-frame/parallel-transport interpolation KILLED by measurement; physical-metric re-base flips the #3.5 ladder (proto1_*, agent C2)
+- **C2 (response Method B + Strategy A) NEGATIVE with mechanism.** Whitened pair-feature subspaces at adjacent coarse q overlap at the random floor without transport (median cos 0.098@3x3 / 0.054@6x6 = sqrt(640/npair)); proven-covariant transport lifts to only ~0.2-0.3 and does NOT approach 1 as dq halves; plaquette holonomy at the random-unitary ceiling; transported Phi~_R tail ROUGHER than raw zeta_R (1.89/1.60 vs 0.39/0.16 vs C_R 2.3e-2/6.7e-4). Fails the response's own sec-10C criterion with seam sewing exact (1e-16), TRS 1e-15, null test 4.4e-14. LOO confirms: transported-Phi interp B ~ 0.9-1.0 (200x worse than plain rankcut ladder). Report: runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/proto1_C2_mechanism_stringent_variant.md.
+- **Owner pushback vindicated + amplified:** under the PHYSICAL metric (gap-window exchange B-block) AND the corrected wrapped-q lab continuation, the #3.5 ingredient-interp + C^-1 ladder has a REAL regularization window: rankcut 1e-4 = 0.47% med / 3.2% max on-grid LOO (tile relF 1.00 simultaneously — tile-Frobenius is the wrong verdict variable). Whitened rank ladder: 160 of 640 directions give 1% physical accuracy.
+- **Two math corrections to the response/spec:** K-identity is K == S R^T V R^* S in the make_Vq orientation (spec form fails at 0.92); the covariant pair transport uses t UNconjugated, not the response's t^* (x) I (gauge-randomization gate: 35 -> 5.6e-9).
+- **Two fixture traps logged in KNOWN_SANDBOX_ERRORS** (q-wrap rk vs stored spheres, 155x physical-metric impact, contaminates #3.5/C3-proto2 ladder rows; psi_full_y not in stored-WFN band span at k!=0, provenance open).

@@ -817,3 +817,59 @@ form); the SR tile `Σ_G ζ̃* v_SR ζ̃` is the interpolable object (subject to
 to what it actually is: the single-coarse-point Q=0 special case in production
 today. α selection policy remains the open question flagged in
 `coulomb_sr_lr.md` (c·Δk default vs exposed knob).
+
+---
+
+## 10. External-response prototype campaign (2026-07-17) — APPENDED: §3.5 re-based under the physical metric; frame-transport counterproposal killed
+
+Three parallel prototypes tested the ARBITRARY_Q_PRIMER_RESPONSE counterproposal
+(zeta as ill-conditioned dual basis; locality in whitened/half-inverse objects;
+smooth BZ-periodic frame + parallel transport + G-channel sewing) on the MoS2
+3×3 (+6×6) fixtures, adjudicated under the OWNER-GOVERNING metric (2026-07-17
+pushback): physical pair-amplitude contractions — gap-window exchange block
+`B = M^H V_Q M` (81 gap-window rows) and TDA exciton swap shifts — NOT tile
+Frobenius. Full synthesis:
+`runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/CAMPAIGN_REPORT.md`.
+
+| construction | null test | phys on-grid (B relF med) | verdict |
+|---|---|---|---|
+| C1 target-frame transported V^SR interp | gates only (chain aborted at a fixture-trap gate) | not landed | INCOMPLETE — conventions/gates delivered (production disk-match 1.9e-15) |
+| C2 global periodic frame + four-tails + transported-Phi interp | PASS 4.4e-14 | 0.96 (exciton 36 meV) | **NEGATIVE — clean kill** by the response's own sec-10C criterion |
+| C3 rank-r solve on interpolated C/Z (§3.5 re-base) | PASS 6.6e-13 | 1.14–1.19 in §3.5's own q-labeling (exciton 18 meV) | NEGATIVE as scheme; re-based bar delivered; INTERP rows superseded (wrap trap) |
+| derived: same §3.5 ladder, production BGW-wrapped labeling | inherits C2 PASS | **rankcut 1e-4: 4.7e-3 (max 3.2e-2)** | **OPTIMISTIC — surviving candidate, on-grid; off-grid pending** |
+
+**Supersession notice for this document (measured, logs on disk):**
+
+1. **§3.5(3) "no regularisation window" and §3.5(4b) "Z-interp dominates" FALL**
+   under the physical metric in the production q-labeling. Two compounded
+   artifacts produced the old verdict: (i) tile-Frobenius/random-`d` metrics are
+   junk-weighted — truncating TRUE ingredients at κ1e6 destroys 90% of tile
+   Frobenius yet moves B by 7.6e-4 and excitons by 0.01 meV (the tail is
+   physically inert; the full-rank tile is ~100% junk); (ii) the §3.5 harness
+   used the unwrapped `mf_header/rk` while the stored zeta spheres are
+   BGW-wrapped, scrambling 5/9 training fields with a spurious `e^{iG0·r}` —
+   worth **155×** on the physical ladder (A/B same q0/solve/truth: 4.5e-3
+   wrapped vs 0.70 unwrapped; KNOWN_SANDBOX_ERRORS 2026-07-17). Corrected,
+   rankcut ~1e-4 ingredient interpolation delivers **0.47% median / 3.2% max**
+   on-grid LOO (exciton ≤5.4 meV at the 1e-2 rung) while the tile stays "100%
+   wrong" — the owner's few-percent scenario is REAL on-grid. Still standing
+   from §3.5: the conditioning-dominated rows (raw/rankcut ≤1e-6 fail in every
+   convention), the C_R-falloff premise, §3.2's master-zeta kill, and the
+   zeta-direct rejection (7% corrected — better, still 15× off the ladder).
+2. **The counterproposal's mechanism is dead by its own falsification
+   criterion:** transported whitened tails are ROUGHER than raw zeta (Phi~_R
+   1.89/1.60 at 3×3 shells vs raw 0.39/0.16 vs C_R 2.3e-2/6.7e-4; 6×6
+   replicates to 26 Bohr), adjacent-q whitened subspaces sit at the
+   random-subspace floor (0.098/0.054 at 3×3/6×6), holonomy at the random
+   ceiling, exact sewing/gauge/densification change nothing. The smoothness
+   lives in the frame-free quadratic ingredients (C_q, Z_q), not in any frame,
+   section, or half-inverse object; the winning scheme never interpolates a
+   frame (rankcut solve in the target's own frame).
+3. **Ranking update to §3.5's verdict / PRIMER §III.4:** per-Q ζ refit remains
+   the production default, but "never route arbitrary-q exchange through
+   `C⁻¹Z` on interpolated inputs" is RELAXED to: rankcut-regularized ingredient
+   interpolation (wrapped labeling, physical-metric-validated) is a measured
+   few-percent ON-GRID fallback; the decisive 3×3-subgrid → 6×6-complement
+   off-grid-with-truth test is pending, plus a Si 4×4×4 negative control
+   (never ran). §3.5's off-grid factor (~30× for C_q) may make off-grid
+   marginal — measure, don't assume.

@@ -760,7 +760,7 @@ A candidate scheme is judged on:
 7. (end-to-end) BGW absorption `ε₂(ω)` on a Si coarse-4³ → fine-8³ via the
    Haydock compare harness, once the interpolation design lands.
 
-## III.4 The falloff study — RESOLVED (2026-07-17): ingredient interpolation NOT viable; refit or SR/LR-potential only
+## III.4 The falloff study (2026-07-17) — SUPERSEDED IN PART by §III.5: the no-window verdict below is overturned on-grid under the physical metric; the frame-death mechanism stands
 
 The study ran (full section: `arbitrary_q_bse.md` §3.5; scripts+logs
 `runs/MoS2/A_bse_w0_resolvent_2026-07-16/interp_study/`). Outcome, in the order
@@ -806,6 +806,45 @@ canonical ranking:
 For the first-principles agents this file briefs: any scheme you propose must
 either avoid the `C⁻¹Z` solve on interpolated inputs entirely, or explain
 precisely why its conditioning analysis escapes the measured no-window result.
+
+---
+
+## III.5 Prototype campaign supersession (2026-07-17) — frames are dead; §III.4's no-window is OVERTURNED on-grid under the physical metric
+
+An external counterproposal (ARBITRARY_Q_PRIMER_RESPONSE.md: half-inverse /
+parallel-transport / BZ-periodic-frame constructions) and the owner's
+physical-metric pushback were both prototyped against fixture data
+(`runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/CAMPAIGN_REPORT.md`
+— authoritative; verdict also appended as `arbitrary_q_bse.md` §10). Outcome:
+
+1. **Frame/section-transport schemes are measured DEAD** — by the response's own
+   criterion. The C_q eigenframe is chaotic: adjacent-q whitened-subspace
+   overlaps sit at the random floor (0.098 / 0.054 at 3×3 / 6×6), holonomy at
+   the random ceiling, and transported whitened R-tails come out ROUGHER than
+   raw ζ (1.89/1.60 vs C_R's 2.3e-2/6.7e-4). Invariant to exact sewing,
+   covariant transport, gauge protocol, and densification. The failure is the
+   frame CONCEPT — do not re-attempt with a new frame convention. Smoothness
+   lives only in the frame-free quadratic ingredients C_q, Z_q.
+2. **The verdict variable is the physical pair-amplitude contraction** (owner
+   ruling): gap-window B = M†V_Q M + exciton-swap shift. The tile is ~100%
+   physically inert junk by Frobenius (κ1e6 truncation removes 90% of tile
+   norm yet moves B by 7.6e-4 and excitons by 0.01 meV). Tile-Frobenius and
+   random-d contractions are VOID as bars.
+3. **§III.4's no-regularization-window conclusion FALLS on-grid**: it was a
+   compound artifact of (i) junk-weighted metrics and (ii) an unwrapped-vs-
+   BGW-wrapped q-labeling seam in the study harness (`mf_header/rk` unwrap
+   trap — worth a measured 155× on the physical ladder; KNOWN_SANDBOX_ERRORS
+   2026-07-17). In production labeling, plain rank-cut (~1e-4) ingredient
+   interpolation + solve-in-the-target's-own-frame achieves **0.47% median /
+   3.2% max** gap-window B error on-grid LOO (exciton ≤5.4 meV at the 1e-2
+   rung). Ingredient-side interpolation is RE-LICENSED on-grid.
+4. **Still pending before any production adoption** (per-Q ζ refit remains the
+   default): the off-grid-with-truth decisive test (3×3-subgrid → 6×6
+   complement) and the Si 4×4×4 negative control. The 0.5% headline is
+   on-grid-only — do not quote it as off-grid capability.
+5. Fixture traps any future study must respect: the rk unwrap trap and the
+   psi_full_y band-span trap (KNOWN_SANDBOX_ERRORS 2026-07-17). Constraints
+   (a)–(d) unchanged; the LR channel stays analytic in closed form.
 
 ---
 

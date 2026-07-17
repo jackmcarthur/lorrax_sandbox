@@ -479,3 +479,46 @@ found" — identically at origin/main and on feature branches (verified both,
 reports/bse_refactor_map_2026-07-15/cleanup_verify/). NOT a code regression.
 Fix: copy the .so from the main checkout into the same relative path in the
 worktree (or rebuild) before running the full suite.
+
+## 2026-07-17: background-task notification displayed phantom results table (agent-harness rendering, not on disk)
+
+During the primer_response_study C3 prototype (this session, JID 56052603), a
+run_in_background watcher's completion notification rendered a full 16-row
+results table with numbers ("CLEAN-INTERP ... 4.061e-02", "(194s)" timings)
+that exist in NO file: the watcher's own output file on disk, the run log, the
+npz, and `sacct` step history (no step of that duration) all disagree with the
+notification text and agree with each other. Treat background-task notification
+BODIES as untrusted rendering; before quoting any number, grep it from the
+on-disk log (`trust production log over mock` applies to notifications too).
+The authoritative C3 outputs are
+runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/proto2_out_c3_3x3.log
+(SLURM step 56052603.11) + proto2_c3_3x3.npz; all reported numbers were
+re-verified from disk.
+
+## 2026-07-17: two MoS2 fixture traps found by the C2 primer-response prototype (proto1_*)
+
+1. **`zeta_q.h5` `mf_header/kpoints/rk` is UNWRAPPED (0, 1/3, 2/3) but the
+   stored zeta spheres/coefficients follow the BGW wrap (2/3 == -1/3).**
+   Using rk as-is for |q+G| Coulomb weights or for the e^{iq.r} lab
+   reconstruction is wrong at every wrap-affected q (5 of 9 on 3x3):
+   |q+G|^2 runs to 53 Ry on a 30 Ry sphere, make_Vq-vs-disk fails at
+   0.6-0.8, TRS appears broken at 0.6, and — the big one — interpolation
+   studies built on the unwrapped lab continuation scramble 5 of 9 fields:
+   measured 155x on the physical exchange-block LOO metric (rankcut-1e-4
+   ladder: 4.5e-3 wrapped vs 0.70 unwrapped, same q0/solve/truth).
+   `interp_study/*.py` (vq_loo, physical_contract, zeta-direct — the #3.5
+   ladder) and the C3 proto2 re-base all use the unwrapped rk; their
+   RELATIVE tile conclusions survive but the physical-metric ladder rows
+   and the "zeta_R flat" table (1.00/0.82/0.65; wrapped: 1.00/0.39/0.16)
+   need re-reading. Fix: q_wrap = rk - round(rk) everywhere the sphere/
+   lab phase/Coulomb is touched (proto1_prep.py does this + self-check
+   `sphere_max|q+G|^2-cutoff == 0`).
+2. **`tmp/isdf_tensors_640.h5:psi_full_y` is NOT in the band span of any
+   WFN.h5 on disk at k != 0** (span-projection residual 29-40% vs
+   05_lorrax_cohsex_native/WFN.h5 == qe/nscf/WFN.h5 == WFN_qp.h5; k=0
+   matches to 2.7e-16; enk_full == WFN el to 7e-14 at ALL k). psi_full_y
+   is a processed set, not raw eigenvectors of the stored WFN. Any
+   cross-validation of restart-vs-WFN wavefunction CONTENT (band
+   transports, non-circular fit-RHS rebuilds, "exact" pair-row
+   references) silently fails at k != 0. Provenance unresolved —
+   restart-writer investigation needed (out of scope read-only session).
