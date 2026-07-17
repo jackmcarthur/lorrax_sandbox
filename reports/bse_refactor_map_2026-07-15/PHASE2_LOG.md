@@ -909,3 +909,119 @@ value is architectural (scale-out) + code (single source of truth, −62 net lin
 
 Artifacts: `tmp_comms_opt/` (probe_collectives.py, timing_matvec.py,
 compare_wq_2x2_{before,after}.log, val_{1x1,2x2}_after.log, full_suite_after.log).
+
+## Screening-window degeneracy fix + gate (2026-07-16, agent/screening-degeneracy-fix, lorrax_A)
+
+Owner-approved Round-2 fix + gate (FINDINGS2 Task 3/4). Root-cause recap:
+splitting a degenerate multiplet at the screening ISDF fit window top makes the
+fitted ζ̃ — and every V_q/W_q tile — non-covariant under the crystal symmetry at
+the high-symmetry k where the multiplet lives, amplified ~20× by cond(CCT)~1e10.
+
+### The fix (commit b13bd4d)
+
+`round_band_window_to_closed_shell(energies_kn_ry, b_hi, tol_ry, direction)` in
+`gw/degen_average.py` — a boundary is degeneracy-closed when
+`min_k(e[k,b]−e[k,b−1]) > tol` (BGW TOL_Degeneracy 1e-6 Ry); reuses the module's
+existing contiguous-group logic, no parallel detector. `Meta.from_system` routes
+`b_id_4_user` (→ `gw_init.fit_zeta band_range_right = (b1, b4)`) through it.
+
+**Composition rule (documented in-code).** The physical top is rounded DOWN to
+the closed shell FIRST; the world_size divisibility round-UP then pads with ZERO
+bands (ψ=0, sentinel energies), NEVER real bands — so the padded window can never
+re-cross a multiplet. `b_id_3 ≤ b_id_4` is a hard BandSlices invariant (a
+reported QP band must sit inside the GF/screening band sum), so when the closed
+shell falls below `b_id_3` the fix clamps at `b_id_3` and warns loudly rather
+than reduce the σ OUTPUT set (whose identical exposure is flagged, not fixed).
+
+Fix behaviour, `Meta.from_system` on the real Si WFN (nelec=8, nbands_file=62,
+1 GPU):
+
+| config | b_id_3 (σ top) | b_id_4 out | result |
+|---|---:|---:|---|
+| work_sym ncond=52 | 60 | 60 | CLAMP at 60 (closed shell 40 < b3); warn b3 exposure; 0 dropped |
+| ncond=32 | 40 | 40 | round 60→40, **drop 20** |
+| ncond=8 | 16 | 40 | round 60→40, **drop 20** |
+| nband=40 (already closed) | 40 | 40 | no change, no warning |
+
+### Golden-gate impact (Item B.2): NONE — no re-freeze
+
+All four committed golden-gate fixtures leave the fix a no-op (their own WFN
+energies, tol 1e-6 Ry):
+
+| fixture | nband(b4) | b3 | gap at boundary b4 | closed_down(b4) | verdict |
+|---|---:|---:|---:|---:|---|
+| cohsex_debug | 40 | 30 | 870 meV | 40 | already closed → no change |
+| gnppm_debug | 46 | 46 | 107 meV | 46 | already closed → no change |
+| bispinor_debug | 32 | 30 | 1.035 meV | 32 | already closed → no change |
+| si_cohsex_debug | 60 | 60 | 0 (cut) | 40 | closed shell < b3 → **clamp**, no change |
+
+Full plain 1-GPU suite on `agent/screening-degeneracy-fix`: **224 passed / 12
+skipped / 0 failed (4:52)** — all four golden gates + the new gate. No golden eqp
+value shifts; no reference re-freeze needed.
+
+### Si covariance validation (Item B.1)
+
+before = `work_sym` (genuinely fix-OFF: restart built 2026-07-16 pre-fix,
+ncond=52, screening `[8,60)` cut); after = `work_demo` (fix ON, ncond=32 → b4
+60→40, screening `[8,40)` closed). Same 792 orbit-closed centroids/seed. q=0
+covariance viol = `max_op ||T[α,α]−T|| / ||T||` under the 48-op centroid perm:
+
+| quantity | before `[8,60)` | after `[8,40)` | ratio |
+|---|---:|---:|---:|
+| CCT C0 cov viol | 4.26e-3 | **7.04e-10** | ~6e6× |
+| ζ-head G0 = ζ̃(G=0) | 8.64e-2 | **2.88e-7** | ~3e5× |
+| V0 q=0 tile | 3.16e-2 | **7.49e-8** | ~4e5× |
+| W0 q=0 tile | 3.01e-2 | **7.15e-8** | ~4e5× |
+| cond(C0) | 3.59e9 | 2.01e10 | — |
+
+The fix FULLY closes the q=0/ζ-fit covariance defect it targets — CCT to the
+machine seed (7e-10), the q=0 tiles to ~1e-7 (the residual is the ~400×
+CCT-conditioning amplification of the 7e-10 seed, still 5–6 orders below the 3%
+cut-window level). (ncond differs 52→32 only to give the fix headroom below the
+σ set; both work_sym legs are cut at 60 and both work_demo legs closed at 40, so
+the comparison isolates window closure.) zeta_probe seed scan independently: the
+same restart's every degeneracy-closed conduction top gives ~6–7e-10, only the
+cut top breaks — the fix simply selects a closed top.
+
+### Scope boundary — the full-BZ ALL-q BSE is a SEPARATE issue
+
+`full_multiplet.py` (all 64 k, window `[0,8)×[8,16)`) is UNCHANGED by the fix:
+
+| arm | max\|λraw−λcov\| | worst genuine-multiplet raw split |
+|---|---:|---:|
+| sym (fix OFF, 60-band) | 8.78 μeV | 15.41 μeV |
+| demo (fix ON, 40-band) | 8.94 μeV | 15.77 μeV |
+
+The screening-window fix closes the q=0 covariance (the exchange tile + the
+ζ-fit), but the all-q BSE multiplet splitting is dominated by the finite-q
+IBZ→BZ UNFOLD of the direct W_q tiles — the deferred TRS / unified-sym-action
+Phase-2 work — which this fix does not touch. This REFINES FINDINGS2 Task 1(B)'s
+hypothesis that "a fully covariant [q=0] set from the fix would close" the
+full-BSE residual: the q=0 set IS now fully covariant (table above), yet the
+finite-q residual persists at ~15 μeV, so it is a distinct defect. The gate is
+correspondingly scoped to the q=0 Γ-on-site block.
+
+### The gate (commit b3d1b01) + calibration (Item C)
+
+`tests/test_bse_degeneracy.py`: over an auto-detected degeneracy-closed (nv,nc)
+window at Γ, build `H_Γ = D+Kx−Kd` (numpy eigvalsh, (nc·nv)²) from the production
+q=0 tiles and their little-group-symmetrized (exactly covariant) counterparts;
+assert (1) `max|λraw−λcov| < TIGHT` (covariant tiles reproduce the production
+spectrum) and (2) any covariant-spectrum multiplet has `cov_split < 1 μeV` and
+`raw_split < TIGHT`. Piggybacks `gnppm_session` — no second GW run.
+
+Calibration against the committed gnppm MoS2 fixture (ntran=2, auto window
+nv=nc=4): little-group symmetrization moves V0/W0 by 2.80e-9 / 2.82e-9 and the
+Γ-on-site spectrum by **4e-4 μeV** (tiles already covariant), and the
+low-symmetry fixture has NO Γ exciton multiplets (invariant 2 vacuous there,
+invariant 1 carries the gate — the design's "calibrate on what it has"). Two-tier
+thresholds tied to the fix: TIGHT 5 μeV (active now that the fix lands with the
+gate — 4 orders of margin) / LOOSE 50 μeV (the Si Γ-block raw floor from FINDINGS2
+Task 1 a gross regression would cross). Gate passes standalone (24 s) and in the
+full suite.
+
+### Artifacts
+`runs/Si/A_bse_sym_centroid_degeneracy_2026-07-16/`: `work_demo/` (fix-ON
+ncond=32 restart), `fix_validate/` (`analyze_fixtures.py` golden-gate scan,
+`meta_check.py`, `tile_cov.py`+`tile_cov.json`, `calibrate_gate2.py`+`calib.json`,
+`full_suite.log`, `demo_gw.log`), `diag2/{zeta_probe,full_multiplet}_demo.json`.

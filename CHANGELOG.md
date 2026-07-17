@@ -1,6 +1,37 @@
 # Changelog
 
 
+## 2026-07-16: Screening-window degeneracy fix + BSE degeneracy gate [agent/screening-degeneracy-fix, lorrax_A, source, NOT pushed]
+
+Owner-approved Round-2 fix (FINDINGS2 Task 3/4). Splitting a degenerate
+multiplet at the screening ISDF fit window top (`b_id_4 = nband`) makes the
+fitted ζ̃ — and every V_q/W_q tile — non-covariant under the crystal symmetry
+at the high-symmetry k where the multiplet lives.
+
+- **Fix** (commit b13bd4d): new `round_band_window_to_closed_shell` in
+  `gw/degen_average.py` (reuses the BGW-TOL_Degeneracy contiguous-group logic,
+  no parallel detector); `Meta.from_system` rounds `b_id_4_user` DOWN to the
+  largest degeneracy-closed shell, then composes with the world_size round-UP
+  via ZERO pad bands (close first, pad second — never re-crosses a multiplet).
+  Scope = the ζ/χ0 fit window only; `b_id_3` (σ OUTPUT set) is left untouched
+  (identical exposure flagged), and since `b_id_3 ≤ b_id_4` is a hard invariant
+  the fix clamps at `b_id_3` + warns loudly when the closed shell is lower.
+- **Gate** (commit b3d1b01): `tests/test_bse_degeneracy.py` — Γ-on-site
+  `H = D+Kx−Kd` over an auto-detected closed (nv,nc) window, numpy eigvalsh,
+  raw vs little-group-symmetrized q=0 tiles; two-tier (TIGHT 5 μeV active with
+  the fix / LOOSE 50 μeV), piggybacks `gnppm_session`.
+- **Golden gates UNAFFECTED**: cohsex/gnppm/bispinor boundaries already closed;
+  si_cohsex cut at 60 but b3=b4=60 clamps. Full 1-GPU suite **224 passed / 12
+  skipped / 0 failed**; no reference re-freeze.
+- **Si validation** (work_demo ncond=32, fix ON → b4 60→40): CCT covariance
+  4.3e-3 → **7.0e-10**, ζ-head G0 8.6e-2 → **2.9e-7**, q=0 V0/W0 tiles 3.2e-2/
+  3.0e-2 → **7.5e-8/7.1e-8**. The fix fully closes the q=0/ζ-fit covariance
+  defect it targets. Scope boundary: the full-BZ ALL-q BSE multiplet split is
+  UNCHANGED (demo 15.8 vs sym 15.4 μeV) — dominated by the finite-q IBZ→BZ
+  unfold (deferred TRS/unified-sym-action Phase-2), NOT the screening cut.
+- Report: `reports/bse_refactor_map_2026-07-15/PHASE2_LOG.md`
+  §"Screening-window degeneracy fix + gate".
+
 ## 2026-07-16: BSE exchange comms-reduction (P2/C1) + nt-aware dispatch (P-NT) [agent/bse-comms-opt, lorrax_A worktree, source, NOT merged]
 
 Two approved matvec-audit items (JOINT_FINDINGS §5-6). P2: `apply_V_ring`'s

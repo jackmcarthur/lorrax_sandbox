@@ -1,0 +1,21 @@
+run_id: si_screening_degeneracy_demo_2026-07-16
+system: Si
+pipeline: lorrax_only        # COHSEX restart-tensor generation only
+platform: perlmutter
+
+variant_of: si_sym_centroid_degeneracy_2026-07-16   # work_sym arm
+reuse_from_parent: [centroids_frac_792.txt]         # same 792 orbit-closed centroids
+overrides:
+  ncond: 32                  # b3 = nelec+ncond = 40 (was 52 → 60)
+  purpose: >
+    Give the screening-window degeneracy fix headroom below the sigma set so it
+    activates: nband=60 rounds DOWN to the closed shell 40 (drops 20 bands),
+    closing the screening window [8,40). work_sym (ncond=52, b3=b4=60) clamps.
+
+# Fix-ON demonstration for the screening-window degeneracy fix (agent/
+# screening-degeneracy-fix, lorrax_A). The GW run emits the closed-window
+# restart tmp/isdf_tensors_792.h5 (40-band psi); the diag2 probes + fix_validate/
+# tile_cov.py read it as arm=demo. See reports/bse_refactor_map_2026-07-15/
+# PHASE2_LOG.md §"Screening-window degeneracy fix + gate".
+steps:
+  00_lorrax: { state: complete, note: "fix ON, b4 60->40; CCT viol 4.3e-3 -> 7e-10, q=0 tiles 3% -> 7e-8" }
