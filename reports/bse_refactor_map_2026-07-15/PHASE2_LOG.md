@@ -1125,3 +1125,117 @@ max per-q 7.895e-8, median 2.854e-8 (identical in both logs).  Gates on 1 GPU:
 `test_bse_dense_reference` = **18 passed / 1 deselected** (`gates_targeted.log`);
 full plain 1-GPU suite green (`full_suite_1gpu.log`).  FEAST call site updated to
 the operands signature (shared GMRES change is FEAST-safe).
+
+## Non-TDA eigensolvers + solver P1 (2026-07-17, agent/bse-phase2, lorrax_A)
+
+Full (non-TDA) optical BSE brought to the general lowest-eigenvalue solver
+alongside TDA through the ONE `solve_bse_sharded` dispatch (`tda` toggle), with
+the FIRST value validation of the coupling B-block WITH screened W — which
+exposed and fixed a real operator bug.  Fixture: gnppm gate restart (MoS2 3x3,
+nspinor=2, 2v2c => N=36), 1 GPU.  All numbers machine-exact vs dense.
+
+### The bug: the non-TDA matvec computed the wrong (complex-spectrum) operator
+
+`build_bse_ring_matvec_full(screening=False)` computed `H = [[A,B],[-B,-A]]`.
+Materialising A, B from the matvec and comparing to the analytic dense build:
+
+- **A is Hermitian** (||A-A^H||/||A|| = 3e-13); **B is complex-SYMMETRIC**
+  (||B-B^T||/||B|| = 2e-13) and **NOT Hermitian** (||B-B^H||/||B|| = 1.55).
+- The old `[[A,B],[-B,-A]]` has a **COMPLEX** spectrum (max|Im| = 1.4e-4 Ry) —
+  not a physical BSE.  It survived because full-BSE-with-W was never
+  value-validated.
+
+The physical operator is the para-Hermitian **SHAO** form
+`H = [[A, B], [-B*, -A*]]` (Onida-Reining-Rubio; Rohlfing-Louie) — REAL spectrum,
++-omega pairs (verified: `Sigma_x H* Sigma_x = -H` holds for SHAO, not for the
+loose `[[A,B],[-B^H,-A^H]]` when A is complex-Hermitian).
+
+**Fix** (`bse_ring_comm._antiresonant_row`, `screening=False`): the anti-resonant
+row is `Y_out = -B* X - A* Y`, computed by reusing the SAME appliers on
+conjugated inputs — `B* X = conj(_apply_B(conj X))`, `A* Y = conj(_apply_A(conj
+Y))` (operator ingredients unchanged; D real) — no new kernel.  `screening=True`
+(the RPA W(0)/W(omega) resolvent path) is byte-UNCHANGED (`[[A,B],[-B,-A]]`, B
+Hermitian there; validated by the W(0) closure) — the branch is build-time on
+`screening`.
+
+**First validated non-TDA-with-W eigenvalues (Ry):**
+`0.007534 0.007623 0.009319 0.009487 0.017128 0.017128`.
+
+### Structure-preserving solver — `bse_nontda.py` (new; procedural, no class)
+
+The design's clean `Omega^2 = eig((A-B)(A+B))` product form (Shao LAA 488;
+(A+B)-metric Lanczos) requires (A+-B) Hermitian, i.e. real / Hermitian-B BSE.
+The spinor B is complex-symmetric, so `(A-B)(A+B)` reduces the WRONG (code)
+operator and is not (A+B)-self-adjoint (1.6e-2).  The correct structure-preserving
+object for complex B is the **Hermitian-definite pencil**
+
+    K z = omega Sigma z,  K = [[A,B],[B*,A*]] (Hermitian, PD: min eig 5e-3),
+    Sigma = diag(I,-I);  lowest omega = extreme eig of Hermitian K^{-1/2} Sigma K^{-1/2}.
+
+This is BGW's own regime (dense ScaLAPACK `BSE_NTDA_SOLVER_SSEIG`).
+`solve_bse_nontda_sharded` dispatches on B: complex-symmetric -> definite pencil;
+Hermitian -> product form.  Both solved densely for small windows (BGW-parity);
+(A+-B) actions reuse the full matvec verbatim (`make_ab_appliers`:
+`matvec([U;+-U])[X-block] = (A+-B)U`); the matrix-free FEAST-on-K / BSEPACK-real-
+transform is the fine-grid follow-on (prototype validated).  Eigenvectors:
+normalised (X, Y) pairs with **X^H X - Y^H Y = +1**, stacked `(n_eig, 2, nc, nv, nk)`.
+
+- **Positive-definiteness of (A-B)/K checked/asserted** — an indefinite K (triplet/
+  charge instability => imaginary excitations) raises a clear message, not hidden.
+- **Dispatch**: `solve_bse_sharded(..., tda=False)` -> `bse_nontda`; `bse_jax`
+  `_preview_lanczos(tda=...)` (drops the old "TDA only" SystemExit); non-TDA routes
+  through the sharded loader even on 1 device.  No parallel solver stack.
+- **Writer**: `write_eigenvectors_stream(use_tda=...)` now HONEST (was hardcoded 1);
+  non-TDA writes X to `eigenvectors` + Y to `eigenvectors_coupling`.
+
+### Solver P1 — block-Lanczos final-slot overwrite + beta-transpose
+
+The recorded bs=4 "ghosts" are **Krylov-truncation variational bias** (Krylov < N),
+NOT spurious duplicates: with full reorth and Krylov >= N, bs=4 recovers the exact
+lowest-4 == dense (measured: bs=1 AND bs=4 both `0.00818851 0.00831683 0.01068212
+0.0107629`; undersampled Krylov=20 gives the biased `0.00827/0.00838`).  The
+**final-slot overwrite** (`Q_all.at[min(j+1, M-1)]` clobbers Q_{M-1} on the last
+iter) corrupts eigenVECTORS (the last Krylov block), not eigenvalues.
+
+Fixed in `solvers/lanczos.py`: (1) allocate **M+1 Krylov slots** and write Q_next
+to slot j+1 (all 3 jit sites: `lanczos_eig_jit`, `block_lanczos_eig_jit`,
+`block_lanczos_eig_jit_converged`), so the final block is retained for the
+eigenvector reconstruction; (2) `beta_j = R` (not `R.T`) in the dead
+`block_lanczos_eig` (the transpose came out conj(R)/R.T instead of R/R^H, masked
+for eigenvalues by (T+T^H)/2 but wrong for the T->Q mapping).  Regression:
+`test_block_lanczos_eigenvector_residual_p1` — at Krylov=N the block-Lanczos
+eigenvector residual `||Hv-λv||/||v|| < 1e-6`.
+
+### Gates (1 GPU)
+
+- `tests/test_bse_nontda.py` (synthetic, CPU-runnable): product form (real BSE),
+  definite pencil (complex A-Herm/B-sym), PD-check raises, P1 eigenvector residual,
+  jit-variant shapes — **5 passed**.
+- BSE gate set (`test_bse_dense_reference` incl. the 2 new `test_nontda_*` +
+  `test_bse_stack_matvec` + `test_bse_w0_resolvent` + `test_bse_w_omega_chain`) =
+  **20 passed / 1 deselected** (18 -> 20 = +2 non-TDA gates; TDA dense/stack
+  bit-unchanged).  `runs/MoS2/A_bse_nontda_2026-07-17/bse_gates.log`.
+- Full plain 1-GPU suite: **<FILL-FULL-SUITE>** (`full_suite.log`).
+
+Artifacts: `runs/MoS2/A_bse_nontda_2026-07-17/` (explore1-4, prototype_solver,
+bse_nontda_draft, test_dense_nontda_standalone, repro_ghost*; module-free runner
+reused from `../A_bse_w0_resolvent_2026-07-16/lxrun_free.sh`).
+
+## Full-basis W_q resolvent run (owner-requested, 2026-07-17)
+
+All 399 columns (identity probe block) × all 5 symmetry-reduced q, MoS2 gnppm
+fixture, 1 GPU, post-recompile-fix engine. EVERY column of every tile validated
+against the restart's (W0−V)[q_flat]:
+
+| iq | q | n_cols | build[s] | solve[s] | max_rel | med_rel | max_resid | n_bad |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 0 | (0,0,0) | 399 | 0.32 | 23.5 | 1.90e-7 | 2.33e-9 | 8.7e-10 | 0 |
+| 1 | (0,1,0) | 399 | 0.08 | 26.3 | 4.95e-8 | 2.58e-8 | 6.0e-10 | 0 |
+| 2 | (1,0,0) | 399 | 0.02 | 26.4 | 6.23e-8 | 2.78e-8 | 6.6e-10 | 0 |
+| 3 | (1,1,0) | 399 | 0.07 | 28.9 | 1.07e-7 | 4.89e-8 | 4.4e-10 | 0 |
+| 4 | (1,2,0) | 399 | 0.16 | 26.1 | 4.29e-8 | 2.62e-8 | 6.0e-10 | 0 |
+
+**Grand total 135.7 s** (~26 s/q ≈ 65 ms/column; iq=0 carries the one-time
+engine compile). Zero non-converged columns. This is the strongest W validation
+to date: the full W_q tiles, every column, at the GW quadrature floor.
+Artifacts: runs/MoS2/A_bse_w0_resolvent_2026-07-16/full_basis/ (committed 8ed3cdc0).
