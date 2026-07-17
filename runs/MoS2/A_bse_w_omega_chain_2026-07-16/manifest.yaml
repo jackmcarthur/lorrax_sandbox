@@ -1,0 +1,27 @@
+run_id: mos2_bse_w_omega_chain_2026-07-16
+system: MoS2
+pipeline: lorrax_only        # BSE/W(omega) post-processing of a gnppm restart
+platform: perlmutter
+
+variant_of: mos2_bse_w0_resolvent_2026-07-16
+reuse_from_parent: [fixture_run/tmp/isdf_tensors_399.h5, fixture_run/WFN.h5]
+overrides:
+  feature: block-Lanczos full-frequency W(omega) model (--w-omega-chain)
+
+# The gnppm MoS2 3x3x1 fixture restart (nspinor=2, nval=26/ncond=20, 399->400
+# centroids, W0_ready) copied from the W(0)-resolvent run so the fixture dir is
+# not shared with the concurrent agent. Head-less bodies (inject_head=False).
+steps:
+  fixture_run: { state: reused, note: "gnppm restart with W0_qmunu written back" }
+  chain_q0:    { state: complete, note: "--w-omega-chain q=0, chain-vs-oracle sweep" }
+  chain_qfin:  { state: complete, note: "smallest nonzero IBZ q=(0,1,0)" }
+
+# Artifacts:
+#   proto_chain.py            numpy math prototype (symplectic->symmetric + chain identity)
+#   lxrun_free.sh             module-free srun+shifter 1-GPU runner
+#   report.md                 convergence + timing tables
+# Reproduce (JID=<salloc jobid>):
+#   env JID=$JID ./lxrun_free.sh "$(pwd)/fixture_run" \
+#     python3 -u -m bse.bse_w_exact -i gnppm_test.in --w-omega-chain \
+#     --n-cols 4 --chain-len 48 --chain-sweep 8,16,32,48 \
+#     --chain-freqs-ev "0,2j,10j,1.5+0.1j"

@@ -1,6 +1,44 @@
 # Changelog
 
 
+## 2026-07-16: W(omega) block-Lanczos-chain model — full-frequency screened Coulomb [agent/bse-phase2, lorrax_A, source, NOT pushed]
+
+The feature the W-resolvent arc was building toward: full-frequency `W_q(omega)`
+from ONE structure-preserving block-Lanczos chain per q, replacing the per-omega
+shifted-GMRES solves. New module `src/bse/w_omega_chain.py` (builder + evaluator,
+plain arrays/functions, no new class), CLI `bse_w_exact --w-omega-chain`, gate
+`tests/test_bse_w_omega_chain.py`. The shifted-solve path (`--compare-w0/-wq`) is
+KEPT as the validation ORACLE (gate reference), not a parallel production path.
+
+- **Structure-preservation:** the para-Hermitian screening operator
+  `H_RPA=[[A,B],[-B,-A]]` (A=D+V, B=V) collapses to an N-dim SYMMETRIC resolvent
+  (Casida Omega^2 / Shao et al.): `W(z)-v = 2 Phi (z^2 I - S)^{-1} Phi^dag`,
+  `S=D^{1/2}(D+2V)D^{1/2}` Hermitian, `Phi^dag e_nu = D^{1/2} f_nu` (the SEED
+  scaled). `A-B=D` exact for screening => reduction is EXACT (proto rel 5e-16).
+  Only `z^2` enters, so ONE chain serves every omega. `S` is applied through the
+  production matvec VERBATIM (`(A+B)U = matvec([U;U])[X]`) + a `D^{1/2}` diag —
+  no new kernel, no duplicated encode/decode, matvec signature unchanged.
+- **Chain:** symmetric block Lanczos (block width = probe width, small), FULL
+  (DGKS) reorthogonalization, robust Gram/eigen block-QR (deflates degenerate/
+  pad columns). Chain object = host alpha/beta/R0 (block-tridiagonal T + seed
+  norms) + device chain blocks (pair basis, `sh.X_full` spec). Evaluator per
+  omega: tiny `(z^2 I - T)^{-1}` host solve + device combine + existing PROJECT
+  (`snapshot`) reduce-scatter to the `(mu_X,nu_Y)` tile. No matvec/GMRES per omega.
+- **Convergence (MoS2 gnppm, 1 GPU):** monotone; omega=0 reproduces the disk
+  `(W0-V)` closure through the evaluator (m=64 -> 6.5e-6, m=120 -> 2e-7 toward the
+  ~2.4e-9 GW floor); imaginary axis (the GW-relevant axis) saturates the oracle's
+  GMRES residual (10i -> 1e-11 by m=64); finite q=(0,1,0) ~10x higher floor,
+  cleanly convergent. `--chain-len` is the accuracy knob (default 32).
+- **Amortization:** chain built ONCE (m matvecs); per-omega eval 40-100x cheaper
+  than a fresh oracle solve (q=0 m=48: build 2.2s, oracle 961 ms/omega, chain
+  9.3 ms/omega). **omega-count break-even ~2-12** — far below any GW/BSE frequency
+  grid.
+
+Validation: gate 2 passed (46.8 s); full plain 1-GPU suite re-run (see PHASE2_LOG
+"W(omega) Lanczos-chain model"). Only-owned edits (`bse_w_exact.py`,
+`w_omega_chain.py`); `apply_V_ring` internals untouched.
+
+
 ## 2026-07-16: BSE matvec efficiency follow-up — P3 pair-amp hoist + P5 donation drop + c64 flag [agent/bse-phase2, lorrax_A, source, NOT pushed]
 
 Three approved items from the matvec efficiency audit (`reports/bse_refactor_map_2026-07-15/archive/matvec_efficiency_audit`).

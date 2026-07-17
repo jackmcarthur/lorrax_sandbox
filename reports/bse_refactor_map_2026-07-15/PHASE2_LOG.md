@@ -683,3 +683,125 @@ fold artifact from closing ψ over the jit — absent when ψ are real jit args.
   W(0) closure 2.467e-9 unchanged).
 - **Full plain 1-GPU suite: 221 passed / 12 skipped / 0 failed (5:22)** — identical
   pass count to the pre-change baseline; all four golden GW gates + the BSE gates.
+
+## W(omega) Lanczos-chain model (2026-07-16, agent/bse-phase2, lorrax_A)
+
+The feature the whole W-resolvent arc was preparing: full-frequency screened
+Coulomb ``W_q(omega)`` from ONE structure-preserving block-Lanczos chain per q,
+replacing the per-omega shifted-GMRES solves.  New module
+``src/bse/w_omega_chain.py`` (builder + evaluator, plain arrays/functions, no new
+class); CLI mode ``bse_w_exact --w-omega-chain``; gate
+``tests/test_bse_w_omega_chain.py``.  The shifted-solve path (``--compare-w0`` /
+``--compare-wq``) is KEPT as the validation ORACLE (gate reference / ground
+truth), NOT a parallel production path.
+
+### Structure-preserving reduction (the recurrence, per-element)
+
+The RPA screening operator is the para-Hermitian ``H_RPA=[[A,B],[-B,-A]]`` with
+``A=D+V``, ``B=V`` (ring kernel ``K^A``), ``D`` = diagonal transition energies
+``eps_c-eps_v > 0``.  The screened column is
+``W(z)-v = L (zI-H)^{-1} B_seed`` with ``B_seed_nu=[f_nu;-f_nu]``,
+``f_nu=M^dag v e_nu`` (= SEED/``gen``) and ``L(x)=v M (x_X+x_Y)`` (= PROJECT/
+``snapshot``).  In the (q=X+Y, p=X-Y) basis H acts as ``q'=(A-B)p``,
+``p'=(A+B)q``; the seed is pure-p (q=0) and the readout reads q, so the 2N
+symplectic resolvent collapses to an N-dim SYMMETRIC one (Casida ``Omega^2`` /
+Shao et al. product structure):
+
+    W(z) - v = 2 * Phi [ z^2 I - S ]^{-1} Phi^dag,
+      S      = D^{1/2}(A+B)D^{1/2} = D^{1/2}(D+2V)D^{1/2}   (Hermitian, Euclidean),
+      Phi    = v M D^{1/2},   Phi^dag e_nu = D^{1/2} f_nu   (the SEED, D^{1/2}-scaled).
+
+``A-B=D`` is EXACT for screening, so this is exact, not an approximation
+(numpy prototype ``proto_chain.py``: full-symplectic vs symmetric-reduced rel
+5e-16; block-chain vs oracle machine-exact at full length).  Only ``z^2`` enters
+=> ONE chain serves the whole complex plane.  ``S`` is applied through the
+production matvec VERBATIM: ``(A+B)U = matvec([U;U])[X-block]`` (since
+``H[U;U]=[(A+B)U;-(A+B)U]``), plus a ``D^{1/2}`` transition-diagonal scale — no
+new kernel, no duplicated encode/decode, matvec call signature unchanged.
+
+Symmetric block Lanczos on ``S`` (block width ``p=len(cols)``, seed
+``B0[b]=D^{1/2} f_{cols[b]}``, block-QR ``B0=Q_0 R_0``): for ``j=0..m-1`` (blocks
+``p x (c,v,k)``, inner product Euclidean over ``(c,v,k)`` completed by the mesh
+allreduce)
+
+    Wb = S Q_j ;  alpha_j = Q_j^dag Wb ;
+    Wb = Wb - Q_j alpha_j - Q_{j-1} beta_{j-1}^dag ;
+    (DGKS) Wb -= sum_{i<=j} Q_i (Q_i^dag Wb)   [full reorthogonalization, 2 passes] ;
+    Q_{j+1} R = Wb (block-QR) => beta_j = R
+
+=> block-tridiagonal ``T`` (diag ``alpha_j``, sub ``beta_j``, super
+``beta_j^dag``).  Full reorth is mandatory (the head-injected/stiff tiles lose
+orthogonality catastrophically otherwise — same lesson as the GMRES DGKS pass).
+Block-QR uses the robust Gram/eigen route (tiny ``p x p`` ``G=W^dag W`` on host,
+near-zero eigenvalues deflated) so degenerate/parallel probe columns and zero
+pad columns cannot break the chain.
+
+Evaluator (per omega, tiny; ``z=(omega+i eta)/Ry``, ``E=[R_0;0;..;0]``):
+``C(z)=(z^2 I-T)^{-1} E`` (mp x p host solve) ;
+``x(z)=sum_j Q_j C_j(z)`` (device einsum over the stored chain blocks) ;
+``W(z)-v = 2 snapshot(D^{1/2} x(z))`` (reduce-scatter to the ``(mu_X,nu_Y)=sh.V``
+tile).  No matvec, no GMRES per omega.  Chain blocks live in the pair basis
+(stacked ``(m,p,c,v,k)`` on the ``sh.X_full`` spec); ``T``/``R_0`` are replicated
+host numpy; the evaluator projects with the existing PROJECT machinery — single
+source.  ``--chain-len`` is the accuracy knob (no new class); block width = probe
+width (small, the ring matvec's optimal regime, keeping ``T`` small).
+
+### Convergence vs chain length — q=0 (probe cols 179/375/337/253, p=4)
+
+``rel_vs_oracle`` = max-column ``||W_chain(m)-W_oracle||/||W_oracle||``;
+``rel_vs_disk`` (omega=0 only) = closure vs the on-disk ``(W0-V)`` tile.
+
+| m   | omega=0 (=disk) | 2i eV  | 10i eV  | 1.5+0.1i eV |
+|----:|----------------:|-------:|--------:|------------:|
+| 8   | 1.10e-2 | 8.86e-3 | 8.10e-4 | 1.28e-2 |
+| 16  | 2.79e-3 | 1.66e-3 | 6.73e-6 | 4.01e-3 |
+| 32  | 2.17e-4 | 6.89e-5 | 3.85e-8 | 5.22e-4 |
+| 64  | 6.54e-6 | 1.05e-6 | 9.58e-12| 5.47e-5 |
+| 96  | 5.49e-7 | 4.95e-8 | 9.70e-12| 1.30e-5 |
+| 120 | 1.95e-7 | 7.11e-9 | 9.70e-12| 4.49e-6 |
+
+Monotone everywhere.  **omega=0 reproduces the disk ``(W0-V)`` closure THROUGH the
+chain evaluator** (rel_vs_disk == rel_vs_oracle to all figures), driving toward
+the GW minimax floor (~2.4e-9) as m grows.  The **imaginary axis** (the
+GW-relevant axis, chi(i omega)) converges fastest and saturates at the oracle's
+own GMRES residual (10i -> 9.7e-12 by m=64).  Real-axis-below-gap is monotone but
+slowest (Krylov-standard for interior real omega with small eta).
+
+### Convergence — finite q=(0,1,0) (p=4)
+
+| m  | omega=0 | 3i eV  | 8i eV  | 1.0+0.15i eV |
+|---:|--------:|-------:|-------:|-------------:|
+| 16 | 1.61e-2 | 5.36e-3 | 3.44e-4 | 1.90e-2 |
+| 32 | 2.47e-3 | 3.69e-4 | 5.50e-6 | 3.60e-3 |
+| 48 | 4.85e-4 | 4.68e-5 | 1.00e-7 | 7.82e-4 |
+
+Finite-q floor ~10x above q=0 (same behavior the oracle shows), still cleanly
+convergent.  Finite-q reuses ``build_finite_q_data`` (rolled psi_c + per-q V tile)
+unchanged.
+
+### Timing / amortization (warm, 1 GPU) — the whole point
+
+| case | chain build | per-omega oracle | per-omega chain eval | speedup/omega | break-even |
+|------|------------:|-----------------:|---------------------:|--------------:|-----------:|
+| q=0, m=48       | 2.23 s | 961 ms | 9.3 ms  | 103x | ~2.3 omega |
+| q=0, m=120      | 11.1 s | 942 ms | 13.7 ms | 69x  | ~12 omega  |
+| q=(0,1,0), m=48 | 2.18 s | 983 ms | 22.9 ms | 43x  | ~2.3 omega |
+
+The chain is built ONCE (m matvecs); each extra frequency is 40-100x cheaper than
+a fresh oracle solve (a full block-GMRES: ~11 iters x p cols).  **omega-count
+break-even is ~2-12 frequencies** — far below any real GW/BSE frequency grid
+(10-30 imaginary nodes + a real grid), so the model wins for any production
+sweep.  Default ``--chain-len 32`` (~1e-6 imaginary / ~2e-4 static on this
+fixture); raise for tighter (>=96 for the ~1e-9 static floor).
+
+### Validation
+
+- Gate ``tests/test_bse_w_omega_chain.py``: **2 passed** (46.8 s) — q=0 + smallest
+  nonzero IBZ q, chain-vs-oracle at static/imaginary/real omega, monotonicity
+  (m vs m/2 on the imaginary axis), and the ``W_tile.sharding.spec == P('x','y')``
+  tile contract.
+- Only-owned edits: ``bse_w_exact.py`` (CLI ``--w-omega-chain`` + harness),
+  ``w_omega_chain.py`` (new).  ``apply_V_ring`` internals untouched (consumed as
+  is); the matvec call signature is unchanged.
+- Artifacts: run dir ``runs/MoS2/A_bse_w_omega_chain_2026-07-16/`` (``proto_chain.py``
+  numpy math proof, module-free ``lxrun_free.sh``, ``manifest.yaml``, gate logs).
