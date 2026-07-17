@@ -27,11 +27,19 @@ Validation (gnppm fixture): 1x1 and 2x2 now **bit-identical** (max rel_err
 ## 2026-07-16: Si sym-centroid BSE-degeneracy experiment — centroids are NOT the degeneracy lever [A, runs only]
 
 Orbit-closed ISDF centroids do NOT restore exact BSE degeneracy (old/sym split
-ratio 1.004-1.018, still ~500-2000 ueV vs BGW ~2 ueV; 792 orbit-closed vs 960
-literal centroids near-identical). Cause is downstream: psi IBZ->full-BZ unfold
-and/or zeta-fit covariance (the deferred unified-sym-action Phase-2 work), now
-with a concrete Si-manifold-splitting observable to gate it.
-runs/Si/A_bse_sym_centroid_degeneracy_2026-07-16/report.md.
+ratio 1.004-1.018, still ~500-2000 ueV; 792 orbit-closed vs 960 literal
+centroids near-identical). **ROOT CAUSE FOUND (same-day diag pass, SUPERSEDES
+the initial psi-unfold hypothesis): band-window truncation of degenerate
+multiplets at high-symmetry k.** Si Gamma multiplets are 6-fold (nspinor=2);
+4v4c keeps 4 of 6 -> transition density non-covariant at the cut points; the
+518 ueV split is a near-cancellation of +-3000-4300 ueV star contributions.
+Degenerate-CLOSED Gamma window restores multiplets to <=36 ueV (~100x).
+Energies covariant to 0 ueV, psi-at-centroids to 1e-15 — unfold/zeta-fit
+EXONERATED. Property of any fixed-(nv,nc) BSE window, not LORRAX; the right
+degeneracy gate uses degenerate-closed windows. Secondary real defect: V0/W0
+tiles ~3% non-covariant under centroid permutation (head injection -> ~8%),
+contracts to 1e-4 in kernels; filed for the tile/head path.
+runs/Si/A_bse_sym_centroid_degeneracy_2026-07-16/{report.md,diag/FINDINGS.md}.
 
 ## 2026-07-16: W(0) resolvent cross-check — GW screened Coulomb validated to ~2e-9 [agent/bse-phase2, lorrax_A, source, NOT pushed]
 

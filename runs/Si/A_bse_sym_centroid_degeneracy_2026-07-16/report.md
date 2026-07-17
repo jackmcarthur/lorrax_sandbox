@@ -42,13 +42,20 @@ arm does **not** collapse it toward BGW's ~2 μeV. The sym arm even has *fewer*
 centroids (792 vs 960, lower ISDF rank) yet near-identical splitting — count is
 not the lever either.
 
-## Interpretation
+## Interpretation — CORRECTED 2026-07-16 (see diag/FINDINGS.md)
 
-Orbit-closed centroids are necessary but not sufficient. The symmetry violation
-enters **downstream of centroid placement** — the ψ full-BZ unfold from 8 IBZ
-k-points and/or the ζ-fit are not themselves symmetry-covariant. This lines up
-with the deferred ψ-side symmetry unification (TRS-blind-sym-bug Phase 2 /
-unified-sym-action). The fix belongs there, not in centroid generation.
+~~Original hypothesis: ψ full-BZ unfold and/or ζ-fit not symmetry-covariant.~~
+**Refuted by the follow-up diagnostic pass** (diag/FINDINGS.md): energies are
+covariant to 0 μeV and ψ-at-centroids to machine precision. **Root cause:
+band-window truncation of degenerate multiplets at high-symmetry k** — Si's
+Γ₂₅′/Γ₁₅ multiplets are 6-fold (nspinor=2) and a 4v4c window keeps 4 of 6,
+making the transition density non-covariant exactly at the cut points. A
+degenerate-closed Γ window restores multiplets to ≤36 μeV (~100× better). This
+afflicts any BSE code with a fixed (nv,nc) window; the correct degeneracy gate
+uses degenerate-closed windows or manifold averages. Secondary genuine defect
+found: V0/W0 tiles ~3% non-covariant under the centroid permutation (head
+injection worsens to ~8%) — contracts to ~1e-4 in kernels, subdominant here,
+filed for the tile/head path.
 
 `glide_symmetry_lloyd_exact.py` (untracked in lorrax_A): a 2-D proof-of-concept
 of exact symmetry-adapted weighted Lloyd for a hard-coded glide group, synthetic

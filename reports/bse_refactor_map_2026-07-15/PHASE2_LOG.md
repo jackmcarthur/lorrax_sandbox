@@ -355,3 +355,27 @@ observable (Si manifold splitting) to gate it. Full table + setup:
 `runs/Si/A_bse_sym_centroid_degeneracy_2026-07-16/report.md`. Side product: a
 vectorised dense-H builder (bit-equal to `_build_dense_H`, rel-err 4.8e-17)
 worth folding into the gate for larger windows.
+
+### SUPERSEDED interpretation — symmetry-breaking root cause found (2026-07-16, diag pass)
+
+The "ψ IBZ→full-BZ unfold / ζ-fit covariance" hypothesis recorded above is
+**REFUTED by direct measurement** (runs/Si/A_bse_sym_centroid_degeneracy_2026-07-16/diag/FINDINGS.md):
+energies are covariant to 0 μeV, ψ-at-centroids to 1e-15 (closed Γ multiplets
+to 1e-9). **Root cause: band-window truncation of degenerate multiplets at
+high-symmetry k** — at Γ the Si valence top (Γ₂₅′) and conduction bottom (Γ₁₅)
+are 6-fold (nspinor=2); a 4v4c window keeps 4 of 6, making the transition
+density non-covariant exactly there. The 518 μeV doublet split is a
+near-cancellation of ±3000–4300 μeV contributions on the small-orbit stars
+(Γ: −3252, star1: +4303; generic size-24 k: −208). Degenerate-CLOSED Γ window
+[2,8)×[8,14) restores multiplets to ≤36 μeV (~100×). This is a property of any
+fixed (nv,nc) BSE window, not of LORRAX — larger fixed windows just cut
+different multiplets (6v6c/8v8c stay ~2000 μeV). The correct LORRAX-vs-BGW
+degeneracy gate uses degenerate-closed windows (or manifold-averaged
+comparisons); the April "BGW ~2 μeV" datum needs its window convention
+re-established before being treated as a reference.
+
+**Genuine LORRAX defect found en route** (subdominant here, real elsewhere):
+V0/W0 ISDF tiles are ~3% non-covariant under the centroid permutation (worst
+on nonsymmorphic ops; q=0 head injection worsens V0 to ~8%); contracts to
+~1e-4 in kernel blocks. Filed for the tile/head-injection path (fits the
+w_head_wings / GW-infra alignment work).
