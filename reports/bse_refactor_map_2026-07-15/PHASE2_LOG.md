@@ -805,3 +805,39 @@ fixture); raise for tighter (>=96 for the ~1e-9 static floor).
   is); the matvec call signature is unchanged.
 - Artifacts: run dir ``runs/MoS2/A_bse_w_omega_chain_2026-07-16/`` (``proto_chain.py``
   numpy math proof, module-free ``lxrun_free.sh``, ``manifest.yaml``, gate logs).
+
+## Si BSE symmetry — Round 2: closed-window residual + tile-defect root cause (2026-07-16)
+
+Round-2 diagnosis (read-only on source; scratch in
+`runs/Si/A_bse_sym_centroid_degeneracy_2026-07-16/diag2/`, full trail in
+diag2/FINDINGS2.md). Attribution verdict: **the Round-1 "genuine tile defect"
+is the SAME degenerate-multiplet-cut mechanism as the BSE window, in the
+SCREENING ISDF fit window, amplified by CCT conditioning — NOT a
+fractional-translation-phase bug — and in the closed-window regime it IS the
+remaining symmetry breaker.**
+
+- **Closed-window residual is tile-driven.** Γ-on-site closed block [2,8)×[8,14):
+  little-group-symmetrizing the q=0 tiles collapses the residual 36.39 → 0.000
+  μeV (head off; 34.70 → 3.06 μeV with head — the 3.06 is raw-G0's own 8.6%).
+  Full coupled BSE: genuine exciton multiplets split up to 15.4 μeV (raw) →
+  <1 μeV (covariant), max eigenvalue shift 8.8 μeV. (V0_sym covariant to
+  6.4e-16; production unfold_v_q roundtrip exact 0.0.) The 2031 μeV "8v8c
+  manifold" is distinct excitons, NOT a broken multiplet.
+- **Born in the ζ-fit, τ-blind.** Bisection ψ(1e-15)→CCT-input(0.4%)→ζ-head
+  G0(8.6%)→V0(3.2%)→W0(3.0%); corr(V0,W0)=0.997 (W inherits V). 8.6% is at G=0
+  (τ phase = 1) yet worst on a nonsymmorphic op ⇒ nonsymmorphic-worst is base
+  rate (36/48), REFUTING the Round-1 phase hypothesis. V_q assembly is a
+  faithful bilinear ζ-contraction (τ cancels leg-to-leg; per-element proof).
+- **Root cause: screening band-window cut + CCT conditioning.** Production
+  screening window [0,8)×[8,60) cuts band 59's multiplet; every
+  degeneracy-closed conduction top gives the CCT covariant to 6e-10 vs 4.3e-3
+  open. cond(CCT)=3.6e9 amplifies the seed 20×. Fix (design only, FINDINGS2
+  Task 3): degeneracy-round the screening fit window (common/meta.py:99
+  b_id_4_user=nband → gw_init band_range_right; today world_size-round-up
+  only), via a helper in gw/degen_average.py. No solver change needed.
+- **Degeneracy gate designed** (Γ-on-site closed-window eigvalsh on the gnppm
+  session fixture, new tests/test_bse_degeneracy.py, two-tier μeV threshold);
+  NOT committed (needs one-time fixture threshold calibration).
+
+Supersedes the Round-1 "genuine tile defect (fractional-translation phase,
+nonsymmorphic-worst)" note.
