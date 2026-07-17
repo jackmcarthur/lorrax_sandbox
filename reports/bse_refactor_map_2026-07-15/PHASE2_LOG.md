@@ -492,3 +492,97 @@ micro-bench + faithfulness), `probe_bitid.py` + `run_bitid.sh` (stash-bracketed
 device-invariance baseline), `validate_after.py`, `prof_{1,2}gpu_{before,after}.log`,
 `gate_after.log`.  Runners: module-free srun+shifter (`lxrun_free.sh`, 4-GPU =
 `lxrun_free_4gpu.sh`).
+
+## Finite-q W_q resolvent check (2026-07-16, agent/bse-phase2)
+
+Owner-requested generalization of the W(0) resolvent to FINITE q: generate W_q
+at the symmetry-reduced q-grid one at a time and validate each against the
+restart's own `(W0_qmunu − V_qmunu)[q_flat]` tile.  **Done — all 5 IBZ q's on
+the MoS2 gnppm fixture close at the GW minimax-quadrature floor.**
+
+### Engine (single-source generalization, NOT a fork)
+
+The finite-q RPA density response is the on-grid `|v k, c k+q⟩` pair basis — a
+k-axis remap of the CONDUCTION slots + a V-tile swap.  The matvec, seed,
+project, solver, and sharding are byte-identical to q=0.
+
+- `common/symmetry_maps.kgrid_shift_map(nkx,nky,nkz,q_off)` — the ONE place the
+  C-order `k+q` fold + umklapp-`G` arithmetic lives (pure numpy; gather ≡
+  `jnp.roll`; unit-gated).
+- `bse_io.load_bse_data_from_restart_sharded(..., load_v_full=True)` → the full
+  `V_qmunu(μ,ν,nkx,nky,nkz)` tensor `data['V_q_full']` (default False keeps q=0
+  byte-identical).
+- `bse_w_exact.build_finite_q_data(data, q, mesh)` — roll `ψ_c`/`ε_c` by `+q` on
+  the reshaped (nkx,nky,nkz) k-axis (`jnp.roll`), set `V_q0 = V_qmunu[q_flat]`.
+  `q=(0,0,0)` is the identity.  `--compare-wq` loops `SymMaps.q_irr_kgrid_int`.
+
+### Convention lock-in (derived + numerically validated)
+
+Roll direction and the umklapp phase were determined by a dense χ0→W_q sweep
+(`finite_q/dense_finite_q.py`) over sign × phase, each vs the disk tile:
+
+| construction | q=(0,1,0) | q=(1,0,0) | q=(1,1,0) | q=(1,2,0) |
+|---|---:|---:|---:|---:|
+| roll `+q`, **no phase** | **1.3e-4** | **1.2e-4** | **1.1e-4** | **8.0e-5** |
+| roll `−q`, no phase | 8.0e-1 | 9.1e-1 | 2.0e0 | 1.4e0 |
+| roll `+q`, umklapp phase on | 6.3e-1 | 5.8e-1 | 2.1e0 | 1.7e0 |
+
+**Roll conduction by `+q`, NO umklapp Bloch phase.**  Derivation: GW's χ0(q) is a
+plain *periodic* FFT-convolution over k (`w_isdf._get_chi_minimax_kernel`:
+`χ_q ∝ Σ_k Gc_k Gv*_{k+q}` with the RAW stored ψ at the wrapped index — the DFT
+delta enforces `k+q mod N`, no phase).  Rolling `ψ_c`/`ε_c` by `+q` gives the
+pair density `conj(ψ_c[k−q])ψ_v[k]` = that convolution (relabel k→k−q), and the
+finite-q V tile `V_qmunu[q_flat]` KEEPS G=0 (`compute_vcoul` zeroes G=0 only at
+q=0) with NO separate head.  The design-doc `exp(−2πi G_umk·s_μ)` phase applies
+to a DIRECT-READ finite-Q BSE against a differently-built reference — it BREAKS
+the match to this FFT-convolution-produced tile (0.6–3.2 vs 1e-8).
+
+### Three GMRES defects the stiff finite-q tiles exposed (shared solver fix)
+
+The finite-q V_q carries a large G=0 head ⇒ `cond(H)~1e8`.  The shared
+`_get_gmres_solver` diverged (true resid O(1)) via three coupled defects, all
+fixed (q=0 / FEAST unchanged; head-less tiles are well-conditioned):
+
+1. **Normal-equations LSQ** `solve(HᴴH)` squared the condition to ~1e17 ≈ 1/eps
+   → garbage `y` → false projected early-exit → `lstsq` (QR/SVD).
+2. **Single Gram-Schmidt** lost orthogonality catastrophically (`||VᴴV−I|| → O(1)`
+   by ~20 iters) → falsely tiny projected residual, rounding-dependent solve →
+   added a DGKS **reorthogonalization** pass (`||VᴴV−I|| ≲ 1e-14`).
+3. **Operator-blind solver cache** keyed on `(max_iter,tol,dtype)` but the solver
+   closes over `matvec`/`data`, so the q-loop silently reused q=0's operator for
+   every later q → key now includes `id(matvec)`/`id(data)` (refs held).
+
+### Per-q closure — `bse_w_exact --compare-wq --n-cols 6` (MoS2 gnppm, 1 GPU)
+
+chi0 window n_val=26 n_cond=20 (full occ × cond), N_μ=399, gmres(200, 1e-10),
+head-less bodies; each q vs its OWN `(W0−V)[q_flat]`.
+
+| iq | q (kgrid) | q_flat | max rel_err | median | max gmres_resid |
+|---:|:---------:|-------:|------------:|-------:|----------------:|
+| 0 | (0,0,0) | 0 | 2.349e-9 | 2.190e-9 | 4.31e-10 |
+| 1 | (0,1,0) | 1 | 2.854e-8 | 2.484e-8 | 2.39e-10 |
+| 2 | (1,0,0) | 3 | 2.905e-8 | 2.537e-8 | 3.22e-10 |
+| 3 | (1,1,0) | 4 | 5.265e-8 | 4.871e-8 | 1.87e-10 |
+| 4 | (1,2,0) | 5 | 3.146e-8 | 2.530e-8 | 2.46e-10 |
+
+**max per-q rel_err = 5.3e-8**, all `gmres_resid ~2e-10` (≥100× below closure →
+quadrature-limited, not solver-limited).  Finite-q floor sits ~10× above q=0's
+2.3e-9 (the roll/exact-1/D vs minimax residual grows with the number of wrapped
+k's) — still cleanly at the GW quadrature noise floor.  Identity
+`W_q = v_q(0−H_RPA^q)⁻¹v_q + v_q` holds at every symmetry-reduced q.
+
+### Validation
+
+- Gate `tests/test_bse_w0_resolvent.py`: **3 passed** — W(0) closure (unchanged
+  2.467e-9), `kgrid_shift_map` unit (permutation / k+q fold / G∈{0,1}³ / roll≡
+  gather / q=0 identity), finite-q closure at the smallest nonzero q (<1e-6).
+- BSE gates 16/16 (`test_bse_stack_matvec` + `test_bse_dense_reference` 13
+  passed / 1 deselected).  **FEAST smoke green** (gnppm restart, W2–W4 Ritz
+  1.75–3.32 eV finite) — the shared GMRES change is FEAST-safe.  GMRES is BSE-only
+  (grep: consumers = FEAST + bse_w_exact), so the golden GW gates are unaffected.
+
+Artifacts (run dir `runs/MoS2/A_bse_w0_resolvent_2026-07-16/finite_q/`):
+`dense_finite_q.py` (convention sweep), `diag_gmres.py` / `gmres_lsq_test.py` /
+`lstsq_pad_test.py` / `scan_vs_loop.py` (GMRES defect isolation),
+`matvec_check.py` (sharded-vs-dense matvec 1e-16), module-free
+`lxrun_freshcache.sh`.

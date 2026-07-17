@@ -1,6 +1,36 @@
 # Changelog
 
 
+## 2026-07-16: Finite-q W_q resolvent — generate + validate at every symmetry-reduced q [agent/bse-phase2, lorrax_A, source, NOT pushed]
+
+Generalized the W(0) resolvent engine (`apply_screening_resolvent_block`) to
+FINITE q — the on-grid `|v k, c k+q⟩` RPA density response — WITHOUT forking:
+`bse_w_exact.build_finite_q_data` rolls conduction `ψ_c`/`ε_c` by `+q` on the
+C-order (nkx,nky,nkz) k-axis (`jnp.roll`) and swaps in `V_qmunu[q_flat]`; the
+matvec/seed/project/solver/sharding are byte-identical to q=0. New
+`common/symmetry_maps.kgrid_shift_map` (the ONE k+q fold + umklapp-G helper),
+`bse_io` `load_v_full` (full V tensor), `--compare-wq` loops the IBZ q-grid
+(`SymMaps.q_irr_kgrid_int`) one at a time vs each q's OWN `(W0−V)[q_flat]` tile.
+
+**Convention (dense-sweep validated): roll `+q`, NO umklapp Bloch phase** — GW's
+χ0(q) is a periodic FFT-convolution over k (raw wrapped ψ), so the design-doc
+`exp(−2πi G_umk·s_μ)` phase BREAKS the match (0.6–3.2 vs 1e-8); it belongs to a
+direct-read finite-Q BSE, not this producer's tiles. Finite-q V tiles keep G=0
+(no head).
+
+Fixed **three coupled defects in the shared `_get_gmres_solver`** that the stiff
+finite-q tiles (large G=0 head, cond(H)~1e8) exposed: normal-equations LSQ
+`solve(HᴴH)` (→ `lstsq`), single-pass Arnoldi orthogonality loss (→ DGKS
+reorthogonalization), and an operator-blind solver cache that reused q=0's
+operator across the q-loop (→ key on `id(matvec)`/`id(data)`). q=0 / FEAST
+unchanged.
+
+Per-q closure (MoS2 gnppm, 5 IBZ q): **max rel_err 5.3e-8**, gmres_resid ~2e-10
+(quadrature-floor-limited; q=0 stays 2.3e-9). Gates: `test_bse_w0_resolvent`
+3 passed (+ `kgrid_shift_map` unit + finite-q), BSE 16/16, FEAST smoke green.
+`reports/bse_refactor_map_2026-07-15/PHASE2_LOG.md` §"Finite-q W_q resolvent check".
+
+
 ## 2026-07-16: W-column resolvent perf — jit the seed/project shard_map boundaries [agent/bse-phase2, lorrax_A, source, NOT pushed]
 
 Profiled `apply_screening_resolvent_block` (the W(ω) Lanczos engine). Hot spot
