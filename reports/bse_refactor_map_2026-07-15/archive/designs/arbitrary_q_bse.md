@@ -706,3 +706,27 @@ made per-fine-Q. The anisotropic-head machinery for the winding-2 term is
 5. Lee & Reichman, JCTC (2023), arXiv:2304.05505 (+ k-point RPA-THC,
    doi:10.1021/acs.jctc.3c00615) — ISDF/THC across q with a q-**independent**
    auxiliary basis; the precedent-and-contrast for LORRAX's q-dependent per-q ζ.
+
+### 9.8 OWNER RULING (2026-07-17) — g0 winding kills direct head-vector interpolation; finite-α split promoted
+
+§9.6's hedge ("if g0(Q) is smooth … interpolate it too") is resolved in the
+negative, by the owner's argument: `g0(Q) = ζ̃(Q, G=0)` **winds across the BZ**
+— the "G=0" label is not periodic (at the zone boundary the G=0 channel at Q
+maps to a different G-channel at the equivalent Q+G point), so componentwise
+interpolation of `g0(Q)` chases a multivalued object, on top of the 2D
+winding-2 `e^{−i2θ}` of §9.5. Direct `g0` interpolation is REJECTED.
+
+Consequence: the analytic LR channel must be **finite-range**, spanning a
+decent shell of small `|Q+G|` — the finite-α Gaussian split of
+`coulomb_sr_lr.md`:
+
+    v_LR(Q+G) = v(Q+G) · exp(−|Q+G|²/(4α²))     (summed over ALL G — periodic in Q)
+    v_SR(Q+G) = v(Q+G) − v_LR(Q+G)              (bounded, smooth)
+
+`Σ_G ζ̃* v_LR ζ̃` is evaluated analytically/exactly at each target Q (the
+divergence and the small-G winding both live here and are handled in closed
+form); the SR tile `Σ_G ζ̃* v_SR ζ̃` is the interpolable object (subject to the
+ζ-rotation falloff study). The α→∞ / G=0-only rank-1 form of §9.6 is demoted
+to what it actually is: the single-coarse-point Q=0 special case in production
+today. α selection policy remains the open question flagged in
+`coulomb_sr_lr.md` (c·Δk default vs exposed knob).
