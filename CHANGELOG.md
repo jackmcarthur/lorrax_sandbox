@@ -1,6 +1,35 @@
 # Changelog
 
 
+## 2026-07-17: Arbitrary-q ingredient-interpolation falloff study — verdict NO [analysis, no source change]
+
+Settled the follow-up the `arbitrary_q_bse.md` design doc reserved (header +
+§3.5): after §3.2 killed the *master-ζ* shortcut, does interpolating the
+*ingredients* (`C_q`, `Z_q`, which carry the C_R falloff) across the coarse grid
+rescue arbitrary-q `V_Q`? **No.**
+
+- **C_R falls off (owner's premise TRUE):** Green's-function-like decay to a
+  ~1e-3–1e-4 floor; MoS2 (2D) dead by ~10 Bohr, Si (3D) only ~14 Bohr.
+- **Ingredients interpolate well** (unlike master-ζ's 90–340%): `C_q` leave-one-out
+  MoS2 4×4 **0.13%**, off-grid 2×2→4×4 midpoints **4.0%**; Si 4×4×4 poor (33% / 72%
+  — 3D coarse grid under-resolves).
+- **But V_Q reconstruction dies on the `ζ=C⁻¹Z` solve:** cond(C)~1e7–1e9 amplifies
+  the sub-percent ingredient residual past 100%. NO regularisation window (3×3
+  rankcut sweep: tile min ~1.0 at λ=1e-2, blows up 10³–10⁶× for lighter λ); the
+  **physical scalar `d*V_q d` is NOT protected** (tracks the tile → no gauge
+  escape); density does not help (6×6 error grows with nR).
+- **Mechanism:** `ζ_R` does **not** fall off (MoS2 3×3: 1.00→0.82→0.65, flat) —
+  `C⁻¹` de-localizes ζ, so the C_R falloff never transfers to the object you must
+  interpolate. Single root cause of both master-ζ and ingredient-solve failures.
+- **Consequence:** confirms §3.4/§4 — per-Q ζ refit (option 1) is the only
+  uncontrolled-error-free route; does not kill option 2 (SR/LR interp of *smoothed*
+  `V^SR_Q`, a different object); never route arbitrary-q exchange through
+  interpolated ζ or `C⁻¹Z`.
+- Artifacts: `runs/MoS2/A_bse_w0_resolvent_2026-07-16/interp_study/` (scripts + logs
+  for C_R falloff, C_q loo, off-grid midpoint, solver sweep, physical contraction,
+  ζ-direct, 6×6). Section: `reports/bse_refactor_map_2026-07-15/archive/designs/arbitrary_q_bse.md` §3.5.
+
+
 ## 2026-07-17: W-resolvent per-q recompile eliminated — one compiled engine for all q [agent/bse-phase2, lorrax_A, source, NOT pushed]
 
 `bse_w_exact --compare-wq` recompiled the ~4.8 s shifted-solve scan once per q

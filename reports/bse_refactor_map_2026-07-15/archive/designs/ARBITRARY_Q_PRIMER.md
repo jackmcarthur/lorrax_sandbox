@@ -12,8 +12,8 @@ and the crisp open question with its evaluation criteria.
 `arbitrary_q_bse.md` (§0–§9.8), which remains the living working doc. A separate
 agent is appending a **"Ingredient-interpolation falloff study" results section**
 to `arbitrary_q_bse.md`; that section is the decisive empirical input to PART III
-here. **When that section lands, its numbers must be folded into PART III §III.4
-of this file** (marked `TO-FOLD-IN` below). Until then `arbitrary_q_bse.md`
+here. The falloff study has LANDED (arbitrary_q_bse.md §3.5) and its numbers
+are folded into PART III §III.4 of this file. `arbitrary_q_bse.md`
 stays as-is and is the place the falloff study is written; this primer is the
 handoff artifact. Ry units throughout. Fractional `q`/`Q` are in reciprocal-
 lattice coordinates unless a Cartesian `q+G` is written.
@@ -210,9 +210,9 @@ side of the inversion, not the fit-vector side.** The measured §II.3 result
 (`C_R` decay length, leave-one-out on the ingredient tile) are the two
 measurements that bracket the inversion — one on each side.
 
-**Interim confirmations of the falloff prediction** (from the in-flight study;
-`TO-FOLD-IN` and to be replaced by the authoritative numbers landing in
-`arbitrary_q_bse.md`):
+**Confirmations of the falloff prediction** (authoritative; study complete —
+full tables in `arbitrary_q_bse.md` §3.5 and PART III §III.4, including the
+decisive negative result: the falloff does NOT transfer through `C⁻¹Z`):
 
 - `C_R` decays to a `1e-3–1e-4` floor by `~10 Bohr` (MoS₂) / `~14 Bohr` (Si) —
   a fixed *physical* length, independent of `k`-mesh, exactly as nearsightedness
@@ -760,28 +760,52 @@ A candidate scheme is judged on:
 7. (end-to-end) BGW absorption `ε₂(ω)` on a Si coarse-4³ → fine-8³ via the
    Haydock compare harness, once the interpolation design lands.
 
-## III.4 Pending decisive numbers — `TO-FOLD-IN`
+## III.4 The falloff study — RESOLVED (2026-07-17): ingredient interpolation NOT viable; refit or SR/LR-potential only
 
-The falloff study (landing as a results section in `arbitrary_q_bse.md`)
-quantifies **how fast the body / `g0` coarse-`q` variation decays with mesh
-density** — i.e. whether interpolating `V^SR` beats a per-`Q` refit at the target
-fine grid, and where the crossover sits. Its verdict decides §III.2 step 2
-(interpolate vs refit the body). Interim data already visible (replace with the
-authoritative section on fold-in):
+The study ran (full section: `arbitrary_q_bse.md` §3.5; scripts+logs
+`runs/MoS2/A_bse_w0_resolvent_2026-07-16/interp_study/`). Outcome, in the order
+of the causal chain:
 
-- `C_R` decay to a `1e-3–1e-4` floor by `~10 Bohr` (MoS₂) / `~14 Bohr` (Si) — a
-  fixed physical length, `k`-mesh-independent (confirms §I.3 nearsightedness).
-- Ingredient leave-one-out interpolation error `0.41%` (3×3) → `0.13%` (4×4):
-  denser `q`-sampling → more `R`-shells inside the decay length → better
-  interpolant.
+**(1) The nearsightedness premise (§I.3) is TRUE.** Per-shell `‖C_R‖_F`
+(normalised to R=0) decays Green's-function-like to a `1e-3–1e-4` floor:
+MoS₂ (2D) dead by ~10 Bohr; Si (3D) only by ~14 Bohr (slower 3D reach).
 
-**Decision rule the folded-in numbers should resolve:** if the interpolated
-`V^SR` reaches the coarse-non-regression/refit accuracy (say `≲ 0.1%` on the
-physical kernel block) at a *realistic* fine-grid density, adopt the interpolate
-route (option 2, amortized) with the finite-α analytic LR head; otherwise keep
-the per-`Q` `ζ` refit (option 1, exact) as the production default and use the
-split only to make the interpolation optional. Either way the rank-1 / finite-α
-LR head is fixed by constraints (c)–(d) and is **not** what the study decides.
+**(2) The INGREDIENTS interpolate.** Leave-one-out Fourier interpolation of
+`C_q`: MoS₂ 4×4 on-grid median **1.3e-3**, off-grid midpoints (2×2→4×4 truth)
+**4.0e-2**; vs 90–340% for the master-ζ strawman. (Si 4×4×4 is still
+under-resolved: 33%/72%.)
+
+**(3) But `V_Q` reconstruction is DEFEATED by the `ζ = C⁻¹Z` solve.**
+`cond(C_q) ~ 1e7–1e9` amplifies the sub-percent ingredient residual past 100%,
+and there is **no regularisation window** (MoS₂ 3×3, nR=7, tile error
+`‖ΔV‖_F/‖V‖`): raw 3.7e6 → rankcut 1e-6: 1.2e4 → 1e-4: 11 → 1e-2: **1.00** —
+light regularisation explodes, aggressive regularisation has already discarded
+the signal. The physical contraction `d*V_q d` (with `d ∈ range(C_q)`) tracks
+the tile (0.89 at rankcut 1e-2) — no gauge-artifact escape. Grid density does
+NOT rescue it: on 6×6 the error GROWS with more R-vectors.
+
+**(4) Mechanism — the falloff does not transfer to ζ.** `ζ_R` is nearly FLAT
+(MoS₂ 3×3: 1.00 → 0.82 → 0.65 to the largest |R|): the `C⁻¹` in `ζ = C⁻¹Z`
+**de-localizes** ζ in R (the inverse of a short-ranged operator is
+long-ranged). This single fact explains both the master-ζ failure (§II) and the
+ingredient-interp failure here; interpolating ζ directly also fails and worsens
+with more R-vectors.
+
+**Resolution of the §III.2 decision rule:** the interpolate-the-body route is
+REJECTED for anything produced through the ζ-fit. Surviving routes, now the
+canonical ranking:
+1. **Per-`Q` ζ refit** ("compute-don't-interpolate", exact, no uncontrolled
+   error) — the production default for arbitrary-`Q` exchange.
+2. **SR/LR interpolation of the divergence-removed potential `V^SR_Q`
+   directly** (a *potential-level* object that never passes through `C⁻¹`; its
+   smoothness is NOT ruled out by this study and remains the one open
+   interpolation question) — with the finite-α analytic LR head fixed by
+   constraints (c)–(d) regardless.
+3. Screened `W_Q`: compute-don't-interpolate via the validated ω=0 resolvent.
+
+For the first-principles agents this file briefs: any scheme you propose must
+either avoid the `C⁻¹Z` solve on interpolated inputs entirely, or explain
+precisely why its conditioning analysis escapes the measured no-window result.
 
 ---
 

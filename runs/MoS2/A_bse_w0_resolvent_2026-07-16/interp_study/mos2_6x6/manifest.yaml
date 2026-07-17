@@ -1,0 +1,23 @@
+run_id: mos2_6x6_interp_study_2026-07-17
+system: MoS2
+pipeline: qe_bgw_lorrax        # QE NSCF + pw2bgw + wfn2hdf, then LORRAX cohsex (zeta-fit only used)
+platform: perlmutter
+
+variant_of: mos2_3x3_cohsex_native   # same cell/SCF, denser k-grid
+reuse_from_parent:
+  - qe/scf/MoS2.save (charge density, copied)
+  - centroids_frac_640.txt (geometry-only, symlinked)
+overrides:
+  kgrid: "6 6 1"               # 36 full-BZ q for the ingredient-interpolation falloff study
+  LORRAX_FORCE_FULL_BZ: 1      # full-BZ zeta on disk (needed for the q-FFT interpolation)
+
+# Purpose: denser-grid + off-grid-midpoint validation of the C_q/Z_q ingredient
+# interpolation argument (reports/bse_refactor_map_2026-07-15/archive/designs/
+# arbitrary_q_bse.md, Ingredient-interpolation falloff study).  6x6 contains the
+# 2x2 and 3x3 sublattices -> off-grid error vs coarse density with 6x6 ground truth.
+
+steps:
+  qe_nscf:   { state: pending, note: "6x6x1, nbnd=82" }
+  pw2bgw:    { state: pending }
+  wfn2hdf:   { state: pending }
+  lorrax_gw: { state: pending, note: "do_screened cohsex; only zeta_q.h5 + isdf_tensors used" }

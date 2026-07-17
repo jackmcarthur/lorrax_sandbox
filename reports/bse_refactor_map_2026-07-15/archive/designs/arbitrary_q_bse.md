@@ -329,6 +329,83 @@ interpolation error unless the fine grid is dense — the SR/LR split cures the
 moot: exchange is not evaluated at all.** The finding converts "exchange
 deferred" from a corner-cut into a justified scope boundary.
 
+### 3.5 Ingredient-interpolation falloff study — VERDICT WITH NUMBERS
+
+The reserved landing (see doc header). §3.2 killed the *master-ζ* shortcut
+(interpolate `V_Q` from one Γ object). This asks the follow-up the owner scheduled:
+does interpolating the **ingredients** across the coarse grid rescue arbitrary-q
+`V_Q`? The Gram matrix `C_q[μν] = Σ_k P*_{k−q,μ} P_{k,ν}` (fixed centroid basis, so
+consistently gauged across q) and `Z_q = C_q ζ_q` both carry the C_R falloff, so
+they should interpolate where a single master ζ cannot. Fixtures: MoS2 3×3 / 4×4
+(`00_mos2_3x3_cohsex/05...`, `01_mos2_4x4_cohsex_gnppm/00...`), Si 4×4×4. Scripts +
+logs under `runs/MoS2/A_bse_w0_resolvent_2026-07-16/interp_study/`.
+
+**(1) C_R falls off — owner's premise is TRUE.** Per-shell `‖C_R‖_F` normalised to
+R=0, Green's-function-like decay to a `~1e-3–1e-4` floor:
+
+| |R| (Bohr) | MoS2 3×3 | MoS2 4×4 | Si 4×4×4 |
+|---|---|---|---|
+| 0 | 1.0 | 1.0 | 1.0 |
+| ~6–7 | 2.3e-2 | 2.0e-2 | 2.9e-1 |
+| ~10 | 6.7e-4 | 3.7e-4 | 1.7e-2 |
+| ~12–15 | — | 1.7e-4 | 5.3e-2 → 5.2e-4 |
+
+Reach is material-dependent: MoS2 (2D) dead by ~10 Bohr; Si (3D) only by ~14 Bohr.
+
+**(2) The ingredients DO interpolate** — far better than master-ζ (§3.2C, 90–340%).
+Leave-one-out Fourier interp of `C_q` (drop one q, rebuild from the rest via the
+R-stencil), median rel-Frobenius:
+
+| | on-grid loo (nR≥7) | off-grid midpoint (coarse→fine truth) |
+|---|---|---|
+| MoS2 4×4 | **1.3e-3** | **4.0e-2** (2×2 → 4×4 midpoints) |
+| Si 4×4×4 | 3.3e-1 | 7.2e-1 (2×2×2 → 56 midpoints) |
+
+MoS2 sub-percent on-grid, ~4% off-grid. Si is poor — the 4×4×4 coarse grid does not
+resolve the slower 3D falloff (needs a denser grid). So far this *supports* the
+ingredient route for 2D.
+
+**(3) But V_Q reconstruction is defeated by the C⁻¹ solve.** `ζ_q = C_q⁻¹ Z_q` and
+`cond(C_q) ~ 1e7 (Γ) – 1e9`. The sub-percent ingredient-interp residual is amplified
+past 100%. Leave-one-out at target q, MoS2 3×3, nR=7, sweeping the solve
+regularisation (‖ΔV‖_F/‖V‖ tile error, and the physical scalar `d*V_q d` with
+`d ∈ range(C_q)`):
+
+| solve | tile med | tile max | phys med | phys max |
+|---|---|---|---|---|
+| raw | 3.7e6 | 6.7e7 | 7.4e4 | 4.9e5 |
+| rankcut 1e-8 | 3.7e6 | 8.4e6 | 7.3e4 | 2.0e5 |
+| rankcut 1e-6 | 1.2e4 | 1.8e4 | 1.5e3 | 4.5e3 |
+| rankcut 1e-4 | 1.1e1 | 2.5e1 | 2.1e1 | 7.3e1 |
+| rankcut 1e-2 | **1.00** | 1.00 | **0.89** | 1.70 |
+
+There is **no regularisation window**: light regularisation lets the conditioning
+blow the answer up (10³–10⁶×); the only λ aggressive enough to tame it (rankcut 1e-2,
+keeping ~top modes) has already thrown away the signal → ~100% error. The **physical
+observable is not protected** — `d*V_q d` tracks the tile, refuting a gauge-artifact
+escape. **Density does not rescue it:** the 6×6 grid at rankcut 1e-6 gives V med
+8.2e2 / 1.8e3 / 1.2e3 at nR=4/7/13 (error grows, not shrinks, with more R-vectors).
+
+**(4) Mechanism — the falloff does not transfer to ζ.** DFT the fit itself:
+`ζ_R = (1/nq) Σ_q e^{2πi q·R} ζ_q(μ,r)`. Unlike C_R, **ζ_R does not fall off**
+(MoS2 3×3, `|ζ_R|/max`): 1.00 → 0.82 → 0.65 out to the largest |R| — nearly flat.
+The `C⁻¹` in `ζ = C⁻¹Z` **de-localizes** ζ in R (inverse of a short-ranged operator
+is long-ranged). Interpolating ζ directly (skip the solve) therefore also fails, and
+*worsens* with more R-vectors as it tries to resolve a non-existent decay: nR=4/7/8
+→ phys 0.17 / 1.34 / 4.87. This is the single root cause of both failures — the
+master-ζ shortcut (§3.2C) and ingredient-interp+solve here.
+
+**Verdict.** The ingredient-interpolation middle path is **not viable at accessible
+grid densities.** `C_R`'s falloff is real but `C_q` is the wrong object to
+interpolate — the object you must produce, `ζ_q` (hence `V_Q`), does not inherit the
+falloff, and the `C⁻¹` that produces it is both ill-conditioned and R-delocalizing,
+with no regularisation window and no gauge escape. This **confirms §3.4 / §4**: the
+per-Q ζ refit (§4 option 1, "compute-don't-interpolate") remains the only route with
+no uncontrolled error. It does **not** kill §4 option 2 (SR/LR interpolation of the
+*smoothed* `V^SR_Q`, a divergence-removed potential object, not ζ) — but it removes
+any hope of a cheaper ζ-side or `C⁻¹Z`-side shortcut: route arbitrary-q exchange
+through a per-Q refit or the SR/LR-smoothed potential, never through interpolated ζ.
+
 ---
 
 ## 4. Exchange-term options, ranked
