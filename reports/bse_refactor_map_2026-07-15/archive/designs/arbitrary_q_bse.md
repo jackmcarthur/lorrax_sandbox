@@ -1,3 +1,5 @@
+<!-- Superseded for HANDOFF purposes by ARBITRARY_Q_PRIMER.md (self-contained, fresh-agent-ready). This doc keeps living: the "Ingredient-interpolation falloff study" results section still lands HERE first, then folds into PRIMER PART III §III.4. -->
+
 # Design: BSE at arbitrary exciton momentum Q via htransform (direct-kernel-only)
 
 Reconnaissance + design, 2026-07-16. Read-only on `sources/lorrax_A`
