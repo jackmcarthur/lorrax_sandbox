@@ -17,7 +17,7 @@ from jax.sharding import Mesh
 jax.config.update("jax_enable_x64", True)
 
 from bse.bse_io import _find_restart_file, load_bse_data_from_restart_sharded
-from bse.bse_feast import gmres_solve_sharded_jit, _apply_shifted_matvec
+from bse.bse_feast import gmres_solve_sharded_jit, _apply_shifted_matvec, matvec_operands
 from bse.bse_w_exact import (
     _build_rpa_resolvent, apply_screening_resolvent_block, _select_compare_cols)
 
@@ -36,6 +36,7 @@ nk = nkx * nky * nkz
 n_rmu = int(data["V_q0"].shape[0]); nlog = int(data["n_rmu"])
 n_cond_pad = int(data["n_cond_pad"]); n_val_pad = int(data["n_val_pad"])
 matvec, diag_h, gen, snapshot, sh = _build_rpa_resolvent(mesh, data)
+operands = matvec_operands(data)
 z = 0.0 + 0.0j
 max_iter, tol = 200, 1e-10
 
@@ -86,8 +87,8 @@ rhs_scan = jnp.moveaxis(rhs, 1, 0)
 # ---- stage 2: SOLVE full (with residual recompute) ----
 def _solve_full(carry, rhs_col):
     rhs_i = rhs_col[:, None]
-    x, kit = gmres_solve_sharded_jit(matvec, diag_h, z, rhs_i, data, max_iter=max_iter, tol=tol)
-    r_true = rhs_i - _apply_shifted_matvec(matvec, x, z, data)
+    x, kit = gmres_solve_sharded_jit(matvec, diag_h, z, rhs_i, operands, max_iter=max_iter, tol=tol)
+    r_true = rhs_i - _apply_shifted_matvec(matvec, x, z, operands)
     nrhs = jnp.linalg.norm(rhs_i)
     resid = jnp.where(nrhs == 0.0, jnp.asarray(0.0, nrhs.dtype), jnp.linalg.norm(r_true) / nrhs)
     s = jax.lax.with_sharding_constraint(x[0] + x[1], sh.X)
@@ -101,7 +102,7 @@ s2f_min, s2f_med = timeit(stage2_full, n=5)
 # ---- stage 2: SOLVE no-recompute (drop the redundant matvec) ----
 def _solve_nr(carry, rhs_col):
     rhs_i = rhs_col[:, None]
-    x, kit = gmres_solve_sharded_jit(matvec, diag_h, z, rhs_i, data, max_iter=max_iter, tol=tol)
+    x, kit = gmres_solve_sharded_jit(matvec, diag_h, z, rhs_i, operands, max_iter=max_iter, tol=tol)
     s = jax.lax.with_sharding_constraint(x[0] + x[1], sh.X)
     return carry, (s[0], kit)
 def stage2_nr():
@@ -139,7 +140,7 @@ for b in [1, 2, 4, 8, 16, 32]:
     x = (jax.random.normal(k1, (2, b, n_cond_pad, n_val_pad, nk))
          + 1j * jax.random.normal(k2, (2, b, n_cond_pad, n_val_pad, nk)))
     x = jax.lax.with_sharding_constraint(x.astype(jnp.complex128), sh.X_full)
-    mmin, _ = timeit(lambda: _apply_shifted_matvec(matvec, x, z, data), n=10, warmup=3)
+    mmin, _ = timeit(lambda: _apply_shifted_matvec(matvec, x, z, operands), n=10, warmup=3)
     if base is None:
         base = mmin
     print(f"{b:>4} {1e3*mmin:9.3f} {1e3*mmin/b:9.4f} {b*base/mmin:10.2f}")
