@@ -841,3 +841,71 @@ remaining symmetry breaker.**
 
 Supersedes the Round-1 "genuine tile defect (fractional-translation phase,
 nonsymmorphic-worst)" note.
+
+## P2 + P-NT — exchange comms-reduction + nt-aware dispatch (2026-07-16, agent/bse-comms-opt)
+
+Two approved count-reduction items from the matvec audit (JOINT_FINDINGS §5-6,
+trace_dossier §2c), in an ISOLATED worktree
+`sources/worktrees/lorrax_A_comms_opt` off `agent/bse-phase2` HEAD 0ecc7d7.
+Commits 4301434 (P2), ae2d1fc (P-NT). NOT merged into bse-phase2 (owner + main
+coordinate after the W(ω) work lands).
+
+### P2/C1 — apply_V_ring 6-collective ring exchange → shared GSPMD form
+`apply_V_ring` computed the dense q=0 exchange with **6 collectives/apply** (2×py
+band-ppermute rings + psum + psum_scatter); the non-TDA resolvent SOLVE calls it
+4×/matvec = **24** (the ~20 ms/call floor). Replaced by ONE shared helper
+`bse_ring_comm.bse_exchange_gspmd(X, M_enc, M_X, V_q0, sh, nk)` — the same
+`S=Σ_kcv M_enc·X` / `U=V_q0·S` / `VX=Σ_M conj(M_X)·U` GSPMD form the stack matvec
+already used, per-element identical to `apply_bse_hamiltonian_single_device`
+(dense-reference gate). **Single source of truth**: `bse_stack_matvec` dropped its
+inline copy and calls the helper; both ring matvecs (TDA + non-TDA full) call it.
+`apply_V_ring` + the four `_apply_V_ring*` shard_map wrappers DELETED (dead). The
+A/B blocks differ ONLY in the encode amplitude (`M_Y` for A / RPA-screening B;
+`conj(M_Y)` for the optical coupling block). B2 was never a blocker: the resolvent
+(`screening=True`) has no W-term, the B1 fix already made the B-block exchange
+correct, and only the W-term B-encode (`encode_T_B`) stays ring-based (out of scope).
+
+**Collectives / matvec (2×2, optimized HLO, start-side counts):**
+
+| operator | before | after |
+|---|---|---|
+| resolvent (non-TDA screening, 4 sub-applies) | **40** (32 collective-permute + 4 all-reduce + 4 reduce-scatter) | **12** (8 all-reduce + 4 all-gather) |
+
+The topology-blind ppermute band-rings are GONE. In the audit's per-apply logical
+units this is 6→3 (2 all-reduce + 1 all-gather), i.e. resolvent **24→12** — NOT
+24→8: the audit's "2 all-reduce/apply" undercounted the encode X all-gather; the
+stack-style exchange compiles to 3 collectives/apply at HEAD.
+
+### P-NT — nt-aware dispatch (bse_lanczos.solve_bse_sharded)
+Routed every solve (incl. bs==1) through the trial-stack matvec — a measured ~1.5×
+single-vector regression. Dispatch at the existing builder seam: **bs≤2 → ring,
+bs≥3 (and Davidson's wide subspace) → stack** (crossover nt≈2-3, trace_dossier
+§1/§4). Same 11-arg signature → pure builder swap; no new config surface
+(`matvec_kind` stays retired). Other consumers already route sensibly (verified):
+FEAST spectral-bound + Haydock use the ring (single-vector); FEAST GMRES contour
+uses the stack (block).
+
+### Validation (module-free srun+shifter, worktree PYTHONPATH, A100)
+- **Gates GREEN**: `test_bse_dense_reference` + `test_bse_stack_matvec` +
+  `test_bse_w0_resolvent` (incl. finite-q) — **16 passed / 1 deselected** (1 GPU).
+- **Full plain 1-GPU suite: 221 passed / 12 skipped / 0 failed** (4:28) — identical
+  to the pre-change baseline; no regressions.
+- **Closure unchanged**: `validate_after` W0-V tile vs restart max rel_err =
+  **2.4077e-9** at BOTH 1×1 and 2×2 (base 2.4078e-9) — device-count invariant.
+  `--compare-wq` per-q closure = 7.9e-8 max (minimax floor), matching base.
+- **Timing (2×2 warm)**: per resolvent matvec (min-of-20): b=1 **14.7→19.6 ms**,
+  b=8 **1.94→1.51 ms/col**. `--compare-wq` `resolve_q` wall (5 IBZ q):
+  before **148.25 s** / after **146.31 s**.
+
+**Honest wall-time note.** The 40→12 count cut does NOT speed the SINGLE-COLUMN
+(b=1) matvec on this latency-bound fixture — it is ~30% slower — because the 12
+full-mesh all-reduce/all-gather cost more per barrier than 40 tiny point-to-point
+ppermutes (the same crossover P-NT exploits: ppermute wins at nt≤2). It wins
+BATCHED (b≥8) and is the correct topology-aware formulation for multi-node scale-out
+(the audit's design lock against ppermute rings). The `--compare-wq` end-to-end wall
+is GMRES-reorthogonalization-dominated (the matvec exchange is a minor fraction), so
+the count cut is roughly wall-neutral at the current single-column resolvent; the
+value is architectural (scale-out) + code (single source of truth, −62 net lines).
+
+Artifacts: `tmp_comms_opt/` (probe_collectives.py, timing_matvec.py,
+compare_wq_2x2_{before,after}.log, val_{1x1,2x2}_after.log, full_suite_after.log).

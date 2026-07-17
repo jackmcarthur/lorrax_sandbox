@@ -1,6 +1,21 @@
 # Changelog
 
 
+## 2026-07-16: BSE exchange comms-reduction (P2/C1) + nt-aware dispatch (P-NT) [agent/bse-comms-opt, lorrax_A worktree, source, NOT merged]
+
+Two approved matvec-audit items (JOINT_FINDINGS §5-6). P2: `apply_V_ring`'s
+6-collective/apply band-ppermute q=0 exchange replaced by ONE shared
+`bse_ring_comm.bse_exchange_gspmd` (the stack matvec's GSPMD form; ring+stack now
+share it, `apply_V_ring` + 4 wrappers deleted, −62 net lines). Resolvent SOLVE
+collectives 40→12 per matvec (2×2 HLO; ppermute rings eliminated); closure
+2.4077e-9 unchanged (1×1==2×2), `--compare-wq` per-q closure byte-identical to base.
+P-NT: `solve_bse_sharded` dispatches bs≤2→ring, bs≥3/Davidson→stack (crossover
+nt≈2-3). Gates green; full 1-GPU suite 221 passed/12 skipped. Honest: the count cut
+is wall-neutral at the single-column resolvent (GMRES-reorthogonalization-dominated;
+full-mesh collectives cost ~= the tiny ppermutes at nt1) — the win is topology-aware
+scale-out + single-source-of-truth; it speeds the batched (b≥8) matvec. See
+`reports/bse_refactor_map_2026-07-15/PHASE2_LOG.md` §"P2 + P-NT".
+
 ## 2026-07-16: W(omega) block-Lanczos-chain model — full-frequency screened Coulomb [agent/bse-phase2, lorrax_A, source, NOT pushed]
 
 The feature the W-resolvent arc was building toward: full-frequency `W_q(omega)`
