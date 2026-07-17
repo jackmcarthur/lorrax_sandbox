@@ -1,6 +1,35 @@
 # Changelog
 
 
+## 2026-07-17: W-resolvent per-q recompile eliminated — one compiled engine for all q [agent/bse-phase2, lorrax_A, source, NOT pushed]
+
+`bse_w_exact --compare-wq` recompiled the ~4.8 s shifted-solve scan once per q
+(5–6 s/q, solve itself tens of ms). Root cause was per-q Python **closures**, not
+unrolled loops (GMRES is already `while_loop`+`fori_loop`, columns already
+`lax.scan`): the solver closed over the q-specific `data`, and `gen`/`snapshot`
+were rebuilt per q.
+
+- **Fix (no physics change)**: `matvec_operands(data)` threads the 10 matvec
+  operand arrays as **runtime args** through `_gmres_solve_core` /
+  `_apply_shifted_matvec` instead of closing over `data`; solver cache re-keyed
+  `(id(matvec), id(data), …)` → `(id(matvec), …)` (structure only). New cached
+  `_get_block_gmres_solver` wraps the stage-2 column scan in ONE jit
+  (`_block(rhs, diag_h, z, operands)`); compare-wq builds `matvec/gen/snapshot`
+  once; `z` passed as a device scalar; device `jnp.roll` → host `np.roll`.
+- **Result**: engine compiles ONCE (iq=0), later q dispatch-only. Compile census
+  `scan` 5→1 (`_block`), `_map` 10→2, `_roll_static` 10→0. `resolve_q` 30.77 s →
+  **4.60 s** (per-q solve 6.1 s → 0.26–0.40 s warm); full 5-q run ~45 s → ~15 s.
+  Per-q rel_err **bit-identical** (max 7.9e-8, median 2.85e-8). Bonus: the
+  per-omega chain oracle inherits the one-compile engine.
+- **New**: compare-wq prints per-q `build[s]`/`solve[s]` + `wq_build`/`resolve_q`/
+  `wq_compare` sub-timers every run.
+- **Gates**: `test_bse_w0_resolvent` + `w_omega_chain` + `stack` + `dense_reference`
+  18 passed/1 deselected; full plain 1-GPU suite green. FEAST call site updated to
+  the operands signature (shared GMRES change is FEAST-safe).
+- Report: `reports/bse_refactor_map_2026-07-15/PHASE2_LOG.md` §"Per-q recompile
+  elimination"; artifacts `runs/MoS2/A_bse_w0_resolvent_2026-07-16/per_q_recompile/`.
+
+
 ## 2026-07-16: Screening-window degeneracy fix + BSE degeneracy gate [agent/screening-degeneracy-fix, lorrax_A, source, NOT pushed]
 
 Owner-approved Round-2 fix (FINDINGS2 Task 3/4). Splitting a degenerate

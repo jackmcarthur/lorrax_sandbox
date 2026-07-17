@@ -1025,3 +1025,103 @@ full suite.
 ncond=32 restart), `fix_validate/` (`analyze_fixtures.py` golden-gate scan,
 `meta_check.py`, `tile_cov.py`+`tile_cov.json`, `calibrate_gate2.py`+`calib.json`,
 `full_suite.log`, `demo_gw.log`), `diag2/{zeta_probe,full_multiplet}_demo.json`.
+
+## Per-q recompile elimination — one compiled engine serves all q (2026-07-17, agent/bse-phase2, lorrax_A)
+
+`bse_w_exact --compare-wq` was paying a full XLA compile per q: ~5–6 s/q of
+which the actual solve is tens of ms.  With static shapes there should be ONE
+compile serving all q — "roll one wfn copy, use a different slice of V_q".  Root
+cause and fix below; artifacts in `runs/MoS2/A_bse_w0_resolvent_2026-07-16/per_q_recompile/`
+(`baseline_compare_wq.log`, `after_compare_wq.log`, `lxrun_census.sh`).
+
+### It was CLOSURES, not unrolled loops
+
+Confirmed by reading the loop structure: the GMRES inner iteration is already
+`lax.while_loop` + `fori_loop` (Arnoldi / DGKS reorth), and the column loop is
+already `lax.scan` over the probe axis — **no Python-unrolled loop anywhere**.
+Every per-q recompile came from a fresh per-q Python closure becoming a distinct
+jit-cache entry, with q-specific device arrays baked in as trace constants:
+
+1. **The scan (the ~4.8 s cost).**  `_get_gmres_solver` keyed the solver cache
+   on `(id(matvec), id(data), …)` and `_solve` **closed over** `data`.  The
+   top-level `lax.scan` in `apply_screening_resolvent_block` therefore baked the
+   q-specific operands (rolled ψ_c, ε_c, `V_qmunu[q]`, hoisted M) as scan
+   constants → a new jaxpr and a fresh XLA compile per q.
+2. **gen / snapshot (`_map`, 2/q).**  `_build_rpa_resolvent` was called **per q**,
+   rebuilding the jitted seed/project shard_maps each time (new object → new
+   compile), though they depend only on (mesh, k-grid, pad sizes) — not on q.
+3. **The roll (`_roll_static`, 2/q).**  Device `jnp.roll` bakes the static
+   q-offset into the program, so each q compiled a fresh roll.
+
+### The fix (plumbing operands through the solver layer; NO physics change)
+
+`bse_feast`: `matvec_operands(data)` returns the 10-tuple the ring matvec
+consumes after `x`; `_apply_shifted_matvec` and the extracted module-level
+`_gmres_solve_core` take that tuple as a **runtime argument** instead of closing
+over `data`.  `_get_gmres_solver` now keys on `(id(matvec), max_iter, tol, dtype)`
+— **id(data) dropped**.  Operator-identity safety is preserved: genuinely
+different STRUCTURES (screening vs optical, TDA vs full) carry distinct `matvec`
+objects → distinct engines (the id-keyed cache keys on the ENGINE, not per-q
+closures).
+
+`bse_w_exact`: new cached `_get_block_gmres_solver(matvec, sh, max_iter, tol,
+dtype)` wraps the stage-2 per-column scan in **one** `jax.jit` (`_block`) whose
+args are `(rhs, diag_h, z, operands)` — so it compiles once per operator
+structure and every later q / omega is dispatch-only.  `z` is passed as a device
+`complex128` scalar (not a Python complex), so a frequency sweep stays a runtime
+arg too.  The compare-wq loop builds `matvec/gen/snapshot` **once** before the q
+loop; per q it only rebuilds the small operand arrays + `diag_h`.  `jnp.roll` →
+host `np.roll` at data-build (`_roll_k_axis_host`; arrays are ~tens of MB), so the
+rolled array enters as DATA with no per-offset compile.  Bonus: the per-omega
+oracle in `run_w_omega_chain_compare` (the chain's ground truth) inherits the
+same one-compile engine — a ω-sweep no longer recompiles the scan per ω either.
+
+Single-source preserved: one GMRES body (`_gmres_solve_core`) feeds both the
+per-column FEAST path (`gmres_solve_sharded_jit`) and the block scan; no parallel
+old/new path, no duplicated matvec kernel.
+
+### Compile census — `--compare-wq --n-cols 6` (MoS2 gnppm, 1 GPU, JAX_LOG_COMPILES=1, cold cache)
+
+| jitted fn | BEFORE (compiles) | AFTER (compiles) | note |
+|:----------|------------------:|-----------------:|:-----|
+| GMRES engine (`scan` → `_block`) | **5** (1/q, ~4.8 s ea) | **1** | the whole win |
+| `_map` (gen SEED + snapshot PROJECT) | **10** (2/q) | **2** | built once |
+| `_roll_static` (ψ_c + ε_c roll) | **10** (2/q) | **0** | host roll |
+| one-time scalar ops (broadcast/transpose/…) | ~30 (q=0 setup) | ~30 (q=0 setup) | unchanged |
+
+`_block` compiles exactly once, immediately before the iq=0 row; iq=1..4 emit no
+further compiles.
+
+### Timing — full 5-q loop (1 GPU A100, wall)
+
+| section | BEFORE | AFTER |
+|:--------|-------:|------:|
+| `w_exact.resolve_q` (5 q) | 30.771 s | **4.604 s** |
+| per-q solve: iq=0 (compile) | ~6.1 s | 3.264 s |
+| per-q solve: iq=1..4 (warm) | ~6.1 s ea | 0.255 – 0.398 s |
+| `w_exact.wq_build` (5 q) | — | 0.440 s |
+| `w_exact.wq_compare` (5 q) | — | 0.002 s |
+| Total recorded | 32.764 s | **6.553 s** |
+| end-to-end run (incl. JAX init + load) | ~45 s | ~15 s |
+
+New per-q sub-timers (`build[s]` / `solve[s]` columns + `wq_build` / `resolve_q`
+/ `wq_compare` sections) are now printed by the compare-wq path on every run.
+
+### Validation — closure IDENTICAL, gates green
+
+Per-q rel_err **bit-identical** before ↔ after (the whole point — no physics
+change):
+
+| iq | q (kgrid) | max rel_err | median | max gmres_resid |
+|---:|:---------:|------------:|-------:|----------------:|
+| 0 | (0,0,0) | 3.203e-9 | 2.253e-9 | 4.22e-10 |
+| 1 | (0,1,0) | 2.854e-8 | 2.444e-8 | 6.03e-10 |
+| 2 | (1,0,0) | 2.905e-8 | 2.626e-8 | 3.48e-10 |
+| 3 | (1,1,0) | 7.895e-8 | 4.871e-8 | 1.46e-10 |
+| 4 | (1,2,0) | 2.820e-8 | 2.464e-8 | 3.77e-10 |
+
+max per-q 7.895e-8, median 2.854e-8 (identical in both logs).  Gates on 1 GPU:
+`test_bse_w0_resolvent` + `test_bse_w_omega_chain` + `test_bse_stack_matvec` +
+`test_bse_dense_reference` = **18 passed / 1 deselected** (`gates_targeted.log`);
+full plain 1-GPU suite green (`full_suite_1gpu.log`).  FEAST call site updated to
+the operands signature (shared GMRES change is FEAST-safe).
