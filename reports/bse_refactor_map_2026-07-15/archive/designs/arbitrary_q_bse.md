@@ -425,3 +425,284 @@ BSE solve. No new large tensors.
    htransform (Q=0 for valence) so the pair density is built from one consistent
    interpolation? The latter is cleaner but pays htransform on the valence leg too.
 ```
+
+---
+
+## 9. SR/LR interpolation in the literature — survey + mapping
+
+Literature survey (2026-07-17, read-only, web only). Purpose: adjudicate the
+owner's suspicion that the BGW-style **multiplicative** trick — interpolate
+`|Q|²·(divergent quantity)` and divide by `|Q|²` after — does **not** transfer to
+LORRAX's *contracted* tile `V_Q[μν]=Σ_G ζ̃*_μ(Q+G) v(Q+G) ζ̃_ν(Q+G)`; and to test the
+parent's hypothesis that the correct transfer is **rank-1-head-channel
+factorization** (interpolate the smooth body + the smooth `g0(Q)` vector,
+reassemble with analytic `1/|Q|²`). Three literatures do exactly this problem for
+Coulomb-mediated quantities; all three converge on the **subtractive** (not
+multiplicative) convention, and the closest analogue (exciton-Wannier) is
+*literally* the rank-1-head factorization.
+
+### 9.0 Verdict (for main)
+
+- **`|Q|²`-multiply-and-divide: REJECTED for the contracted tile.** The trick is
+  only well-posed on an *isolated single divergent channel* with a common `1/|Q|²`
+  prefactor (a scalar `ε⁻¹₀₀(q)`, a single-G Coulomb `v(Q+G)`, or BGW's head entry
+  stored as `1.0`). `V_Q[μν]` is a **sum** of a divergent `G=0` head + a smooth
+  `G≠0` body; there is no common `1/|Q|²` to factor out of a sum. Multiplying the
+  whole tile by `|Q|²` sends the body amplitude → 0 as `Q→0`, and dividing back is
+  `0/0` on the body — it destroys the smooth information it was meant to preserve.
+  The owner's suspicion is correct. **BGW never does this to a summed object**: it
+  keeps head/wing/body as *separate G-indexed channels* (`mtxel_kernel.f90`,
+  `w_head_wings_interp.md §Reference`) and applies multiply/divide (or the stored-
+  `1.0` strip) only to the already-isolated scalar head/wing. LORRAX has already
+  contracted over G, so it has no separate channel to multiply — unless it first
+  *reconstructs* one, which is precisely the rank-1 factorization.
+- **subtract-analytic-LR: CORRECT, and it is the universal convention.** Verdi–
+  Giustino, Sjakste, Brunin (e-ph) and Haber–Qiu–da Jornada–Neaton (excitons) all
+  form `X_SR = X − X_LR`, interpolate the finite/smooth `X_SR`, and add the
+  closed-form `X_LR` back at the target point. Strictly better-conditioned than any
+  whole-object multiply *because subtraction respects the additive head+body
+  structure*: it removes only the singular part and leaves the body's amplitude
+  untouched (no `0/0`, no amplitude collapse). This is the e-ph "SUBTRACTIVE"
+  convention and it is not a stylistic choice — `g = g_S + g_L` is a sum and `g_L`
+  is the only divergent term, so a multiplicative `q·g` would kill the smooth `g_S`
+  the same way it kills LORRAX's body.
+- **rank-1-head factorization (parent's hypothesis): VINDICATED — it *is* the
+  subtractive scheme specialized to LORRAX's known rank-1 head.** The exciton-
+  Wannier long-range exchange kernel is *literally* rank-1 in a dipole vector and is
+  subtracted/re-added analytically (Haber et al. Eqs 27–34). LORRAX's head is
+  already stored in exactly this form — `V_qmunu` is persisted with `G=0` zeroed,
+  `g0_μ = ζ(q,μ,G=0)` is kept separately, and `apply_q0_head_rank1` injects
+  `v(q)·conj(g0)⊗g0` (`head_correction.py:743-816`, `coulomb_sr_lr.md §Current
+  state`). **The SR/LR split LORRAX already has at Q=0 *is* the rank-1
+  factorization; interpolation just applies it per-fine-Q instead of only at the
+  single coarse Q=0.** Recommended for both `V_Q` and the exchange kernel.
+- **subtractive vs multiplicative is a false dichotomy *once the head is
+  isolated*.** After you name the rank-1 channel `g0(Q)⊗g0*(Q)·v(Q)`, adding it
+  back (`V_SR + v·g0⊗g0`) and "dividing a stripped factor back in" coincide — both
+  operate on one clean channel. The real dichotomy is **isolate-the-channel
+  (rank-1 factorization / subtraction) vs operate-on-the-summed-tile (naive
+  `|Q|²`-multiply, which fails)**. The e-ph subtractive convention is "better
+  conditioned" precisely because subtraction is *how you isolate the channel
+  additively*; the rank-1 factorization isolates it even more cleanly by naming its
+  exact form.
+
+### 9.1 Exciton-band-structure interpolation — the direct analogue
+
+**Haber, Qiu, da Jornada, Neaton, "Maximally Localized Exciton Wannier
+Functions," PRB 108, 205109 (2023) / arXiv:2308.03012.** This is the exciton
+BSE-kernel transcription of the whole problem and it maps 1:1 onto LORRAX.
+
+They split the singlet exciton Hamiltonian (their Eq. 32) and interpolate only the
+short-range part:
+
+```
+H^Xct(Q) = H^SR(Q) + 2 δ_S K^LR(Q)                                    (Eq 32)
+K^LR(Q)  = K^{X,Dip}(Q) − K̄^{X,Dip}(0)                               (Eq 33)  ← SUBTRACT the Q=0 dipole
+K^{X,Dip}_{MN}(Q) = (4πe²/V_uc) Σ_G [P*_M·(Q+G)][P_N·(Q+G)] / |Q+G|²  (Eq 27)  ← rank-1 in dipole P
+K^{NA}_{MN}(Q) ≡ lim_{G=0, Q→0} K^{X,Dip} = (4πe²/V_uc)(P*_M·Q̂)(P_N·Q̂) (Eq 28-29) ← direction-dep., finite
+```
+
+- **What is rank-1:** `K^{X,Dip}` is a dyadic in the *exciton transition-dipole
+  vector* `P_M`. The `G=0` head is `(P*_M·Q̂)(P_N·Q̂)` — direction-dependent,
+  bounded in 3D (numerator `|Q|²` cancels `v`'s `|Q|²`), and this **is g0⊗g0**: `P_M`
+  is Haber's `g0`.
+- **What is interpolated:** the short-range `H^SR(Q)` is Fourier-transformed to the
+  exciton-Wannier lattice `R̄` (Eq 20); `H^SR_{MN}(R̄)` decays rapidly ⇒
+  interpolation-safe. The head-removed `Q=0` anchor is `H^SR(0)=T(0)−K^D(0)+2δ_S
+  K̄^X(0)` (Eq 43).
+- **What is added back analytically:** `K^LR(Q)` from the *smooth/Q-independent
+  dipoles* `P_M` and the closed-form `1/|Q+G|²` at each target Q.
+- **Direction-dependent Q→0:** handled by subtracting `K̄^{X,Dip}(0)` before the FT
+  (regularizes the sum) and a Löwdin down-folding (their §V.2) for the residual
+  head; the `G=0` cusp lives entirely in the analytic `K^LR`, never in the
+  interpolant.
+
+This is *exactly* the parent's rank-1-head factorization: interpolate the smooth
+body (`H^SR`), carry the smooth `g0` (dipoles `P_M`), reassemble with analytic
+`1/|Q|²`. Earlier precedent for interpolating BSE across the grid via Wannier +
+analytic-singular separation: **Kammerlander, Botti, Marques, Marini, Attaccalite,
+arXiv:1209.1509** (double-grid BSE; interpolate transition dipoles, treat the
+Coulomb head/wing singularity analytically).
+
+### 9.2 Polar electron-phonon matrix elements — the subtractive lineage
+
+The `g = g_SR + g_LR` split is the *additive* analogue of the owner's multiplicative
+idea, and the community adopted it precisely because the multiplicative form fails on
+a sum.
+
+**Verdi & Giustino, PRL 115, 176401 (2015) / arXiv:1510.06373** — Fröhlich vertex:
+
+```
+g_{mnν}(k,q) = g^S_{mnν}(k,q) + g^L_{mnν}(k,q)                         (Eq 2)
+g^L_{mnν}(k,q) = i(4π/Ω)(e²/4πε₀) Σ_κ (ℏ/2NM_κω_qν)^½ ·
+   Σ_{G≠−q} [(q+G)·Z*_κ·e_κν(q)] / [(q+G)·ε^∞·(q+G)] ·
+            ⟨ψ_{m,k+q}|e^{i(q+G)·r}|ψ_{n,k}⟩                          (Eq 4)  ← 1/q dipole divergence
+```
+
+Their explicit recipe (verbatim): "(ii) subtract `g^L` so as to obtain the
+short-ranged part `g^S`; (iii) apply Wannier-Fourier interpolation to `g^S`; (iv)
+add up the short-range and long-range parts at arbitrary k and q **after**
+interpolation." **SUBTRACT → interpolate remainder → ADD analytic LR back.**
+Parallel construction: **Sjakste, Vast, Calandra, Mauri, PRB 92, 054307 (2015)**
+(GaAs polar-optical Wannier interpolation, same split).
+
+**Brunin, Miranda, Royo, Stengel, Verstraete, et al., PRL 125, 136601 (2020) /
+arXiv:2002.00628** — the *cautionary* result: dipole-only subtraction is **not
+enough**. The next order in q (the **dynamical quadrupole**) is finite at `q→0` but
+angular-discontinuous; if it is left inside `g^S`, Fourier interpolation produces
+unphysical oscillations near Γ (their Fig. 2, "FI" vs "FI+Q"). Fix = extend `g^L` to
+the quadrupole term (their Eq 3, adds `(q_β+G_β)(q_γ+G_γ)(Z* v^Hxc + ½Q^βγ)` in the
+numerator) so the interpolated remainder is truly smooth. **Lesson for LORRAX: the
+subtractive split is only as good as the analytic LR model; if the removed channel
+does not capture *all* the nonanalytic structure, the "smooth body" is still
+non-interpolable.** This is the e-ph mirror of the ζ-rotation caveat in §3.
+
+**2D modifications — Sohier, Calandra, Mauri, Nano Lett. 17, 3758 (2017) /
+arXiv:1612.07191** (and Sohier–Gibertini–Marzari, mobility framework): in 2D the
+bare Coulomb changes power, `v(q) = 2π/(|q| ε_2D(q))` with `ε_2D(q)=ε_ext+r_eff|q|`,
+so the LO/head is **linear in `|q|`** with a *finite but direction-discontinuous
+slope* at `q→0` (nonanalytic first derivative, not a `1/q²` pole). The analytic
+re-add must use the 2D-truncated Coulomb, not the 3D `1/q²`.
+
+### 9.3 ISDF/THC across momentum — two conventions (target 3)
+
+Direct precedent for (not-)interpolating the density-fitting vectors themselves:
+
+- **q-independent auxiliary basis (interpolation trivial by construction).** Lee &
+  Reichman, "Even Faster Exact Exchange for Solids via THC," JCTC (2023) /
+  arXiv:2304.05505; and the k-point RPA-THC with a *momentum-dependent auxiliary
+  basis* (JCTC 2023, doi:10.1021/acs.jctc.3c00615). In these, the interpolation
+  vectors `ζ_μ(r)` are **cell-periodic and k-independent**; the entire `q=k′−k`
+  dependence is folded into Bloch **phase factors** `e^{iq·r}` and the `M`-matrices.
+  Interpolating/reusing ζ across q is a non-issue there *because ζ was fit to the
+  union span of all orbital pairs at once* (larger rank, not tuned per q).
+- **per-q least-squares ζ_q (LORRAX's convention).** LORRAX fits `C_q ζ_q = Z_q` per
+  momentum to the *specific* pair-density span at that q (manual 5.3). That span
+  rotates with q — §3 measured ~40% median magnitude variation between adjacent q
+  and 90–340% Frobenius error predicting `V_q` from a Γ "master ζ". So LORRAX sits
+  in the convention where ζ is **genuinely q-dependent and not directly
+  interpolable**; the H1/H2 "cell-periodic master ζ" hypothesis that the k-THC
+  schemes rely on is exactly what §3 rejected for LORRAX's per-q fit.
+
+Implication: a precedent for reusing ISDF vectors across q **exists**, but only in
+the global-auxiliary-basis convention. Two honest routes for LORRAX: (a) recompute
+`g0(Q)`/`ζ_Q` per Q (compute-don't-interpolate, §4 option 1 — cheap for the `g0`
+G=0 slice), or (b) migrate to a union-span/global ζ if dense-Q dispersion makes
+per-Q refits dominate (a larger-rank, separate design). AFQMC-ISDF (Malone, Lee,
+Morales, arXiv:1810.00284) and complex-k-means ISDF (arXiv:2208.07731) are further
+ISDF-with-k references but do not interpolate ζ across q either.
+
+### 9.4 Mapping table — literature object ↔ LORRAX object
+
+| literature object | source | LORRAX object |
+|---|---|---|
+| exciton dipole `P_M` (Haber Eq 27) | 2308.03012 | `g0_μ = ζ(q,μ,G=0)` — the head channel vector (`head_correction`, `tagged_arrays.py:94`) |
+| rank-1 dipolar head `K^{X,Dip}=Σ_G P*·(Q+G) P·(Q+G)/|Q+G|²` (Eq 27) | 2308.03012 | rank-1 head `V_Q^LR[μν] = Σ_G ζ̃*_μ v(Q+G) ζ̃_ν` restricted to the g0 channel = `v(Q)·conj(g0)⊗g0` (`apply_q0_head_rank1`) |
+| short-range `H^SR(R̄)` (Wannier-interpolated, Eq 32/20) | 2308.03012 | `V_Q^SR[μν] = V_qmunu` (already G=0-zeroed) — the smooth body to interpolate |
+| subtract `K̄^{X,Dip}(0)` before FT (Eq 33) | 2308.03012 | subtract `V_Q^LR` before storing/interpolating (= `coulomb_sr_lr.md` split, α→∞ limit) |
+| e-ph `g = g_S + g_L`, `g_L ∝ (q·Z*·e)/(q·ε·q)` (Verdi Eq 2,4) | 1510.06373 | `v(Q+G)=v_SR+v_LR` per-G split; `V_Q=V_SR+V_LR` (`coulomb_sr_lr.md` Gaussian split) |
+| SUBTRACT-interpolate-ADD recipe (Verdi step ii–iv) | 1510.06373 | interpolate `V_SR/W_SR`, re-add `v_lr_at_qG` analytically (`range_sep.readd_lr_direct`) |
+| quadrupole term needed for smooth `g_S` (Brunin Eq 3) | 2002.00628 | the ζ-rotation residual (§3): analytic head removal alone leaves ~40% coarse-q body variation ⇒ body still not perfectly interpolable |
+| 2D `v=2π/(|q|ε_2D)`, linear-`|q|` head (Sohier) | 1612.07191 | slab-truncated Coulomb `f_2D` envelope (`slab_2d.py:29-37`); 2D head `~2π/|Q|` |
+| 2D exchange head `A|Q| + A|Q|e^{−i2θ}` winding-2 (Qiu Eq 9,10) | 1507.03336 | directional `g0(Q̂)`-carried head; `S_cart` anisotropic generator thrown away today (`w_head_wings_interp.md`) |
+| k-THC q-independent ζ_μ(r), q in phases | 2304.05505 | the H1/H2 "master ζ" hypothesis §3 REJECTED for LORRAX's per-q ζ_q |
+
+### 9.5 2D nonanalytic q̂ — implication for the MoS2 fixtures
+
+Qiu, Cao, Louie, PRL 115, 176801 (2015) / arXiv:1507.03336 is the load-bearing 2D
+reference. Their exchange kernel (Eq 2) `⟨vckQ|K^x|v'c'k'Q⟩=Σ_G M_cv v(Q+G)
+M*_{c'v'}` with 2D `v(Q+G)=2πe²/|Q+G|` (Eq 4) gives, on expansion (Eqs 9–10):
+
+```
+intravalley:  ⟨S^K_Q|K^x|S^K_Q⟩   = C + A|Q| + βQ²
+intervalley:  ⟨S^K_Q|K^x|S^{K'}_Q⟩ = A|Q| e^{−i2θ} + β'Q²        (θ = polar angle of Q)
+```
+
+Two consequences for MoS2 (a slab fixture, `sys_dim=2`):
+
+1. **The head is nonanalytic — a `|Q|` cusp, not a `1/|Q|²` pole — and the analytic
+   re-add must use the 2D-truncated Coulomb `2π/|Q|·f_2D`, not the 3D `1/|Q|²`.**
+   LORRAX already has `f_2D` (`slab_2d.py`), and `coulomb_sr_lr.md`'s Gaussian split
+   keeps the dimensional envelope as an outer factor, so `v_SR+v_LR=v` holds for the
+   slab. The rank-1 factorization inherits this for free **iff** the head's `v(Q)` is
+   evaluated through `get_kernel(sys_dim).v_qG`, not a hardwired 3D form.
+2. **The head is direction-dependent with winding number 2** (`e^{−i2θ}`). A single
+   isotropic scalar (today's `wcoul0`/`vhead` in `apply_q0_head_rank1`) **averages
+   this away** — correct only at the single coarse `Q=0` point where Baldereschi–
+   Tosatti makes the direction average out (which is *why* the isotropic head passed
+   the coarse Si/MoS2 gates, `w_head_wings_interp.md`). Once Q is refined toward 0
+   — exactly the finite-Q / fine-grid regime this design targets — the isotropic
+   scalar is wrong. The rank-1 head `g0(Q)⊗g0*(Q)·v(Q)` carries the winding-2
+   angular structure **naturally, provided `g0(Q)` is the Q̂-dependent G=0 projection
+   (the transition-dipole orientation), not a frozen vector.** This is the same point
+   `w_head_wings_interp.md` makes about the discarded `S_cart` anisotropic generator:
+   for MoS2 finite-Q, `g0` must rotate with Q̂.
+
+### 9.6 Concrete recommended scheme
+
+**For `V_Q` (bare exchange tile), arbitrary Q — rank-1-head factorization
+(= subtract-analytic-LR with LORRAX's known rank-1 head):**
+
+1. Persist the smooth body `V_Q^SR[μν] = V_Q[μν] − v(Q)·conj(g0(Q))⊗g0(Q)` — **this
+   is the already-stored `V_qmunu` (G=0 zeroed)**; no new production of the body is
+   needed, only the recognition that the stored G=0-zeroed tile *is* `V^SR`.
+2. Persist/carry the head vector `g0(Q)=ζ̃(Q,μ,G=0)`.
+3. Interpolate `V_Q^SR` across the fine grid (uniform-refinement FFT of the body, or
+   the dcc/dvv interpolation of the wfn design — its choice, not this note's).
+4. Reassemble at target `Q_fi`:
+   `V_{Q_fi} = interp(V^SR)(Q_fi) + v(Q_fi)·conj(g0(Q_fi))⊗g0(Q_fi)`,
+   with `v(Q_fi)` the **analytic** `get_kernel(sys_dim).v_qG` (3D `8π/|Q|²`; 2D
+   `2π/|Q|·f_2D`), and `g0(Q_fi)` the Q̂-dependent G=0 projection.
+5. **Do NOT** multiply the whole tile by `|Q|²` and divide back (§9.0). Do the
+   removal/re-add on the **isolated rank-1 channel only**.
+
+Caveat carried from §3 and mirrored by Brunin §9.2: `g0(Q)` and the body inherit the
+ζ-rotation. Two sub-cases, gate them:
+- If the **G=0 slice `g0(Q)` is smooth** across the coarse grid (an open, cheap-to-
+  test question — the G=0 projection may be far smoother than full `ζ_q`, whose §3
+  rotation is dominated by high-G components), interpolate it too.
+- If `g0(Q)` is **not** smooth, **compute-don't-interpolate the head vector**: one
+  G=0 projection of an htransform-fed per-Q ζ (or dipole) refit per Q — cheap, exact,
+  no interpolation error (§4 option 1 specialized to the single G=0 row).
+
+**For the exchange kernel at arbitrary Q (finite-Q exciton):** same rank-1
+factorization on `V_Q`, plus the **2D directional head** of §9.5 (Q̂-dependent
+`g0(Q̂)`, 2D Coulomb `2π/|Q|·f_2D`, winding-2 preserved). For MoS2 the honest first
+cut is **per-Q ζ refit of the body too** (§4 option 1) until the in-flight
+ingredient-interpolation *falloff study* (which quantifies how fast the body/`g0`
+coarse-q variation decays — the §3 40% number is one datum of it; **do not
+duplicate that study here**) shows the body is smooth enough to interpolate at the
+target fine-grid density. The rank-1 factorization is the *correct container* either
+way: it cleanly separates the divergence (analytic, exact) from the basis rotation
+(the residual interpolation error), so the falloff study's verdict decides only
+*how* the body is produced (interpolate vs refit), never whether the head is right.
+
+**Relationship to the existing designs:** the rank-1 factorization **is**
+`coulomb_sr_lr.md`'s Gaussian SR/LR split in the `α→∞` / G=0-only limit (all singular
+weight on the head channel), ISDF-compressed. `coulomb_sr_lr.md`'s finite-α Gaussian
+split is the *smooth generalization* that also de-weights near-head G≠0 terms; it is
+the better choice if the body FFT-interpolation needs extra smoothness. Either way
+the seam is the same `v_qG_split`/`v_lr_at_qG` + the existing `apply_q0_head_rank1`
+made per-fine-Q. The anisotropic-head machinery for the winding-2 term is
+`w_head_wings_interp.md`'s promoted `head_wing` module with the Q̂-directional
+`W_head`.
+
+### 9.7 Load-bearing citations (returned to main)
+
+1. Haber, Qiu, da Jornada, Neaton, PRB 108, 205109 (2023), arXiv:2308.03012 — the
+   exciton-Wannier SR/LR split; `K^{X,Dip}` rank-1 in the dipole, subtracted and
+   re-added analytically (Eqs 27–34, 43). **The direct proof the rank-1-head
+   factorization is the right transfer.**
+2. Verdi & Giustino, PRL 115, 176401 (2015), arXiv:1510.06373 — polar e-ph
+   `g=g_S+g_L`, explicit SUBTRACT→interpolate→ADD recipe (Eqs 2, 4). The
+   subtractive convention.
+3. Qiu, Cao, Louie, PRL 115, 176801 (2015), arXiv:1507.03336 — 2D exchange head
+   `A|Q|` + winding-2 `e^{−i2θ}` nonanalyticity (Eqs 2, 4, 9, 10). Governs the MoS2
+   fixtures' directional head.
+4. Brunin et al., PRL 125, 136601 (2020), arXiv:2002.00628 — dipole-only subtraction
+   leaves a non-interpolable remainder; quadrupole (next order in q) needed (Eq 3).
+   The e-ph mirror of the ζ-rotation caveat: subtraction is only as good as the
+   analytic LR model.
+5. Lee & Reichman, JCTC (2023), arXiv:2304.05505 (+ k-point RPA-THC,
+   doi:10.1021/acs.jctc.3c00615) — ISDF/THC across q with a q-**independent**
+   auxiliary basis; the precedent-and-contrast for LORRAX's q-dependent per-q ζ.
