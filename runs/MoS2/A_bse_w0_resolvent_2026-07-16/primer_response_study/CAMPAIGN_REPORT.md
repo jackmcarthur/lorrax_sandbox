@@ -164,6 +164,13 @@ independently of interpolation.
 
 ### 5a. Optimistic branch — the surviving candidate (rankcut ingredient interp, production labeling)
 
+> **2026-07-17 SUPERSESSION — read §8 before acting on this list.** Item 1's
+> 3×3-subgrid → 6×6-complement design was WITHDRAWN by owner redesign
+> mid-execution (cross-grid-class convergence confound; 3×3 never a useful
+> coarse grid) and replaced by the 6×6-LOO + Γ→x̂-path-smoothness design;
+> item 2's fixture pointer is wrong (work_sym zeta is IBZ-only — the control
+> ran on work_old, n_μ=960). Results: §8 below + arbitrary_q_bse.md §11.
+
 1. **The decisive test (blocking everything else):** off-grid-with-truth — interpolate
    C/Z from the 3x3 subgrid of the 6x6 fixture to the 27 complement q's, rankcut solve,
    score B-block + exciton swap against the stored 6x6 truth, wrapped labeling throughout
@@ -261,3 +268,56 @@ Add to `ARBITRARY_Q_PRIMER.md` PART III (as §III.5, with a pointer patch in §I
   `proto2_out_c3_{3x3,diag}.log`, `proto2_c3_3x3.npz` (SLURM step 56052603.11).
 - Campaign summary appended to
   `reports/bse_refactor_map_2026-07-15/archive/designs/arbitrary_q_bse.md` §10.
+
+---
+
+## 8. Follow-up results (2026-07-17): owner-redesigned off-grid tests — 6×6 anchor + path smoothness PASS; midpoint refit truth pending; Si control fails off-grid as predicted
+
+Executed with the campaign's own harness (proto1_prep loaders + the C2
+wrapped-labeling conventions), extended by `offgrid_prep.py` and driven by
+`offgrid_mos2.py` / `offgrid_si.py` / `offgrid_path.py` /
+`offgrid_path_htr.py`. Logs: `offgrid_{mos2,si,path,path_htr}.log` +
+`offgrid_*_results.npz`. Full writeup: `arbitrary_q_bse.md` §11 (redesign
+rationale §11.0 — the 3×3→6×6 idea must not be re-attempted). Highlights:
+
+- **Harness continuity null:** the new driver reproduces §3's wrapped ladder
+  bit-for-bit (3×3 LOO rc1e-4 B 4.699e-3/3.235e-2; rc1e-2 exciton 5.444 meV
+  = the §1 logged values). All §2 nulls re-pass; two NEW fixture traps found
+  and logged in KNOWN_SANDBOX_ERRORS (half-boundary sphere-center
+  irregularity — 2/36 q on the 6×6; Si 3D mini-BZ head in disk V_qmunu).
+- **§6 open item closed:** 3×3 LOO exciton at the rankcut-1e-4 optimum =
+  **0.110 meV med / 0.242 max**.
+- **6×6 on-grid LOO (redesign item 1):** rc1e-4 **B 3.73e-3 med / 3.63e-2
+  max, excitons 0.020 meV med / 0.185 max** (nR7; window flat 1e-3..1e-5) —
+  the on-grid headline survives densification and excitons improve ~5×.
+  Subgrid-LOO bridging row (1/3-spacing on the same data): 4.92e-3 — the
+  q-spacing, not the fixture, controls the error.
+- **Γ→(1/6,0,0)x̂ path (redesign item 2a):** rank-cut trajectories of the
+  fixed-probe B-block are smooth (entries d²/range ~5–7e-2; head-channel
+  overlap ≥0.9899); raw is chaotic (10²–10⁴ excursions) — the window
+  persists off-grid. Exact-stencil+raw chain null at both endpoints:
+  2.4e-9/6.5e-8. Caveat: with a fixed Γ-probe (G0-excluded) the truncation
+  costs 3–20% — junk-inertness belongs to the physical pair-row metric only.
+- **Physical swap-H(t) via htransform (item 2b, partial):** true M(t)/D(t)/
+  H_dir(t) from `compute_wfns_fi` on 24×24; smooth finite-Q dispersion
+  curves, **trajectory rung-sensitivity ≤0.3 meV, endpoint swap anchors
+  0.024–0.057 meV**; endpoint B relF (G0-excl) 1.4–1.6% at q=1/6. Content
+  finding: htransform ψ(r_μ) ≈ psi_full_y (cos 0.9987) ≠ raw WFN (0.716) —
+  the LORRAX loader defines the content class; the pipeline is internally
+  consistent. **Pending (the one remaining measurement): midpoint ζ-refit
+  ground truth from full-grid htransform ψ.**
+- **Withdrawn leg (appendix only, §11.5):** the pre-redesign 3×3-subgrid →
+  6×6-complement run (complete before the stop landed) gave rc1e-4 B
+  3.88e-3/8.07e-3, excitons 0.026/0.080 meV — retained as ingredient-level
+  diagnostics, NOT an off-grid capability claim.
+- **Si 4×4×4 control (work_old, full-BZ):** off-grid from 2×2×2 FAILS at
+  every rung (dC/dZ 67–69%, best B 19%, window inverted) — error tracks the
+  under-resolved 3D falloff exactly as §3.5 predicted: **control PASSES.**
+  On-grid 3D LOO still hits 0.29% B with the complete-fcc-shell stencil
+  (nR13); broken shells (nR7) are 30–60× worse.
+
+**Standing verdict:** per-Q ζ refit remains the production default. The
+rank-cut scheme is now measured: few-tenths-percent on-grid at 3×3 AND 6×6,
+smooth and meV-anchored along the near-grid path, correctly failing where
+its premise (resolved C_R falloff) is absent. Production adoption waits on
+the midpoint refit truth (arbitrary_q_bse.md §11.4/§11.7).

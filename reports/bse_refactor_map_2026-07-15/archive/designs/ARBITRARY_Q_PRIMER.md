@@ -838,10 +838,29 @@ physical-metric pushback were both prototyped against fixture data
    interpolation + solve-in-the-target's-own-frame achieves **0.47% median /
    3.2% max** gap-window B error on-grid LOO (exciton ≤5.4 meV at the 1e-2
    rung). Ingredient-side interpolation is RE-LICENSED on-grid.
-4. **Still pending before any production adoption** (per-Q ζ refit remains the
-   default): the off-grid-with-truth decisive test (3×3-subgrid → 6×6
-   complement) and the Si 4×4×4 negative control. The 0.5% headline is
-   on-grid-only — do not quote it as off-grid capability.
+4. **Follow-up status (2026-07-17, measured — arbitrary_q_bse.md §11):**
+   the 3×3-subgrid → 6×6-complement design named here was WITHDRAWN by owner
+   redesign (cross-grid-class convergence confound; 3×3 never a useful coarse
+   grid — do not re-attempt it; §11.0). Its replacements:
+   - **6×6 on-grid LOO: PASSED** — rankcut 1e-4 B 0.37% med / 3.6% max,
+     excitons 0.020 meV med / 0.185 max (the 3×3 0.47% headline survives
+     densification; 3×3 exciton at the optimum = 0.110 meV, closing §10's
+     missing number).
+   - **Γ→(1/6,0,0)x̂ path smoothness: PASSED at the (a) level** — rank-cut
+     trajectories smooth (raw chaotic; the window persists off-grid),
+     exact-stencil chain nulls 2.4e-9/6.5e-8 at the endpoints, physical
+     swap-H(t) via htransform smooth with rung-sensitivity ≤0.3 meV and
+     endpoint swap anchors 0.024–0.057 meV.
+   - **Si 4×4×4 negative control: behaves as predicted** — off-grid from
+     2×2×2 fails at every rung (dC/dZ ~0.7, best B 19%, window inverted;
+     error tracks the unresolved 3D falloff), while 3D on-grid LOO reaches
+     0.29% with complete-fcc-shell stencils (broken shells 30–60× worse).
+   - **Still PENDING before any production adoption (per-Q ζ refit remains
+     the default): the midpoint ζ-refit ground truth** — the per-Q refit at
+     off-grid q from full-grid htransform ψ (compute_wfns_fi delivers ψ(r_μ)
+     only; the fit RHS needs full-r reconstruction). Until it lands, off-grid
+     accuracy is bounded by smoothness + endpoint anchors, not measured;
+     quote no off-grid capability number.
 5. Fixture traps any future study must respect: the rk unwrap trap and the
    psi_full_y band-span trap (KNOWN_SANDBOX_ERRORS 2026-07-17). Constraints
    (a)–(d) unchanged; the LR channel stays analytic in closed form.

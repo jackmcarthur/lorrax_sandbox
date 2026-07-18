@@ -873,3 +873,181 @@ Frobenius. Full synthesis:
    off-grid-with-truth test is pending, plus a Si 4×4×4 negative control
    (never ran). §3.5's off-grid factor (~30× for C_q) may make off-grid
    marginal — measure, don't assume.
+
+## 11. Off-grid follow-up (2026-07-17) — APPENDED: owner redesign mid-execution; 6×6 LOO anchor + Γ→x̂ path smoothness PASS; midpoint ζ-refit truth pending; Si control fails off-grid as predicted
+
+Follow-up to §10's "decisive missing measurement". All numbers grep-verified
+from `runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/`
+`offgrid_{mos2,si,path,path_htr}.log` (+ `offgrid_*_results.npz` /
+`offgrid_prep.py`, `offgrid_mos2.py`, `offgrid_si.py`, `offgrid_path.py`,
+`offgrid_path_htr.py`). Scheme under test throughout: the §10 surviving
+candidate — plain rank-cut interpolation of C_q/Z_q in production BGW-wrapped
+labeling, one truncated solve in the target's own frame, physical metrics
+(gap-window `B = M^H V_Q M`, TDA exciton swap).
+
+### 11.0 OWNER REDESIGN (supersedes §5a-item-1's test design; do not re-attempt)
+
+The originally-specified 3×3-subgrid → 6×6-complement off-grid-with-truth
+test is **withdrawn as a scheme verdict**: exciton/physical values shift
+strongly with k-grid convergence between the two grid classes, so
+interpolation error cannot be separated from convergence shift, and 3×3 is
+judged never-useful as a coarse base grid. (The leg had already completed
+when the redesign landed — its output is retained as §11.5 ingredient-level
+appendix ONLY.) Replacement design, owner's words: "start with 6×6 and see
+if it's possible to get smoother interpolation just between the lowest
+eigenvalues at like k=0 and k=1/6 x̂ or something, even if it's harder to
+compare those to ground truth" — i.e. (1) 6×6 on-grid LOO anchor, (2) a
+Γ → (1/6,0,0) path with SMOOTHNESS of physical observables as the judge +
+(where affordable) midpoint ground truth via per-Q ζ refit from htransform'd
+wavefunctions on the same 6×6 data; (3) Si control deprioritized.
+
+### 11.1 Gates and nulls (all fixtures)
+
+Campaign chain inherited and extended; every gate green before any result:
+
+| gate | MoS2 3×3 | MoS2 6×6 | Si 4×4×4 (work_old) |
+|---|---|---|---|
+| sphere max\|q+G\|²−cutoff (post-wrapfix) | 0.0 | 0.0 | 0.0 |
+| makeVq vs disk V_qmunu, all q (max) | 1.30e-9 | 2.81e-9 | **1.42e-15** |
+| X^H X == C_q | 8.7e-11 | 4.2e-11 | 1.1e-15 |
+| solve-chain null (true C/Z, raw) | 4.90e-13 | 4.6–6.0e-10 | 3.9–4.0e-13 |
+| rankcut-1e-4 floor on TRUE data | 3.58e-3 | 3.2–3.7e-3 | 0.9–1.4e-3 |
+| trig-interp exactness (to a training pt) | 4.9e-16 | 4.9e-16 | 7.3e-16 |
+| solve/to_sphere commutation | 2.16e-14 | — | — |
+| harness continuity vs §10 logs | **rc1e-4 LOO B 4.699e-3/3.235e-2 + exc 5.444 meV @1e-2 — exact reproduction** | | |
+
+Two new fixture traps found and recorded (KNOWN_SANDBOX_ERRORS 2026-07-17):
+the **half-boundary wrap trap** (at q-components exactly 1/2 the stored
+sphere center is per-q irregular — writer FP fuzz; 2/36 q on the 6×6
+mislabeled by `rk−round(rk)`; fix = sphere-derived center, implemented in
+`offgrid_prep.fix_sphere_wrap`) and the **Si 3D mini-BZ head** (disk V_qmunu
+carries the MC-averaged v(q,G=0) at q≠0 per `build_v_head_miniBZ_avg_3d`;
+without it makeVq-vs-disk fails at 9.6e-3 med). Also: §5a-item-2's fixture
+pointer (work_sym/792) is IBZ-only zeta — the control ran on work_old
+(full-BZ, n_μ=960).
+
+### 11.2 Redesign item 1 — 6×6 on-grid LOO (35-train) + the missing 3×3 exciton
+
+| rung | 6×6 LOO nR7 B med (max) | exc meV med (max) | 6×6 nR13 B med | 3×3 LOO B med | 3×3 exc meV med (max) |
+|---|---|---|---|---|---|
+| rankcut 1e-3 | 7.55e-3 (4.46e-2) | 0.050 (0.263) | 7.39e-3 | 8.18e-3 | 0.160 (0.608) |
+| **rankcut 1e-4** | **3.73e-3 (3.63e-2)** | **0.020 (0.185)** | 3.54e-3 | 4.70e-3 | **0.110 (0.242)** |
+| rankcut 1e-5 | 3.12e-3 (4.59e-2) | 0.019 (0.234) | 2.34e-3 | 6.62e-3 | 0.131 (0.270) |
+| raw | 2.31e-1 (3.24) | 1.77 (6.4) | 6.48e-2 | 2.64e-1 | 14.7 (20.9) |
+
+- The 3×3 headline gets its 6×6 counterpart: **0.37% median / 3.6% max B,
+  excitons 0.020 meV** at the rankcut-1e-4 optimum. Ingredients: dC med
+  1.0e-3 (nR7) / 4.8e-4 (nR13), dZ 3.3e-2. The §10 caveat "0.5% is 3×3-only"
+  is closed — densifying the grid does not degrade the window; excitons
+  improve ~5× (0.110 → 0.020 meV).
+- The §6 missing number: **3×3 LOO exciton at rankcut 1e-4 = 0.110 meV med /
+  0.242 max** (rc1e-2 rung reproduces the logged 5.444 meV exactly).
+- Subgrid-LOO bridging row (8-train at 1/3-spacing ON the 6×6 data): rc1e-4
+  B 4.92e-3/4.40e-2 — statistically the 3×3-fixture number: q-spacing, not
+  fixture, controls the error.
+
+### 11.3 Redesign item 2a — Γ→(1/6,0,0)x̂ path smoothness (`offgrid_path.py`)
+
+9-point t-grid, training = all 36 on-grid q, fixed G-superset (2012 G, union
+of path spheres, **G=0 excluded** — the slab head diverges ~1/|q_par| toward
+Γ and is the analytic rank-1 channel; its interpolant coefficient
+ζ̃(t, G=0) is tracked separately), fixed Γ gap-window probe (324 rows).
+
+- **Rank-cut trajectories are smooth**: B̃ entries evolve in gentle monotone
+  arcs (d²/range med 5–7e-2 across stencils nR7/13/36); the top eigenvalue
+  curves are smooth in the interior; the head-channel coefficient's
+  successive-t overlap stays ≥ 0.9899 at every rankcut rung.
+- **raw is chaotic everywhere off-grid** (eigenvalue excursions 10²–10⁴,
+  head-channel overlap dropping to 0.11) — the regularization window is not
+  an on-grid artifact; it is what makes off-grid evaluation possible at all.
+- **Exact-stencil chain null**: nR36 + raw solve reproduces the stored truth
+  at both on-grid endpoints through the full off-grid contraction machinery
+  at 2.4e-9 / 6.5e-8.
+- Honest caveat (metric hygiene): with this FIXED-Γ-probe, G0-excluded
+  contraction the rankcut truncation costs 3.3–4.5e-2 at t=0 and ~0.19 at
+  t=1 vs full-rank truth — junk-inertness is a property of the physical
+  pair-row metric (0.3% floors above), NOT of arbitrary probes. Consistent
+  with §10's "tile is junk-weighted" adjudication; quote no fixed-probe
+  number as a physical error.
+- A visible first-step at Γ on the 2nd/4th eigenvalue (t=0 → 1/8) is the
+  Γ-adjacent nonanalyticity of the G0-excluded 2D exchange body (winding
+  structure survives the rank-1 head removal) + the Γ truncation offset —
+  present identically at every rung, not an interpolation kink.
+
+### 11.4 Redesign item 2b (partial) — physical swap-H(t) via htransform (`offgrid_path_htr.py`)
+
+Production entry points (`bandstructure.htransform.initialize_wfns` +
+`bse_setup.compute_wfns_fi`, kgrid_fi=24×24×1 — contains every k−q(t) for
+t = j/4) on the same 6×6 dataset. Galerkin rank 1280 (= ns·n_μ ceiling).
+
+- **Content finding (resolves the direction of the band-span trap):**
+  htransform ψ(r_μ) at on-grid k matches **psi_full_y** at window-subspace
+  cos med 0.9987 while matching raw-WFN centroids only at med 0.716 — the
+  LORRAX loader itself produces the psi_full_y content class; the stored
+  ζ/W0/restart and htransform are ONE consistent class, raw WFN.h5 is the
+  outlier. Cross-content contraction is therefore NOT an issue inside this
+  pipeline. Norm convention ratio med 1.0073 (applied once).
+- htransform fidelity: on-grid ε err med 220 meV / max 837 meV (bands
+  20–32) at 640 centroids — adequate for smoothness/anchors (D and H_dir
+  errors are t-consistent and cancel in swaps), NOT yet for absolute
+  dispersion physics.
+- **Swap-H(t) lowest-4 trajectories** (true M(t), D(t), H_dir(t) from
+  htransform; B(t) from the interp scheme, G0-excluded): smooth finite-Q
+  exciton dispersion curves (range ~240 meV, max|d²| 38–62 meV ≈ curvature
+  scale of a 5-point parabola, no kinks); **rung-sensitivity of the whole
+  trajectory ≤ ~0.3 meV** across rankcut 1e-3/1e-4/1e-5.
+- **Endpoint swap anchors (interp vs stored-fit truth, same M): 0.024–0.057
+  meV**; endpoint B relF (G0-excluded convention) 4–5% at Γ, 1.4–1.6% at
+  q=(1/6,0,0).
+- **Still pending — the true (b):** the per-Q ζ REFIT truth at the
+  MIDPOINTS needs the fit RHS on the full r-grid, i.e. full-grid htransform
+  ψ (centroid-basis reconstruction beyond `compute_wfns_fi`'s ψ(r_μ)
+  contract). Marked as the follow-up; until it lands the midpoint accuracy
+  is bounded only by smoothness + endpoint anchors, not measured directly.
+
+### 11.5 APPENDIX (no scheme conclusions — §11.0): the withdrawn 3×3-subgrid → 6×6-complement leg
+
+Completed before the redesign landed; ingredient-level diagnostics retained:
+interpolating from the 9-point subgrid OF THE 6×6 DATASET to the 27
+complement q gave dC med 7.9e-4, dZ med 4.1e-2, and through the rankcut-1e-4
+solve B med 3.88e-3 / max 8.07e-3 with exciton swaps 0.026/0.080 meV against
+the same-dataset stored fits (raw: 3.5e-2/0.30; window shape as in §11.2).
+Read per §11.0 as: the q-interpolation operator itself is benign at
+1/3-spacing on 6×6-converged ingredients — NOT as an off-grid capability
+claim for a 3×3-based production run.
+
+### 11.6 Si 4×4×4 negative control (deprioritized; ran at zero marginal cost)
+
+Full-BZ fixture work_old (n_μ=960, 64 q, bare-3D + mini-BZ head Coulomb).
+
+| test | dC med | dZ med | B med best rung | B med rc1e-4 | raw |
+|---|---|---|---|---|---|
+| off-grid 2×2×2 → 56 complement (nR8 exact) | 0.67 | 0.69 | 0.194 (rc1e-2) | 9.4 | 4.6e4 |
+| on-grid LOO 63-train, nR13 (R0+full fcc shell) | 0.136 | 0.137 | **2.87e-3 (rc1e-3)** | 3.06e-3 | 3.4e-2 |
+| on-grid LOO, nR7 (broken 6-of-12 shell) | 0.457 | 0.449 | 8.5e-2 | 1.8e-1 | 3.1e-1 |
+
+**The control PASSES (= the scheme fails where theory says it must):**
+off-grid from a 2×2×2 base the ingredient error is ~67–69% (§3.5's 72%
+reproduced) and B fails at EVERY rung with the window inverted (more
+truncation = less bad) — error tracks the unresolved 3D C_R falloff, not the
+solve. Two informative surprises: (i) on-grid LOO in 3D still achieves
+MoS2-class 0.29% B despite 13.6% ingredient error — junk-inertness under the
+physical metric extends to 3D on-grid; (ii) 3D R-stencils must take
+COMPLETE coordination shells (nR7 = an argsort-tiebreak subset of the
+12-vector fcc shell is 30–60× worse than nR13).
+
+### 11.7 Verdict and standing defaults
+
+1. **6×6 on-grid anchor: PASS** — 0.37% med / 3.6% max B, 0.020 meV
+   excitons at rankcut 1e-4 (window 1e-3..1e-5 flat).
+2. **Path smoothness (a): PASS** — rank-cut trajectories smooth Γ→x̂ with
+   machine-level exact-stencil nulls and 0.02–0.06 meV endpoint swap
+   anchors; raw chaotic; window persists off-grid.
+3. **Midpoint ground truth (b): PENDING** — htransform ζ-refit at off-grid
+   q needs full-grid ψ reconstruction; the single remaining measurement
+   before any production adoption.
+4. **Si control: behaves as predicted** (off-grid fail tracks falloff
+   resolution; on-grid 3D fine with complete shells).
+5. **Production default unchanged: per-Q ζ refit.** The scheme is a
+   measured few-tenths-of-a-percent on-grid + smooth-and-anchored
+   near-grid interpolant; it is not yet certified at generic off-grid Q.

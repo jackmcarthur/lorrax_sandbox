@@ -1,6 +1,42 @@
 # Changelog
 
 
+## 2026-07-17: Arbitrary-Q follow-up — owner-redesigned off-grid tests: 6×6 LOO anchor + Γ→x̂ path smoothness PASS (0.37% B / 0.02 meV excitons), midpoint ζ-refit truth pending; Si control fails off-grid as theory demands [analysis, no source change]
+
+The campaign's surviving rankcut ingredient-interp scheme, taken through the
+owner-redesigned off-grid program (the original 3×3-subgrid → 6×6-complement
+leg was WITHDRAWN mid-execution — cross-grid-class convergence confound;
+retained as ingredient-level appendix only). Results in
+`arbitrary_q_bse.md` §11 (+ CAMPAIGN_REPORT.md §8, PRIMER §III.5 item 4);
+harness `primer_response_study/offgrid_{prep,mos2,si,path,path_htr}.py`,
+logs `offgrid_*.log` (all numbers grep-verified from disk).
+
+- Harness continuity: new driver reproduces the campaign 3×3 ladder
+  bit-for-bit (rc1e-4 4.699e-3/3.235e-2; 5.444 meV @1e-2); all nulls green
+  (solve-chain 4e-13..6e-10, trig-exactness ~5e-16, makeVq-vs-disk down to
+  1.4e-15 on Si).
+- **6×6 on-grid LOO: rc1e-4 B 3.73e-3 med / 3.63e-2 max, excitons 0.020 meV
+  med** — the 0.47% 3×3 headline survives densification; missing 3×3
+  exciton at the optimum logged (0.110 meV).
+- **Γ→(1/6,0,0) path: rank-cut trajectories smooth** (raw chaotic — the
+  regularization window persists off-grid); physical swap-H(t) via
+  htransform (`compute_wfns_fi`, 24×24) smooth with rung-sensitivity
+  ≤0.3 meV and endpoint swap anchors 0.024–0.057 meV. Content finding:
+  htransform ψ(r_μ) ≈ psi_full_y class (cos 0.9987), raw WFN.h5 is the
+  outlier — the band-span trap is loader-content, pipeline internally
+  consistent.
+- **Si 4×4×4 (work_old full-BZ, n_μ=960): negative control PASSES** —
+  off-grid from 2×2×2 fails every rung (dC/dZ ~0.7, window inverted;
+  §3.5's falloff prediction confirmed); 3D on-grid LOO still 0.29% with
+  complete-fcc-shell stencils (broken shells 30–60× worse).
+- Two new fixture traps in KNOWN_SANDBOX_ERRORS: half-boundary sphere-center
+  irregularity (q=1/2 wrap decided by writer FP fuzz; sphere-derived fix)
+  and the Si 3D mini-BZ-averaged head in disk V_qmunu; plus the campaign's
+  Si fixture pointer correction (work_sym zeta is IBZ-only).
+- **Standing: per-Q ζ refit remains the production default.** The single
+  remaining measurement is the midpoint ζ-refit ground truth (full-grid
+  htransform ψ reconstruction).
+
 ## 2026-07-17: Primer-response prototype campaign (C1/C2/C3) — frame-transport counterproposal KILLED; §3.5 no-window FALLS under physical metric + wrapped labeling [analysis, no source change]
 
 Three parallel prototypes of the ARBITRARY_Q_PRIMER_RESPONSE counterproposal

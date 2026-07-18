@@ -522,3 +522,46 @@ re-verified from disk.
    transports, non-circular fit-RHS rebuilds, "exact" pair-row
    references) silently fails at k != 0. Provenance unresolved —
    restart-writer investigation needed (out of scope read-only session).
+
+## 2026-07-17: half-boundary (q=1/2) extension of the rk wrap trap — the stored sphere center at BZ-boundary q is per-q IRREGULAR (writer FP fuzz)
+
+Follow-up to the 2026-07-17 rk-unwrap entry. On grids with half-integer q
+components (MoS2 6x6, Si 4x4x4) the fix `q_wrap = rk - round(rk)` is NOT
+sufficient: at components exactly 1/2 the stored zeta sphere may sit at
++1/2 or -1/2 PER Q, decided by float fuzz in the writer's own wrap (rk
+values a few ULP above/below 0.5 round differently). Measured on
+`interp_study/mos2_6x6/lorrax/tmp/zeta_q.h5`: 2 of the 11 half-boundary
+q's (q=9 (1/6,-1/2)->( 1/6,+1/2), q=33 (-1/6,-1/2)->(-1/6,+1/2)) are
+centered opposite to the round() guess; the campaign's own fourtails 6x6
+log shows the sphere gate FAILING at +14.45 Ry over cutoff for this
+reason (the run proceeded; its 6x6 shell tables at boundary q carry an
+e^{iG0.r} contamination on those 2 training fields — 3x3 tables and the
+overall four-tails verdict unaffected). Robust fix (implemented in
+`primer_response_study/offgrid_prep.py::fix_sphere_wrap`): derive the
+center per q FROM the sphere itself — the unique candidate wrap with
+max|q_c+G|^2 <= cutoff over the stored G's; assert exact fit. After the
+fix makeVq-vs-disk = 2.8e-9 at all 36 q (6x6). Any future consumer of
+zeta_q.h5 at boundary q must use the sphere-derived center, not round().
+
+## 2026-07-17: CAMPAIGN_REPORT sec 5a item 2 points the Si negative control at an IBZ-only-zeta fixture; and Si 3D disk tiles use the mini-BZ-averaged head
+
+- **Where**: `runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/CAMPAIGN_REPORT.md`
+  sec 5a item 2 (and the task spec derived from it): fixture named
+  `runs/Si/A_bse_sym_centroid_degeneracy_2026-07-16/work_sym/tmp/isdf_tensors_792.h5`.
+- **What happened**: work_sym (and work_demo) zeta_q.h5 store IBZ-ONLY
+  zeta (8 spheres; `zeta_q_G {8,792,588}`) while the restart is full-BZ
+  (64) — no per-q truth or training zeta at 56 of 64 q. The negative
+  control cannot be scored on that fixture.
+- **Expected**: a full-BZ-zeta Si fixture.
+- **Workaround**: `work_old/tmp/` (isdf_tensors_960.h5 + zeta_q.h5,
+  n_mu=960, `zeta_q_G {64,960,588}`) is the only full-BZ-zeta Si restart
+  on disk; the control ran there. Note its zeta_q.h5 `mf_header/kpoints/rk`
+  is the IBZ list (8 rows) — the 64 spheres follow the row-major kgrid
+  enumeration (last index fastest), gate-verified (makeVq-vs-disk all 64 q).
+- **Bonus trap for 3D fixtures**: Si disk `V_qmunu` is built with the
+  mini-BZ MC-averaged head at G=0 for every q != 0
+  (`gw/compute_vcoul.py::build_v_head_miniBZ_avg_3d`, injected when
+  `mc_average_vcoul_body=True` (default) and sys_dim=3;
+  `v_q_g_flat.py:526`). A bare 8pi/|q+G|^2 rebuild fails makeVq-vs-disk
+  at med 9.6e-3 / max 5.7e-2; with the (seed-42, nmc=2^18) table the
+  gate is machine-level. 2D fixtures are unaffected (no head injection).
