@@ -1,0 +1,337 @@
+<title>Interpolating the ISDF Coulomb tile to arbitrary Q: the F-scheme</title>
+<style>
+  :root{
+    --bg:#fdfcf9; --ink:#1d2129; --ink2:#4b5261; --rule:#d9d5cb; --rule2:#eceade;
+    --acc:#8a3324; --acc2:#a5522f; --eqbg:#f6f4ec; --hl:#f3ede0; --good:#2c6e49; --bad:#9b2c2c;
+    --tblhead:#efece2; --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg:#191b1f; --ink:#e6e2d8; --ink2:#a9a698; --rule:#3a3d44; --rule2:#2b2d33;
+    --acc:#e0876a; --acc2:#c9714f; --eqbg:#22242a; --hl:#26241d; --good:#7dc9a0; --bad:#e08a8a;
+    --tblhead:#24262c;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#191b1f; --ink:#e6e2d8; --ink2:#a9a698; --rule:#3a3d44; --rule2:#2b2d33;
+    --acc:#e0876a; --acc2:#c9714f; --eqbg:#22242a; --hl:#26241d; --good:#7dc9a0; --bad:#e08a8a;
+    --tblhead:#24262c;
+  }
+  :root[data-theme="light"]{
+    --bg:#fdfcf9; --ink:#1d2129; --ink2:#4b5261; --rule:#d9d5cb; --rule2:#eceade;
+    --acc:#8a3324; --acc2:#a5522f; --eqbg:#f6f4ec; --hl:#f3ede0; --good:#2c6e49; --bad:#9b2c2c;
+    --tblhead:#efece2;
+  }
+  html{background:var(--bg)}
+  body{margin:0;color:var(--ink);background:var(--bg);
+    font:17px/1.62 Georgia,'Times New Roman',serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:46rem;margin:0 auto;padding:3.5rem 1.4rem 5rem}
+  header{border-bottom:2px solid var(--ink);padding-bottom:1.6rem;margin-bottom:2.2rem}
+  .journal{font:600 .72rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin-bottom:1.1rem}
+  h1{font:400 2.05rem/1.22 Georgia,serif;margin:0 0 .9rem;text-wrap:balance;letter-spacing:-.01em}
+  .abstract{font-size:.95rem;color:var(--ink2);border-left:3px solid var(--rule);padding-left:1.1rem;margin-top:1.3rem}
+  .abstract b{color:var(--ink)}
+  h2{font:600 1.28rem/1.3 Georgia,serif;margin:2.8rem 0 .9rem;letter-spacing:-.005em}
+  h2 .no{color:var(--acc);font-weight:400;margin-right:.55rem}
+  h3{font:600 1.02rem/1.35 Georgia,serif;margin:1.9rem 0 .6rem}
+  p{margin:.85rem 0}
+  /* math */
+  i,var{font-family:Georgia,serif;font-style:italic}
+  .eq{background:var(--eqbg);border-radius:4px;padding:.95rem 1.2rem;margin:1.15rem 0;
+    overflow-x:auto;text-align:center;font-size:1.03rem;line-height:2.0}
+  .eq .tag{float:right;color:var(--ink2);font-size:.85rem;font-style:normal;line-height:2.2}
+  sub,sup{font-size:.68em;line-height:0}
+  .frac{display:inline-block;vertical-align:-.62em;text-align:center;font-size:.88em;line-height:1.15;margin:0 .12em}
+  .frac .n{display:block;padding:0 .25em;border-bottom:1px solid currentColor}
+  .frac .d{display:block;padding:0 .25em}
+  .op{font-style:normal}
+  .bold{font-weight:700;font-style:normal}
+  code,.mono{font-family:var(--mono);font-size:.86em}
+  /* callouts */
+  .obs{background:var(--hl);border-radius:4px;padding:.9rem 1.15rem;margin:1.3rem 0;font-size:.95rem}
+  .obs .lbl{font:700 .7rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--acc);display:block;margin-bottom:.45rem}
+  /* table */
+  .tblwrap{overflow-x:auto;margin:1.4rem 0}
+  table{border-collapse:collapse;width:100%;font-size:.84rem;line-height:1.45;font-variant-numeric:tabular-nums}
+  th{background:var(--tblhead);text-align:left;font:600 .78rem/1.4 var(--mono);padding:.55rem .65rem;border-bottom:2px solid var(--ink)}
+  td{padding:.5rem .65rem;border-bottom:1px solid var(--rule2);vertical-align:top}
+  tr.win td{background:var(--hl);font-weight:600}
+  td.num{font-family:var(--mono);font-size:.8rem;white-space:nowrap}
+  .good{color:var(--good)} .bad{color:var(--bad)}
+  .cap{font-size:.82rem;color:var(--ink2);margin:.5rem 0 0}
+  ul{padding-left:1.3rem} li{margin:.4rem 0}
+  .footnote{border-top:1px solid var(--rule);margin-top:3rem;padding-top:1.1rem;font-size:.83rem;color:var(--ink2)}
+  a{color:var(--acc)}
+  :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="journal">LORRAX &middot; Technical note &middot; 2026-07-18</div>
+  <h1>Interpolating the ISDF Coulomb tile to arbitrary momentum: theory and results of the F&#8209;scheme</h1>
+  <div class="abstract">
+    <b>Abstract.</b> We want the bare-exchange tile <i>V</i><sub><i>Q</i></sub> of the
+    interpolative-separable density-fitting (ISDF) representation at momenta <i>Q</i> off the
+    coarse grid, without ever forming an object carrying the full real-space dimension, and
+    without redoing the fit at each target. Direct routes fail for instructive reasons: the
+    fitting vectors &zeta;<sub><i>q</i></sub> are the dual basis of an ill-conditioned frame and
+    are not smooth in <i>q</i>; the divergent long-range Coulomb weight makes even the tile
+    itself rough. The working construction — clean the tile spectrally, split the Coulomb kernel
+    into Gaussian short- and long-range parts, interpolate only the short-range tile, and
+    rebuild the long-range channel from phase-factored form factors — reaches
+    <b>0.6% median error on physical matrix elements and 0.05&nbsp;meV on exciton energies</b>,
+    within 1.6&times; of the best scheme that carries the full-grid data, at roughly 1/100 the
+    per-target cost. Along the way, the &ldquo;chaotic frame&rdquo; folklore is narrowed to a
+    precise operator-theory statement, and a dipole–quadrupole multipole alternative is ruled out
+    quantitatively.
+  </div>
+</header>
+
+<h2><span class="no">1</span>The objects</h2>
+
+<p>ISDF compresses products of Bloch functions onto a set of <i>n</i><sub>&mu;</sub> interpolation
+points <b>r</b><sub>&mu;</sub> (centroids). For each transfer momentum <i>q</i> on the coarse grid,
+the pair density is approximated as</p>
+
+<div class="eq">
+  &psi;<sup>*</sup><sub><i>m</i>,<i>k</i>&minus;<i>q</i></sub>(<b>r</b>)&thinsp;&psi;<sub><i>n</i>,<i>k</i></sub>(<b>r</b>)
+  &nbsp;&asymp;&nbsp;
+  <span class="op">&Sigma;</span><sub>&mu;</sub>&thinsp;
+  &zeta;<sub><i>q</i>,&mu;</sub>(<b>r</b>)&thinsp;
+  &psi;<sup>*</sup><sub><i>m</i>,<i>k</i>&minus;<i>q</i></sub>(<b>r</b><sub>&mu;</sub>)&thinsp;
+  &psi;<sub><i>n</i>,<i>k</i></sub>(<b>r</b><sub>&mu;</sub>)
+  <span class="tag">(1)</span>
+</div>
+
+<p>and the fitting vectors solve the least-squares normal equations</p>
+
+<div class="eq">
+  <i>C</i><sub><i>q</i></sub>&thinsp;&zeta;<sub><i>q</i></sub> = <i>Z</i><sub><i>q</i></sub>,
+  &nbsp;&nbsp;&nbsp;
+  <i>C</i><sub><i>q</i></sub>[&mu;&nu;] =
+  <span class="op">&Sigma;</span><sub><i>k</i>,<i>mn</i></sub>
+  &rho;<sup>*</sup><sub><i>mn</i>,<i>k</i>,<i>q</i></sub>(<b>r</b><sub>&mu;</sub>)&thinsp;
+  &rho;<sub><i>mn</i>,<i>k</i>,<i>q</i></sub>(<b>r</b><sub>&nu;</sub>)
+  <span class="tag">(2)</span>
+</div>
+
+<p>where <i>C</i><sub><i>q</i></sub> is the <i>n</i><sub>&mu;</sub>&times;<i>n</i><sub>&mu;</sub>
+Gram matrix of pair densities sampled at the centroids and
+<i>Z</i><sub><i>q</i></sub> is the centroid&#8209;to&#8209;full&#8209;grid cross-Gram — the one object whose
+second dimension is the full grid (<i>r</i><sub>tot</sub>), and the one we refuse to carry.
+The exchange tile is the frame-free quadratic contraction</p>
+
+<div class="eq">
+  <i>V</i><sub><i>q</i></sub>[&mu;&nu;] =
+  <span class="op">&Sigma;</span><sub><b>G</b></sub>&thinsp;
+  &zeta;&#771;<sup>*</sup><sub>&mu;</sub>(<i>q</i>,<b>G</b>)&thinsp;
+  <i>v</i>(<i>q</i>+<b>G</b>)&thinsp;
+  &zeta;&#771;<sub>&nu;</sub>(<i>q</i>,<b>G</b>)
+  <span class="tag">(3)</span>
+</div>
+
+<p>with <i>v</i> the (slab-truncated) Coulomb kernel. Everything the BSE consumes from this tile
+is of the form <i>B</i> = <i>M</i><sup>&dagger;</sup><i>V</i><sub><i>Q</i></sub><i>M</i>, where
+<i>M</i><sub><i>cvk</i></sub>(&mu;) are pair amplitudes of band states near the gap — this
+<i>physical contraction</i>, together with the exciton-energy shift when only the tile is swapped,
+is the metric everywhere below. Tile Frobenius norms turn out to be almost meaningless, which is
+half the story.</p>
+
+<h2><span class="no">2</span>Why the obvious routes fail</h2>
+
+<p>Two measured facts frame the problem. First, the ingredients are genuinely smooth: the lattice
+Fourier transforms <i>C</i><sub><b>R</b></sub>, <i>Z</i><sub><b>R</b></sub> decay
+superalgebraically (a nearsightedness statement — they are quadratic in density matrices, which
+decay exponentially in a gapped system), and leave-one-out interpolation of
+<i>C</i><sub><i>q</i></sub> is accurate at the 0.1–1% level. Second, the object one actually needs,
+&zeta;<sub><i>q</i></sub> = <i>C</i><sub><i>q</i></sub><sup>&minus;1</sup><i>Z</i><sub><i>q</i></sub>,
+is <i>not</i> smooth: cond(<i>C</i>) &sim; 10<sup>7</sup>–10<sup>9</sup> with a gapless spectrum, and
+the inverse of a short-ranged operator is long-ranged — &zeta;<sub><b>R</b></sub> is nearly flat in
+<b>R</b>. Interpolating &zeta;, or anything wearing <i>C</i>&rsquo;s eigenframe, fails.</p>
+
+<p>The operator-theory statement is worth having exactly. Davis–Kahan bounds subspace rotation by
+&Vert;&Delta;<i>C</i>&Vert;/gap; a hard rank cut placed inside a gapless spectrum has no protecting
+gap, so cut-edge eigenvectors rotate freely under arbitrarily smooth variation of
+<i>C</i><sub><i>q</i></sub>. Benzi–Boito–Razouk&rsquo;s decay bounds require the spectral function to be
+analytic in an ellipse clearing the spectrum — a step function inside a gapless spectrum has no
+theorem; an analytic filter of width &epsilon; does. Measured on adjacent grid points: plain top-<i>m</i>
+subspaces of <i>C</i><sub><i>q</i></sub> are in fact <em>smooth</em> (principal-cosine affinity
+0.975–0.9998 for every <i>m</i> up to 480, against random floors of 0.13–0.87); only whitened,
+<i>S</i><sup>&minus;1</sup>-amplified eigenframe statistics sit at the random floor — as perturbation
+theory requires them to. The earlier &ldquo;frames are chaotic&rdquo; folklore was a true measurement of
+the wrong object.</p>
+
+<div class="obs"><span class="lbl">Observation 1</span>
+The pair-space <em>geometry</em> varies smoothly with <i>q</i>; the <em>dual basis</em> of the
+centroid point-value frame does not. Licensed objects for interpolation are frame-free quadratics
+(the tiles, the Grams) and analytically-filtered functions of <i>C</i><sub><i>q</i></sub>;
+forbidden ones are eigenvector frames, whitened sections, and anything transported along them.
+</div>
+
+<p>But frame-freedom alone is not enough. Interpolating the raw tile fails at the 16–50% level, and —
+the campaign&rsquo;s central surprise — spectrally cleaning the tile first barely helps (15%). The
+dominant <i>q</i>-roughness of <i>V</i><sub><i>q</i></sub> is not junk in the ill-conditioned tail; it is
+the <em>near-head Coulomb weight</em>: <i>v</i>(<i>q</i>+<b>G</b>) at small
+&vert;<i>q</i>+<b>G</b>&vert; varies violently across the zone (and diverges at the head), and the
+label &ldquo;<b>G</b>&nbsp;=&nbsp;0&rdquo; is not even periodic across the zone boundary — the head
+channel <em>winds</em>.</p>
+
+<h2><span class="no">3</span>The F-scheme</h2>
+
+<p>Three moves, each answering one failure mode above. All coarse-side objects are built once from
+stored data; the per-target cost is a handful of <i>n</i><sub>&mu;</sub><sup>2</sup> AXPYs plus an
+analytic rebuild. No solve, no eigendecomposition, no <i>r</i><sub>tot</sub> object at or after
+interpolation.</p>
+
+<h3>3.1&ensp;Clean without touching <i>Z</i></h3>
+
+<p>Rank-cutting the stored fit is a projection. With
+eigh(<i>C</i><sub><i>q</i></sub>) = <i>R</i>&Lambda;<i>R</i><sup>H</sup> and <i>P</i> =
+<i>R</i><sub><i>r</i></sub><i>R</i><sub><i>r</i></sub><sup>H</sup> the top-<i>r</i> projector,</p>
+
+<div class="eq">
+  &zeta;<sub>rc</sub> = <i>R</i><sub><i>r</i></sub>&Lambda;<sub><i>r</i></sub><sup>&minus;1</sup><i>R</i><sub><i>r</i></sub><sup>H</sup><i>Z</i>
+  = <i>P</i>&thinsp;&zeta;<sub>stored</sub>
+  &nbsp;&nbsp;&rArr;&nbsp;&nbsp;
+  <i>V</i><sub>c</sub> = &Pi;&thinsp;<i>V</i>&thinsp;&Pi;,&nbsp;&nbsp;
+  &Pi; = <i>P</i><sup>*</sup>
+  <span class="tag">(4)</span>
+</div>
+
+<p>so the cleaned tile is computable from the stored tile and the &psi;-level Gram alone — the
+identity was verified against an explicit refit at the 10<sup>&minus;14</sup> level. A smooth
+(Tikhonov) filter <i>g</i><sub>&epsilon;</sub>(&lambda;) =
+&lambda;<sup>2</sup>/(&lambda;<sup>2</sup>+&epsilon;<sup>2</sup>) in place of the hard cut is the
+theory-preferred variant; it is measurably smoother in <i>q</i> (cleaned-tile increments are
+70–90&times; smaller than raw-tile increments) and slightly better downstream.</p>
+
+<h3>3.2&ensp;Split the kernel, interpolate only the short-range part</h3>
+
+<p>Following the polar electron–phonon lineage (subtract the analytic long-range part, interpolate
+the smooth remainder, re-add at the target), split per G-channel with a Gaussian window,
+<i>K</i> = <i>q</i>+<b>G</b>:</p>
+
+<div class="eq">
+  <i>v</i><sub>LR</sub>(<i>K</i>) = <i>v</i>(<i>K</i>)&thinsp;e<sup>&minus;<i>K</i><sup>2</sup>/4&alpha;<sup>2</sup></sup>,
+  &nbsp;&nbsp;
+  <i>v</i><sub>SR</sub> = <i>v</i> &minus; <i>v</i><sub>LR</sub>,
+  &nbsp;&nbsp;
+  <i>V</i><sub>SR,c</sub> = <i>V</i><sub>c</sub> &minus; &Pi;&thinsp;<i>V</i><sub>LR</sub>&thinsp;&Pi;
+  <span class="tag">(5)</span>
+</div>
+
+<p>The long-range channel — everything divergent, everything winding — is confined to a <em>fixed
+global superset</em> 𝒢(&alpha;) of Miller indices (those with
+min<sub><i>q</i></sub>&vert;<i>q</i>+<b>G</b>&vert;<sup>2</sup> &le;
+4&alpha;<sup>2</sup>ln(1/&epsilon;<sub>LR</sub>); 337 vectors at &alpha; = 0.3), with tail bounds at
+the 10<sup>&minus;17</sup> level. The short-range tile that remains is smooth in <i>q</i> and
+interpolates through a truncated-<b>R</b> Fourier stencil at the same accuracy as the ingredients.
+The window width has a broad optimum at &alpha; &asymp; 1.5–2&times; the grid spacing, and the
+rank-cut sits in a wide inert window — neither is a delicate knob.</p>
+
+<h3>3.3&ensp;Carry the long-range channel as phase-factored form factors</h3>
+
+<p>The winding of the head is cured analytically, not interpolated through. Define, per coarse
+<i>q</i> and per <b>G</b> in the superset,</p>
+
+<div class="eq">
+  <i>F</i><sub>&mu;</sub>(<i>q</i>;<b>G</b>) =
+  e<sup>+2&pi;i(<i>q</i>+<b>G</b>)&middot;<b>s</b><sub>&mu;</sub></sup>&thinsp;
+  &zeta;&#771;<sub>c,&mu;</sub>(<i>q</i>+<b>G</b>)
+  <span class="tag">(6)</span>
+</div>
+
+<p>— the exact form factor of the cleaned fitting vector with the full centroid phase
+e<sup>&minus;i<i>K</i>&middot;<b>s</b><sub>&mu;</sub></sup> factored out. At fixed Miller index these are
+periodic, winding-safe functions of <i>q</i> (adjacent-<i>q</i> roughness drops from 0.68 for the raw
+head slot to 0.31), and they interpolate componentwise. The assembled prediction at a target
+<i>q</i><sub>0</sub>, with stencil weights <i>w</i><sub><i>j</i></sub>, is</p>
+
+<div class="eq">
+  <i>V</i>(<i>q</i><sub>0</sub>) =
+  <span class="op">&Sigma;</span><sub><i>j</i></sub>&thinsp;<i>w</i><sub><i>j</i></sub>&thinsp;
+  <i>V</i><sub>SR,c</sub>(<i>q</i><sub><i>j</i></sub>)
+  &nbsp;+&nbsp;
+  <span class="op">&Sigma;</span><sub><b>G</b>&isin;𝒢</sub>&thinsp;
+  <i>v</i><sub>LR</sub>(<i>q</i><sub>0</sub>+<b>G</b>)&thinsp;
+  e<sup>&minus;i&Delta;&phi;</sup><i>F</i><sup>*</sup><sub>&mu;</sub>&thinsp;<i>F</i><sub>&nu;</sub>&#8203;(<i>q</i><sub>0</sub>;<b>G</b>)
+  <span class="tag">(7)</span>
+</div>
+
+<p>with the interpolated form factors re-dressed by the exact analytic phases. Storage for the
+whole long-range channel is <i>n</i><sub>&mu;</sub>&times;337 per coarse point — 124&nbsp;MB
+against the 17&nbsp;GB of <i>Z</i><sub><i>q</i></sub> at the same fixture.</p>
+
+<h2><span class="no">4</span>Results</h2>
+
+<p>Leave-one-out over all coarse <i>q</i> on the MoS<sub>2</sub> 6&times;6 fixture; primary metric is
+the gap-window physical block <i>B</i> (median and max relative error) and the exciton-energy shift
+when only the tile is swapped. The rejected reference row carries the full-grid
+<i>Z</i><sub><i>q</i></sub>; everything else is <i>n</i><sub>&mu;</sub><sup>2</sup>-level.</p>
+
+<div class="tblwrap">
+<table>
+<tr><th>scheme</th><th>interpolated objects</th><th>B med (max)</th><th>excitons, meV med/max</th></tr>
+<tr><td>ingredient scheme, rank-cut 10<sup>&minus;4</sup> <span class="bad">(rejected: carries <i>Z</i>)</span></td><td class="num">C (n&mu;&sup2;) + Z (n&mu;&times;r_tot)</td><td class="num">3.73e-3 (3.63e-2)</td><td class="num">0.020 / 0.185</td></tr>
+<tr><td>A&ensp;raw tile</td><td class="num">V</td><td class="num bad">1.61e-1 (3.03e-1)</td><td class="num">0.52 / 1.88</td></tr>
+<tr><td>B&ensp;cleaned tile, no split</td><td class="num">V_c</td><td class="num bad">1.53e-1 (2.69e-1)</td><td class="num">0.16 / 0.94</td></tr>
+<tr><td>C&ensp;clean-SR + exact LR (diagnostic ceiling), &alpha;=0.6</td><td class="num">V_SR,c</td><td class="num good">3.56e-3 (3.63e-2)</td><td class="num">0.021 / 0.088</td></tr>
+<tr class="win"><td>F&ensp;clean-SR + interpolated form-factor LR, &alpha;=0.3</td><td class="num">V_SR,c + F (n&mu;&times;337)</td><td class="num">6.23e-3 (4.57e-2)</td><td class="num">0.046 / 0.212</td></tr>
+<tr class="win"><td>F&ensp;with Tikhonov cleaning, &epsilon;=10<sup>&minus;4</sup></td><td class="num">same</td><td class="num">5.85e-3 (3.78e-2)</td><td class="num">0.045 / 0.167</td></tr>
+<tr><td>D/E&ensp;multipole long-range models (best order)</td><td class="num">+ moments (n&mu;&times;162)</td><td class="num">1.18e-2 – 4.3e-2</td><td class="num">0.053 / 0.647</td></tr>
+<tr><td>W&ensp;pair-level LR, projection Wannier gauge</td><td class="num">+ M&#771;</td><td class="num bad">3.7e-1 (gauge-blocked)</td><td class="num">1.6 / 8.0</td></tr>
+</table>
+<p class="cap">Selected rows; full ladder incl. 3&times;3 columns and &alpha;-scan in the design
+document, &sect;12.1. &ldquo;Diagnostic ceiling&rdquo; row C uses the target&rsquo;s own stored
+long-range channel — it bounds what any LR treatment can achieve.</p>
+</div>
+
+<div class="obs"><span class="lbl">Observation 2</span>
+The split, not the cleaning, is the load-bearing move. Cleaning alone (row B) leaves 15% error —
+indistinguishable from raw — because the tile&rsquo;s roughness is Coulomb-weight variation near the
+head, not ill-conditioned junk. Conversely, the junk really is physically inert: deleting 90% of
+the tile&rsquo;s Frobenius norm moves the physical block by 8&times;10<sup>&minus;4</sup> and exciton
+energies by 0.01&nbsp;meV.
+</div>
+
+<div class="obs"><span class="lbl">Observation 3</span>
+Once the winding phase is carried analytically, the exact form factors interpolate essentially at
+the exact-LR ceiling (F&nbsp;&asymp;&nbsp;C at matched &alpha;). Every Taylor or moment compression
+of them — dipole, quadrupole — loses an order of magnitude, and the multipole hierarchy
+<em>inverts</em> (monopole-only beats monopole+dipole+quadrupole): the ISDF &zeta; envelopes are not
+compact, so literal polynomial-weighted moments are dominated by delocalized tails. On a slab, the
+pure-3D multipole expansion additionally fails in the out-of-plane direction (73% error in the
+&vert;G<sub>z</sub>&vert;&nbsp;=&nbsp;1 channels, which carry 19% of the long-range weight);
+per-G<sub>z</sub> treatment is mandatory.
+</div>
+
+<p>Path smoothness — the practically relevant off-grid diagnostic — was tested along
+&Gamma;&rarr;(1/6,0,0): the F trajectories of physical matrix elements and low eigenvalues are
+smooth (normalized second differences 3.6–4.5&times;10<sup>&minus;2</sup>, slightly better than the
+ingredient scheme), connecting the on-grid endpoints without kinks.</p>
+
+<h2><span class="no">5</span>Standing verdict</h2>
+
+<ul>
+<li><b>The no-full-grid constraint is met</b>: 0.59–0.62% median physical error / 0.045&nbsp;meV
+excitons, within 1.6&times; of the <i>Z</i>-carrying scheme, at &sim;1/100 the per-target cost and
+&sim;1/70 the storage. The short-range side already sits at the ceiling; the whole remaining gap is
+long-range-channel interpolation.</li>
+<li><b>Production default remains the per-<i>Q</i> refit</b> (exact, no uncontrolled error); the
+F-scheme is the designated interpolation candidate, pending an off-grid ground truth in the same
+convergence class.</li>
+<li><b>Do not re-attempt</b>: eigenvector-frame transport (lawless on a gapless spectrum — that is
+a theorem, not a folklore); literal multipole compression of the long-range channels; band windows
+that split Kramers doublets (no smooth gauge exists even in principle); pure-3D multipoles on
+slabs.</li>
+</ul>
+
+<div class="footnote">
+Sources: <span class="mono">reports/bse_refactor_map_2026-07-15/archive/designs/arbitrary_q_bse.md</span>
+&sect;&sect;9–12 (constructions, ladders, operator-theory checks, Wannier-theory discussion, and the
+multipole adjudication), with runnable implementations and disk logs under
+<span class="mono">runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/tile_*.py</span>.
+Background: Benzi, Boito &amp; Razouk, SIAM Rev. 55, 3 (2013); Panati, Ann. Henri Poincar&eacute; 8,
+995 (2007); Verdi &amp; Giustino, PRL 115, 176401 (2015); Brunin et&nbsp;al., PRL 125, 136601 (2020);
+Qiu, Cao &amp; Louie, PRL 115, 176801 (2015); Haber et&nbsp;al., PRB 108, 205109 (2023).
+</div>
+</div>
