@@ -1,0 +1,29 @@
+run_id: mos2_12x12_bands_2026-07-18
+system: MoS2
+pipeline: qe_bgw_lorrax   # qe (nscf only, scf reused) + lorrax; no BGW
+platform: perlmutter
+
+variant_of: mos2_3x3_cohsex_05_lorrax_cohsex_native
+reuse_from_parent: [qe/scf/MoS2.save (copied, not linked),
+                    centroids_frac_640.txt (symlink; geometry-only)]
+overrides:
+  kgrid: "12x12x1 (was 3x3x1) — new top-level run per invalidation rules"
+  purpose: >
+    Owner-requested production run: regenerate the MoS2 exciton
+    bandstructure on a 12x12 coarse grid with a denser Gamma-M-K-Gamma
+    path (15/8/16 subdivisions, 40 points) and compare against the
+    delivered 3x3-trained run (B_exciton_bands_2026-07-17).  Same physics
+    as the 3x3 trainer fixture: 640 centroids (same file), nval=26/
+    ncond=54/nband=80, 30 Ry, COHSEX + do_screened (minimax).
+  code: "sources/worktrees/lorrax_A_exciton_bands @ agent/bse-exciton-bands"
+
+# States: pending | running | complete | failed | reused | skipped
+steps:
+  qe/scf:                  { state: reused, note: "00_mos2_3x3_cohsex/qe/scf charge density (copied save dir)" }
+  qe/nscf:                 { state: complete, note: "144 k, nbnd=82; NSCF 35 s (4 GPU) + pw2bgw 47 s + wfn2hdf 27 s" }
+  00_lorrax_cohsex:        { state: complete, note: "16-GPU gw_jax COHSEX+do_screened 150 s; 144-q FULL-BZ restart (V_qmunu, W0_qmunu+heads, psi_full_y, zeta_q.h5 2.9 GB)" }
+  01_lorrax_exciton_bands: { state: complete, note: "40-pt path interp (narrow-window htransform, census=1 compile); spot checks vs DENSE stored-tile truth (htransform refit representation-limited at 12x12/640mu -> replaced by dense on-grid truth + 24-q LOO); exciton_bands_12x12_GMKG.{dat,png} + 3x3 overlay; iQ~6,9 window-artifact rows flagged" }
+  # --- agent-B additions 2026-07-18 (owner: SP bands + 1000-centroid ISDF-convergence variant) ---
+  02_lorrax_cohsex_1000c:  { state: running, note: "1000-centroid variant of 00 (only centroids_file differs); centroids via kmeans_cli 1000 --seed 42 --no-orbit (literal points -> orbit-closure failure keeps zeta full-BZ); dipole.h5+kin_ion.h5 symlinked from 00 (centroid-independent)" }
+  03_lorrax_exciton_bands_1000c: { state: pending, note: "exciton driver rerun on the identical 40-pt path with the 1000c restart; interp + on-grid dense spot checks (htransform refit stays representation-limited: needs ns*n_mu >= nk*nb = 11520 -> n_mu >= 5760)" }
+  05_htransform_spbands:   { state: running, note: "owner SP-bands deliverable: htransform eps_n(k) along the same GMKG path + free-pair floor D_min(Q); window design constraints found: boundaries must not cut Kramers pairs (gap_scan.py) + plotted bands must be f-transform-conditioned; windows (20,28)/(26,34)/(24,32)" }
