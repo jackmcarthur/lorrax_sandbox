@@ -1341,3 +1341,145 @@ BGW-parity anchor by 2.5–28 meV (BGW has no matching knob — parity loss is
 permanent); transverse-channel design + device-invariance validation;
 low_mem potrf guard; and a physical argument that ridge-ζ is more accurate
 — the measured benefit is covariance hygiene (~10×), not accuracy.
+
+## Exciton bandstructure pipeline (2026-07-17/18, agent/bse-exciton-bands, lorrax_A worktree)
+
+Production exciton-bandstructure capability: a BSE V_Q-interpolation
+backend (`src/bse/vq_interp.py` — the F-scheme + b26p production port) and
+a Q-path driver (`src/bse/exciton_bands.py`) that reads the SAME
+`K_POINTS crystal_b` block the htransform bandstructure driver consumes,
+runs ONE compiled `lax.scan` of per-Q TDA solves over the whole path, and
+emits `exciton_bands.dat` + a PNG.  Artifacts + disk logs:
+`runs/MoS2/B_exciton_bands_2026-07-17/` (WORKLOG.md = full session record).
+Branch `agent/bse-exciton-bands` (base c4c349f); commits 1f16ea2, 196c30b,
+0060a52, + final.
+
+### What landed (single-source seams honored)
+
+| piece | where | note |
+|---|---|---|
+| vq_interp: prepare_coarse (Tik clean + SR/LR split, device P('x','y') tiles, eigh backend auto\|off\|cusolvermp\|slate) + host b26p LSQ + ONE jitted `eval_vq` (all Q-dependent data runtime args) + `refit_vq` ground truth | `src/bse/vq_interp.py` | port of `REFERENCE_arbitrary_q_vq.py`, arithmetic preserved |
+| `compute_wfns_fi(q_list=…, return_coeffs=…)` | `bandstructure/bse_setup.py` | the §1 ~40-LOC arbitrary-Q generalization; no parallel function |
+| `streaming_galerkin_solve(return_full_proj=…)` | `bandstructure/htransform.py` | full-r α-basis projector W_proj = L⁻¹diag(1/s)U^H (refit consumer) |
+| Q-path driver: htransform conduction caches ψ_c(k+Q)/ε_c(k+Q); ONE stack matvec (conduction slots swapped); scan-of-block-Lanczos; .dat+.png | `src/bse/exciton_bands.py` | exchange tile at wrap(−Q); Γ = production q=0 tile; V Hermitized |
+| **block-Lanczos Krylov-exhaustion clamp** | `src/solvers/lanczos.py` | see below — pre-existing solver bug, fix benefits every consumer |
+| gates | `tests/test_bse_vq_interp.py`, `tests/test_exciton_bands.py` | acceptance vs reference thresholds; sharding assert; census; driver smoke |
+
+### vq_interp port parity (MoS2 3×3 640-centroid fixture, 1 GPU)
+
+The port reproduces the reference e2e baseline TO EVERY PRINTED DIGIT:
+LOO B med 1.409e-2 / max 3.553e-2, exciton swap med 0.642 / max 2.542 meV
+(reference log values identical); machine gates (recon 2.3e-16,
+makeVq-vs-disk 1.3e-9, X^HX-vs-C 6.2e-11) and nulls (exact-stencil
+1.7e-15, F-rebuild 6.0e-11) all green; jitted-vs-host evaluator parity
+3-5e-16 at on- and off-grid Q; tile sharding P('x','y') asserted; ONE jit
+cache entry serves every Q.  (smoke_vq.py log in the run dir.)
+
+### Solver bug found + fixed: sub-spectrum Lanczos ghosts past Krylov exhaustion
+
+With the 4v4c exciton window (n_flat = 144) and the requested Krylov
+320 (bs 8 × 40 iter), the fixed-iteration block Lanczos ran past
+exhaustion: the residual block collapses, QR of a ~zero block returns
+junk directions, and the manufactured α/β blocks put Ritz values
+ANYWHERE — measured 60-100 meV BELOW the dense ground state, different
+garbage per code path (production solve_bse_sharded, the driver scan, the
+htransform-ψ variant all disagreed below 0.179 eV while dense eigh said
+the true minimum IS 0.179359 eV).  Fix: clamp max_iter at floor(n/bs) in
+`block_lanczos_eig_jit` + the converged variant; driver defaults to FULL
+reorthogonalisation (exciton windows are small; partial reorth at
+saturation breeds ghosts; cost negligible).  Post-fix: solve_bse_sharded
+== 144-dim dense eigh to 0.0000 meV; the driver Γ row == dense
+(htransform-ψ operator) exactly.  Every earlier small-window BSE Lanczos
+run on this lineage is suspect below its true ground state.
+
+### htransform ψ-source floor (quantified, driver gate)
+
+At Γ the driver row differs from dense(stored-ψ) by 2.25 meV — the
+htransform representation floor at 640 centroids / rank 720 (Kramers-
+doublet rotations + window-edge mixing; ε exact to 0.000 meV, conduction
+subspace min-sval 0.943).  The driver prints Δε and the subspace overlap
+at every Γ path point and hard-fails only on gross breakage.
+
+### Per-Q ζ-refit ground truth (--vq-mode both): convention found, floor measured
+
+* Stored-ζ phase convention derived + adopted (pinned by the on-grid
+  null): `ZG_μ(G) = e^{−2πi q·s_μ}·FFT_r[ζ̃_μ](G)` — the centroid winding
+  phase folded into the stored sphere (the same phase the F-scheme
+  factors out).  Omitting it decorates V by e^{iq(s_μ−s_ν)}: 54% tile /
+  11% B error.
+* Pair-family allegiance measured: the stored ζ fits the TORUS pair
+  family (u at wrapped labels, no umklapp phases) better than the
+  umklapp/lab family (expansion error 0.112 vs 0.123) — refit convention
+  = torus, matching build_cq and the producer kernels' per-element
+  decode.
+* Remaining on-grid refit-vs-stored gap 2.0-2.9% B (htransform m-leg;
+  3.7-5.1% stored-m-leg): NOT a convention error and NOT regularization
+  (rcond-insensitive 1e-6→1e-12 at B(vs ridge) 2e-8; cond(C)=1.8e7; all
+  discrete conj/q-sign/frame variants refuted).  Measured provenance:
+  the refit's full-grid ζ fits the physical pair family at expansion
+  error E = 8.5e-4, while the stored (30-Ry sphere-band-limited) ζ sits
+  at E = 0.112 — the stored representation's expansion error is
+  dominated by its sphere truncation, and the refit-vs-stored V tile
+  difference lives in that truncation-sector realization.  The 2-3% B
+  systematic is stable across q and CALIBRATES the ground-truth
+  comparisons below; at the EXCITON level it collapses (on-grid K spot
+  check: ≤0.13 meV across 8 states).
+
+### Compile census + timings (final 32-pt Γ→M→K→Γ, 1 GPU A100, JAX_LOG_COMPILES, cold cache)
+
+| engine | compiles | note |
+|---|---:|---|
+| `solve_path` (scan of per-Q block-Lanczos) | **1** (26.3 s XLA) | the whole path + refit rows in ONE compile |
+| `eval_vq` (arbitrary-Q tile) | **1** | every Q dispatch-only |
+| `_q_batch` (htransform ψ(k+Q)) | **1** | batched q-list |
+| `_clean_split` (offline prep, per sphere size) | 3 | per distinct ngk; offline-only |
+| one-time small eager ops | ~135 | setup/host prep, O(1) in nQ |
+
+Per-Q marginal compiles: **0** — verified again on the both-mode final
+run at nQ = 37 rows (32 path + 5 refit rows in the SAME scan/compile:
+`solve_path` cold 28.3 s incl. its one compile, warm 26.4 s =
+713 ms/Q; temp 514 MiB, args 341 MiB).  Interp-only pipeline on a cold
+census cache: solve warm 1.20 s/Q over 32 Q; one-time htransform setup
+61 s + vq prep 170 s (offline, per fixture; 5-11 s warm).  Per-refit-Q
+cost ~4.7 s (htransform q-list + fit + sphere contraction — the
+compute-don't-interpolate mode is ~5× the scan's warm per-Q solve).
+
+### The bandstructure (deliverable)
+
+`runs/MoS2/B_exciton_bands_2026-07-17/exciton_bands_GMKG.{dat,png}` —
+MoS2 3×3 COHSEX fixture (the gnppm fixture's ζ storage is IBZ-only, which
+the vq trainer cannot consume — recorded; same system, W0_ready, full-BZ
+ζ), 4v×4c TDA, lowest 8 states, Γ→M→K→Γ 32 points.  Physical features:
+Γ ground state 0.1794 eV (== dense), the finite-Q G=0 exchange branch
+visible as the Γ↔Q→0 convention step (documented in the .dat header),
+smooth arcs with a finite-momentum minimum on the K→Γ segment
+(0.174 eV — below Γ), both Γ endpoints bit-identical.  Interp-vs-refit
+(ground truth) ΔE_S at spot-check path points, lowest 8 states (meV):
+
+| iQ | s | where | ΔE₁ | ΔE₂ | ΔE₃ | ΔE₄ | ΔE₅ | ΔE₆ | ΔE₇ | ΔE₈ |
+|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 3 | 0.95 | Γ→M, off-grid | 0.002 | 0.004 | 0.103 | 0.087 | 0.001 | 0.005 | 0.566 | 1.230 |
+| 9 | 2.86 | M→K, off-grid | 0.000 | −0.000 | −0.013 | 0.052 | 0.029 | 0.000 | −0.000 | 0.003 |
+| 12 | 3.81 | K (ON-grid null) | −0.000 | −0.001 | 0.011 | 0.125 | 0.106 | −0.001 | −0.001 | 0.030 |
+| 18 | 6.01 | K→Γ min, off-grid | −0.001 | −0.391 | −0.007 | −1.847 | −0.009 | 0.009 | −0.012 | −0.388 |
+| 26 | 8.72 | K→Γ, off-grid | 0.228 | 0.001 | 0.007 | 0.004 | 0.231 | 0.003 | 0.130 | 0.002 |
+
+**The off-grid ground-truth verdict the interpolation program was
+missing (§11.4/§12.6 caveat): at the exciton level the b26p/F-scheme
+interpolation agrees with the per-Q compute-don't-interpolate refit to
+≪0.1 meV median and 1.85 meV worst-state across off-grid Q — the same
+scale as the on-grid spot check (≤0.13 meV) plus the refit↔stored
+2-3% B systematic documented above.  No off-grid degradation is
+observed on this fixture.**
+
+### Deferred / follow-ups
+
+1. IBZ-stored-ζ unfold for vq_interp training (route through the ONE
+   SymMaps sym-action; unblocks the gnppm fixture proper).
+2. eqp/QP-corrected exciton bands (htransform accepts an EQP override —
+   plumb --eqp through the driver).
+3. Refit-quality htransform m-leg at large |G_umk| paths beyond the first
+   BZ ring (current paths stay inside).
+4. 3D-bulk vq_interp (K_z-continuous LR basis — §13.5(4) unchanged).
+5. Multi-GPU path runs (driver is sharding-clean by construction;
+   validated 1×1 only — no 16-GPU gating).

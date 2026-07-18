@@ -1,6 +1,34 @@
 # Changelog
 
 
+## 2026-07-18: Exciton bandstructure pipeline — V_Q interpolation backend + Q-path driver [agent/bse-exciton-bands, lorrax_A worktree, source, NOT pushed]
+
+Production exciton-bandstructure capability for LORRAX (owner-commissioned):
+`src/bse/vq_interp.py` (the F-scheme + b26p arbitrary-Q exchange-tile backend —
+production port of REFERENCE_arbitrary_q_vq, bit-parity with its pinned
+acceptance baseline) + `src/bse/exciton_bands.py` (Q-path driver: reads the
+htransform `K_POINTS crystal_b` format, htransform conduction caches
+psi_c(k+Q)/eps_c(k+Q), the ONE stack matvec with conduction slots swapped,
+ONE compiled lax.scan of per-Q block-Lanczos over the whole path,
+`--vq-mode interp|both` with per-Q zeta-refit ground truth, .dat + PNG).
+
+- **Solver bug found+fixed** (`solvers/lanczos.py`): fixed-iteration block
+  Lanczos past Krylov exhaustion (bs*max_iter > n) manufactured SUB-SPECTRUM
+  ghost states 60-100 meV below the dense ground state (any small BSE window).
+  Clamped at floor(n/bs); post-fix solve_bse_sharded == dense eigh to 0.0 meV.
+- **Off-grid ground truth landed** (the §11/12 caveat): per-Q zeta refit via
+  htransform full-r reconstruction (stored-zeta phase convention
+  ZG = e^{-2pi i q·s_mu}·FFT(zeta) derived + pinned by on-grid nulls; torus
+  pair family confirmed by an expansion-error allegiance test). Verdict on
+  MoS2 3x3: interp agrees with the refit truth at the exciton level to
+  <<0.1 meV median / 1.85 meV worst state OFF-grid — same scale as on-grid.
+- Final run: `runs/MoS2/B_exciton_bands_2026-07-17/exciton_bands_GMKG.{dat,png}`
+  (Gamma-M-K-Gamma, 32 pts, 8 states, interp + 5 refit overlays). Compile
+  census: solve_path/eval_vq/htransform-batch = 1 compile each, 0 per-Q.
+  Full suite 233 passed. PHASE2_LOG has the full section; WORKLOG.md in the
+  run dir is the session record. Deferred: IBZ-zeta unfold for the trainer
+  (gnppm fixture), --eqp plumbing, 3D-bulk LR basis.
+
 ## 2026-07-17: Non-TDA (full BSE) eigensolver + matvec fix + solver P1 [agent/bse-phase2, lorrax_A, source, NOT pushed]
 
 Full (non-Tamm-Dancoff) optical BSE brought to the general lowest-eigenvalue

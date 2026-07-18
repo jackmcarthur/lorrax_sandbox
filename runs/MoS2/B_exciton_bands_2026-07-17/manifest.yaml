@@ -1,0 +1,21 @@
+run_id: mos2_3x3_exciton_bands_2026-07-17
+system: MoS2
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: mos2_3x3_cohsex_05_lorrax_cohsex_native
+reuse_from_parent: [tmp/isdf_tensors_640.h5, tmp/zeta_q.h5, WFN.h5,
+                    centroids_frac_640.txt]
+overrides:
+  purpose: "exciton bandstructure E_S(Q) along Gamma-M-K-Gamma (TDA)"
+  code: "sources/worktrees/lorrax_A_exciton_bands @ agent/bse-exciton-bands"
+  note: >
+    Read-only reuse of the parent 640-centroid COHSEX restart (full-BZ
+    zeta storage; W0_ready).  The gnppm fixture named in the mandate has
+    IBZ-only zeta (5 of 9 q) which the vq_interp trainer cannot consume
+    (IBZ-zeta unfold deferred) — recorded in WORKLOG.md.
+
+steps:
+  smoke_vq:      { state: complete, note: "vq_interp port == reference baseline to every digit" }
+  smoke_driver:  { state: complete, note: "3-pt path; Gamma row == dense(ht-psi) exactly" }
+  final_path:    { state: complete, note: "32 pts interp + 5 refit rows, ONE compile; exciton_bands_GMKG.{dat,png}" }
