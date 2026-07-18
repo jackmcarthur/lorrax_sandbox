@@ -1,6 +1,33 @@
 # Changelog
 
 
+## 2026-07-18: 12×12 exciton-dip root cause + 640-vs-1000-centroid A/B + SP-bands deliverable [sandbox artifacts, no source changes]
+
+Owner deliverables on `runs/MoS2/04_mos2_12x12_bands_2026-07-18/`
+(PHASE2_LOG §"1000-centroid variant + SP bands"):
+
+- **SP bands + free-pair floor** (`05_htransform_spbands/
+  sp_bands_12x12_GMKG.{dat,png}`): htransform ε_n(k) (v 22-25 + c 26-31)
+  along the exciton Q path + D_min(Q) computed with the driver's (24,32)
+  window AND a clean window.  KEY FINDING: at 12×12 the Kramers pairs are
+  exactly degenerate and the (24,32) window's 31|32 boundary min-gap is
+  5.9 meV → its off-grid conduction caches ring by 100-1000 meV; the
+  exciton iQ 6/9/16-17 dips exist only in that window's D_min curve
+  (A/B max 317 meV @iQ 9, on-grid exact) → they are htransform
+  WINDOW-CACHE ARTIFACTS, not Λ-valley kinematics, not ISDF error.
+- **640-vs-1000-centroid exciton A/B** (`02_lorrax_cohsex_1000c/` +
+  `03_lorrax_exciton_bands_1000c/`, seed-42 literal kmeans, cohsex/driver
+  inputs verbatim): per-state |ΔE| median 9.7 / max 46.5 meV, artifact
+  rows shift by the same ~10 meV — **a more converged ISDF basis does NOT
+  smooth the exciton bands**; the dips persist (iQ 9 depth 180→207 meV).
+  Smoothing lever = clean-boundary driver window (e.g. (22,34) at 1000c
+  capacity); follow-up.
+- Window-design rules established (gap_scan.py): boundaries must not cut
+  Kramers pairs; plotted bands need f-transform conditioning (f' not → 0);
+  guard bands absorb the compression zone.
+- 1000c costs: GW ×1.3, trainer ×2.35 (the pre-perf n_mu² host stages),
+  solve ×1.5 per Q.  Timing table in PHASE2_LOG.
+
 ## 2026-07-18: Exciton-bands pipeline perf pass — 12×12 e2e 2×, trainer 5×, values bit-identical [agent/bse-bands-perf, lorrax_A worktree, source, NOT pushed]
 
 Profile-first perf pass on the new exciton-bandstructure pipeline at 12×12

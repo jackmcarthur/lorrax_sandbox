@@ -1614,3 +1614,88 @@ LEFT, with reasons:
 40-iter 3-Q scan), `baseline_smoke_4gpu.log` / `after_smoke_4gpu.log`
 (census runs), `prof_*.log`, `12x12/` input scaffold (symlinks into the
 READ-ONLY sibling restart).
+
+## 1000-centroid variant + SP bands (2026-07-18, agent B, no source changes)
+
+Two owner deliverables on the 12×12 MoS2 dataset
+(`runs/MoS2/04_mos2_12x12_bands_2026-07-18/`), answering the exciton-band
+smoothness question from both ends: a single-particle diagnostic
+(htransform bands + free-pair floor) and an ISDF-convergence A/B (640 vs
+1000 centroids, everything else verbatim).
+
+### Deliverable 1 — htransform SP bands + D_min(Q)  [`05_htransform_spbands/`]
+
+`sp_bands_12x12_GMKG.{dat,png}` (2-panel): ε_n(k) for valence 22-25 +
+conduction 26-31 along the exciton run's Γ-M-K-Γ 40-pt path, and the
+free-pair floor `D_min(Q) = min_{k,c,v}[ε_c(k+Q) − ε_v(k)]` on the 12×12
+coarse-k set, computed TWICE — with the exciton driver's own (24,32)
+htransform window and with a structurally clean window.
+
+**Window-boundary discovery (gap_scan.py, probe_spike.py).**  At 12×12
+Kramers pairs (even,odd) are exactly degenerate; an htransform window
+boundary that cuts a pair fails at the eV scale off-grid (the Si
+degeneracy root-cause mechanism).  Between-pair boundary min-gaps vary
+from 2194/1700 meV (33|34, 25|26) down to 5.9 meV (31|32).  Windows with
+a weak boundary RING at off-grid q: the production (24,32) window
+(31|32 = 5.9 meV top boundary) carries isolated 100-1000 meV excursions
+on the M-K leg (probe scans bracketed by exact on-grid endpoints).
+
+**The iQ 6/9/16-17 exciton dips are window-cache artifacts.**  D_min A/B
+((24,32) vs clean window, all 5760 k+Q): on-grid rows exact, median
+9.7 meV, max 316.6 meV AT iQ 9 — the "Λ-valley dip" exists ONLY in the
+driver-window curve; the clean floor is smooth there.  The delivered
+exciton E_1(Q) tracks the artifact curve.  This settles the sibling
+session's open iQ 6/9 flags (its w2331 guard A/B cut the (22,23) pair —
+it was measuring its own breakage) — the dips are NOT Λ-valley
+kinematics and NOT ISDF error; they enter through the ε_c/ψ_c(k+Q)
+htransform caches.
+
+**Windows shipped**: valence 22,23 (20,28)@640c; gap-edge 24-31
+(24,36)@1000c (241/243 meV boundaries, a_band=31; the 1000-μ basis lifts
+capacity to nb ≤ 13); D_min ref (24,32)@640c (driver-identical) + clean
+floor (24,36)@1000c (cross-window/cross-basis agreement median 6.8 meV).
+Residual: the valence pair keeps O(100-400 meV) uncertainty at
+half-integer-coordinate off-grid points on the M-K leg under EVERY
+window/basis (marked on the plot); the BSE consumes valence only at
+on-grid k, where htransform is exact (gate 0.0000 meV).
+
+### Deliverable 2 — 640-vs-1000-centroid exciton A/B  [`02_/03_..._1000c/`]
+
+`centroids_frac_1000.txt` via `kmeans_cli 1000 --seed 42 --no-orbit
+--force-shard` (640-file conventions: literal points → orbit closure
+fails → FULL-BZ ζ storage, verified in gw.out: 879/2000 failures,
+full-BZ fallback; prune left=(0,26)/right=(0,52)).  GW (16 GPU, 4×4,
+cohsex.in verbatim except centroids_file): heads match 640c exactly
+(vhead 9315.306 / whead0 3499.067); trainer disk gate
+makeVq_vs_disk_allq = 5.0e-9.  Driver rerun on the identical 40-pt path,
+interp mode (refit stays representation-limited at 12×12: needs
+ns·n_mu ≥ nk·nb = 11520 → n_mu ≥ 5760; spot checks = dense on-grid
+stored-tile truth instead).
+
+**Verdict: the basis does NOT smooth the bands.**
+`exciton_bands_1000c.{dat,png}` + overlay
+`exciton_bands_640c_vs_1000c_GMKG.png`: per-state |ΔE(1000c−640c)|
+median 9.7 meV / mean 11.0 / max 46.5 meV (@iQ 11); on the artifact rows
+6/9/16-17 the shift is the SAME ~10 meV (median 9.8, max 41.8) — the
+dips persist essentially unchanged (iQ 9 E_1: 640c 1.2245 → 1000c
+1.2016 eV, dip depth ~180 → ~207 meV).  Consistent with the D_min
+analysis: fH k-smoothness is a property of the window, not of the
+centroid count.  The smoothing lever is a clean-boundary driver window —
+at 1000c capacity the (22,34) 12-band window (80.7/2194 meV boundaries)
+fits the driver's v4+c4+guards layout; left as the follow-up.
+
+### Timing table (owner mandate; container-BLAS caveat as in the perf log)
+
+| stage (1000c chain)              | GPUs | wall (s) |
+|----------------------------------|------|----------|
+| kmeans_cli 1000 (sharded prune)  | 2    | 19       |
+| gw_jax COHSEX+do_screened        | 16   | 195 (rec 129.9: ζ-fit 106.8, V_q 11.7, χ0/W 1.6, Σ 4.4) |
+| driver smoke 3-pt (census)       | 4    | 573 (vq_prepare 397.5, warm 20.0 s/Q) |
+| driver final 40-pt (census=1)    | 4    | 2272 (ψ_cQ 184.0, vq_prepare 394.5, cold 825.2, warm 827.3 = 20.7 s/Q) |
+| SP-bands v4 (rank-1728 D_min)    | 1    | 303      |
+| SP-bands v3 (three 640c windows) | 1    | 287      |
+| 640c reference (sibling)         | 16/4 | GW 150 (rec 98.6) / final 1474 (13.7 s/Q) |
+
+1000c vs 640c cost: GW ×1.3, trainer ×2.35, solve ×1.5 — all below the
+naive (1000/640)² = 2.4 except the trainer (its n_mu² host stages are
+exactly what the perf branch already fixed; merge closes the gap).

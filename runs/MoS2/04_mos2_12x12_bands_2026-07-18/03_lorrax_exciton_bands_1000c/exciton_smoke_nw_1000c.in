@@ -1,0 +1,47 @@
+# NARROW-WINDOW variant (nval=2/ncond=6/nband=8, window bands 24-32):
+# the htransform alpha-basis is capped at ns*n_mu=1280 fields; the 80-band
+# sigma window at 12x12 (144*80=11520 states) degrades the conduction caches
+# (gate min-sval 0.2175).  The BSE only needs conduction bands 26-30 (+guards):
+# 144*8=1152 states <= 1280 restores the full-rank regime.  Loader n_occ comes
+# from WFN ifmax (resolve_n_occ), unaffected by these keys.
+# nband=32 (NOT nval+ncond=8): Meta b_id_4_user is the ABSOLUTE band-budget
+# top - bands >= nband are force-zeroed in load_centroids_band_chunked
+# (wfn_transforms.py:1870), so the (24,32) window needs nband=32.
+# Exciton-bandstructure driver input — MoS2 12x12 coarse grid.
+# Same [cohsex] physics block as ../00_lorrax_cohsex/cohsex.in (the restart
+# producer); the K_POINTS crystal_b block is the exciton Q path:
+# SMOKE: 3-point Gamma->M stub path (size validation + census + max_iter probe)
+# length, 40 path points) — the denser path vs the delivered 3x3-era run
+# (12/6/13, 32 points).
+[cohsex]
+restart = false
+centroids_file = centroids_frac_1000.txt
+nval = 2
+ncond = 6
+nband = 32
+sys_dim = 2
+x_only = false
+do_screened = true
+bispinor = false
+self_consistent = false
+use_ppm_sigma = false
+screening_method = minimax
+sigma_debug_split_contrib = true
+fermi_reference = midgap
+sigma_at_dft_extrapolate = false
+sigma_at_dft_energies = true
+use_chunked_isdf = true
+memory_per_device_gb = 28
+write_no_head_vw = false
+debug_hartree = false
+write_w_copies_debug = false
+wfn_file = WFN.h5
+output_file = eqp0.dat
+sigma_omega_h5_file = sigma_mnk.h5
+sigma_freq_debug_output = true
+bare_coulomb_cutoff = 30.0
+
+K_POINTS {crystal_b}
+2
+  0.0000 0.0000 0.0000 1   # Gamma
+  0.0000 0.5000 0.0000 2   # M

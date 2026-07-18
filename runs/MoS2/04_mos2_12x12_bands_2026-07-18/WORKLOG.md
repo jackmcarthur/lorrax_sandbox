@@ -242,3 +242,41 @@ Code: `sources/worktrees/lorrax_A_exciton_bands` @ agent/bse-exciton-bands
   (full-BZ), eqp0.dat 144 k, heads MATCH the 640 run (vhead 9315.306,
   whead0 3499.067).  15:35 launched concurrently: driver smoke 3-pt
   (4 GPU, nid002917) + v4 SP-bands (24,36)@1000c (1 GPU, nid002920).
+- 15:41 v4 SP-bands COMPLETE (302 s, 1 GPU): (24,36)@1000c removes the
+  val(20,28) ringing on bands 24/25 (365-392 meV @iQ 16/18); conduction
+  agrees with (26,34)@640c to <=58 meV (median ~1 meV) across windows AND
+  bases; clean D_min floors agree median 6.8 meV (max 113 meV @iQ 17 — the
+  M-K half-integer-coordinate rows are the residual uncertainty everywhere).
+  Deliverable PNG regenerated with >50 meV window-A/B uncertainty circles
+  (valence M-K leg; BSE uses valence ON-grid only, where htransform is
+  exact).  Committed a78606d8.
+- 15:44 driver smoke 1000c PASS end-to-end (572.6 s, 4 GPU): htransform@
+  Gamma 0.000 meV / min-sval 0.9010 (640c: 0.8852 — richer basis helps);
+  wrapfix 4/144 (same rows); ALL trainer gates OK (makeVq-vs-disk 5.0e-9
+  all-q); nulls OK; census = 1 solve_path compile; vq_prepare 397.5 s
+  (640c: 168 — pre-perf trainer is the n_mu^2 hotspot); warm 20.0 s/Q
+  (640c 13.7).  EARLY 640-vs-1000 SIGNAL (smoke rows vs 640c final rows):
+  |dE| ~ 4-12 meV per state (Gamma E_1 -11.5 meV, M E_1 -5.6 meV) — the
+  basis effect is small and uniform, no restructuring.  15:45 FINAL 40-pt
+  1000c run launched (4 GPU, census, ~45 min ETA).
+- 16:23 FINAL 1000c COMPLETE rc=0 (final_1000c.log): 2272 s on 4 GPU,
+  census = 1 solve_path compile, warm 20.7 s/Q (ψ_cQ 184 / vq_prepare
+  394.5 / cold 825.2 / warm 827.3).  exciton_bands_1000c.{dat,png} written.
+- 16:2x OVERLAY + VERDICT (exciton_bands_640c_vs_1000c_GMKG.png):
+  per-state |dE(1000c-640c)| median 9.7 / mean 11.0 / max 46.5 meV
+  (@iQ 11); artifact rows iQ 6/9/16-17 shift by the SAME ~10 meV (max
+  41.8) — the dips PERSIST (iQ 9 E_1 depth 180 -> 207 meV).  ANSWER to
+  the owner: a more converged ISDF basis does NOT smooth the exciton
+  bands; the wiggle mechanism is the (24,32) htransform window (see
+  05_htransform_spbands), and the smoothing lever is a clean-boundary
+  driver window ((22,34) fits at 1000c capacity; follow-up).
+  diag_dense_head_1000c (dense on-grid stored-tile spot checks) running.
+- 16:35 diag_dense_head_1000c COMPLETE (549 s, 1 GPU): 8 on-grid path
+  points, dense-interp vs dense-stored max|dE| <= 0.056 meV over all 64
+  states (V_Q interpolation exciton-level exact at 1000 mu, matching the
+  640c 0.034 meV); driver rows within 1.4-8.5 meV of dense-stored
+  (htransform-cache + Lanczos representation floor, same class as 640c).
+- 16:3x Session wrap: PHASE2_LOG §"1000-centroid variant + SP bands",
+  CHANGELOG, manifest -> complete; allocation 56101959 released after
+  final commit.  Follow-up filed in PHASE2_LOG: clean-boundary driver
+  window (22,34)@1000c as the actual smoothing lever for iQ 6/9/16-17.
