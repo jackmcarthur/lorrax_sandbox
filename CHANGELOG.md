@@ -1,6 +1,67 @@
 # Changelog
 
 
+## 2026-07-18: Owner-spec-compliant arbitrary-Q tile schemes — no-r_tot constraint MET (0.6% B / 0.05 meV at 6x6 LOO); pasted multipole approach adjudicated UNWORKABLE; "frames are dead" narrowed by operator theory + Wannier spine [analysis, no source change]
+
+The §10/§11 ingredient scheme is owner-REJECTED for production (interpolates
+Z_q, n_mu x r_tot). Prototyped and measured the spec-compliant replacement:
+everything n_mu^2 / n_mu-x-small, no Z anywhere in the interpolation
+machinery or per-target cost. Full section: `arbitrary_q_bse.md` §12
+(+ PRIMER §III.5 items 6-7 and the item-1 narrowing); harness
+`primer_response_study/tile_{prep,t1t2_mos2,smooth_filter,path,wannier_pair}.py`,
+logs `tile_*.log` + npz (all numbers grep-verified from disk).
+
+- **Constructions.** T1: rank-cut/Tikhonov-clean the stored V_q tile in its
+  own C_q frame WITHOUT Z (cleaning == projecting stored zeta; clean-floor
+  reproduces the campaign rankcut-TRUE-data floor bit-level, 3.572e-3 vs
+  3.58e-3), finite-alpha Gaussian SR/LR split (full slab f2d), stencil the
+  cleaned SR tiles, re-add analytic LR at the target. T2: slab-adapted
+  per-Gz in-plane multipole moments of the cleaned zeta with the centroid
+  phase factored (winding cure). T2': phase-factored EXACT LR channels
+  F_mu(q;G) on a fixed Gaussian G-superset (Taylor summed to all orders).
+- **Head-to-head (6x6 LOO, gap-window B med (max) / excitons):** ingredient
+  (r_tot, rejected) 3.73e-3 (3.63e-2) / 0.020 meV; raw tile 1.61e-1;
+  cleaned-no-split 1.53e-1 (cleaning alone useless — the near-head Coulomb
+  variation dominates, not junk); clean-SR + exact-LR ceiling 3.56-5.2e-3;
+  **clean-SR + F-channel LR (honest, spec-compliant): 6.2e-3 (4.6e-2) /
+  0.046 meV; Tikhonov-cleaned 5.85e-3 (3.78e-2) / 0.045 meV** — within
+  ~1.6x of the ingredient scheme at ~1/100 per-target cost (no solve/eigh/
+  r_tot at target). Moment variants: mixed 4.3e-2, consistent-model
+  1.2-2.1e-2 with the Brunin hierarchy INVERTED (monopole-only best; model
+  fidelity 58-70%; 3D z-Taylor DOA on slabs: 73% error at 19% LR weight).
+  Gamma->x-hat path: smooth at or better than §11.3 quality (entries
+  d2/range 3.6-4.5e-2 vs 5-7e-2).
+- **Owner amendment 1 (smooth filters + checks):** Tik >= hard confirmed
+  (small); Check A: filtered g_eps(C) varies 16-100x below Lipschitz
+  bounds; cleaned tiles 70-90x q-smoother than raw; Check B: plain top-m
+  subspace affinities 0.975-0.9998 for m=10..480 (random floor 0.13-0.87)
+  — the C2 "random floor" was the whitened/transported statistic (which
+  perturbation theory forces to the floor on a gapless spectrum: BBR 2013
+  + Davis-Kahan), NOT subspace chaos. "Frames are dead" narrowed to
+  "eigenframe/whitened objects are lawless; filtered/subspace/quadratic
+  objects are smooth".
+- **Owner amendment 2 (Wannier spine, no htransform):** derivation in
+  §12.4 (pair space = q-analytic Wannier-pair frame; centroid-dual
+  roughness is coordinates, not content; C2 substituted the lawless
+  spectral frame for the analytic Wannier frame). Constructive pair-gauge
+  test on stored fixtures honestly BLOCKED: 3v/3c trio windows split
+  Kramers doublets (no smooth gauge exists — gauge singularity 0.006);
+  Kramers-clean 2v/2c fixes valence (0.88+) but conduction stays entangled
+  (0.056) — needs atom-centered trials on full-grid psi or real
+  disentanglement.
+- **Pasted dipole+quadrupole LR-tensor approach: UNWORKABLE as specced**
+  (transported half-whitened frame = the dead machinery; literal moments
+  58-70% error, orders invert Brunin; 3D form DOA for slabs). Surviving
+  content (subtractive exact-at-coarse container, fixed-superset Gaussian
+  window, low-rank LR kernel) adopted and realized better by F. §12.5.
+- New KNOWN_SANDBOX_ERRORS entry: fixed Miller supersets are not contained
+  in every stored zeta sphere (6x6 boundary-q KeyError; zero-fill +
+  exp(-cutoff/4a^2) weight bound is the stored-consistent handling).
+- **Standing: production default per-Q zeta refit unchanged; the F-scheme
+  supersedes the ingredient scheme as the interpolation candidate.**
+  No off-grid capability number (unchanged §11 caveat; htransform-based
+  midpoint truth is owner-barred in this thread).
+
 ## 2026-07-17: Arbitrary-Q follow-up — owner-redesigned off-grid tests: 6×6 LOO anchor + Γ→x̂ path smoothness PASS (0.37% B / 0.02 meV excitons), midpoint ζ-refit truth pending; Si control fails off-grid as theory demands [analysis, no source change]
 
 The campaign's surviving rankcut ingredient-interp scheme, taken through the

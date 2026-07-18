@@ -565,3 +565,21 @@ zeta_q.h5 at boundary q must use the sphere-derived center, not round().
   `v_q_g_flat.py:526`). A bare 8pi/|q+G|^2 rebuild fails makeVq-vs-disk
   at med 9.6e-3 / max 5.7e-2; with the (seed-42, nmc=2^18) table the
   gate is machine-level. 2D fixtures are unaffected (no head injection).
+
+## 2026-07-18: fixed global Miller supersets are NOT contained in every stored zeta sphere (6x6 boundary-q; KeyError trap)
+
+- **Where**: any consumer that maps a fixed Miller G-set across all q of
+  `zeta_q.h5` spheres (e.g. a Gaussian LR superset built from
+  `min_q |q+G|^2 <= K2max`). First hit in
+  `primer_response_study/tile_prep.py::sphere_slot` on MoS2 6x6.
+- **What happens**: a G kept because SOME q brings `|q+G|^2` under the
+  bound can exceed the 30 Ry sphere cutoff at a FAR q (worst on grids with
+  q-components at 1/2) — the slot lookup then has no entry (3x3 is
+  accidentally immune; 6x6 fails with a KeyError on e.g. G=(1,3,-6)).
+- **Correct handling**: those (q,G) channels are ZERO in the stored
+  representation (the fit is band-limited to the sphere); zero-fill them
+  and bound their weight — for a Gaussian LR window the worst-case weight
+  at any q where the channel is missing is `exp(-cutoff/(4 alpha^2))`
+  (measured 5.8e-17 at alpha=0.45; 26 channels affected on 6x6).
+  Implemented in `tile_prep.py::{sphere_slot,F_channels}` (sentinel -1 +
+  zero column + printed weight bound).

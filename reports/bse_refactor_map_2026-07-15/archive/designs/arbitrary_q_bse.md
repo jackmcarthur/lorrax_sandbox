@@ -1051,3 +1051,300 @@ COMPLETE coordination shells (nR7 = an argsort-tiebreak subset of the
 5. **Production default unchanged: per-Q ζ refit.** The scheme is a
    measured few-tenths-of-a-percent on-grid + smooth-and-anchored
    near-grid interpolant; it is not yet certified at generic off-grid Q.
+
+## 12. Owner-spec-compliant tile-level schemes (2026-07-17/18) — APPENDED: no-r_tot constraint MET at 0.6% B / 0.05 meV; multipole counterproposal adjudicated; "frames are dead" narrowed by operator theory
+
+**Governing constraint (owner).** The §10/§11 surviving candidate is REJECTED
+for production because it stores/interpolates `Z_q` (`n_μ × r_tot`, ~17 GB at
+MoS2 6×6). Spec: the interpolation machinery and the per-target-`Q` cost may
+touch only SR/LR-split V-tile-level objects (`n_μ²`) or moment-class vectors
+(`n_μ × small`); coarse-grid production fits may touch `Z` once (the existing
+GW pipeline). Everything below obeys this: no `Z_r` array is ever formed.
+
+Scripts/logs (all numbers grep-verified from disk, per the phantom-table
+rule): `primer_response_study/tile_{prep,t1t2_mos2,smooth_filter,path,`
+`wannier_pair}.py`, logs `tile_t1t2_{3x3,6x6}.log`,
+`tile_smooth_filter.log`, `tile_path.log`, `tile_wannier_pair{,_nw2}.log`,
+npz alongside. Fixtures: the §11 MoS2 3×3/6×6 (wrapped labels via
+`offgrid_prep.fix_sphere_wrap`); metric: gap-window `B = M^H V_Q M` (3v×3c,
+stored-fit truth) + TDA exciton swap; stencil nR7; truth and harness
+continuity anchored to the campaign (below).
+
+### 12.0 The constructions
+
+All coarse-side objects are built once from stored data; interpolation is a
+truncated-R Fourier stencil on them; per-target work is `n_μ²` AXPYs + an
+analytic LR rebuild. Per-element math (full derivations in `tile_prep.py`
+docstring):
+
+- **Cleaning without Z.** rank-cutting the stored fit is a projection:
+  `ζ_rc = R_r Λ_r^{-1} R_r^H Z = P ζ_stored` with `P = R_r R_r^H` from
+  `eigh(C_q)` (`C_q` is ψ-level, `n_μ²`). On the tile:
+  `V_c = conj(P) V_ref conj(P)` (`= Π V Π`, `Π = conj(P)` Hermitian).
+  Gate: `Π V Π == makeVq(P ζ̃)` at 2.8e-14; the B-metric clean-floor
+  reproduces the campaign's rankcut-on-TRUE-data floor **exactly**
+  (3×3: 3.572e-3 vs logged 3.58e-3; 6×6 med 3.2–3.7e-3) — bit-level
+  continuity with §10/§11 without ever forming `Z`. Smooth-filter variant
+  (owner amendment): `S_ε = R g_ε(Λ) R^H`, `g_ε(λ)=λ²/(λ²+ε²)` (the Z-free
+  form of the Tikhonov solve `f_ε(C)Z`, `f_ε(λ)=λ/(λ²+ε²)`).
+- **T1 split.** `v_LR = v·exp(−K²/4α²)` (full slab `f_2D` envelope, only the
+  true divergence zeroed), `v_SR = v·(−expm1)` per-G on the stored sphere;
+  `V_SR_c = V_c − Π V_LR Π`; sphere-tail bound `exp(−cutoff/4α²)` ≤ 8e-17
+  for α ≤ 0.45. Re-add at target over a FIXED global Miller superset 𝒢(α)
+  (`min_{q∈BZ}|q+G|² ≤ 4α²ln(1/ε_LR)`, ε_LR=1e-8; 125/337/1007 G at
+  α=0.2/0.3/0.45). Out-of-sphere (q,G) superset channels are zero in the
+  stored representation (26 channels at α=0.45, worst Gaussian weight
+  5.8e-17 — bounded, harmless).
+- **T2 moments (slab-adapted, frame-free).** Winding cure: factor the FULL
+  centroid phase, `ζ̃_μ(K) = e^{−iK·s_μ} M_μ(K)`; since `q_z = 0` on the
+  coarse grid, `K_z = G_z` is an exact discrete channel (per-`G_z` moments —
+  the pasted response's own §10 slab refinement), and only `K_∥` is
+  Taylored: `M_μ(K_∥,G_z) ≈ m0_μ(G_z) − iK_∥·d_μ(G_z) − ½K_∥·Θ_μ(G_z)·K_∥`
+  with minimal-image in-plane displacements (Cartesian via the exact dual
+  `A = 2π(B^T)^{-1}`, gated vs `adot` at 1.4e-17). Storage
+  `n_μ × n_{Gz} × 6` (27 G_z channels). Model evaluated at any `Q+G` with
+  the analytic phase — no G-slot label anywhere, BZ-periodic by
+  construction.
+- **T2' channels (no Taylor).** `F_μ(q;G) = e^{+2πi(q+G)·s_μ} ζ̃_c,μ(q+G)`
+  on 𝒢 — the exact form factor `M_μ(K)` sampled at `K=q+G`; the T2 moments
+  are its in-plane Taylor coefficients. `n_μ × n_G_LR` per coarse q
+  (124 MB total at 6×6/α=0.3 vs 17 GB for `Z_r`). Componentwise stencil
+  interpolation at fixed Miller G is winding-safe (phase factored).
+- **Assembly variants** (target q0, LOO weights w): **A** raw-tile
+  `Σw V_ref`; **B** cleaned tile `Σw V_c`; **C** `Σw V_SR_c + Π_0 V_LR(q0)
+  Π_0` from the target's own stored ζ̃ — the DIAGNOSTIC ceiling (breaks LOO
+  on the LR channel only; `Π_0` needs only `C_q0` = ψ-level); **D**
+  `Σw V_SR_c + V_MP[interp moments](q0)` (mixed split — quantifies the
+  response's §4 subtract/re-add inconsistency warning); **E**
+  `Σw [V_c − V_MP_own] + V_MP[interp moments](q0)` (same model both sides:
+  exact-at-coarse for ANY model — the pasted approach's structure,
+  frame-free; exact-stencil null 2.7e-15); **F** `Σw V_SR_c +
+  V[interp F-channels](q0)` (T2 without Taylor; own-rebuild gate 1.8e-9).
+
+### 12.1 Head-to-head (LOO over all coarse q, B med (max); exc meV med/max)
+
+| scheme | interp objects (per q) | 3×3 B med | 6×6 B med (max) | 6×6 exc |
+|---|---|---|---|---|
+| §11 ingredient (rc1e-4) — REJECTED (r_tot) | C (n_μ²) + **Z (n_μ×r_tot)** | 4.70e-3 | **3.73e-3 (3.63e-2)** | 0.020/0.185 |
+| A raw tile | V (n_μ²) | 5.04e-1 | 1.61e-1 (3.03e-1) | 0.52/1.88 |
+| B cleaned tile, no split (rc1e-4) | V_c | 4.59e-1 | 1.53e-1 (2.69e-1) | 0.16/0.94 |
+| C clean-SR + exact-LR α=0.3 (ceiling) | V_SR_c | 1.89e-2 | 5.22e-3 (4.42e-2) | 0.037/0.181 |
+| C at α=0.45 / 0.6 | V_SR_c | 7.9e-3 / 5.2e-3 | 3.69e-3 / **3.56e-3 (3.63e-2)** | — / 0.021/0.088 |
+| **F clean-SR + channel-LR α=0.3 (honest, spec-compliant)** | V_SR_c + F (n_μ×337) | 1.87e-2 | **6.23e-3 (4.57e-2)** | 0.046/0.212 |
+| F at α=0.45 | + F (n_μ×1007) | 1.36e-2 | 5.72e-3 (3.97e-2) | — |
+| F, Tikhonov cleaning ε=1e-4 | same | — | **5.85e-3 (3.78e-2)** | 0.045/0.167 |
+| D mixed moment-LR (α=0.3, o2) | + moments (n_μ×162) | 3.35e-2 | 4.32e-2 | 0.079/0.423 |
+| E consistent moment model o0/o1/o2 | same | 2.8/5.1/6.0e-2 | 1.18/1.90/2.06e-2 | o2: 0.053/0.647 |
+| W pair-level LR, projection gauge | + M̃ (npair×337) | — | 3.7e-1 (gauge-blocked, §12.4) | 1.6/8.0 |
+
+Reading, in causal order:
+
+1. **The parent's bounds sketch, scored.** (i) "raw tile fails at 5–10%":
+   REFUTED downward — raw is worse (16% at 6×6, 50% at 3×3). (ii)
+   "cleaned tile reaches ingredient level": TRUE for the full T1
+   construction (clean + split): C sits at 3.6–5.2e-3 ≈ the ingredient
+   3.73e-3; cleaning ALONE (B, 15%) does nothing for the physical metric —
+   the tile's q-roughness is overwhelmingly the near-head Coulomb-weight
+   variation, not the junk (junk is inert under B by §10, and neither hard
+   nor Tikhonov cleaning rescues the un-split tile: Btik ≈ Bhard ≈ 0.15).
+   The SPLIT is the load-bearing move; cleaning matters only in that the SR
+   remainder then interpolates at the clean floor. (iii) "moments of
+   cleaned ζ smooth where raw g0 is not": PARTIAL — see 12.2.
+2. **The spec is MET at 0.59–0.62% B / 0.05 meV excitons** (F at α=0.3–0.45,
+   hard or Tik cleaning), within ~1.6× of the r_tot-carrying ingredient
+   scheme (0.37% / 0.020 meV) at ~1/100 the per-target cost and ~1/70 the
+   storage, with NO solve, NO eigh, and NO r_tot object at or after
+   interpolation. α-ladder: C/F improve 0.2→0.45 and plateau 0.45→0.6
+   (α ≈ 1.5–2× Δq); rc-window flat 1e-3..1e-5 (E rows and B rows) — same
+   inert-window behaviour as §10.
+3. **Γ→(1/6,0,0) path (tile_path.py, fixed-Γ probe, G0-excluded rows
+   comparable to §11.3):** F trajectories smooth — entries d²/range med
+   3.6e-2 (nR36) / 4.3e-2 (nR7), slightly better than the §11.3
+   ingredient-scheme 5–7e-2; top-eig arc smooth+monotone; the eig-1 first
+   step at Γ is §11.3's known G0-excluded winding nonanalyticity (present
+   at every rung, not an interpolation kink). Exact-stencil chain null at
+   the endpoints 1.6e-14 / 7.0e-10 (raw), and the t=1 anchor 0.19–0.26 on
+   the split variants is the FIXED-Γ-PROBE truncation cost (§11.3 measured
+   ~0.19 for the same reason), not scheme error.
+
+### 12.2 T2 verdict — the winding cure works; literal moments do not
+
+- Adjacent-q roughness (6×6, +x̂ pairs, rel diff med): raw g0 slot vector
+  0.678 (max 1.96 — the winding object) → phase-factored cleaned
+  F-channels **0.313** → cleaned m0 0.357; but dipole/quadrupole moments
+  0.72/0.78 — WORSE than the monopole. R-falloff mirrors it (m0
+  1→0.40→0.11 vs C_R 1→4.2e-2→7.8e-4; d does not decay at shell 1).
+- Moment-model fidelity vs the exact cleaned LR tile: 58–70% relF, and
+  orders HURT (o1/o2 worse than o0) — the ISDF ζ envelopes are not
+  compact, so literal polynomial-weighted moments are dominated by
+  delocalized tails (the response's own §9 warning about literal real-space
+  moments, realized). Consequently the Brunin hierarchy INVERTS in the
+  assembled scheme: E o0 (1.18e-2) beats o1/o2 (1.9/2.1e-2).
+- The Brunin smoothness criterion itself registers only weakly and in the
+  remainder alone: interpolated-remainder trajectories along Γ→x̂ smooth
+  out mildly with quadrupole subtraction (entries d²/range max
+  0.143→0.098, eigs 0.114→0.081 at nR36) — the DIRECTION is right, but the
+  re-add model error (58–70%) swamps the gain: total-E is
+  model-accuracy-limited, not smoothness-limited.
+- The pure-3D z-Taylor is DOA for slabs, quantified: at α=0.3 the |G_z|=1
+  channels carry 19% of the LR weight with 73% 3D-Taylor error (|G_z|=2:
+  2.8% weight, 460% error). Per-G_z moments (or channels) are MANDATORY —
+  the pasted response's §10 caveat confirmed with numbers.
+- **The working object is the phase-factored exact channel `F`, not its
+  Taylor compression.** F ≈ C at α=0.3 (6.2e-3 vs 5.2e-3) — once the
+  winding is carried analytically, the channels interpolate essentially at
+  the exact-LR ceiling; every Taylor/integral-moment compression of them
+  loses an order of magnitude. And the compression buys almost nothing:
+  moments are n_μ×162 vs F's n_μ×337 at α=0.3.
+
+### 12.3 Operator-theory checks (owner amendment 1) — "frames are dead" NARROWED
+
+`tile_smooth_filter.log`, 6×6, all 36 adjacent +x̂ pairs:
+
+- **Check A (matrix-function continuity):** ‖ΔC‖/‖C‖ = 3.18e-2;
+  Tikhonov-cleaning-weight continuity ‖Δg_ε(C)‖/‖ΔC‖ ≈ 7e2–1e3 across
+  ε_rel 1e-3..1e-6 — i.e. ε_abs·ratio = 0.006–0.04, a factor 16–100 BELOW
+  the analytic Lipschitz bound (max|g′_ε| ≈ 0.65/ε): the filtered
+  operators are far smoother than worst-case. Hard-cut projector distance
+  ‖ΔP_r‖_F/√2r = 0.21–0.22 — NOT at the random floor (0.65–0.85) but a
+  persistent ~22% edge-rotation, exactly the Davis–Kahan picture: modes
+  within ‖ΔC‖ of the cut rotate freely, the bulk does not. Cleaned-TILE
+  smoothness: ‖ΔV_c‖/‖ΔV_ref‖ = 0.015 (hard) / 0.011 (Tik) — the cleaned
+  tile is ~70–90× smoother in q than the raw tile, Tik mildly smoother
+  than hard, and downstream Ftik ≥ Fhard (5.85e-3/3.78e-2 vs
+  6.23e-3/4.57e-2) — the amendment's prediction confirmed in sign,
+  small in size.
+- **Check B (re-audit of the C2 "random floor"):** plain top-m
+  eigen-subspace principal cosines between adjacent q (no whitening, no
+  transport, no ζ — C_q is ψ-level and label-free): cos med ≈ 1.0000 and
+  affinity 0.975–0.9998 for EVERY m ∈ {10..480}, vs random floors
+  0.125–0.87. Only the MINIMUM cosine degrades with m (0.9986 at m=10 →
+  0.083 at m=480) — the cut-edge modes, DK-consistent (‖ΔC‖/gap grows 1.1
+  → 5e6). **The C2 probe was not wrap-trapped and not buggy; it measured a
+  different statistic** — whitened (S^{-1}-amplified) angles with band
+  transport, whose median over the gapless tail is REQUIRED to sit at the
+  floor by perturbation theory. The subspace geometry of the pair space is
+  in fact q-smooth. §10's "frames are dead" is hereby narrowed to:
+  **hard-cut/whitened EIGENFRAME objects are lawless on C_q's gapless
+  spectrum, exactly as Davis–Kahan and the BBR gap-hypothesis require
+  (Benzi–Boito–Razouk, SIAM Rev. 55, 3 (2013): decay/continuity bounds for
+  f(H) need f analytic in a Bernstein ellipse clearing the spectrum — a
+  step INSIDE a gapless spectrum has no theorem, an analytic filter of
+  width ε does); smoothed spectral functions and whole-subspace/filtered
+  objects are the licensed ones.** Do not re-attempt eigenvector-frame
+  transport; smooth-filtered functionals of C_q are fine.
+
+### 12.4 Wannier-theory spine (owner amendment 2) and the pair-frame test
+
+**(a) Why the ingredients are analytic — the Wannier statement.** For an
+isolated band group, an analytic periodic Bloch gauge exists (Panati,
+Ann. Henri Poincaré 8, 995 (2007); Marzari–Vanderbilt) and yields
+exponentially localized Wannier functions `w_nR`; BBR-class bounds give the
+same decay for the gauge-invariant density matrix. The window density
+matrices `P_k` entering §1's Grams are gauge-invariant, and
+`C_R, Z_R ∝ |P_R|²` inherit exponential decay (the measured C_R falloff) ⇒
+`C_q, Z_q` are analytic in q. The momentum-q PAIR SPACE is spanned by Bloch
+sums of Wannier pair products `w*_n(r−R) w_m(r−R−ΔR)` — a canonical,
+exponentially-localized, q-ANALYTIC frame for exactly the space ζ lives in.
+**(b) What this licenses for ζ:** posed in Wannier-pair coordinates the fit
+has analytic inputs AND an analytic frame; the q-roughness of ζ (and of
+every ζ-linear centroid-frame object measured here: g0 0.68, m0 0.36,
+F 0.31) is a property of the CENTROID POINT-VALUE DUAL coordinates — the
+LSQ dual basis of an ill-conditioned frame — not of the physical content.
+Any fixed ANALYTIC-filtered functional of C_q (12.3) and any frame-free
+quadratic contraction (the tiles) is q-analytic; that is precisely what
+the working schemes (§11 ingredient, T1 SR tiles, F under contraction)
+exploit. **(c) The C2 diagnosis:** C2's "global smooth frame" was the
+SPECTRAL frame of C_q — lawless on a gapless spectrum by 12.3 — where the
+theory offers the WANNIER frame, analytic by theorem. That substitution is
+exactly why C2 hit the floor with a correct implementation.
+**(d) The constructive test, attempted and honestly blocked.**
+`tile_wannier_pair.py` builds the cheapest standard smooth gauge
+(Γ-anchored trial projection + Löwdin on the stored ψ-at-centroids; NO
+htransform) on the gap-window legs and measures the pair-level LR channels
+`M̃(q) = x̃_q ζ̃_c` in that gauge. Result: with the 3v/3c trio windows the
+gauge fails its own nonsingularity diagnostic (smin/smax down to
+0.006–0.016) — the trio windows SPLIT KRAMERS DOUBLETS (C3's flag; §I.2
+lesson), so their subspace is k-discontinuous and no smooth gauge exists
+even in principle. Kramers-clean 2v×2c windows FIX the valence gauge
+completely (med 0.991, min 0.880) but the conduction window remains
+entangled (med 0.452, min 0.056 — Γ trials do not span the K-point
+conduction character; bottom-2 conduction is not an isolated group), and
+the moving (conduction) leg dominates M̃, which stays rough (1.21 adjacent
+diff) and the pair-LR variant W fails (0.37). **Verdict: not a refutation —
+the fixture's centroid-sampled ψ + Γ-trial projection cannot construct the
+conduction-side Wannier gauge; a proper test needs atom-centered trials on
+full-grid ψ or genuine disentanglement.** Flagged per amendment item 5;
+the theory's empirical support here is Check B (smooth subspaces) + the
+tile/ingredient analyticity it predicts.
+
+### 12.5 Adjudication of the pasted multipole approach (RESPONSE.md, final section)
+
+The owner-pasted "effective covariant dipole/quadrupole tensors in the
+parallel-transported half-whitened frame" approach, scored against the
+campaign + this section's evidence:
+
+1. **Its subtract-model / interpolate-remainder / re-add-model skeleton is
+   CORRECT and now measured** — variant E implements it frame-free and is
+   algebraically exact at coarse points (null 2.7e-15) for any model
+   quality, exactly as the response §"scheme I would now favor" claims.
+2. **Its frame is the killed one.** The tensors are defined in the
+   half-whitened transported frame (`Φ_q = S R^H ζ`, `D → T_{Q←q}D`) — the
+   C2-measured-dead machinery; 12.3 explains WHY it is dead (gapless
+   spectral frame) and shows the content it wanted (localized, analytic
+   frames) belongs to Wannier theory instead. As pasted: **UNWORKABLE.**
+3. **Its literal multipole content fails frame-free too.** In the
+   centroid basis with the winding phase factored — the most favorable
+   frame-free reading — literal moments are a 58–70%-error model of the LR
+   channel, orders invert Brunin (12.2), and the promised compression is
+   marginal (n_μ×162 vs n_μ×337 for exact channels). Its own §9 warning
+   (literal real-space moments vs form-factor Taylor coefficients) and §10
+   caveat (slab needs G_z-resolved moments — confirmed: 73% 3D-Taylor
+   error at 19% weight) are the operative failure modes. Its §4
+   "fit-based" extraction (LSQ in K-space over the LR support) is the one
+   untested variant that could close part of the moment↔channel gap; it
+   can at best reach the F-channel numbers it would be fit to.
+4. **What survives, and is now adopted:** the finite-α Gaussian window
+   over a fixed reciprocal superset (its §6 — implemented, incl. the
+   worst-case tolerance rule), the stable `expm1` SR evaluation and slab
+   small-K series (§5 — implemented), consistency-of-LR-definitions (§4 —
+   quantified: mixed D 4.3e-2 vs consistent E 2.1e-2 vs matched-channel F
+   6.2e-3), α from a held-out plateau (§11 — observed), and "the LR term
+   naturally has a different, extremely low-rank representation" (§3) —
+   realized as the phase-factored exact channels F (and, once a real
+   disentangled Wannier gauge exists, the pair-level `F_Q D F_Q^H` form).
+   **Bottom line: dipole+quadrupole LR tensors — UNWORKABLE as pasted
+   (frame dead, literal moments inaccurate, 3D form DOA for slabs);
+   the surviving 20% of the idea is the subtractive container and the
+   low-rank LR channel, which the F-scheme implements better with the
+   Taylor summed to all orders.**
+
+### 12.6 Standing verdict
+
+1. **Owner spec (no r_tot, n_μ²-level everywhere): MET** at 6×6 on-grid
+   LOO **0.59–0.62% median B / 3.8–4.6% max, excitons 0.045–0.046 meV med
+   / 0.17–0.21 max** (F-composition, α 0.3–0.45, Tik or hard cleaning) —
+   ~1.6× the ingredient scheme's error at ~1/100 the per-target cost, no
+   solve at the target. The exact-LR ceiling (C, 0.36% at α=0.6) shows the
+   SR-tile side is already AT ingredient level; the remaining gap is
+   entirely the LR-channel interpolation.
+2. Off-grid: path smoothness + endpoint anchors at §11.3 quality (entries
+   d²/range 3.6–4.5e-2, better than the ingredient scheme's 5–7e-2).
+   The §11 caveat is inherited unchanged: no off-grid capability number
+   until an off-grid ground truth exists (per-Q ζ refit at midpoints —
+   note the htransform route for it is owner-barred in this thread).
+3. **Production default remains per-Q ζ refit.** The F-scheme replaces the
+   §10/§11 ingredient scheme as the designated fallback/interpolation
+   candidate (it dominates it on every axis the owner cares about:
+   storage, per-target cost, spec compliance; accuracy within 1.6×).
+4. Do not re-attempt: eigenvector-frame transport (12.3), literal moment
+   compression of the LR channels (12.2), trio-window gauges that split
+   Kramers doublets (12.4), pure-3D multipoles on slabs (12.2).
+
+Citations for 12.3/12.4: M. Benzi, P. Boito, N. Razouk, "Decay properties
+of spectral projectors with applications to electronic structure," SIAM
+Review 55(1), 3-64 (2013) (archive/designs copy; Thm 8.1, Cor 8.6, §1157
+gap-dependence remark); Davis-Kahan sin-theta (via BBR §presentation);
+G. Panati, Ann. Henri Poincaré 8, 995 (2007); Marzari-Vanderbilt
+RMP 84, 1419 (2012); Brunin et al., PRL 125, 136601 (2020); Haber et al.,
+PRB 108, 205109 (2023).

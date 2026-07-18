@@ -1870,3 +1870,632 @@ That avoids both known failure mechanisms: the (C^{-1}) dual-coordinate amplific
 
 [1]: https://arxiv.org/abs/2308.03012?utm_source=chatgpt.com "Maximally-Localized Exciton Wannier Functions for Solids"
 [2]: https://arxiv.org/abs/2002.00628?utm_source=chatgpt.com "Electron-Phonon Beyond Fröhlich: Dynamical Quadrupoles in Polar and Covalent Solids"
+
+
+
+
+
+
+
+Q: what about dipole quadrupole etc long range matrix elements; those should be interpolable.
+
+
+
+
+Yes—I think there is a **strong and probably preferable case** for storing the long-range contribution as dipole/quadrupole tensors. I was previously conflating two goals:
+
+1. reproducing an entire finite-(\alpha) Gaussian LR contraction exactly; and
+2. extracting all the nonanalytic structure so that the remainder is interpolable.
+
+Dipole/quadrupole tensors only need to accomplish the second. The remainder can absorb everything the truncated multipole model does not reproduce. That is exactly the subtract–interpolate–add logic used in exciton-Wannier and electron–phonon interpolation. Haber et al. isolate a dipolar long-range exciton interaction, while the quadrupole literature shows that removing only the leading dipole may leave a less singular but still non-smooth remainder. ([arXiv][1])
+
+## The scheme I would now favor
+
+Work in the parallel-transported, half-whitened auxiliary frame:
+
+[
+\Phi_q=S_qR_q^\dagger\zeta_q,
+\qquad
+\mathcal V_q=S_qR_q^\dagger V_qR_qS_q.
+]
+
+Construct a multipole model (\mathcal V_q^{\mathrm{MP}}), subtract it from the exactly known coarse-grid interaction,
+
+[
+\boxed{
+\mathcal V_q^{\mathrm{reg}}
+===========================
+
+\mathcal V_q-\mathcal V_q^{\mathrm{MP}},
+}
+]
+
+parallel-transport and interpolate only (\mathcal V^{\mathrm{reg}}), and restore the multipole model analytically:
+
+[
+\boxed{
+\mathcal V_Q
+\approx
+\operatorname{Interp}_{\mathrm{PT}}
+[\mathcal V^{\mathrm{reg}}]_Q
++
+\mathcal V_Q^{\mathrm{MP}}.
+}
+]
+
+This decomposition is **algebraically exact at every coarse point**, regardless of how accurately the multipole model reproduces the complete finite-(q) interaction, because the difference is retained in (\mathcal V^{\mathrm{reg}}).
+
+The model’s only job is to remove the terms responsible for poor Fourier interpolation.
+
+---
+
+# 1. What tensors should actually be stored
+
+Let the long-wavelength form-factor vector in the orthonormal auxiliary frame be
+
+[
+M_a(\mathbf K)
+==============
+
+\widetilde\Phi_a(\mathbf K),
+\qquad
+\mathbf K=\mathbf q+\mathbf G.
+]
+
+For a neutral transition-density space,
+
+[
+M_a(\mathbf 0)=0.
+]
+
+Its expansion is
+
+[
+\boxed{
+M_a(\mathbf K)
+==============
+
+-iK_iD_{a i}
+-\frac12K_iK_jQ_{a,ij}
++\frac{i}{6}K_iK_jK_kO_{a,ijk}
++\cdots
+}
+]
+
+where:
+
+* (D_{ai}) is a complex dipole vector for each auxiliary direction (a);
+* (Q_{a,ij}=Q_{a,ji}) is a complex symmetric quadrupole tensor;
+* optionally (O_{a,ijk}) is a symmetric octupole tensor.
+
+Storage is tiny:
+
+* dipole: (3r) complex numbers;
+* symmetric quadrupole: (6r);
+* symmetric octupole: (10r).
+
+This is dramatically smaller than either (r\times n_G) auxiliary functions or (r\times r) matrices for every fine (Q).
+
+Under an auxiliary-frame gauge transformation,
+
+[
+\Phi_q\rightarrow U_q^\dagger\Phi_q,
+]
+
+the tensors transform simply as
+
+[
+D_i(q)\rightarrow U_q^\dagger D_i(q),
+\qquad
+Q_{ij}(q)\rightarrow U_q^\dagger Q_{ij}(q).
+]
+
+So they can be parallel-transported exactly like (\Phi_q):
+
+[
+\widehat D_i(q;Q)
+=================
+
+T_{Q\leftarrow q}D_i(q),
+]
+
+[
+\widehat Q_{ij}(q;Q)
+====================
+
+T_{Q\leftarrow q}Q_{ij}(q).
+]
+
+They are therefore exceptionally convenient interpolation objects.
+
+---
+
+# 2. Reconstructing the LR interaction from the tensors
+
+Introduce a smooth reciprocal-space LR envelope,
+
+[
+f_\alpha(K)=e^{-K^2/(4\alpha^2)},
+]
+
+and define the multipole form factor at a target (Q):
+
+[
+M_Q^{\mathrm{DQ}}(K)
+====================
+
+-iK_iD_i(Q)
+-\frac12K_iK_jQ_{ij}(Q).
+]
+
+Then
+
+[
+\boxed{
+\mathcal V_Q^{\mathrm{MP}}
+==========================
+
+\sum_G
+v_{\mathrm{dim}}(Q+G),
+f_\alpha(Q+G),
+M_Q^{\mathrm{DQ}}(Q+G)
+M_Q^{\mathrm{DQ}}(Q+G)^\dagger.
+}
+]
+
+This expression is:
+
+* positive semidefinite;
+* automatically Hermitian;
+* periodic in (Q) when the reciprocal-image sum is treated consistently;
+* valid with either 3D or slab-truncated (v_{\mathrm{dim}});
+* naturally low rank in the number of retained (G) vectors.
+
+I would implement it directly as a loop over the small LR (G)-set rather than explicitly coding third- and fourth-rank lattice tensors.
+
+Conceptually, however, it is equivalent to
+
+[
+\mathcal V_Q^{DD}
+=================
+
+\Lambda^{(2)}_{ij}(Q)
+D_iD_j^\dagger,
+]
+
+[
+\mathcal V_Q^{DQ}
+=================
+
+\frac{i}{2}\Lambda^{(3)}*{ijk}(Q)
+\left[
+D_iQ*{jk}^\dagger
+-----------------
+
+Q_{ij}D_k^\dagger
+\right],
+]
+
+[
+\mathcal V_Q^{QQ}
+=================
+
+\frac14\Lambda^{(4)}*{ijkl}(Q)
+Q*{ij}Q_{kl}^\dagger,
+]
+
+where
+
+[
+\Lambda^{(n)}_{i_1\ldots i_n}(Q)
+================================
+
+\sum_G
+v_{\mathrm{dim}}(Q+G)
+f_\alpha(Q+G)
+K_{i_1}\cdots K_{i_n}.
+]
+
+These (\Lambda)'s are universal geometry/kernel tensors; (D,Q) contain the material and auxiliary-subspace information.
+
+---
+
+# 3. The important subtlety: these should be **effective covariant multipoles**
+
+Because your auxiliary frame itself varies with (q), the appropriate quadrupole coefficient is not necessarily just
+
+[
+\int r_ir_j\Phi_{a,0}(r),dr.
+]
+
+The full object being expanded is
+
+[
+M_a(q)
+======
+
+\widetilde\Phi_{a,q}(K=q),
+]
+
+which depends on (q) through both:
+
+* the plane-wave factor (e^{-iq\cdot r});
+* the physical pair subspace and its auxiliary frame.
+
+Therefore, in a transported gauge,
+
+[
+D_{ai}
+\sim
+i\left.
+\frac{dM_a(q)}{dq_i}
+\right|_{q=0},
+]
+
+and
+
+[
+Q_{a,ij}
+\sim
+-\left.
+\frac{d^2M_a(q)}
+{dq_i,dq_j}
+\right|_{q=0}.
+]
+
+The second derivative includes:
+
+* the ordinary spatial quadrupole;
+* derivatives of the underlying Bloch states;
+* derivatives of the auxiliary-frame rotation;
+* Berry-connection/covariant-derivative terms.
+
+So I would call them **effective dipole and quadrupole coefficients of the transported form factor**, not necessarily literal moments of a single fixed real-space (\zeta).
+
+This is analogous to gauge-covariant quadrupolar terms in long-range electron–phonon theory: the next-order coefficient is not safely obtained by treating independently gauged Bloch states as ordinary scalar functions. ([arXiv][2])
+
+---
+
+# 4. A particularly practical way to obtain them
+
+You may be able to extract (D) and (Q) from the existing coarse-(q) auxiliary data, without implementing full second-order wavefunction perturbation theory.
+
+Choose a reference frame at (\Gamma). For every nearby coarse point (q):
+
+1. Select the reciprocal image (G_q) such that
+   [
+   K_q=q+G_q
+   ]
+   lies near zero.
+
+2. Apply the exact (G)-channel sewing.
+
+3. Parallel-transport the auxiliary vector into the reference frame:
+   [
+   \widehat M_q
+   ============
+
+   T_{0\leftarrow q}
+   \widetilde\Phi_q(K_q).
+   ]
+
+4. Fit all nearby points to
+   [
+   \widehat M_q
+   ============
+
+   M_0
+   -iK_{q,i}D_i
+   -\frac12K_{q,i}K_{q,j}Q_{ij}
+   +O(K_q^3).
+   ]
+
+For a pure valence–conduction transition space, impose
+
+[
+M_0=0.
+]
+
+This fit directly captures the variation of both the pair functions and the transported auxiliary frame. It is therefore more appropriate than taking naïve coordinate moments of raw (\zeta_q).
+
+The fit should include points on both sides of BZ boundaries after reciprocal sewing. A discontinuity that remains after this operation would be physical or due to bad transport, rather than merely a fixed-(G)-slot artifact. Your existing primer explicitly identifies the BZ winding of the (G=0) label as a likely hazard for componentwise interpolation. 
+
+An even cleaner future implementation could derive (D) and (Q) from first and second covariant derivatives of the htransform Hamiltonian, but I would test the transported polynomial fit first.
+
+---
+
+# 5. Why quadrupoles are genuinely useful here
+
+Suppose
+
+[
+M(K)=O(K)+O(K^2)+O(K^3).
+]
+
+In 3D,
+
+[
+v(K)\sim K^{-2}.
+]
+
+The dipole–dipole contribution is therefore
+
+[
+O(K),K^{-2},O(K)=O(1),
+]
+
+but it is direction-dependent:
+
+[
+D_iD_j^\dagger\frac{K_iK_j}{K^2}.
+]
+
+That is the nonanalytic dipolar head isolated in the exciton-Wannier construction. ([arXiv][1])
+
+If only the dipole is subtracted, the leading omitted cross term is dipole–quadrupole:
+
+[
+O(K),K^{-2},O(K^2)=O(K).
+]
+
+Although it vanishes at (K=0), it is generally angularly nonanalytic. That can still yield a slowly decaying Fourier remainder.
+
+Including the quadrupole removes this entire (O(K)) sector. The leading residual becomes (O(K^2)), from dipole–octupole and higher terms. This is the same mathematical reason quadrupoles materially improve long-range electron–phonon interpolation beyond a dipole-only Fröhlich model. ([arXiv][2])
+
+For a 2D-truncated kernel,
+
+[
+v(K_\parallel)\sim |K_\parallel|^{-1}.
+]
+
+Then dipole–dipole gives
+
+[
+O(K^2)/|K|=O(|K|),
+]
+
+with exactly the linear cusp and angular winding found for monolayer-TMD exchange. ([arXiv][3])
+
+Dipole–quadrupole is then nominally (O(K^2)), but still has non-polynomial angular structure because of the denominator (|K|). Quadrupole subtraction therefore remains useful for making the remainder more differentiable, even though the leading cusp is already entirely dipolar.
+
+---
+
+# 6. You do not need the multipole model to be globally accurate
+
+This is the key practical point.
+
+Suppose the DQ model starts becoming quantitatively poor by
+
+[
+|K|\sim0.2\ \mathrm{bohr}^{-1}.
+]
+
+That is not fatal. Choose (f_\alpha(K)) narrow enough that the model is active only where its expansion is accurate:
+
+[
+f_\alpha(K)=e^{-K^2/(4\alpha^2)}.
+]
+
+Everything outside that region remains in
+
+[
+\mathcal V_q^{\mathrm{reg}}
+===========================
+
+\mathcal V_q-\mathcal V_q^{\mathrm{MP}},
+]
+
+which is interpolated.
+
+There is a direct tradeoff:
+
+* small (\alpha): highly accurate multipole model, but more long-range structure remains in the interpolated remainder;
+* large (\alpha): shorter-ranged remainder, but the DQ expansion is used over a broader (K)-range;
+* adding quadrupoles permits a larger useful (\alpha);
+* adding octupoles permits a still larger one.
+
+The correct (\alpha) is the one that minimizes held-out interpolation error in (\mathcal V^{\mathrm{reg}}), not necessarily the one that best reproduces the exact Gaussian LR contraction by itself.
+
+---
+
+# 7. The tensors can be (q)-dependent or reference-point tensors
+
+There are two viable versions.
+
+## Local reference model
+
+Store (D_i) and (Q_{ij}) only in a reference frame at (\Gamma). For a target close to (\Gamma), transport them into the target frame:
+
+[
+D_i(Q)=T_{Q\leftarrow0}D_i(0),
+]
+
+[
+Q_{ij}(Q)=T_{Q\leftarrow0}Q_{ij}(0).
+]
+
+This is the simplest approach and may be enough because the LR term matters appreciably only near reciprocal-lattice origins.
+
+However, changes of the dipole with (Q) contribute at the same order as an effective quadrupole. Therefore, a static (D(0)) plus literal (Q(0)) must be defined through the full covariant Taylor fit, or it may omit frame-variation terms.
+
+## Coarse-(q) tensor fields
+
+Store
+
+[
+D_i(q),\qquad Q_{ij}(q)
+]
+
+at every coarse (q), transport them into the target frame, and interpolate:
+
+[
+D_i(Q)
+======
+
+\sum_nw_n(Q)
+T_{Q\leftarrow q_n}D_i(q_n),
+]
+
+[
+Q_{ij}(Q)
+=========
+
+\sum_nw_n(Q)
+T_{Q\leftarrow q_n}Q_{ij}(q_n).
+]
+
+This is still extremely cheap in storage and allows the tensors themselves to vary smoothly across the BZ.
+
+My instinct is:
+
+* use the reference-(\Gamma) Taylor tensors for the singular (G) image;
+* use coarse-(q) tensor interpolation only if testing shows meaningful variation within the Gaussian LR support.
+
+---
+
+# 8. Ensure the auxiliary space is neutral
+
+For BSE exchange, every valence–conduction transition density satisfies
+
+[
+\int\rho_{vc}(r),dr=0
+]
+
+at (q=0), so the monopole vanishes.
+
+But your existing charge-channel ISDF fit may span pair products beyond pure (v)-(c) transitions. Then individual orthonormal auxiliary functions can contain a monopole direction, even if physical BSE contractions cancel it.
+
+An implementation should do one of the following:
+
+1. construct the half-whitened frame from the actual BSE transition-pair matrix (X_q^{vc});
+2. explicitly project out the constant-density direction for the LR model;
+3. retain and store a monopole vector
+   [
+   M_a^{(0)}
+   ]
+   and verify that physical BSE vectors annihilate it.
+
+I prefer the first option. Otherwise extremely large monopole terms may cancel only after contraction, undermining numerical stability.
+
+---
+
+# 9. Do not confuse literal real-space moments with periodic-cell multipoles
+
+A naïve quadrupole
+
+[
+Q_{ij}=\int r_ir_j\rho(r),dr
+]
+
+depends on origin when the dipole is nonzero. In a periodic system, the position operator is also not globally well-defined.
+
+The safest operational definition is therefore the Taylor coefficient of the **reciprocal form factor in a parallel-transported, reciprocal-sewn gauge**:
+
+[
+D_i
+===
+
+i\partial_{K_i}M(K)\big|_{0},
+]
+
+[
+Q_{ij}
+======
+
+-\partial_{K_i}\partial_{K_j}M(K)\big|_{0}.
+]
+
+This automatically packages origin and gauge conventions consistently. If real-space moments are used, every auxiliary function must use the same cell origin, and the known origin-shift transformation of (Q_{ij}) must be respected.
+
+---
+
+# 10. Slabs may benefit from a slightly richer “2D multipole” representation
+
+For a slab, the leading small-(Q_\parallel) behavior comes from the in-plane Fourier transform while retaining the finite (z)-profile. A pure point-like 3D DQ expansion may converge slowly if (\alpha) extends to
+
+[
+|Q_\parallel|L_z\sim1.
+]
+
+A more accurate compact representation could store moments resolved by (G_z):
+
+[
+D_{a i}(G_z),
+\qquad
+Q_{a,ij}(G_z),
+]
+
+for a handful of small (G_z) channels, and expand only in (Q_\parallel):
+
+[
+M_a(Q_\parallel,G_z)
+====================
+
+M_a^{(0)}(G_z)
+-iQ_iD_{ai}(G_z)
+-\frac12Q_iQ_jQ_{a,ij}(G_z)+\cdots.
+]
+
+Then
+
+[
+\mathcal V_Q^{\mathrm{MP}}
+==========================
+
+\sum_{G_\parallel,G_z}
+v_{\rm slab}(Q+G)
+f_\alpha(Q+G)
+M(Q+G)M(Q+G)^\dagger.
+]
+
+This retains finite-thickness information while still reducing the expensive dependence to a few dipole/quadrupole vectors. I would begin with ordinary 3D DQ tensors, then introduce (G_z)-resolved tensors only if the MoS(_2) residual remains noticeably nonlocal.
+
+# Recommendation
+
+I would tell an implementation agent to prototype exactly this:
+
+[
+\boxed{
+\mathcal V_q^{\mathrm{reg}}
+===========================
+
+## \mathcal V_q
+
+\sum_G
+v_{\mathrm{dim}}(q+G)f_\alpha(q+G)
+M_q^{\mathrm{DQ}}(q+G)
+M_q^{\mathrm{DQ}}(q+G)^\dagger
+}
+]
+
+with (M^{\mathrm{DQ}}) reconstructed from transported effective dipole and quadrupole tensors.
+
+Then:
+
+[
+\boxed{
+\mathcal V_Q
+============
+
+\operatorname{Interp}*{\rm PT}
+[\mathcal V^{\mathrm{reg}}]*Q
++
+\sum_G
+v*{\mathrm{dim}}(Q+G)f*\alpha(Q+G)
+M_Q^{\mathrm{DQ}}(Q+G)
+M_Q^{\mathrm{DQ}}(Q+G)^\dagger.
+}
+]
+
+The decisive diagnostics are:
+
+* whether the (R)-space tail of (\mathcal V^{\mathrm{reg}}) becomes substantially shorter after dipole subtraction;
+* whether quadrupole subtraction shortens it further;
+* whether held-out physical exchange contractions improve;
+* whether the answer reaches an (\alpha)-insensitive plateau.
+
+So yes: **storing long-range exchange as transported dipole/quadrupole tensors is not merely plausible; it may be the cleanest way to avoid off-grid full-grid wavefunctions while preserving the exact singular and angular structure.** The finite-(\alpha) Gaussian should be viewed as the smooth window defining where the multipole model operates, not as a requirement to reproduce the exact LR form factors over an arbitrarily broad reciprocal region.
+
+[1]: https://arxiv.org/abs/2308.03012?utm_source=chatgpt.com "Maximally-Localized Exciton Wannier Functions for Solids"
+[2]: https://arxiv.org/abs/2002.00628?utm_source=chatgpt.com "Electron-Phonon Beyond Fröhlich: Dynamical Quadrupoles in Polar and Covalent Solids"
+[3]: https://arxiv.org/pdf/1507.03336?utm_source=chatgpt.com "arXiv:1507.03336v1 [cond-mat.mtrl-sci] 13 Jul 2015"

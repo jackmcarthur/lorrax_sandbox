@@ -825,6 +825,22 @@ physical-metric pushback were both prototyped against fixture data
    covariant transport, gauge protocol, and densification. The failure is the
    frame CONCEPT — do not re-attempt with a new frame convention. Smoothness
    lives only in the frame-free quadratic ingredients C_q, Z_q.
+   **[NARROWED 2026-07-18, measured — arbitrary_q_bse.md §12.3/§12.4]:** the
+   dead thing is the *eigenframe/whitened* statistic, exactly as operator
+   theory requires (Davis–Kahan; Benzi–Boito–Razouk 2013: decay/continuity of
+   f(C) needs f analytic clearing the spectrum — a hard cut inside C_q's
+   GAPLESS spectrum has no theorem). Plain top-m eigen-SUBSPACES between
+   adjacent 6×6 q are in fact smooth (affinity 0.975–0.9998 for m=10..480 vs
+   random floors 0.13–0.87; only cut-edge modes rotate), analytic filters
+   `g_ε(C)` vary 16–100× below their Lipschitz bounds, and cleaned tiles are
+   ~70–90× q-smoother than raw. The C2 probe was correct but measured the
+   S⁻¹-amplified whitened-median — the statistic perturbation theory forces to
+   the floor. Wannier theory (Panati; Marzari–Vanderbilt) supplies the frame
+   that IS analytic (Wannier pair products); C2's substitution of the spectral
+   frame for it is the sharp diagnosis of its failure. A constructive
+   Wannier-pair-gauge test on the stored fixtures is blocked by conduction-
+   window entanglement (Γ-trial projection gauge singular, smin 0.056
+   Kramers-clean; valence side clean at 0.88+) — see §12.4.
 2. **The verdict variable is the physical pair-amplitude contraction** (owner
    ruling): gap-window B = M†V_Q M + exciton-swap shift. The tile is ~100%
    physically inert junk by Frobenius (κ1e6 truncation removes 90% of tile
@@ -864,6 +880,34 @@ physical-metric pushback were both prototyped against fixture data
 5. Fixture traps any future study must respect: the rk unwrap trap and the
    psi_full_y band-span trap (KNOWN_SANDBOX_ERRORS 2026-07-17). Constraints
    (a)–(d) unchanged; the LR channel stays analytic in closed form.
+6. **OWNER SPEC + STATUS (2026-07-18): the no-r_tot constraint is MET.** The
+   §III.5(3) ingredient scheme is REJECTED for production because it stores/
+   interpolates Z_q (n_μ × r_tot). The spec-compliant replacement (measured,
+   `arbitrary_q_bse.md` §12): interpolate CLEANED, SR/LR-SPLIT TILES
+   (`Π V Π − Π V_LR Π`, all n_μ²; cleaning = top-subspace projection of C_q
+   equals rank-cutting the stored ζ WITHOUT forming Z — clean-floor anchor
+   reproduces the campaign floor bit-level) plus PHASE-FACTORED LR CHANNELS
+   `F_μ(q;G) = e^{+2πi(q+G)·s_μ} ζ̃_c(q+G)` on a fixed Gaussian G-superset
+   (n_μ×~300; the g0-winding carried analytically). 6×6 on-grid LOO:
+   **B 0.59–0.62% med / 3.8–4.6% max, excitons 0.045 meV med / 0.17 max**
+   (vs ingredient 0.37%/0.020 meV) at ~1/100 per-target cost (7 tile AXPYs +
+   one analytic LR rebuild; NO solve, NO eigh, NO r_tot object at the
+   target); exact-LR ceiling C = 0.36% shows the SR side is AT ingredient
+   level. Γ→x̂ path smoothness at §11.3 quality or better. Tikhonov
+   (smooth-filter) cleaning ≥ hard cut (5.85e-3 vs 6.23e-3). Production
+   default remains per-Q ζ refit; the F-scheme supersedes the ingredient
+   scheme as the designated interpolation candidate.
+7. **Multipole LR compression (the pasted dipole+quadrupole approach):
+   UNWORKABLE as specced** — its transported half-whitened frame is the dead
+   machinery of item 1; frame-free literal moments model the LR channel at
+   only 58–70% (orders INVERT the Brunin hierarchy: monopole-only beats
+   +dipole+quadrupole), pure-3D multipoles are DOA on slabs (73% z-Taylor
+   error at 19% LR weight; per-G_z moments mandatory), and the compression
+   gains ~2× storage at ~3× error vs the exact F channels. Surviving 20%:
+   the subtractive exact-at-coarse container (variant E, null 2.7e-15), the
+   fixed-superset Gaussian window, and "LR as a separate low-rank physical
+   kernel" — all realized better by F. Full adjudication:
+   `arbitrary_q_bse.md` §12.5.
 
 ---
 
