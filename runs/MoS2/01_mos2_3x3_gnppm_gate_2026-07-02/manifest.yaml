@@ -1,0 +1,39 @@
+run_id: mos2_3x3_gnppm_gate_2026-07-02
+system: MoS2
+pipeline: qe_bgw_lorrax   # fresh QE WFN; LORRAX GN-PPM primary; BGW GN-PPM reference if time
+platform: perlmutter
+
+variant_of: null
+reuse_from_parent: []     # fresh QE run; no WFN reuse (inputs copied from 00_mos2_3x3_cohsex/qe)
+overrides: {}
+
+# Purpose: seed a GN-PPM regression gate on a freshly-generated full WFN.h5
+# (NOT the reduced tests/regression/cohsex_debug/WFNsmall.h5). MoS2 monolayer 3x3,
+# nspinor=2 FR pseudos, ecutwfc=30 Ry, nval=26, nband=80.
+
+system_params:
+  formula: MoS2
+  prefix: MoS2
+  dimensionality: 2
+  n_val: 26
+  n_cond: 54
+  n_band: 80
+  nbnd_nscf: 82
+  ecutwfc: 30.0
+  kgrid: [3, 3, 1]
+  metal: false
+
+# Directory-level status. States: pending | running | complete | failed | reused | skipped
+steps:
+  qe:            { state: complete, note: "fresh SCF(11 it)->NSCF->pw2bgw->wfn2hdf WFN.h5 (9k,82b,nspinor2); +nscfq->WFNq.h5" }
+  00_lorrax_gnppm: { state: complete, note: "compute_mode=gn_ppm EXIT 0 on fresh full WFN; NO WFNsmall build_G crash. eqp0/sigma_mnk/sigma_diag produced" }
+  01_bgw_gnppm:  { state: complete, note: "BGW freq_dependence=3 reference (epsilon+sigma Job Done); Sigma_c @Gamma matches LORRAX to MAE 1.75 eV" }
+  # Ridge-regularized zeta-fit A/B (2026-07-17, agent/bse-phase2-zeta-ridge
+  # commit 5f23631, worktree lorrax_A_ridge_wt, 1 GPU). Inputs symlinked from
+  # 00_lorrax_gnppm; zeta_ridge_eps per arm. See PHASE2_LOG "Ridge-regularized
+  # zeta-fit A/B" + reports/zeta_ridge_ab_2026-07-17/.
+  02_lorrax_gnppm_stock_ridgewt: { state: complete, note: "eps=0 baseline from ridge worktree; bit-identical to 06 repeat" }
+  03_lorrax_gnppm_ridge1em4:     { state: complete, note: "eps=1e-4; gap sigX drift 192 meV vs stock" }
+  04_lorrax_gnppm_ridge1em5:     { state: complete, note: "eps=1e-5; gap sigX drift 130 meV" }
+  05_lorrax_gnppm_ridge1em6:     { state: complete, note: "eps=1e-6; gap sigX drift 113 meV (non-scaling: deep-tail modes carry Sigma_X weight)" }
+  06_lorrax_gnppm_stock_repeat:  { state: complete, note: "determinism control: bit-identical to 02" }

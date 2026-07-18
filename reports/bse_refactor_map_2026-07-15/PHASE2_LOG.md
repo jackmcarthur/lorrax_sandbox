@@ -1239,3 +1239,102 @@ against the restart's (W0−V)[q_flat]:
 engine compile). Zero non-converged columns. This is the strongest W validation
 to date: the full W_q tiles, every column, at the GW quadrature floor.
 Artifacts: runs/MoS2/A_bse_w0_resolvent_2026-07-16/full_basis/ (committed 8ed3cdc0).
+
+## Ridge-regularized ζ-fit A/B — Tikhonov by default? (2026-07-17, agent/bse-phase2-zeta-ridge, lorrax_A_ridge_wt)
+
+Owner question: §12's cleaned-ζ (Tikhonov filter f_ε(λ)=λ/(λ²+ε²), i.e.
+solve (C²+ε²I)ζ = CZ) was physically inert on BSE observables and improved
+tile covariance — would generating ridge-ζ BY DEFAULT change production GW?
+
+**Verdict: YES — 4–200 meV drifts on Σ at every tested ε. NOT
+default-safe.** Shipped opt-in: cohsex.in `zeta_ridge_eps` (default 0.0 =
+bit-identical; charge-only; bispinor+ridge rejected at parse — transverse
+indefinite-CCT semantics are a flagged follow-up). Commit `5f23631` on
+`agent/bse-phase2-zeta-ridge` (isolated worktree off `agent/bse-phase2`
+HEAD; the parent branch carried uncommitted BSE work). ε_q = ε_rel ·
+λ̂_max(C_q), deterministic power-iteration λ̂ (matches eigh to 4 digits on
+both fixtures), no eigh, operator-only change — sharded/FFI solve structure
+and all Cholesky backends untouched; RHS premultiply = one batched GEMM.
+
+Arms (1 GPU A100, job 56071522, module-free srun+shifter, worktree
+PYTHONPATH): MoS2 gnppm `runs/MoS2/01_mos2_3x3_gnppm_gate_2026-07-02/`
+02_stock/03..05_ridge{1e-4,1e-5,1e-6} + 06_stock_repeat; Si COHSEX
+`runs/Si/B_zeta_ridge_covariance_2026-07-17/work_{stock,r1em4,r1em5,r1em6,
+stock_repeat}` (orbit-closed 792-centroid set). **Determinism floor exactly
+0 meV** (stock reruns bit-identical) — all deltas are real ridge effects.
+Analysis: `reports/zeta_ridge_ab_2026-07-17/{analyze_ridge_ab.py,
+ab_results.json, analysis.log, determinism_check.py}`.
+
+### Physical drift vs stock (meV)
+
+| fixture / observable | ε 1e-4 | ε 1e-5 | ε 1e-6 |
+|---|---|---|---|
+| Si ΣTOT max (gap window b5–12) | 31.0 | 17.3 | 4.3 |
+| Si ΣTOT MAE | 7.0 | 3.8 | 0.9 |
+| MoS2 σ_X max (gap window b23–30) | 192 | 130 | 113 |
+| MoS2 σ_X MAE (all bands) | 56 | 44 | 27 |
+| MoS2 Re σ_C gap max | 481 | 501 | 498 |
+| MoS2 eqp0 max (pole-dominated, 714/720 bands PPM-pathological) | 39 eV | 25 eV | 12 eV |
+
+Si scales with ε (÷2–4/decade); MoS2 σ_X does NOT (~0.1–0.2 eV flat): the
+2D fixture's Σ_X carries ~0.1 eV of weight in the deepest spectral tail
+(λ/λmax < 1e-6) — junk modes are NOT Σ-inert. The §12 RELATIVE class
+(~1e-3) transfers, but GW lacks the exciton-level cancellation, so 1e-3 of
+a 30–40 eV Σ is 30–200 meV. V0/W0 tiles change 65–100% relF under ridge
+(junk-dominated norms — the §12 gauge-artifact picture, reconfirmed).
+
+### Covariance under the centroid permutation (diag2 ladder, max_rel)
+
+| arm | Si G0 | Si V0 | Si W0 | Si ΔW | MoS2 G0 | MoS2 V0 | MoS2 W0 |
+|---|---|---|---|---|---|---|---|
+| stock | 8.6e-2 | 3.2e-2 | 3.0e-2 | 6.9e-2 | 2.7e-7 | 1.0e-7 | 1.5e-7 |
+| 1e-4 | 3.2e-3 | 4.1e-3 | 4.3e-3 | 2.0e-3 | 1.3e-8 | 1.7e-8 | 1.2e-8 |
+| 1e-5 | 7.2e-3 | 5.9e-3 | 6.0e-3 | 5.5e-3 | 6.2e-8 | 1.2e-7 | 7.5e-8 |
+| 1e-6 | 1.0e-2 | 8.7e-3 | 8.5e-3 | 9.7e-3 | 8.6e-6 | 1.2e-5 | 1.0e-5 |
+
+Prediction CONFIRMED on Si: the ~3% covariance defect → 3–4e-3 at ε=1e-4,
+exactly the §12 cleaned-tile floor, monotone in ε. On the already-clean
+MoS2, ε=1e-6 DEGRADES covariance 100× via cond(B)≈1/ε_rel²=1e12 roundoff.
+
+### Conditioning seen by the solver (owner mental model)
+
+cond(C): MoS2 1.1e8 (λmax 1.73e-2, λmin 1.5e-10), Si 3.8e7. cond(B) =
+min(cond(C)², 1/ε_rel²) = 1e8/1e10/1e12 at ε_rel 1e-4/1e-5/1e-6 — below
+ε_rel* = cond(C)^{-1/2} (≈1e-4 here) the ridge makes the solver's operator
+WORSE-conditioned than stock. At 20k centroids cond(C) grows and ε_rel*
+shrinks, but the physics drift binds first. Best experimental setting:
+ε_rel ≈ cond(C)^{-1/2} — best covariance, cond(B) ≈ cond(C).
+
+### Suite status
+
+- Knob OFF: full 1-GPU suite untouched-green (`lorrax_A_ridge_wt/
+  suite_off_solo.log`; incl. 8 new `test_zeta_ridge.py` gates: OFF
+  bit-identity, eigh-reference filter match, λ̂ gate, padded-extent
+  zeros, transverse loud-fail). An earlier concurrent-srun-step run OOMed
+  the bispinor session (GPU sharing under --overlap, not code).
+- Golden gates knob ON (deltas recorded, references NOT re-frozen;
+  `reports/zeta_ridge_ab_2026-07-17/golden_on_work/`): cohsex 2D
+  7.46 eV / 0.47 eV / 5.2 meV at ε 1e-4/1e-5/1e-6; si_cohsex_3d 27.7 /
+  5.4 / 2.5 meV (frozen atol 1 meV); gnppm 42.6 / 26.6 / 8.6 eV
+  (pole-adjacent Σc columns included). ALL gates fail their frozen atol at
+  every ε.
+
+### Rank/invertibility audit (read-only)
+
+One full-rank assumption downstream of the tiles: the opt-in
+`screening_solver=low_mem` fused Dyson (`w_isdf.py:294`) potrf's the BARE
+V tile (`v = X X†`) — numerically-PSD-only V (stock junk tail or
+ridge-attenuated) can NaN it; non-default, flag before any ridge use with
+low_mem. Everything else is safe by construction: default Dyson LU is on
+`A = I − Vχ` (w_isdf.py:265; A→I on V's null space), GN-PPM ratio is
+masked (`minimax_screening.py:408` + ppm_invalid_mode), head injection is
+scalar, Σ assembly and BSE loaders contract tiles without inversion, the
+W(ω) chain solves at shifted z (`w_omega_chain.py:315`).
+
+### Adoption requirements (if ever)
+
+Re-freeze all Tier-1/Tier-2 references; accept degrading the si_cohsex_3d
+BGW-parity anchor by 2.5–28 meV (BGW has no matching knob — parity loss is
+permanent); transverse-channel design + device-invariance validation;
+low_mem potrf guard; and a physical argument that ridge-ζ is more accurate
+— the measured benefit is covariance hygiene (~10×), not accuracy.

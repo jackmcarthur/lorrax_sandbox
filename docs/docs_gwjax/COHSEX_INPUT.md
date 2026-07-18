@@ -37,6 +37,21 @@ GPU memory budget in GB. 0.0 = auto-detect (90% of available GPU memory via
 `jax.memory_stats()` or `nvidia-smi`). The chunk solver uses this to determine
 r-chunk, band-chunk, and q-chunk sizes. See `MEMORY_MODEL.md` for formulas.
 
+### `zeta_ridge_eps` (float, default: `0.0`) — opt-in, charge-only
+Relative Tikhonov ridge for the ζ-fit. `0.0` (default) = OFF, bit-identical to
+the historical LSQ fit. When `> 0` the fit solves the SPD normal equations
+`(C² + ε_q²I) ζ = C Z` with `ε_q = zeta_ridge_eps · λ̂_max(C_q)` per q
+(deterministic power-iteration λ̂, no eigh) — the spectral filter
+`f_ε(λ) = λ/(λ²+ε²)`, i.e. the "cleaned ζ" of the F-scheme study. RELATIVE
+scaling by design so the knob transfers across system sizes. Charge channel
+only: rejected with `bispinor = true` (transverse indefinite-CCT follow-up).
+Effective solver conditioning: `cond(C²+ε²I) ≈ min(cond(C)², 1/eps_rel²)` —
+the crossover ε_rel* = cond(C)^{-1/2} (~1e-4 at fixture scale). A/B results
+(reports/zeta_ridge_ab_2026-07-17/): NOT physically inert on GW Σ — drifts
+are ~1e-3 relative of Σ (meV–100 meV absolute); V/W-tile q-covariance
+improves ~8× at 1e-4 on Si. Diagnostic/experiments knob; do not enable in
+production comparisons without an A/B against `zeta_ridge_eps = 0`.
+
 ---
 
 ## 2. Band Window
