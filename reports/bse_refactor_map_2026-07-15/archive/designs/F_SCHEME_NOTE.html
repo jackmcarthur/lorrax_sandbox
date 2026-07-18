@@ -182,27 +182,41 @@ stored data; the per-target cost is a handful of <i>n</i><sub>&mu;</sub><sup>2</
 analytic rebuild. No solve, no eigendecomposition, no <i>r</i><sub>tot</sub> object at or after
 interpolation.</p>
 
-<h3>3.1&ensp;Clean without touching <i>Z</i></h3>
+<h3>3.1&ensp;Clean without touching <i>Z</i> — once per <em>coarse</em> point</h3>
 
-<p>Rank-cutting the stored fit is a projection. With
-eigh(<i>C</i><sub><i>q</i></sub>) = <i>R</i>&Lambda;<i>R</i><sup>H</sup> and <i>P</i> =
-<i>R</i><sub><i>r</i></sub><i>R</i><sub><i>r</i></sub><sup>H</sup> the top-<i>r</i> projector,</p>
+<p>Everything in this subsection happens at the coarse grid points
+<i>q</i><sub><i>j</i></sub> only — each in that point&rsquo;s own frame, as an offline
+preparation pass. Rank-cutting the stored fit at <i>q</i><sub><i>j</i></sub> is a projection: with
+eigh(<i>C</i><sub><i>q</i><sub><i>j</i></sub></sub>) =
+<i>R</i><sub><i>q</i><sub><i>j</i></sub></sub>&Lambda;<sub><i>q</i><sub><i>j</i></sub></sub><i>R</i><sup>H</sup><sub><i>q</i><sub><i>j</i></sub></sub>
+and <i>P</i><sub><i>q</i><sub><i>j</i></sub></sub> the projector onto its top-<i>r</i> eigenvectors,</p>
 
 <div class="eq">
-  &zeta;<sub>rc</sub> = <i>R</i><sub><i>r</i></sub>&Lambda;<sub><i>r</i></sub><sup>&minus;1</sup><i>R</i><sub><i>r</i></sub><sup>H</sup><i>Z</i>
-  = <i>P</i>&thinsp;&zeta;<sub>stored</sub>
+  &zeta;<sub>rc</sub>(<i>q</i><sub><i>j</i></sub>) =
+  <i>P</i><sub><i>q</i><sub><i>j</i></sub></sub>&thinsp;&zeta;<sub>stored</sub>(<i>q</i><sub><i>j</i></sub>)
   &nbsp;&nbsp;&rArr;&nbsp;&nbsp;
-  <i>V</i><sub>c</sub> = &Pi;&thinsp;<i>V</i>&thinsp;&Pi;,&nbsp;&nbsp;
-  &Pi; = <i>P</i><sup>*</sup>
+  <i>V</i><sub>c</sub>(<i>q</i><sub><i>j</i></sub>) =
+  &Pi;<sub><i>q</i><sub><i>j</i></sub></sub>&thinsp;<i>V</i>(<i>q</i><sub><i>j</i></sub>)&thinsp;&Pi;<sub><i>q</i><sub><i>j</i></sub></sub>,
+  &nbsp;&nbsp;&Pi;<sub><i>q</i><sub><i>j</i></sub></sub> = <i>P</i><sup>*</sup><sub><i>q</i><sub><i>j</i></sub></sub>
   <span class="tag">(4)</span>
 </div>
 
-<p>so the cleaned tile is computable from the stored tile and the &psi;-level Gram alone — the
-identity was verified against an explicit refit at the 10<sup>&minus;14</sup> level. A smooth
-(Tikhonov) filter <i>g</i><sub>&epsilon;</sub>(&lambda;) =
+<p>so the cleaned tile at each coarse point is computable from that point&rsquo;s stored tile and
+&psi;-level Gram alone — the identity was verified against an explicit refit at the
+10<sup>&minus;14</sup> level. A smooth (Tikhonov) filter <i>g</i><sub>&epsilon;</sub>(&lambda;) =
 &lambda;<sup>2</sup>/(&lambda;<sup>2</sup>+&epsilon;<sup>2</sup>) in place of the hard cut is the
 theory-preferred variant; it is measurably smoother in <i>q</i> (cleaned-tile increments are
 70–90&times; smaller than raw-tile increments) and slightly better downstream.</p>
+
+<p>Note what Eq.&nbsp;(4) does <em>not</em> do: it never compares, aligns, or transports
+eigenvectors between different <i>q</i><sub><i>j</i></sub>. Each projector is absorbed into its own
+tile, and from that point on only the frame-free <i>n</i><sub>&mu;</sub><sup>2</sup> objects
+<i>V</i><sub>c</sub>(<i>q</i><sub><i>j</i></sub>) exist. That is why the scheme survives the frame
+chaos of &sect;2: the map <i>q</i> &#8614;
+&Pi;<sub><i>q</i></sub><i>V</i>(<i>q</i>)&Pi;<sub><i>q</i></sub> is smooth even though
+<i>q</i> &#8614; (individual eigenvectors) is not — for the Tikhonov filter this is
+operator-function continuity outright, and for the hard cut the freely-rotating cut-edge modes
+carry only the physically inert weight, so their rotation barely moves the tile.</p>
 
 <h3>3.2&ensp;Split the kernel, interpolate only the short-range part</h3>
 
@@ -215,7 +229,9 @@ the smooth remainder, re-add at the target), split per G-channel with a Gaussian
   &nbsp;&nbsp;
   <i>v</i><sub>SR</sub> = <i>v</i> &minus; <i>v</i><sub>LR</sub>,
   &nbsp;&nbsp;
-  <i>V</i><sub>SR,c</sub> = <i>V</i><sub>c</sub> &minus; &Pi;&thinsp;<i>V</i><sub>LR</sub>&thinsp;&Pi;
+  <i>V</i><sub>SR,c</sub>(<i>q</i><sub><i>j</i></sub>) =
+  <i>V</i><sub>c</sub>(<i>q</i><sub><i>j</i></sub>) &minus;
+  &Pi;<sub><i>q</i><sub><i>j</i></sub></sub>&thinsp;<i>V</i><sub>LR</sub>(<i>q</i><sub><i>j</i></sub>)&thinsp;&Pi;<sub><i>q</i><sub><i>j</i></sub></sub>
   <span class="tag">(5)</span>
 </div>
 
@@ -260,6 +276,40 @@ head slot to 0.31), and they interpolate componentwise. The assembled prediction
 <p>with the interpolated form factors re-dressed by the exact analytic phases. Storage for the
 whole long-range channel is <i>n</i><sub>&mu;</sub>&times;337 per coarse point — 124&nbsp;MB
 against the 17&nbsp;GB of <i>Z</i><sub><i>q</i></sub> at the same fixture.</p>
+
+<h3>3.4&ensp;Where each operation lives: grid <i>q</i><sub><i>j</i></sub> versus target <i>Q</i></h3>
+
+<p>Collecting the pipeline, because the division of labor is the whole point:</p>
+
+<p><b>Offline, once per coarse grid point <i>q</i><sub><i>j</i></sub></b> (all heavy linear algebra
+lives here): one eigh(<i>C</i><sub><i>q</i><sub><i>j</i></sub></sub>) &rarr;
+&Pi;<sub><i>q</i><sub><i>j</i></sub></sub>; the cleaned split tile
+<i>V</i><sub>SR,c</sub>(<i>q</i><sub><i>j</i></sub>) via Eqs.&nbsp;(4)–(5); the form-factor block
+<i>F</i>(<i>q</i><sub><i>j</i></sub>;<b>G</b>) via Eq.&nbsp;(6). These are stored:
+one <i>n</i><sub>&mu;</sub><sup>2</sup> tile and one
+<i>n</i><sub>&mu;</sub>&times;&vert;𝒢&vert; block per coarse point.</p>
+
+<p><b>At an arbitrary target <i>Q</i></b> (cheap, no linear algebra): stencil weights
+<i>w</i><sub><i>j</i></sub>(<i>Q</i>) come from truncated-<b>R</b> trigonometric interpolation —
+the same weights for every matrix element, fixed by the coarse grid geometry and <i>Q</i> alone.
+Then</p>
+
+<div class="eq">
+  <i>V</i><sub>SR</sub>(<i>Q</i>) = <span class="op">&Sigma;</span><sub><i>j</i></sub>&thinsp;<i>w</i><sub><i>j</i></sub>(<i>Q</i>)&thinsp;<i>V</i><sub>SR,c</sub>(<i>q</i><sub><i>j</i></sub>),
+  &nbsp;&nbsp;&nbsp;
+  <i>F</i>(<i>Q</i>;<b>G</b>) = <span class="op">&Sigma;</span><sub><i>j</i></sub>&thinsp;<i>w</i><sub><i>j</i></sub>(<i>Q</i>)&thinsp;<i>F</i>(<i>q</i><sub><i>j</i></sub>;<b>G</b>)
+  <span class="tag">(7&prime;)</span>
+</div>
+
+<p>and Eq.&nbsp;(7) assembles <i>V</i>(<i>Q</i>) from these plus the closed-form
+<i>v</i><sub>LR</sub>(<i>Q</i>+<b>G</b>) and centroid phases
+e<sup>&minus;i(<i>Q</i>+<b>G</b>)&middot;<b>s</b><sub>&mu;</sub></sup>, which are evaluated
+analytically at <i>Q</i> — they are known functions, not interpolants. There is no
+<i>C</i><sub><i>Q</i></sub>, no eigendecomposition, no projector, and no fit at the target;
+the eigendecompositions of &sect;3.1 relate to the interpolation only by having prepared, at each
+coarse point separately, the smooth objects that the stencil then combines. (The one exception in
+the results table is diagnostic row&nbsp;C, which deliberately uses the target&rsquo;s own stored
+long-range channel to bound what any LR treatment could achieve — the honest F rows do not.)</p>
 
 <h2><span class="no">4</span>Results</h2>
 
