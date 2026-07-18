@@ -222,3 +222,23 @@ Code: `sources/worktrees/lorrax_A_exciton_bands` @ agent/bse-exciton-bands
     blemishes; conduction 26-31 (cond(26,34)) is clean.  Total 287 s (1 GPU).
 - 15:2x kmeans 1000c attempt 1 (1 GPU) OOM in pivoted-Cholesky Gram
   (pair_density 20.7 GB @ M=1500, nk=144) -> rerun on 4 GPUs (sharded).
+- 15:27-15:31 kmeans trap ladder: (i) 4-GPU run silently fell back to
+  single-device (P/4 = 11520 < 100k per-shard floor) -> --force-shard;
+  (ii) 2x2 mesh rejected (nb_total=26 % 4 != 0) -> 2 GPUs (1x2 mesh);
+  (iii) still OOM at 10.5 GB under default BFC pool -> platform allocator
+  envs (same as run_wt runners).  SUCCESS: centroids_frac_1000.txt (1000
+  unique, seed 42, --no-orbit literal, prune left=(0,26)/right=(0,52) =
+  the 640 convention), 19 s.
+- 15:31 alloc swap: 56101152 released; 4-node interactive 56101959 granted
+  in ~20 s (nid[002917,002920,002925,003917], holder detached).  GW chain
+  launched 15:31 (16 GPU, 4x4 mesh, cohsex.in verbatim except
+  centroids_file; dipole/kin_ion reused from 00 — centroid-independent).
+  gw.out confirms: orbit closure FAILED (879/2000) -> FULL-BZ zeta on disk,
+  as vq_interp requires (matches the 640 run's convention).
+- 15:34 GW 1000c COMPLETE rc=0: wall 195 s (16 GPU), recorded 129.9 s
+  (zeta_fit 106.8 / V_q 11.7 / chi0_W 1.6 / sigma 4.4) vs 640c (150 s wall,
+  98.6 recorded: 80.7/9.2/1.3/2.6) — only 1.3x, well under the ~2.5x
+  estimate.  Restart: isdf_tensors_1000.h5 4.99 GB, zeta_q.h5 4.53 GB
+  (full-BZ), eqp0.dat 144 k, heads MATCH the 640 run (vhead 9315.306,
+  whead0 3499.067).  15:35 launched concurrently: driver smoke 3-pt
+  (4 GPU, nid002917) + v4 SP-bands (24,36)@1000c (1 GPU, nid002920).
