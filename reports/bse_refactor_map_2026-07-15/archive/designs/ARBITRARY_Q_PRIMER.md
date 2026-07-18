@@ -492,7 +492,7 @@ analogue (exciton-Wannier) is *literally* a rank-1-head factorization.
 ### II.5.1 Exciton-band interpolation — the direct analogue
 
 **Haber, Qiu, da Jornada, Neaton, "Maximally Localized Exciton Wannier
-Functions," PRB 108, 205109 (2023) / arXiv:2308.03012.** Splits the singlet
+Functions," PRB 108, 125118 (2023) / arXiv:2308.03012.** Splits the singlet
 exciton Hamiltonian and interpolates only the short-range part:
 
 ```
@@ -913,7 +913,7 @@ physical-metric pushback were both prototyped against fixture data
 
 ## Load-bearing citations
 
-1. **Haber, Qiu, da Jornada, Neaton, PRB 108, 205109 (2023), arXiv:2308.03012** —
+1. **Haber, Qiu, da Jornada, Neaton, PRB 108, 125118 (2023), arXiv:2308.03012** —
    exciton-Wannier SR/LR split; `K^{X,Dip}` rank-1 in the dipole, subtracted and
    re-added analytically (Eqs 27–34, 43). The direct proof the rank-1-head
    factorization is the right transfer.

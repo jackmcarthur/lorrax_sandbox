@@ -576,7 +576,7 @@ multiplicative) convention, and the closest analogue (exciton-Wannier) is
 ### 9.1 Exciton-band-structure interpolation — the direct analogue
 
 **Haber, Qiu, da Jornada, Neaton, "Maximally Localized Exciton Wannier
-Functions," PRB 108, 205109 (2023) / arXiv:2308.03012.** This is the exciton
+Functions," PRB 108, 125118 (2023) / arXiv:2308.03012.** This is the exciton
 BSE-kernel transcription of the whole problem and it maps 1:1 onto LORRAX.
 
 They split the singlet exciton Hamiltonian (their Eq. 32) and interpolate only the
@@ -776,7 +776,7 @@ made per-fine-Q. The anisotropic-head machinery for the winding-2 term is
 
 ### 9.7 Load-bearing citations (returned to main)
 
-1. Haber, Qiu, da Jornada, Neaton, PRB 108, 205109 (2023), arXiv:2308.03012 — the
+1. Haber, Qiu, da Jornada, Neaton, PRB 108, 125118 (2023), arXiv:2308.03012 — the
    exciton-Wannier SR/LR split; `K^{X,Dip}` rank-1 in the dipole, subtracted and
    re-added analytically (Eqs 27–34, 43). **The direct proof the rank-1-head
    factorization is the right transfer.**
@@ -1347,4 +1347,4 @@ Review 55(1), 3-64 (2013) (archive/designs copy; Thm 8.1, Cor 8.6, §1157
 gap-dependence remark); Davis-Kahan sin-theta (via BBR §presentation);
 G. Panati, Ann. Henri Poincaré 8, 995 (2007); Marzari-Vanderbilt
 RMP 84, 1419 (2012); Brunin et al., PRL 125, 136601 (2020); Haber et al.,
-PRB 108, 205109 (2023).
+PRB 108, 125118 (2023).
