@@ -1,0 +1,22 @@
+run_id: mos2_bse_bands_perf_2026-07-18
+system: MoS2
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: mos2_12x12_bands_2026-07-18
+reuse_from_parent: [00_lorrax_cohsex/tmp/isdf_tensors_640.h5 (read-only),
+                    00_lorrax_cohsex/tmp/zeta_q.h5 (read-only),
+                    01_lorrax_exciton_bands/exciton_smoke_nw.in (copied)]
+overrides:
+  purpose: >
+    Performance investigation + optimization of the exciton-bandstructure
+    pipeline (vq_interp trainer, compute_wfns_fi q-list htransform,
+    solve_path scan, refit path) at 12x12 scale, 3x3 for contrast.
+    Profile first, fix second, validate always.
+  code: "sources/worktrees/lorrax_A_bands_perf @ agent/bse-bands-perf"
+
+steps:
+  profile_baseline_12x12: { state: complete, note: "baseline_smoke_4gpu.log 124 s / 3-pt; prof_stages_4gpu.log sub-stage split; probe_solve (matvec=100% of iter, 40-vs-80 drift 0.000 meV); probe_gates (XHX 13.7 s serial-BLAS)" }
+  profile_baseline_3x3:   { state: skipped, note: "3x3 covered by pytest fixture gates; scale problem is 12x12" }
+  fixes:                  { state: complete, note: "7 commits 18f5cfb..2e90edb on agent/bse-bands-perf: q-batch sharding, batched vq trainer, chunk-accum Grams, device stacks, --skip-rerun-check, gflat cs clamp" }
+  profile_after:          { state: complete, note: "3-pt 124->62.9 s, .dat IDENTICAL; 40-pt measured 432 s (183 s = diagnostic re-scan, now optional); both-mode 3x3 .dat identical incl refit rows; suite 234 passed x2" }
