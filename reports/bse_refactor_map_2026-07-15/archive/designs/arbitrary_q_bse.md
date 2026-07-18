@@ -1551,3 +1551,46 @@ Reading:
    superset); 3D-bulk (K_z-continuous) variant; off-grid ground truth
    inherited §11/12 unchanged (fit evaluation at off-grid Q is
    analytic, but no truth exists to score it against yet).
+
+### 13.6 Consolidation (2026-07-17): one reference implementation + e2e test — the formalism survives its own development mess
+
+The winning pipeline (Tikhonov clean → Gaussian SR/LR split → SR-tile
+stencil + global b26p LR fit → closed-form assembly at any Q) is now ONE
+self-contained module:
+`runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/`
+`REFERENCE_arbitrary_q_vq.py` — three procedural stages
+(`prepare_coarse` / `fit_lr_model` / `eval_vq`), per-element math in the
+docstrings, copy-with-attribution from the campaign scripts (arithmetic
+preserved), fixture wrap-fix + gate battery + machine-level nulls built
+in. Companions: `test_reference_e2e.py` (MoS2 3×3 smoke: prepare → fit →
+eval at every held-out q → thresholds; PASS in 15 s compute at B med
+1.409e-2 / max 3.553e-2, exc 0.642/2.542 meV — the 3×3 q-spacing
+baseline, ~3× the 6×6 B per the §11 bridging row; `test_reference_e2e.log`)
+and `README.md` (the scratch ledger: every script family classified
+superseded-by-reference vs evidence-only; nothing deleted).
+
+Acceptance (`REFERENCE_acceptance_6x6.log`, 124 s): the module re-runs
+the 6×6 Tik-gauge LOO from scratch (fresh gates — all identical to the
+ladder log bit-level; fresh eigh; honest LOO refits) and reproduces the
+§13.2 pins to every printed digit, per-target as well as in summary:
+
+| metric | §13.2 pin | reference impl |
+|---|---|---|
+| b26p B med / max | 5.368e-3 / 3.960e-2 | 5.3676e-3 / 3.9597e-2 |
+| b26p exc med / max (meV) | 0.043 / 0.144 | 0.0427 / 0.1444 |
+| F-anchor B med / max | 5.848e-3 / 3.779e-2 | 5.8480e-3 / 3.7790e-2 |
+| F-anchor exc med / max (meV) | 0.045 / 0.167 | 0.0449 / 0.1671 |
+| coeff stability med / max | 6.899e-3 / 1.739e-2 | 6.8991e-3 / 1.7389e-2 |
+
+Mode `transfer` re-runs the §13.3 grid transfer (3×3-fit → 6×6-deploy):
+B med 5.3817e-3 / max 3.9081e-2 vs pins 5.382e-3 / 3.908e-2 — PASS
+(`REFERENCE_transfer.log`, 52 s).
+
+Doc sync landed with this consolidation: `F_SCHEME_NOTE.html` gained
+§3.5 ("The long-range channel compresses") + the b26p results-table row
+(repo copy — the published artifact needs republishing by the owner);
+`ARBITRARY_Q_PRIMER.md` §III.5 gained item 8 (b26p + consolidation
+status); `CAMPAIGN_REPORT.md` §7 carries a pointer note. The §14
+stress/edge campaign (parallel session, `stress_*.py`) was in flight
+during this consolidation and is untouched by it. Production default
+remains the per-Q ζ refit (§12.6/§13.5 unchanged).

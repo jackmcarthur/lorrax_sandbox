@@ -311,6 +311,42 @@ coarse point separately, the smooth objects that the stencil then combines. (The
 the results table is diagnostic row&nbsp;C, which deliberately uses the target&rsquo;s own stored
 long-range channel to bound what any LR treatment could achieve — the honest F rows do not.)</p>
 
+<h3>3.5&ensp;The long-range channel compresses</h3>
+
+<p>The form-factor block of &sect;3.3 is the scheme&rsquo;s one bulky object:
+<i>n</i><sub>&mu;</sub>&times;337 channels per coarse point. It turns out to be compressible to
+almost nothing — because the samples <i>F</i><sub>&mu;</sub>(<i>q</i>;<b>G</b>) at
+<i>K</i> = <i>q</i>+<b>G</b> are scattered values of a <em>single</em> function
+<i>M</i><sub>&mu;</sub>(<i>K</i>) on the long-range ball. In the Tikhonov gauge this is a measured
+fact: <i>M</i>(<i>K</i>) is single-valued to &sim;1% (the apparent per-<i>q</i> multivaluedness in
+the hard-cut gauge is the freely-rotating cut edge of &sect;3.1, and it is physically inert). One
+global weighted least-squares fit of per-<i>G</i><sub>z</sub> in-plane polynomials — degrees
+{3,&thinsp;2,&thinsp;0,&thinsp;0} for &vert;<i>G</i><sub>z</sub>&vert; = 0..3, weight
+<i>w</i> = <i>v</i><sub>LR</sub>(<i>K</i>) so the objective is exactly the Frobenius error of the
+long-range tile factor the physical contraction sees — replaces all of it with
+<b><i>n</i><sub>&mu;</sub>&times;26 complex coefficients total</b> (not per <i>q</i>), evaluated in
+closed form at any <i>Q</i>:</p>
+
+<ul>
+<li>6&times;6 leave-one-out: <i>B</i> 5.37&times;10<sup>&minus;3</sup> median /
+4.0&times;10<sup>&minus;2</sup> max, excitons 0.043&thinsp;/&thinsp;0.144&nbsp;meV — at the exact-LR
+ceiling (5.40&times;10<sup>&minus;3</sup>) and slightly <em>better</em> than interpolating the
+exact channels, at 1/467 of their storage and with no per-<i>q</i> long-range object at all.</li>
+<li>The coefficients are stable (leave-one-out drift 0.7% median) and <em>transfer across
+datasets</em>: fit on the 3&times;3 fixture, deployed on 6&times;6, costs zero downstream accuracy
+(5.382 vs 5.368&times;10<sup>&minus;3</sup>). The system-consistent object is the weighted fit
+itself — not any literal moment.</li>
+<li>What does <em>not</em> work, measured: literal or pinned multipole moments (2.3&times; worse —
+the delocalized ISDF envelopes contaminate real-space moments in every gauge), SVD
+&ldquo;learned multipoles&rdquo; (the channel data has no low rank across &mu;), and fitting
+hard-cut-cleaned channels (the fit gauge must be the analytic filter).</li>
+</ul>
+
+<p>Full ladder, single-valuedness decomposition, and literature mapping: design document
+&sect;13. Slab scope: the per-<i>G</i><sub>z</sub> decomposition presumes
+<i>q</i><sub>z</sub> = 0 coarse grids; a 3D-bulk variant needs a <i>K</i><sub>z</sub>-continuous
+basis (untested).</p>
+
 <h2><span class="no">4</span>Results</h2>
 
 <p>Leave-one-out over all coarse <i>q</i> on the MoS<sub>2</sub> 6&times;6 fixture; primary metric is
@@ -327,6 +363,7 @@ when only the tile is swapped. The rejected reference row carries the full-grid
 <tr><td>C&ensp;clean-SR + exact LR (diagnostic ceiling), &alpha;=0.6</td><td class="num">V_SR,c</td><td class="num good">3.56e-3 (3.63e-2)</td><td class="num">0.021 / 0.088</td></tr>
 <tr class="win"><td>F&ensp;clean-SR + interpolated form-factor LR, &alpha;=0.3</td><td class="num">V_SR,c + F (n&mu;&times;337)</td><td class="num">6.23e-3 (4.57e-2)</td><td class="num">0.046 / 0.212</td></tr>
 <tr class="win"><td>F&ensp;with Tikhonov cleaning, &epsilon;=10<sup>&minus;4</sup></td><td class="num">same</td><td class="num">5.85e-3 (3.78e-2)</td><td class="num">0.045 / 0.167</td></tr>
+<tr class="win"><td>F&ensp;+ global b26p LR fit (&sect;3.5), Tikhonov</td><td class="num">V_SR,c + 26 coeffs/&mu; TOTAL</td><td class="num good">5.37e-3 (3.96e-2)</td><td class="num">0.043 / 0.144</td></tr>
 <tr><td>D/E&ensp;multipole long-range models (best order)</td><td class="num">+ moments (n&mu;&times;162)</td><td class="num">1.18e-2 – 4.3e-2</td><td class="num">0.053 / 0.647</td></tr>
 <tr><td>W&ensp;pair-level LR, projection Wannier gauge</td><td class="num">+ M&#771;</td><td class="num bad">3.7e-1 (gauge-blocked)</td><td class="num">1.6 / 8.0</td></tr>
 </table>
@@ -377,9 +414,13 @@ slabs.</li>
 
 <div class="footnote">
 Sources: <span class="mono">reports/bse_refactor_map_2026-07-15/archive/designs/arbitrary_q_bse.md</span>
-&sect;&sect;9–12 (constructions, ladders, operator-theory checks, Wannier-theory discussion, and the
-multipole adjudication), with runnable implementations and disk logs under
-<span class="mono">runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/tile_*.py</span>.
+&sect;&sect;9–13 (constructions, ladders, operator-theory checks, Wannier-theory discussion, the
+multipole adjudication, and the compact-LR fit program), with disk logs under
+<span class="mono">runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/</span>
+(<span class="mono">tile_*.py</span>, <span class="mono">lr_*.py</span>). The consolidated
+reference implementation of the full pipeline, with pinned acceptance tests, is
+<span class="mono">primer_response_study/REFERENCE_arbitrary_q_vq.py</span> (see the scratch
+ledger <span class="mono">README.md</span> there).
 Background: Benzi, Boito &amp; Razouk, SIAM Rev. 55, 3 (2013); Panati, Ann. Henri Poincar&eacute; 8,
 995 (2007); Verdi &amp; Giustino, PRL 115, 176401 (2015); Brunin et&nbsp;al., PRL 125, 136601 (2020);
 Qiu, Cao &amp; Louie, PRL 115, 176801 (2015); Haber et&nbsp;al., PRB 108, 125118 (2023).

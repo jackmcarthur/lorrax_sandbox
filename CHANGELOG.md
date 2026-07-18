@@ -1,6 +1,36 @@
 # Changelog
 
 
+## 2026-07-17: Arbitrary-Q consolidation (polish pass 1) — winning pipeline distilled into ONE reference implementation + e2e smoke test; sec-13 b26p pins reproduced to every printed digit; docs synced [analysis + docs, no source change]
+
+The ~30-script primer_response_study/ development mess is now survivable:
+`runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/`
+`REFERENCE_arbitrary_q_vq.py` is the single self-contained statement of
+the validated pipeline — stage 1 `prepare_coarse` (Tikhonov clean
+S_eps = R g_eps(Lam) R^H without forming Z; Gaussian SR/LR split on the
+fixed Miller superset; phase-factored LR form-factor samples), stage 2
+`fit_lr_model` (the b26p global v_LR-weighted per-Gz polynomial LSQ,
+n_mu x 26 complex total), stage 3 `eval_vq` (nR7 trig stencil on V_SR,c +
+closed-form LR rebuild; no solve/eigh/r_tot at the target). Acceptance
+mode re-runs the 6x6 Tik LOO from scratch and reproduces sec 13.2
+per-target-exact: b26p B 5.3676e-3/3.9597e-2, exc 0.0427/0.1444 meV;
+F-anchor 5.8480e-3/3.7790e-2; coeff stability 6.8991e-3/1.7389e-2 — all
+10 pins OK (124 s, REFERENCE_acceptance_6x6.log). Transfer mode
+reproduces sec 13.3: B 5.3817e-3/3.9081e-2 vs pins 5.382e-3/3.908e-2
+(52 s, REFERENCE_transfer.log). `test_reference_e2e.py` = 3x3 smoke
+(15 s: gates + machine nulls + full LOO; PASS at B med 1.409e-2,
+baseline in test_reference_e2e.log). `README.md` scratch ledger maps
+every script family (C1/C2/C3, offgrid, tile, lr) to
+superseded-by-reference vs evidence-only — NOTHING deleted; traps +
+do-not-reattempt list restated. Docs: F_SCHEME_NOTE.html +sec 3.5 ("The
+long-range channel compresses") + b26p table row — repo copy edited, the
+PUBLISHED artifact needs republishing by the owner from
+reports/bse_refactor_map_2026-07-15/archive/designs/F_SCHEME_NOTE.html;
+ARBITRARY_Q_PRIMER.md sec III.5 item 8; arbitrary_q_bse.md sec 13.6;
+CAMPAIGN_REPORT.md sec-7 pointer. Parallel sec-14 stress campaign
+(stress_*.py, second polish session) untouched and in flight. Production
+default remains per-Q zeta refit (off-grid truth still pending).
+
 ## 2026-07-17: Ridge-regularized zeta-fit A/B — Tikhonov-by-default REJECTED (4-200 meV Sigma drift at every eps); opt-in zeta_ridge_eps landed (default OFF, charge-only) on agent/bse-phase2-zeta-ridge commit 5f23631; Si tile covariance defect improves 3e-2 -> 3-4e-3 at eps=1e-4
 
 E2E answer to "would default ridge-zeta change GW physics": YES.

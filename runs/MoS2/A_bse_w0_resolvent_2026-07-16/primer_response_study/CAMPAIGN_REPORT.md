@@ -258,6 +258,12 @@ Add to `ARBITRARY_Q_PRIMER.md` PART III (as §III.5, with a pointer patch in §I
 
 ## 7. File index
 
+> **2026-07-17 consolidation note:** this index predates §§12–13 of
+> `arbitrary_q_bse.md` (F-scheme + b26p). The maintained directory map is
+> now `README.md` (scratch ledger) in this directory, and the winning
+> pipeline's single reference implementation is
+> `REFERENCE_arbitrary_q_vq.py` (+ `test_reference_e2e.py`).
+
 - This report: `CAMPAIGN_REPORT.md` (synthesis; supersedes the per-construction bars).
 - C1: `proto0_C1_primary_target_frame_transp.md`, `prep.py`, `proto0_{a,b,c}_*.py`,
   `proto0_run.sh`, `proto0_a.log` (gates PASS; aborted at regauge assert line 225).

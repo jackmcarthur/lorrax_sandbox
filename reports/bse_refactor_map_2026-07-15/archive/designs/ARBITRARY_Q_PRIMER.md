@@ -908,6 +908,28 @@ physical-metric pushback were both prototyped against fixture data
    fixed-superset Gaussian window, and "LR as a separate low-rank physical
    kernel" — all realized better by F. Full adjudication:
    `arbitrary_q_bse.md` §12.5.
+8. **LR-channel compression (2026-07-17, measured — `arbitrary_q_bse.md`
+   §13): the F-scheme's per-q LR block collapses to a GLOBAL n_μ×26
+   coefficient fit ("b26p") at zero accuracy cost.** In the Tikhonov gauge
+   (ε_rel=1e-4 — mandatory: the hard-cut q-fiber is the Davis–Kahan cut
+   edge; §13.1) the phase-factored form factors are single-valued samples
+   of one M_μ(K) to ~1%, and ONE v_LR-weighted LSQ of per-G_z in-plane
+   polynomials {3,2,0,0} carries the whole LR channel: 6×6 LOO
+   **B 5.37e-3 med / 3.96e-2 max, excitons 0.043/0.144 meV** — at the
+   exact-LR ceiling (5.40e-3), ≥ the F-anchor on every metric, 1/467 of
+   F's LR storage, zero per-q LR objects, LOO-stable to 0.7%, and
+   grid-transferable (3×3-fit → 6×6-deploy at zero B-loss: 5.382e-3).
+   Refuted en route: SVD "learned multipoles" (no low rank across μ),
+   literal-moment pinning (2.3× worse — second refutation of literal
+   moments), multi-width GTO radial ladders (conditioning). 3D-bulk needs
+   a K_z-continuous basis (untested). **CONSOLIDATION STATUS (2026-07-17):
+   the winning pipeline (Tik clean + Gaussian split + SR-tile stencil +
+   b26p LR fit) now has a single self-contained reference implementation
+   with pinned acceptance tests:
+   `runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/`
+   `REFERENCE_arbitrary_q_vq.py` (+ `test_reference_e2e.py`; scratch
+   ledger in `README.md` there). Production default remains per-Q ζ refit
+   (item 4: off-grid truth still pending).**
 
 ---
 
