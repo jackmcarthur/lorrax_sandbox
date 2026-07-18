@@ -1,0 +1,26 @@
+run_id: mos2_3x3_bse_nontda_2026-07-17
+system: MoS2
+pipeline: lorrax_only        # reuses the gnppm gate restart (no new GW run)
+platform: perlmutter
+
+variant_of: mos2_3x3_bse_w0_resolvent_2026-07-16
+reuse_from_parent:
+  - ../A_bse_w0_resolvent_2026-07-16/fixture_run/tmp/isdf_tensors_399.h5
+overrides:
+  purpose: >
+    Non-Tamm-Dancoff (full optical BSE) eigensolver development + first value
+    validation of the coupling-block (B) matvec WITH screened W.  MoS2 3x3x1,
+    nspinor=2, gnppm restart, 2v2c window (N=36).
+
+steps:
+  explore:   { state: complete, note: "materialize A,B; A Hermitian, B complex-symmetric" }
+  validate:  { state: complete, note: "definite-pencil solver + product-Lanczos both machine-exact vs dense" }
+  matvec_fix: { state: complete, note: "SHAO fix + bse_nontda + dispatch + P1; committed c4c349f on agent/bse-phase2" }
+  gates:     { state: complete, note: "BSE 20/1; synthetic+P1 5; full suite 230 passed/12 skipped" }
+
+findings:
+  - "A (resonant) is Hermitian; B (coupling) is COMPLEX-SYMMETRIC (B=B^T), NOT Hermitian."
+  - "build_bse_ring_matvec_full computes [[A,B],[-B,-A]] -> COMPLEX spectrum (bug, never validated)."
+  - "Physical operator is SHAO [[A,B],[-B*,-A*]] -> real spectrum, +/-omega pairing."
+  - "First validated non-TDA-with-W eigenvalues (Ry): 0.007534 0.007623 0.009319 0.009487 0.017128 0.017128."
+  - "Clean matrix-free M=(A-B)(A+B) product reduction only valid for real/Hermitian-B BSE; spinor case needs the Hermitian-PD definite pencil K=[[A,B],[B*,A*]]."

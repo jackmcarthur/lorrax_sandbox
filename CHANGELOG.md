@@ -1,6 +1,46 @@
 # Changelog
 
 
+## 2026-07-17: Non-TDA (full BSE) eigensolver + matvec fix + solver P1 [agent/bse-phase2, lorrax_A, source, NOT pushed]
+
+Full (non-Tamm-Dancoff) optical BSE brought to the general lowest-eigenvalue
+solver alongside TDA through the ONE `solve_bse_sharded` dispatch (`tda` toggle),
+producing the FIRST value-validated non-TDA-with-W eigenvalues — which exposed a
+real operator bug.
+
+- **Matvec bug fixed** (`bse_ring_comm._antiresonant_row`): the non-TDA matvec
+  (`build_bse_ring_matvec_full(screening=False)`) computed `[[A,B],[-B,-A]]`, a
+  **COMPLEX-spectrum** (unphysical, max|Im|=1.4e-4 Ry) operator. Measured on the
+  gnppm fixture: **A Hermitian, B complex-SYMMETRIC (B=Bᵀ, not Hermitian)**. The
+  physical para-Hermitian operator is the SHAO form `[[A,B],[-B*,-A*]]` (real
+  spectrum, ±ω pairs); fix = `Y_out = -B*X - A*Y` via the SAME appliers on
+  conjugated inputs (no new kernel). `screening=True` (RPA W-resolvent) byte-
+  unchanged. First eigenvalues (Ry): 0.007534 0.007623 0.009319 0.009487 0.017128.
+- **New `bse/bse_nontda.py`** (procedural, no class): structure-preserving
+  eigensolver. Complex B → Hermitian-definite pencil `K=[[A,B],[B*,A*]]` (PD,
+  BGW's dense `SSEIG` regime); Hermitian B → the design's `Ω²=eig((A-B)(A+B))`
+  product form. (A±B) actions reuse the full matvec (`matvec([U;±U])[X-block]`).
+  Returns paired (X,Y) with **X^H X − Y^H Y = +1**; **(A-B)/K positive-definiteness
+  asserted** (triplet instability → clear error, not hidden). Matrix-free
+  FEAST-on-K is the fine-grid follow-on (prototype validated).
+- **Dispatch**: `solve_bse_sharded(tda=False)` → `bse_nontda`; `bse_jax`
+  `_preview_lanczos(tda=…)` (removed the "TDA only" SystemExit; non-TDA routes via
+  the sharded loader on any device count). Writer `use_tda` now honest (was
+  hardcoded 1); non-TDA persists X + coupling Y.
+- **Solver P1 fixed** (`solvers/lanczos.py`): final-slot overwrite (Q_{M-1}
+  clobbered on the last iter → corrupt eigenVECTORS) in all 3 jit variants
+  (allocate M+1 Krylov slots); `beta_j=R` (not `R.T`) in the dead
+  `block_lanczos_eig`. Diagnosed the recorded bs=4 "ghosts" as Krylov-truncation
+  variational bias (Krylov<N), NOT the overwrite — with full reorth + Krylov≥N
+  bs=4 recovers exact lowest-4.
+- **Gates (1 GPU)**: `test_bse_nontda` (5, synthetic) + BSE gate set **20 passed /
+  1 deselected** (+2 non-TDA dense gates; TDA dense/stack bit-unchanged); full
+  plain 1-GPU suite **230 passed / 12 skipped / 25 deselected** (223 baseline +7,
+  no regressions).
+- Report: `reports/bse_refactor_map_2026-07-15/PHASE2_LOG.md` §"non-TDA
+  eigensolvers + solver P1"; artifacts `runs/MoS2/A_bse_nontda_2026-07-17/`.
+
+
 ## 2026-07-17: Arbitrary-Q consolidation (polish pass 1) — winning pipeline distilled into ONE reference implementation + e2e smoke test; sec-13 b26p pins reproduced to every printed digit; docs synced [analysis + docs, no source change]
 
 The ~30-script primer_response_study/ development mess is now survivable:

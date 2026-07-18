@@ -1215,7 +1215,10 @@ eigenvector residual `||Hv-λv||/||v|| < 1e-6`.
   `test_bse_stack_matvec` + `test_bse_w0_resolvent` + `test_bse_w_omega_chain`) =
   **20 passed / 1 deselected** (18 -> 20 = +2 non-TDA gates; TDA dense/stack
   bit-unchanged).  `runs/MoS2/A_bse_nontda_2026-07-17/bse_gates.log`.
-- Full plain 1-GPU suite: **<FILL-FULL-SUITE>** (`full_suite.log`).
+- Full plain 1-GPU suite: **230 passed / 12 skipped / 25 deselected (5:08)** — the
+  223 baseline + 7 new non-TDA/P1 tests, all four golden GW gates included, no
+  regressions (`full_suite.log`; 4 warnings pre-existing: cusolvermp donation,
+  WFN symmetry fallback).
 
 Artifacts: `runs/MoS2/A_bse_nontda_2026-07-17/` (explore1-4, prototype_solver,
 bse_nontda_draft, test_dense_nontda_standalone, repro_ghost*; module-free runner
