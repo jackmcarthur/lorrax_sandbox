@@ -1348,3 +1348,206 @@ gap-dependence remark); Davis-Kahan sin-theta (via BBR §presentation);
 G. Panati, Ann. Henri Poincaré 8, 995 (2007); Marzari-Vanderbilt
 RMP 84, 1419 (2012); Brunin et al., PRL 125, 136601 (2020); Haber et al.,
 PRB 108, 125118 (2023).
+
+## 13. Compact LR-channel representation (2026-07-17) — APPENDED: the K-ball fit program; F's n_μ×337-per-q block collapses to n_μ×26 GLOBAL coefficients at the exact-LR ceiling; M(K) is single-valued to ~1% in the Tikhonov gauge (the q-fiber was the hard-cut edge); literal-moment pinning refuted a second way
+
+**Governing question (owner).** The F-scheme (12.6) carries the LR channel
+as `n_μ × 337` explicit G-channels per coarse q. Wanted: a representation
+that is "just simpler and more consistent system to system" — target
+`≤ n_μ × (10–30)` coefficients, accuracy at the F level (6e-3 B; the
+literal-moment 1.2e-2+ is the failure to beat), analytic at any Q.
+
+Scripts/logs (all numbers grep-verified from disk):
+`primer_response_study/lr_{prep,singlevalued,basis_ladder,fiber_source,`
+`transfer,pin}.py`, logs `lr_singlevalued_{6x6,3x3}.log`,
+`lr_basis_ladder_6x6{,_tik}.log`, `lr_fiber_source_6x6.log`,
+`lr_transfer.log`, `lr_pin_6x6.log`, npz alongside. Fixtures, truth,
+B/exciton metric, nR7 stencil, α=0.3, rc*=1e-4: unchanged from §12.
+
+### 13.0 The reframing, and a structural fact about the samples
+
+`F_μ(q;G) = e^{+iK·s_μ} ζ̃_c,μ(K)`, `K = q+G`, are scattered samples of a
+would-be single function `M_μ(K)` on the LR ball
+`|K| ≤ 2α√(ln 1/ε_LR)` (2.57 bohr⁻¹ at α=0.3). The §12.2 literal moments
+are the K=0 Taylor of that function — they fail because Taylor departs
+from the truth by |K| ~ α; the right object is a WEIGHTED LSQ FIT over
+the whole ball (the pasted response's own untested §4 "fit-based
+extraction"). Structural fact (gated: integrality 2e-9, duplicates 0):
+with q on the N×N grid (q_z=0) and G in the fixed superset, the in-plane
+sample points tile a REGULAR fine lattice of spacing |b|/N per exact
+discrete `K_z = G_z` channel, with exactly ONE sample per K point — so
+"is M single-valued?" cannot be a coincidence test; it decomposes into
+seam parity, q-fiber, and plateau (13.1). Fit machinery (`lr_prep.py`):
+per-G_z in-plane bases `Φ_b(K_∥)`, weight `w = v_LR(K)` (this makes the
+LSQ objective exactly `‖ΔA‖²_F` of the tile factor `A = ζ̃√v_LR` — the
+fit minimizes what the physical contraction sees); design matrix shared
+across μ, so one normal solve per (G_z, LOO target) serves all rows;
+per-q normal blocks make LOO refits honest and O(n_b²). The winding
+phase is never fit through — it is re-applied analytically (T2'
+convention). Per-G_z v_LR weight shares (6×6, α=0.3, summed ±):
+0.421 / 0.466 / 0.090 / 0.020 / 0.0025 for |G_z| = 0..4.
+
+### 13.1 Single-valuedness (experiment 1) — and the fiber's identity
+
+`lr_singlevalued_{6x6,3x3}.log`, `lr_fiber_source_6x6.log`:
+
+- **Seam parity.** Adjacent fine-lattice pairs (|ΔK| = |b|/N) that cross
+  a BZ boundary (Miller label changes) vs pairs that do not: med rel diff
+  ratio cross/same = **0.983** (6×6; 0.932 at 3×3) on the weight-relevant
+  subset — statistically identical classes. NO residual seam beyond the
+  analytically-carried phase: the winding is fully cured.
+- **q-fiber (hard-cut gauge).** After a rich smooth fit (gto3×poly4 on
+  |G_z|≤2, weighted rel resid 0.091), **65% of the residual power is
+  coherent per-(q,G_z)** — 11.5× the white-residual dof floor (0.056);
+  the per-q coherent component is 9.3–11.6% of |Y| at G_z=0. M is NOT a
+  function of K alone at the 1% level in the hard gauge. At 3×3 the same
+  fit reaches 0.018 with per-q coherence 0.1–0.4%.
+- **The fiber is the hard cut.** Same rich fit on differently-cleaned
+  channels (`lr_fiber_source`): hard rc=1e-4 wres 0.0911 / per-q
+  coherent (G_z=0 med) 0.0928 → raw 0.0567 / 0.0640 → **Tikhonov ε=1e-4:
+  0.0112 / 0.0097**. The q-fiber is overwhelmingly the Davis–Kahan
+  cut-edge rotation of the rank-cut projector (12.3's ~22% edge
+  rotation, seen here in the channels), plus dual-basis jitter that the
+  smooth filter also tames. **In the Tikhonov gauge M(K) IS
+  single-valued to ~1%** — the parent's hypothesis holds in exactly the
+  gauge that 12.3's operator theory licenses. (The fiber is also
+  physically inert: the hard-gauge ladder below reaches the same B floor
+  through 32% tile infidelity.)
+
+### 13.2 Basis ladder (experiment 2) — LOO over all 36 coarse q, 6×6
+
+Budget specs (per-|G_z| in-plane poly degree, following the weight
+shares): b16p = {2,1,0,0}, b26p = {3,2,0,0}, b45p = {4,3,1,0,0} for
+|G_z| = 0,1,2,(3,4); |G_z| beyond spec dropped (exact-channel truncation
+to |G_z|≤3 costs B med 3.4e-3 = the clean floor; ≤2 costs 4.6e-3).
+Tikhonov gauge headline (hard-gauge in parens where instructive);
+D = clean-SR interp + model re-add at target (the F-scheme's own
+structure), E = consistent subtract/re-add; fid = own-fit
+relF(V_model, Π V_LR Π) med:
+
+| rung | coeffs/μ | fid | B med (max) | exc meV med/max |
+|---|---|---|---|---|
+| C exact-LR ceiling | — (target's own LR) | 0 | 5.40e-3 (3.87e-2) | 0.039/0.149 |
+| F channel-interp (≡12.1 Tik row — continuity anchor) | 337 per q | — | 5.85e-3 (3.78e-2) | 0.045/0.167 |
+| **D b26p global fit** | **26 global** | 7.4e-2 | **5.37e-3 (3.96e-2)** | **0.043/0.144** |
+| D b16p | 16 global | 9.2e-2 | 5.26e-3 (4.17e-2) | — |
+| D b45p | 45 global | 5.8e-2 | 5.47e-3 (3.97e-2) | — |
+| D unif-poly0 (fitted per-G_z monopoles) | 19 global | 1.8e-1 | 5.69e-3 [hard: 4.98e-3] | — |
+| D rich gto3×poly4 (fit ceiling) | 477 global | 1.25e-2 | 5.46e-3 (3.83e-2) | 0.043/0.148 |
+| D svd r=4 / 16 / 24 ("learned multipoles") | 4/16/24 +shared | 1.7e-1 / 6.3e-2 / 4.9e-2 | 5.26e-3 / 6.33e-3 / 5.34e-3 | svd16: 0.035/0.143 |
+| D hyb26 (b26p + per-(q,G_z) mean-residual corr) | 26 global + 7 per q | 1.8e-2 | 5.13e-3 (3.88e-2) | 0.046/0.145 |
+| D ftop30 (exact top-weight channels + model tail) | 30 per q + 26 | 5.9e-3 | 5.62e-3 (3.78e-2) | 0.047/0.170 |
+| D b28g (gto radial ladder) | 28 global | 1.1e-1 | 1.06e-2 (5.54e-2) | — |
+| E b26p | 26 global | 7.4e-2 | 5.69e-3 (4.02e-2) | 0.042/0.168 |
+| pinned-m0 b26p (13.3) | 26 global | 3.2e-1 | 1.21e-2 (6.62e-2) | — |
+
+Reading:
+
+1. **The spec is BEATEN.** b26p — per-G_z in-plane polynomials, degrees
+   {3,2,0,0}, ONE global weighted LSQ over all coarse samples — carries
+   the whole LR channel in `n_μ × 26` complex coefficients TOTAL (not
+   per q): B med 5.37e-3 / max 3.96e-2 / excitons 0.043/0.144 meV — at
+   the exact-LR ceiling (5.40e-3) and better than the F-anchor
+   (5.85e-3, 0.045/0.167) on every metric, at 1/467 of F's per-μ LR
+   storage (26 vs 337×36) and with NO per-q LR object at all. LOO
+   coefficient stability 0.7% med / 1.7% max.
+2. **B forgives model infidelity up to ~10–20%.** The SR-interp side
+   dominates the floor (C = 5.4e-3), so every rung with fid ≲ 0.2 lands
+   at 5.1–5.8e-3 — including the hard-gauge b26p (fid 32%, B 5.89e-3,
+   exc 0.048/0.180: the inert fiber is invisible to B). The failure
+   modes only surface beyond ~40%: literal-moment D o2 (fid 58–70%)
+   4.3e-2, pinned-m0 (32%, but biased IN the head weight) 1.21e-2.
+   The fit-based extraction is thereby vindicated exactly where the
+   literal moments failed: fitted per-G_z constants ALONE (19 numbers)
+   give 4.98e-3 (hard) where the literal o0 E-scheme gave 1.18e-2.
+3. **What does NOT pay:** SVD compression — the weighted sample-matrix
+   spectrum decays slowly (1.4e-1 → 7.9e-3 over 32 svals even in Tik
+   gauge; the LR data has no small effective rank across μ), so
+   "learned multipoles" never beat the direct 16–26-coefficient
+   analytic fit. Per-q corrections (hyb26, ftop30) buy ≤4% on B med —
+   not worth any per-q storage. The gto radial ladder (b28g) is the one
+   conditioning casualty (three near-collinear widths, B 1.06e-2):
+   plain polynomials × the v_LR weight are better AND simpler.
+4. E ≈ D throughout (≤6% relative): once fid ≲ 10%, split consistency
+   (response §4) is a non-issue.
+
+### 13.3 System-consistency (experiment 3): transfer, and the physical-tensor question settled negative
+
+- **Grid transfer** (`lr_transfer.log`; the 3×3 and 6×6 fixtures share
+  ALL 640 centroids, so coefficients are μ-comparable): b26p fit on the
+  3×3 data alone, deployed on 6×6 — coefficient distance 3–12% per G_z,
+  fitted monopole correlation 0.9981, tile fidelity 10.5% (vs own
+  7.4%), and 6×6 LOO **B med 5.382e-3 vs own-fit 5.368e-3 — zero
+  downstream loss.** The representation transfers across datasets; fit
+  on the cheap grid, deploy on the fine one.
+- **Literal-moment pinning refuted a second way** (`lr_pin_6x6.log`,
+  the literature-suggested Poisson-DF/MDF move: pin the monopole
+  exactly, fit only the rest — in the poly basis this is just freezing
+  the constant term to the literal `m0_μ(G_z)`): the literal m0 of the
+  Tik-cleaned ζ is still 23% rough in q (P1: med 0.230 vs hard-gauge
+  0.357) — NOT a physical-tensor-like object in any gauge tried — and
+  pinning it drags B to 1.21e-2 (2.3× worse) with fid 32%. The
+  delocalized ζ envelopes contaminate literal real-space moments
+  everywhere; only the v_LR-weighted FITTED constants are well-defined,
+  and it is those (not the literal moments) that transfer across grids
+  at 0.998 correlation. **There is no Born-charge-like per-μ tensor
+  file here; the system-consistent object is the weighted fit itself.**
+- Scope caveat: per-G_z decomposition presumes a slab with q_z = 0
+  (K_z = G_z·b₃ exact discrete channels — evaluation is analytic at any
+  IN-PLANE Q, the physical case). A 3D-bulk variant needs a
+  K_z-continuous basis; untested (Si fixture is 3D — future work).
+
+### 13.4 Literature mapping (lit-agent survey, 2026-07-17)
+
+- **Range-separated Gaussian density fitting** — Ye & Berkelbach, JCP
+  154, 131104 (2021): LR channel of periodic DF integrals evaluated
+  analytically in reciprocal space from Gaussian form factors on an
+  e^{−K²/4ω²}-windowed ball; Sun et al., JCP 147, 164119 (2017) (MDF):
+  multipole-matched compensation Gaussians carried analytically.
+  Identical machinery class to our per-G_z polynomial(×Gaussian) fits;
+  none of them FIT arbitrary numeric form factors — that step appears
+  novel here.
+- **Poisson DF / charge-constrained fitting** (Manby–Knowles Poisson
+  DF; Dunlap charge-conserving fitting): the pin-the-multipoles move —
+  tested (lr_pin) and REFUTED for ISDF ζ (13.3): the constraint that
+  stabilizes GTO aux bases hurts when the "multipole" is a literal
+  moment of a delocalized numeric envelope.
+- **Data-driven momentum-resolved compression** — Hummel, Tsatsoulis &
+  Grüneis, JCP 146, 124105 (2017) (SVD of the Coulomb vertex);
+  Yeh & Morales, JCTC 19, 6197 (2023) (k-point THC): the SVD rung is
+  their analogue; our measured spectrum says the LR channel is NOT
+  low-rank across μ at the accuracy needed — analytic K-fits beat
+  learned bases here.
+- **Form-factor fit practice** (X-ray Cromer–Mann 4–5 Gaussians;
+  nuclear sum-of-Gaussians, Sick NPA 218, 509 (1974), N ≈ q_max·R/π;
+  2D Slepian/PSWF dof counts with our weight → ~10–50 real dof per
+  (μ,G_z)): our measured 10/6/1/1 per-G_z allocation (b26p) sits
+  exactly in this window — the coefficient count is
+  information-theoretically expected, not lucky.
+- Small-K exciton exchange forms: Qiu, Cao & Louie, PRL 115, 176801
+  (2015); Haber et al., PRB 108, 125118 (2023) (citation corrected
+  2026-07-17, commit de90147f).
+
+### 13.5 Standing verdict
+
+1. **Owner target (≤ n_μ×(10–30), F-level accuracy, analytic any-Q):
+   EXCEEDED** — `n_μ × 26` complex coefficients GLOBAL (b26p, Tikhonov
+   gauge), B 5.37e-3 med / 3.96e-2 max, excitons 0.043/0.144 meV,
+   ≥ F-anchor on all metrics, 1/467 of F's LR storage, zero per-q LR
+   objects, LOO-stable to 0.7%, grid-transferable at zero B-loss.
+   Even 16 coefficients (b16p) holds the ceiling on B med.
+2. **Production shape.** Offline: Tikhonov-clean (ε_rel=1e-4) + §12
+   split; ONE weighted LSQ (w = v_LR, shared design, per-q blocks) of
+   per-G_z in-plane polys {3,2,0,0} over all coarse samples. Per
+   target: §12's SR stencil + closed-form model rebuild (poly eval ×
+   phase × v_LR) — strictly cheaper than F (no n_μ×337 stencil AXPYs).
+3. **Do not re-attempt:** fitting hard-cut channels (the q-fiber is the
+   cut edge — Tik gauge is mandatory for the fit program, 13.1);
+   literal-moment pinning (13.3, second refutation of literal moments);
+   SVD/learned-multipole compression (no low rank to find, 13.2);
+   multi-width GTO radial ladders without a conditioning treatment
+   (b28g); pure-3D bases on slabs (12.2, unchanged).
+4. Open: α=0.45 budget re-allocation (more G_z channels in the
+   superset); 3D-bulk (K_z-continuous) variant; off-grid ground truth
+   inherited §11/12 unchanged (fit evaluation at off-grid Q is
+   analytic, but no truth exists to score it against yet).

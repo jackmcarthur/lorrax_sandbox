@@ -1,6 +1,72 @@
 # Changelog
 
 
+## 2026-07-17: Ridge-regularized zeta-fit A/B — Tikhonov-by-default REJECTED (4-200 meV Sigma drift at every eps); opt-in zeta_ridge_eps landed (default OFF, charge-only) on agent/bse-phase2-zeta-ridge commit 5f23631; Si tile covariance defect improves 3e-2 -> 3-4e-3 at eps=1e-4
+
+E2E answer to "would default ridge-zeta change GW physics": YES.
+(C^2+eps^2 I) zeta = C Z with eps_q = eps_rel*lambda_max_hat(C_q)
+(power-iteration, no eigh) implemented behind cohsex.in `zeta_ridge_eps`
+(0.0 = bit-identical stock; bispinor+ridge rejected — transverse
+follow-up). MoS2 gnppm + Si COHSEX arms at eps_rel 1e-4/1e-5/1e-6, 1 GPU,
+determinism floor exactly 0: Si SigmaTOT gap drift 31/17/4.3 meV (scales
+with eps), MoS2 sigX 192/130/113 meV (does NOT scale — deep-tail modes
+carry ~0.1 eV of Sigma_X weight; junk is not Sigma-inert). The sec-12
+BSE-inertness class (~1e-3 REL) transfers, but GW has no exciton-level
+cancellation, so 1e-3 x 30-40 eV Sigma = 30-200 meV. Covariance
+prediction CONFIRMED (Si G0/V0/W0 3-9e-2 -> 2-4e-3 at eps=1e-4, the
+cleaned floor; MoS2 already-clean fixture DEGRADES at eps=1e-6 via
+cond(B)=1/eps_rel^2 = 1e12 roundoff). cond(C) 1.1e8/3.8e7 (MoS2/Si);
+cond(B) = min(cond(C)^2, 1/eps_rel^2); crossover eps* = cond(C)^{-1/2}
+~ 1e-4. Golden gates knob-ON all fail frozen atol (cohsex 2D 7.5 eV at
+1e-4 -> 5.2 meV at 1e-6; si 27.7->2.5 meV; NOT re-frozen). Knob-OFF full
+suite untouched-green (+8 new unit gates). Audit: one downstream
+full-rank assumption on bare V tiles (opt-in low_mem fused Dyson potrf,
+w_isdf.py:294); default Dyson/PPM/head/Sigma/BSE consumers all safe.
+Tables: reports/bse_refactor_map_2026-07-15/PHASE2_LOG.md ("Ridge-
+regularized zeta-fit A/B"); artifacts reports/zeta_ridge_ab_2026-07-17/,
+runs/MoS2/01_mos2_3x3_gnppm_gate_2026-07-02/0[2-6]_*, runs/Si/
+B_zeta_ridge_covariance_2026-07-17/. Docs: COHSEX_INPUT.md knob entry.
+
+## 2026-07-17: Compact LR-channel representation — F's n_mu x 337-per-q block collapses to n_mu x 26 GLOBAL coefficients at the exact-LR ceiling (B 5.37e-3 / 0.043 meV, >= F on all metrics); M(K) single-valued to ~1% in the Tikhonov gauge; literal-moment pinning refuted a second way [analysis, no source change]
+
+The owner asked for a simpler, system-consistent replacement for the
+F-scheme's per-coarse-q LR channels. Parent reframing tested and
+CONFIRMED (in the right gauge): the phase-factored form factors
+F_mu(q;G) are samples of one smooth K-ball function M_mu(K), and a
+v_LR-weighted LSQ of per-Gz in-plane polynomials over ALL coarse samples
+(the pasted response's untested sec-4 "fit-based extraction", all orders
+fit not Taylor'd) replaces the channels outright. Full section:
+`arbitrary_q_bse.md` §13; harness `primer_response_study/lr_*.py` +
+logs/npz (grep-verified).
+
+- **Single-valuedness:** on-grid samples tile a fine K-lattice with ONE
+  sample per point (proved from data), so the question becomes seam
+  parity (cross/same-BZ-boundary 0.983 — winding fully cured by the
+  analytic phase), q-fiber, and plateau. Hard-cut channels carry a REAL
+  q-fiber (65% of rich-fit residual coherent per-(q,Gz), ~10% of signal)
+  — it is the Davis-Kahan cut-edge rotation: raw 6%, Tikhonov eps=1e-4
+  **1%** (lr_fiber_source). Fit program requires the Tik gauge; the
+  fiber is also physically inert (hard-gauge B unaffected).
+- **Ladder (6x6 LOO, Tik):** b26p (per-Gz polys {3,2,0,0}, 26 complex
+  coeffs/mu TOTAL, no per-q LR object) B med 5.37e-3 / max 3.96e-2 /
+  exc 0.043/0.144 meV — at the exact-LR ceiling (5.40e-3), beats the
+  F-anchor (5.85e-3, 0.045/0.167) at 1/467 the LR storage; b16p holds
+  the ceiling too. SVD "learned multipoles" DON'T pay (no low rank
+  across mu); per-q corrections buy <=4%; gto multi-width ladder is a
+  conditioning casualty; fitted per-Gz constants alone (19) give
+  4.98e-3 where literal o0 moments gave 1.18e-2 — fit-based extraction
+  vindicated exactly where literal moments failed.
+- **Consistency:** 3x3-fit model deployed on 6x6 (all 640 centroids
+  shared): B 5.382e-3 vs own 5.368e-3 — zero transfer loss; fitted
+  monopoles correlate 0.998 across grids. Pinning the LITERAL monopole
+  (Poisson-DF move) hurts 2.3x and literal m0 stays 23% q-rough even in
+  Tik gauge — no Born-charge-like tensor file exists here; the
+  system-consistent object is the weighted fit itself. Lit mapping
+  (RSGDF/MDF, Coulomb-vertex SVD, SOG/PSWF dof counts ~ our 26) in
+  §13.4; Haber citation fixed (PRB 108, 125118, commit de90147f).
+- **Next:** alpha=0.45 budget re-allocation; 3D-bulk Kz-continuous
+  variant; off-grid truth still pending (sec 11/12 caveat unchanged).
+
 ## 2026-07-18: Owner-spec-compliant arbitrary-Q tile schemes — no-r_tot constraint MET (0.6% B / 0.05 meV at 6x6 LOO); pasted multipole approach adjudicated UNWORKABLE; "frames are dead" narrowed by operator theory + Wannier spine [analysis, no source change]
 
 The §10/§11 ingredient scheme is owner-REJECTED for production (interpolates
