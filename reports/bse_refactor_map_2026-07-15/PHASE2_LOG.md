@@ -1699,3 +1699,76 @@ fits the driver's v4+c4+guards layout; left as the follow-up.
 1000c vs 640c cost: GW ×1.3, trainer ×2.35, solve ×1.5 — all below the
 naive (1000/640)² = 2.4 except the trainer (its n_mu² host stages are
 exactly what the perf branch already fixed; merge closes the gap).
+
+## Full-band htransform fix — exciton-band off-grid dips removed (2026-07-18, agent A, agent/bse-exciton-bands)
+
+**Problem.** The delivered 12×12 exciton scans (`04_.../01_` 640c, `03_` 1000c)
+dip spuriously in E_S(Q) at off-grid iQ 6/9/16-17 (iQ 9 E_1 = 1.224 eV, ~188 meV
+below trend). `05_htransform_spbands` (agent B) pinned the mechanism: those runs
+fed `bse_setup.compute_wfns_fi` a SLIVER conduction window (`nval=2/ncond=6/
+nband=32` → fH over abs bands 24-31; its top boundary 31|32 cuts a 5.9 meV
+near-degenerate Kramers pair) → off-grid ε_c(k+Q) rings 100-1000 meV (D_min
+narrow-vs-clean max 317 meV @iQ 9). Same class as the Si degeneracy root-cause
+(window truncation of degenerate multiplets, 73e58f79).
+
+**Root cause / fix.** `compute_wfns_fi` builds fH from EVERY band in `ctilde` and
+only RETURNS the `band_window_fi` sub-window — so a full-band ctilde yields a
+full-band fH regardless of how few conduction bands the BSE keeps. The bug was
+the DRIVER passing a narrow ctilde (`initialize_wfns` over the sliver window).
+Fix: build fH over the FULL window (`nval=26/ncond=14/nband=40` = 26v+14c, DFT
+energies), EXACTLY as the standard SP bandstructure driver (`06_`/`07_
+spbands_*_fullband`). The BSE keeps conduction 26-29 INTERIOR, guarded by bands
+30-39 → no selection boundary cuts a pair. Run: `08_lorrax_exciton_bands_fullbasis`.
+
+**Owner's capacity-cap correction confirmed.** SVD (5760, 1280) → rank=1280
+(column-limited) yet htransform@Γ gate min-sval **0.8853** == the narrow-window
+0.8852. 40 bands interpolate cleanly at nk=144; the `nb ≤ ns·n_μ/nk` cap was an
+artifact of stacking the α-basis across coarse k (the physical 40-band ψ has
+effective rank ≤ 1280). The old nband=80 gate failure (0.2175) came from the
+extra high oscillatory bands 40-79 pushing the effective rank past capacity +
+a-compression, NOT from 40 bands.
+
+**a_band.** `--a-band 28` (flattest conduction band, BW 0.72 eV → a=2.87 eV)
+ties the f-transform width to the conduction manifold so the selected caches sit
+in the f'≈1 linear region; the default a from the dispersive top guard band 39
+would compress off-grid ε_c.
+
+**Code (agent/bse-exciton-bands, worktree lorrax_A_exciton_bands, 2 files):**
+`exciton_bands.py` full-band-window enforcement + guard-band logging (raise if
+the BSE conduction window exceeds the fH window; warn on <4 guards or a too-wide
+window); `bse_setup.compute_wfns_fi` single-source contract docstring. ONE fH
+builder (`htransform.build_fH_R`) shared with the SP driver; census stays 1
+`solve_path` compile (verified in both smoke and final logs; warm re-run
+bit-reproducible — driver hard-asserts).
+
+**Verdict (full 40-pt Γ-M-K-Γ, same grid/path/centroids/restart/W as `01_`).**
+
+| iQ (Q)              | full-band E_1 | narrow E_1 | ΔE_1 (meV) |
+|---------------------|---------------|------------|------------|
+| 0,5,10,15=M,23=K,39 | on-grid       | —          | **coincide, E_1 ≤ 0.3** |
+| 6  (0,0.20)         | 1.4179        | 1.3713     | **+46.6**  |
+| 9  (0,0.30)         | 1.4123        | 1.2245     | **+187.8** |
+| 16 (0.042,0.479)    | 1.2312        | 1.2018     | **+29.4**  |
+| 17 (0.083,0.458)    | 1.2938        | 1.2080     | **+85.8**  |
+
+All four off-grid dips LIFTED onto the smooth trend (iQ 5-10 E_1 = 1.412, 1.418,
+1.406, 1.402, 1.412, 1.415 — smooth; narrow had 1.412, 1.371↓, 1.410, 1.396,
+1.224↓, 1.415). On-grid nodes coincide to E_1 <0.3 meV (max over 8 states 0.6-8
+meV = the shared 640-μ ISDF/Lanczos floor, matching agent B's dense-truth spot
+checks 1.4-8.5 meV). Deliverables: `exciton_bands_fullbasis.{dat,png}`,
+`exciton_bands_fullbasis_vs_640c_GMKG.png`.
+
+### Timing table (owner mandate; container-BLAS caveat as in the perf log)
+
+| stage (full-band 640c chain, 12×12)   | GPUs | wall (s) |
+|---------------------------------------|------|----------|
+| driver smoke 3-pt (census=1)          | 4    | 304.6 (ψ_cQ 19.2, vq_prepare 168.5, cold 43.8, warm 42.75 = 14.25 s/Q) |
+| driver final 40-pt (census=1)         | 4    | 1520.8 (load 4.1, htr_setup 9.6, ψ_cQ 199.3, vq_prepare 166.1, vq_eval 1.8, cold 570.7, warm 563.3 = **14.08 s/Q**) |
+| (reused) gw_jax COHSEX+do_screened    | 16   | 150 (rec 98.6) — `00_lorrax_cohsex`, unchanged |
+
+No source-side cost vs the narrow-window `01_` run (1474 s / 13.7 s/Q): same fH
+dim (rank 1280), same BSE solve (n_flat 2304). The full-band ψ_cQ build is
+slightly larger (5760 q over 40 bands) but off the critical path. Env-bound
+walls per the perf-log caveat (container host-BLAS; the perf branch's
+trainer/htransform-batch speedups land at merge, .dat bit-identical).
+

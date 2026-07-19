@@ -1,0 +1,54 @@
+# Exciton-bandstructure driver input — MoS2 12x12 coarse grid, FULL-BAND
+# htransform basis (the fix for the iQ 6/9/16-17 window-cache dips).
+#
+# Root cause (05_htransform_spbands gap_scan + owner): the delivered 640c/1000c
+# runs fed compute_wfns_fi a SLIVER conduction window (nval=2/ncond=6/nband=32
+# -> fH over abs bands 24-31, top boundary 31|32 cuts a 5.9 meV near-degenerate
+# pair) -> off-grid eps_c(k+Q) rings 100-1000 meV -> spurious exciton dips.
+#
+# Fix: build fH over the FULL band window (nval=26/ncond=14/nband=40 = all 26
+# valence + 14 conduction, DFT energies) EXACTLY as the standard SP
+# bandstructure driver does (06_/07_spbands_*_fullband, clean by eye).  The BSE
+# keeps conduction bands 26-29 (--n-cond 4) INTERIOR to this window, guarded by
+# bands 30-39, so no selection boundary cuts a Kramers pair.  Owner correction
+# on record: the "nb <= ns*n_mu/nk capacity cap" was an artifact of stacking the
+# alpha-basis across coarse k; 40 bands interpolate cleanly at this nk.
+#
+# Same [cohsex] physics as ../00_lorrax_cohsex/cohsex.in (the 144-q restart
+# producer) EXCEPT nval/ncond/nband -> the full-band window; same 640 centroids,
+# same 30 Ry, same zeta_q.h5 trainer.  K_POINTS = the 40-pt Gamma-M-K-Gamma
+# exciton Q path (15/8/16, nodes 0/15/23/39).
+[cohsex]
+restart = false
+centroids_file = centroids_frac_640.txt
+nval = 26
+ncond = 14
+nband = 40
+sys_dim = 2
+x_only = false
+do_screened = true
+bispinor = false
+self_consistent = false
+use_ppm_sigma = false
+screening_method = minimax
+sigma_debug_split_contrib = true
+fermi_reference = midgap
+sigma_at_dft_extrapolate = false
+sigma_at_dft_energies = true
+use_chunked_isdf = true
+memory_per_device_gb = 28
+write_no_head_vw = false
+debug_hartree = false
+write_w_copies_debug = false
+wfn_file = WFN.h5
+output_file = eqp0.dat
+sigma_omega_h5_file = sigma_mnk.h5
+sigma_freq_debug_output = true
+bare_coulomb_cutoff = 30.0
+
+K_POINTS {crystal_b}
+4
+  0.0000 0.0000 0.0000 1   # Gamma
+  0.0000 0.5000 0.0000 15  # M
+  0.3333 0.3333 0.0000 8   # K
+  0.0000 0.0000 0.0000 16  # Gamma

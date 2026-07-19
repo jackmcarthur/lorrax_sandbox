@@ -1,0 +1,43 @@
+#!/bin/bash
+# 4-GPU single-process variant (JAX sees 4 local devices; driver mesh --px/--py).
+# Module-free srun+shifter runner (Lmod modules are broken in scripted contexts,
+# KNOWN_SANDBOX_ERRORS 2026-07-15). Mirrors LORRAX_SHIFTER from the lorrax_A
+# modulefile but with the home-migrated FFI stage dirs (KSE 2026-07-01: A/B/C
+# still carry dead $SCRATCH defaults). 1 GPU, 1 rank.
+#   usage: JID=<jobid> ./run_wt.sh <workdir> <python args...>
+set -euo pipefail
+
+JID="${JID:?set JID to the salloc job id}"
+WD="$1"; shift
+
+IMAGE="nvcr.io/nvidia/jax:25.04-py3"
+SRC=/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_exciton_bands/src
+SITE=/global/homes/j/jackm/scratchperl/.isdf/isdf_venvs/isdf_site
+DEPS=/pscratch/sd/j/jackm/lorrax_sandbox/sources
+NVHPC=/global/homes/j/jackm/software/lorrax_nvhpc
+PHDF5=/global/homes/j/jackm/software/lorrax_phdf5_cray/stage
+SLATE=/global/homes/j/jackm/software/lorrax_slate_cray/stage
+SLATE_INSTALL=/global/homes/j/jackm/software/slate/install
+MPICH=/opt/udiImage/modules/mpich
+DARSHAN=/global/common/software/nersc9/darshan/default/lib
+
+PYPATH="$SRC:$SITE:$DEPS"
+LDLIB="$SLATE_INSTALL/lib64:/lorrax_slate/lib:/lorrax_phdf5/lib:$NVHPC/0.7.2_cuda12.9/math_libs/12.9/lib64:$MPICH:$MPICH/dep:$DARSHAN"
+JAXCACHE="${SCRATCH:-$HOME}/.jax_cache"
+
+srun --jobid="$JID" --overlap -N1 -n1 --gres=gpu:4 --cpu-bind=cores \
+  --chdir="$WD" \
+  shifter --image="$IMAGE" --module=gpu,mpich \
+    --volume="$NVHPC:/lorrax_nvhpc" \
+    --volume="$PHDF5:/lorrax_phdf5" \
+    --volume="$SLATE:/lorrax_slate" \
+    --env=PYTHONPATH="$PYPATH" \
+    --env=HDF5_USE_FILE_LOCKING=FALSE \
+    --env=LD_LIBRARY_PATH="$LDLIB" \
+    --env=LD_PRELOAD=/lorrax_slate/lib/libmpi_gtl_cuda.so.0 \
+    --env=MPICH_GPU_SUPPORT_ENABLED=1 \
+    --env=JAX_COMPILATION_CACHE_DIR="$JAXCACHE" \
+    --env=XLA_PYTHON_CLIENT_PREALLOCATE=false \
+    --env=XLA_PYTHON_CLIENT_ALLOCATOR=platform \
+    --env=TF_GPU_ALLOCATOR=cuda_malloc_async \
+    "$@"
