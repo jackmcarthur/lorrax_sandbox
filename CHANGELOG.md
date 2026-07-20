@@ -1,6 +1,45 @@
 # Changelog
 
 
+## 2026-07-20: arbitrary-Q b26p — two owner investigations (principled LR basis; cutoff/n_µ audit) → arbitrary_q_bse.md §15 [study artifacts, no source changes]
+
+Read-only studies on the §12/§13 MoS2 3×3/6×6 slab fixtures, reference
+harness verbatim (`REFERENCE_arbitrary_q_vq.py` loaders/pipeline, Tik gauge,
+α=0.30, nR7, verdict = gap-window B + TDA exciton). Scripts + logs:
+`runs/MoS2/A_bse_w0_resolvent_2026-07-16/primer_response_study/study2_*`.
+Production default unchanged (per-Q ζ refit).
+
+- **STUDY 1 (is b26p fundamental or empirical?):** empirical, and it does not
+  matter — the LR form factor is ~10-DOF and ~96% isotropic monopole
+  (µ-avg angular power m0=0.959, m1=0.033, m3≈0.001 at 6×6). A matched-degree
+  **Zernike disk basis is B-identical to the monomials to every digit** (same
+  polynomial span), Fourier-Bessel bandlimited harmonics **tie** (5.32e-3 vs
+  b26p 5.37e-3), and the empirical monomial actually **wins on conditioning**
+  (block cond 31 vs 7e5–3e8; LOO-stab 0.7% vs 3–22%) because its 1/2α scaling
+  matches the physical 1/K²·Gaussian weight while the disk bases are
+  orthogonal under the wrong (uniform-disk) measure. Symmetry-adaptation
+  (m≡0 mod 3, zernike3) is the one principled win: **12 vs 26 coeffs at ~10%
+  B cost**, but small because there is barely any angular structure. The §13.2
+  SVD-multipole failure is reconciled as a **µ-rank property** (identical slow
+  across-µ SVD decay in every basis) — 640 distinct centroids, basis-
+  independent. All bases grid-transfer 3×3→6×6 at zero loss. **Keep b26p.**
+- **STUDY 2 (cutoffs vs ISDF size):** audited all four cutoffs. RIDGE
+  (1e-11, rel to K-space block trace, nb≤15), pinv-rcond (1e-15, q-geometry),
+  EPS_LR (1e-8, physical ball) are **structurally n_µ-independent**; RIDGE is
+  additionally load-free (B identical for RIDGE 0→1e-6). Only **cleaning-ε**
+  (1e-4, rel to λmax) couples to cond_C, which deepens with n_µ. Completed the
+  killed stress axisA/B: cleaning optimum broad ε≈1e-4–1e-5. **Synthetic
+  spectrum-stretch** (λ'=λmax(λ/λmax)^σ → cond_C^σ, to 2.5e14 mimicking 20k
+  centroids): under the FAITHFUL tail-only deepening a **small fixed ε_rel
+  drifts B by 0.2%** (junk-inert under MᴴV_QM); the pessimistic uniform
+  deepening makes fixed-ε drift 9×, held flat only by crossover-tracking
+  ε=cond_C⁻¹ᐟ². **Policy 640→20k:** keep ε relative-to-λmax (never absolute);
+  small fixed ε_rel is safe for the BSE tile (junk-inert); fall back to
+  ε=max(ε_small, cond_C⁻¹ᐟ²) — the ridge-ζ crossover law, MANDATORY on the
+  junk-sensitive GW Σ side — whenever junk-inertness cannot be assumed;
+  RIDGE/pinv/EPS_LR need no revision. Cross-ref `reports/zeta_ridge_ab_2026-07-17/`.
+
+
 ## 2026-07-18: 12×12 exciton-dip root cause + 640-vs-1000-centroid A/B + SP-bands deliverable [sandbox artifacts, no source changes]
 
 Owner deliverables on `runs/MoS2/04_mos2_12x12_bands_2026-07-18/`

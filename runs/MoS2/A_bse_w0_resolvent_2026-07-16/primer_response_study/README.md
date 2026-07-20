@@ -38,7 +38,18 @@ extend this file; extend the reference implementation".
 
 | family | role |
 |---|---|
-| `stress_*.py` + logs/npz | §14 stress/edge campaign on the winning pipeline (α budget re-allocation; cleaning-ε / fit-ridge / stencil robustness; Γ-edge; negative controls; Si-3D probe — see each docstring). Owned by the parallel polish session; results will land in `arbitrary_q_bse.md`. |
+| `stress_*.py` + logs/npz | §14 stress/edge campaign on the winning pipeline (α budget re-allocation; cleaning-ε / fit-ridge / stencil robustness; Γ-edge; negative controls; Si-3D probe — see each docstring). Owned by the parallel polish session; results will land in `arbitrary_q_bse.md`. NOTE: the run was cut off by allocation end (SIGTERM 2026-07-18T03:39); only axisA (cleaning-ε) landed. Its axisA/B are completed by `study2_run_study2.py` below (§15.2). |
+
+## §15 studies (2026-07-20 — the two owner investigations, arbitrary_q_bse.md §15)
+
+| file | role |
+|---|---|
+| `study2_basis_lib.py` | STUDY 1 library: principled per-channel LR bases (Fourier-Bessel Neumann disk harmonics, Zernike disk polynomials, C3-symmetry-adapted m≡0 mod 3) + generic complex-capable v_LR-weighted per-q-normal-block LSQ with honest LOO. Design-matrix-only swap vs b26p; reuses the reference loaders/pipeline. |
+| `study2_run_study1.py` | STUDY 1 driver: matched-count ladder (B + exciton + block-conditioning + LOO-coeff-stability), µ-averaged angular power of M_µ(K), across-µ SVD per basis, grid transfer. Verdict: b26p empirical but low-DOF; Zernike bit-identical (same span), Bessel ties, monomial best-conditioned; symmetry-adaptation halves coeffs at ~10% cost; SVD failure is a µ-property. |
+| `study2_run_study2.py` | STUDY 2 driver: cutoff inventory (EPS_TIK/RIDGE/pinv/EPS_LR), cleaning-ε + hard-cut sweeps (completes stress axisA/B), fit-ridge n_µ-independence, and the synthetic spectrum-stretch (uniform vs faithful tail-only) deciding the ε/rank policy for 640→20k centroids. |
+| `study2_probe_env.py` | scipy/Bessel + C_q-spectrum/crossover probe (cond_C≈1.6e7 both fixtures; ε*=cond⁻¹ᐟ²≈2.5e-4). |
+| `study2_verify_npz.py` + `study2_provenance_6x6.txt` | committed provenance: the verify script reloads the `.npz` result arrays and reprints every §15 table number (phantom-table rule); `.txt` is its captured output. Canonical because stdout logs are flaky under srun+shifter (buffered tail dropped on step teardown) AND gitignored — the durable record is the `.npz` (written directly by Python) + this regenerator. |
+| `study2_study{1,2}_MoS2_{3x3,6x6}_results.npz` | on-disk (gitignored) result arrays; reload via `study2_verify_npz.py`. |
 
 ## Shared prep libraries (imported by the evidence scripts; the winning-pipeline
 parts are absorbed into the reference impl — extend THAT, not these)

@@ -1594,3 +1594,203 @@ status); `CAMPAIGN_REPORT.md` §7 carries a pointer note. The §14
 stress/edge campaign (parallel session, `stress_*.py`) was in flight
 during this consolidation and is untouched by it. Production default
 remains the per-Q ζ refit (§12.6/§13.5 unchanged).
+
+## 15. Two owner investigations (2026-07-20) — APPENDED: (1) the b26p LR basis is EMPIRICAL but that is irrelevant — the DOF is genuinely low, a principled disk basis ties on accuracy and LOSES on conditioning, symmetry-adaptation halves the coeff count at ~10% cost, the SVD failure is a µ-property; (2) full cutoff audit — RIDGE/pinv/EPS_LR are n_µ-inert, cleaning-ε is the only n_µ-coupled knob and stays relative-to-λmax; under FAITHFUL n_µ growth a small fixed ε_rel drifts B by 0.2% to cond 2.5e14 (junk-inert), crossover ε=cond⁻¹ᐟ² is the conservative floor
+
+**Scope.** Two questions the owner raised about the §13 b26p long-range fit.
+Both are read-only studies on the §12/§13 MoS2 3×3/6×6 slab fixtures, run in
+the reference harness (`REFERENCE_arbitrary_q_vq.py` loaders/pipeline verbatim,
+Tikhonov gauge, α=0.30, nR7, verdict = gap-window `B = MᴴV_QM` med/max over the
+full-BZ LOO + TDA exciton swap). All numbers grep-verified from disk (phantom-
+table rule): scripts `primer_response_study/study2_{basis_lib,run_study1,`
+`run_study2,probe_env}.py`; on-disk provenance = the `.npz` result arrays
+(gitignored; written directly by Python — stdout logs are flaky under
+srun+shifter) reloaded by `study2_verify_npz.py` → `study2_provenance_6x6.txt`
+(committed; regenerates every number below). Production
+default is unchanged (per-Q ζ refit; §12.6/§13.5).
+
+### 15.1 STUDY 1 — is the b26p basis fundamental, or empirical?
+
+b26p = per-`G_z` in-plane Cartesian **monomials** `(K_x/2α)^a(K_y/2α)^b`,
+`a+b ≤ d`, degrees `{|G_z|=0:3, 1:2, 2:0, 3:0}` → 26 complex coeffs/µ, allocated
+by measured `v_LR` weight share (§13.0). Not derived from completeness or
+symmetry. Tested against three **principled** disk bases, each fit with the
+identical `v_LR`-weighted per-q-normal-block LSQ (only the design matrix
+`Φ(K_par)` changes) at matched coefficient count:
+
+- **zernike** — Zernike disk polynomials `R_n^m(r/R){cos,sin}(mθ)` to radial
+  degree `d`: the ORTHOGONAL basis of the disk spanning the *same* polynomial
+  function space as monomials of degree `d`.
+- **bessel** — Fourier-Bessel (Neumann) disk harmonics
+  `J_m(k_{m,l}r/R){cos,sin}(mθ)`, `k_{m,l}=` roots of `J_m'` (so `m=l=0` is the
+  constant): the bandlimited-optimal orthogonal basis on the physical ball
+  `R = 2α√(ln 1/ε_LR)` — the owner's "spherical harmonics of the disk."
+- **bessel3 / zernike3** — the same, angular-restricted to `m ≡ 0 (mod 3)`
+  (MoS2 C3v/D3h symmetry-adapted).
+
+**Head-to-head (MoS2 6×6, LOO over all 36 coarse q;
+`study2_study1_MoS2_6x6_results.npz`):**
+
+| rung | coeff/µ | cond(block) max | LOO-stab med | B med | B max | exc med/max meV |
+|---|---|---|---|---|---|---|
+| **monomial (b26p, anchor)** | 26 | **3.1e1** | **6.9e-3** | **5.368e-3** | 3.960e-2 | 0.043/0.144 |
+| zernike (same span) | 26 | 7.5e5 | 3.1e-2 | 5.368e-3 | 3.960e-2 | 0.043/0.144 |
+| bessel (bandlimited) | 26 | 3.3e6 | 1.0e-1 | 5.319e-3 | 3.952e-2 | 0.044/0.147 |
+| zernike3 (m≡0 mod 3) | **12** | 6.7e5 | 1.2e-1 | 5.903e-3 | 3.963e-2 | 0.052/0.147 |
+| bessel3 (m≡0 mod 3) | 26 | 3.0e8 | 2.2e-1 | 6.052e-3 | 3.869e-2 | 0.053/0.152 |
+| monomial b45p `{4,3,1,0}` | 43 | 9.4e1 | 8.0e-3 | 5.249e-3 | 3.967e-2 | 0.043/0.152 |
+| bessel b45p | 43 | 2.6e7 | 9.9e-2 | 5.340e-3 | 3.953e-2 | 0.040/0.147 |
+
+Reading (each point measured, not asserted):
+
+1. **Zernike ≡ monomial to every digit** (B 5.368e-3, identical excitons,
+   identical across-µ SVD spectrum). A matched-degree orthogonal disk basis and
+   the ad-hoc monomials span the *same* polynomial function space, so the
+   weighted-LSQ projection — hence B — is bit-identical. **The accuracy is set
+   by the function SPACE (its DOF), not by the basis within it.** This is the
+   direct answer to "does basis choice matter?": for accuracy, no.
+2. **Bandlimited (bessel) ties, does not beat** (5.319e-3 vs 5.368e-3 — noise).
+   The principled bandlimited-optimal basis buys nothing on B.
+3. **The empirical monomial WINS on conditioning and stability.** Its `1/(2α)`
+   scaling is matched to the physical `1/K²·e^{−K²/4α²}` weight, giving
+   cond(block) **31** and LOO-coeff stability **0.7%**; the disk-orthogonal
+   bases are orthogonal under the *uniform-disk* measure (the wrong one for this
+   weight), so they are 4–7 orders worse conditioned (7e5–3e8) and 4–30× less
+   LOO-stable. b26p is already near-optimally conditioned — a principled basis
+   is a downgrade here.
+4. **Diminishing returns confirm low DOF:** b45p (43 coeff) improves B by 2%
+   over b26p (26). ~26 is already on the plateau.
+5. **Symmetry-adaptation is the one principled lever with value, and it is
+   modest.** `zernike3` reaches B 5.9e-3 with **12** coeffs (vs 26) — a >2×
+   compression at ~10% B cost. But the payoff is small *because there is little
+   angular structure to exploit*: the µ-averaged angular power of `M_µ(K)` on
+   the richest `|G_z|=0` channel is **m0 0.959, m1 0.033, m2 0.005, m3 0.001**
+   (6×6; 0.920/0.060/… at 3×3) — the form factor is ~96% isotropic **monopole**,
+   its largest anisotropy is a `m=1` dipole (from centroids at generic, non-
+   symmetry FFT sites), and the genuinely C3-specific `m=3,6` harmonics are
+   ≲0.001. "m ≡ 0 (mod 3) dominant" is true only in the trivial sense that
+   `m=0` dominates; there is no rich C3 tensor structure to compress.
+6. **The SVD-multipole failure (§13.2) is reconciled and is basis-independent.**
+   The across-µ SVD of the fitted coefficient matrix decays *identically slowly*
+   in monomial, Zernike, and Bessel bases (norm 1.0, 0.14, 0.086, 0.056, …).
+   The slow decay is a **µ-rank property** — the 640 centroids are 640 genuinely
+   distinct form factors — orthogonal to the K-basis choice. A principled
+   K-basis fixes the (already low, ~10) K-dimension; it cannot reduce the
+   µ-dimension, which is where "learned multipoles" tried and failed.
+7. **No transfer advantage over b26p.** The owner's hypothesised edge — a fixed
+   physical ball radius `R` is system-independent — does not distinguish the
+   bases, because b26p is *already* physical-scale (its `1/(2α)` normalization,
+   α physical). Grid transfer 3×3-fit → 6×6-deploy: monomial 5.382e-3, zernike
+   5.408e-3, bessel 5.522e-3 — all at zero downstream B-loss (§13.3).
+
+**VERDICT (Study 1).** The b26p basis is **empirical** (a weight-informed
+polynomial-degree ladder), and this is **immaterial**: the LR form factor lives
+in a genuinely low-dimensional, near-isotropic function space (~10 DOF on the
+rich channel), so (i) no principled basis is more accurate at matched count
+(Zernike is bit-identical, Bessel ties); (ii) none is more transferable (all
+transfer at zero loss; b26p is already physical-scale); (iii) the polynomial's
+success *does* reveal that the DOF is just low — and, because the physical
+`1/K²·Gaussian` weight is strongly non-uniform, the ad-hoc monomials with `1/2α`
+scaling are in fact *better conditioned and more LOO-stable* than the
+"principled" disk-orthogonal bases, which are orthogonal under the wrong
+measure. The only principled idea that pays is **symmetry-adaptation**
+(`m≡0 mod 3` → 12 vs 26 coeffs at ~10% B cost), and it pays little because the
+form factor carries almost no angular structure. **Keep b26p.** If a smaller
+footprint is ever wanted, drop to the symmetry-adapted 12-coeff `zernike3`, not
+a bandlimited basis.
+
+### 15.2 STUDY 2 — SVD/rank/Tikhonov cutoffs and ISDF-basis-size dependence
+
+**Every cutoff in the V_Q interp + trainer pipeline, audited
+(`study2_run_study2.py`; `REFERENCE_arbitrary_q_vq.py`/`lr_prep.py`):**
+
+| cutoff | site | value | scaling | grows with n_µ? | measured verdict |
+|---|---|---|---|---|---|
+| **EPS_TIK** | tile cleaning `g_ε(λ)=λ²/(λ²+(ε·λ_max)²)` | 1e-4 | **relative to λ_max** (per q) | **couples to cond_C(n_µ)** | the only n_µ-sensitive knob; §15.2 policy below |
+| RIDGE | b26p normal solve `A+=RIDGE·(trAᐟnb)·I` | 1e-11 | relative to block trace | **no** — `nb`≤15 is the BASIS size | **inert**: B *identical* for RIDGE ∈ {0,1e-14,…,1e-6} (5.368e-3) |
+| pinv rcond | stencil `f0@pinv(F)` | 1e-15 | relative to σ_max(F) | **no** — `F` is `(n_q×nR)` q-geometry | safe; unrelated to ISDF size |
+| EPS_LR | LR ball `K²_max=4α²ln(1/ε)` | 1e-8 | Gaussian tail bound | **no** — depends on α+lattice | safe; sets the 337-G superset only |
+| hard rank-cut `Π=top-r` | (alternative to Tik) | — | fraction of n_µ | — | spectrum-*shape*-invariant but narrow sweet spot + §13.1 q-fiber |
+
+So three of four cutoffs are **structurally n_µ-independent** (RIDGE acts on the
+K-space Gram whose size `nb` and conditioning do not grow with n_µ; pinv and
+EPS_LR are pure geometry/physics). RIDGE is additionally *load-free* — the fit
+survives RIDGE=0. Only **cleaning-ε** touches the C_q spectrum, which deepens
+(longer gapless tail, higher cond_C) as n_µ → 20k.
+
+**Cleaning-ε sweep (6×6, completes the killed §14/stress-axisA;
+`study2_study2_MoS2_6x6_results.npz`):** cond_C med **1.57e7**, crossover
+ε*=cond⁻¹ᐟ²=**2.5e-4**.
+
+| ε_rel | 1e-3 | 1e-4 | 1e-5 | 1e-6 | 1e-7 | hard r=0.5n_µ |
+|---|---|---|---|---|---|---|
+| B med | 8.46e-3 | 5.37e-3 | **4.71e-3** | 6.17e-3 | 1.10e-2 | 4.88e-3 |
+
+Broad, shallow optimum ε≈1e-4–1e-5 (best 1e-5); over-cleaning (1e-3) and the
+§13.1 q-fiber (ε≤1e-6, exciton max 0.14→0.23 meV) bound it. Hard rank-cut peaks
+at r≈0.5n_µ (4.88e-3) but degrades sharply at r=0.75n_µ (8.3e-3, the Davis-Kahan
+cut-edge modes) — narrower and worse-behaved than Tikhonov, as §13.1 predicts.
+
+**n_µ scaling — synthetic spectrum stretch (`λ'=λ_max(λ/λ_max)^σ`, cond_C →
+cond_C^σ, eigenvectors fixed; the owner's tail-scaling probe).** Two stretch
+models — *uniform* (deepens ALL sub-maximal modes, pessimistic) and *tail*
+(keeps the resolved top-half fixed, deepens only the lower tail — faithful to
+"larger n_µ adds inert junk, physics unchanged") — under the current fixed
+ε_rel=1e-4 vs the crossover-tracking ε=cond_C^−1/2:
+
+| σ (cond_eff) | 1.00 (1.6e7) | 1.25 (1e9) | 1.50 (6e10) | 1.75 (4e12) | 2.00 (2.5e14) |
+|---|---|---|---|---|---|
+| **tail**, fixed 1e-4 | 5.368e-3 | 5.379e-3 | 5.379e-3 | 5.379e-3 | **5.379e-3** |
+| **tail**, track cond⁻¹ᐟ² | 6.63e-3 | 4.70e-3 | 4.88e-3 | 4.88e-3 | 4.88e-3 |
+| uniform, fixed 1e-4 | 5.368e-3 | 8.27e-3 | 1.16e-2 | 1.81e-2 | **4.91e-2** |
+| uniform, track cond⁻¹ᐟ² | 6.63e-3 | 6.74e-3 | 6.79e-3 | 6.81e-3 | 6.81e-3 |
+| hard r=0.5n_µ | 4.88e-3 | 4.88e-3 | 4.88e-3 | 4.88e-3 | 4.88e-3 |
+
+The decisive rows are the **tail** ones (the faithful n_µ-growth model): a small
+**fixed relative** ε_rel drifts B by **0.2%** (5.368→5.379e-3) even as cond_C
+runs to 2.5e14, because the deepened tail is **inert under `MᴴV_QM`** — damping
+it more (ε fixed) or the same (ε tracked) never touches the physical block. This
+directly confirms the junk-inertness thesis for the BSE tile. The *uniform*
+rows are the stress case: when the deepening also reaches physically-resolved
+modes, fixed ε_rel over-damps them (9× drift by σ=2, ndamp 374→559), and only
+the crossover-tracking ε=cond⁻¹ᐟ² holds B flat (2.7% over 7 decades of cond,
+ndamp constant 406). The hard top-r projector is B-invariant by construction
+(spectrum-shape-independent) but inherits §13.1's q-fiber and narrow sweet spot.
+
+**Connection to the ridge-ζ A/B verdict (`reports/zeta_ridge_ab_2026-07-17/`).**
+There the GW Σ pathway is junk-**sensitive** (V0/W0 device-covariance and
+Σ_c swing 4–200 meV as ε shrinks; ε MUST scale relative to λ_max; crossover
+ε*≈cond(C)⁻¹ᐟ²). The BSE tile pathway measured here is the **forgiving** cousin:
+identical relative-ε *logic*, but the junk is inert under the physical
+contraction, so the fixed-ε policy that is *dangerous* for GW is *safe* for BSE
+to cond 2.5e14. The scaling law transfers; the tolerance does not.
+
+**RECOMMENDED ε/rank policy (safe 640 → ~20k centroids):**
+
+1. **Cleaning-ε stays RELATIVE to λ_max (per q).** Never an absolute floor —
+   an absolute floor drifts with the spectrum (measured). This is already the
+   code (`EPS_TIK·λ.max()`); keep it.
+2. **For the BSE tile, a small fixed ε_rel (1e-4, or 1e-5 for peak on-grid
+   accuracy) is safe and near-optimal to 20k centroids** — the owner's small-ε
+   preference is vindicated *for this pathway*, because the growing tail is
+   junk-inert (tail-stretch B drift 0.2%). No n_µ-scaling of ε is required for
+   BSE tile interpolation.
+3. **The conservative floor, if the physical/junk gap ever closes** (window
+   redesign that admits near-degenerate physical pairs, near-metallic system,
+   or when sharing the cleaning with a junk-sensitive GW Σ path), is
+   `ε_rel = max(ε_small, cond_C⁻¹ᐟ²)` evaluated per-q from the actual spectrum —
+   the ridge-ζ crossover law, which held B flat under BOTH stretch models. Cost:
+   ~24% worse on-grid at MoS2 scale (6.6e-3 vs 5.4e-3), bought as robustness.
+4. **RIDGE, pinv-rcond, EPS_LR need no change from 640 to 20k** — they are
+   n_µ-independent by construction (K-space Gram size, q-geometry, physical ball
+   radius). RIDGE may even be set to 0; 1e-11 is a harmless guard.
+5. Prefer Tikhonov over the hard rank-cut (§13.1 q-fiber; narrower sweet spot);
+   if a spectrum-shape-invariant option is ever wanted, r≈0.5n_µ is the plateau.
+
+**VERDICT (Study 2).** The pipeline is well-posed for the n_µ→20k regime: the
+only spectrum-coupled cutoff (cleaning-ε) is already correctly relative-to-λmax,
+and for the junk-inert BSE tile a small fixed ε_rel is measured-safe to
+cond_C≈2.5e14 (0.2% B drift). The crossover ε=cond_C⁻¹ᐟ² is the recommended
+conservative default whenever junk-inertness cannot be assumed (it is *mandatory*
+on the GW Σ side); the fit-ridge and stencil/ball cutoffs are n_µ-inert and need
+no revision.
