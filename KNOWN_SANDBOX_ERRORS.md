@@ -583,3 +583,11 @@ zeta_q.h5 at boundary q must use the sphere-derived center, not round().
   (measured 5.8e-17 at alpha=0.45; 26 channels affected on 6x6).
   Implemented in `tile_prep.py::{sphere_slot,F_channels}` (sentinel -1 +
   zero column + printed weight bound).
+
+## 2026-07-20: `git -C <symlink> worktree add <RELATIVE path>` lands on the wrong filesystem
+
+`sources/lorrax_A` is a symlink to the home FS. `git -C sources/lorrax_A worktree
+add sources/worktrees/lorrax_A_x` (relative dest) silently created the worktree at
+`/global/u2/.../lorrax_A/sources/worktrees/...` (home FS) instead of pscratch —
+import failures downstream. Not a doc error; the trap is symlink + `-C` + relative
+dest. FIX: always use an ABSOLUTE destination path for `git worktree add`.

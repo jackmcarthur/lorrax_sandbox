@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-07-20: nband=80 interp reconciliation + 8v8c exciton bands [agent/bse-bands-80]
+
+- **Reconciliation (owner):** nband=80 htransform interp is REAL harm, not a
+  min-sval artifact. min-sval "0.2175" not reproduced (it is 0.86 == nband=40) —
+  wrong metric. On-grid conduction ENERGY corrupts to 955 meV (scan: nband
+  34/40/48/64/80 -> 0.16/1.0/1.9/7.4/955 meV, cliff at 80). Root cause: 640
+  centroids can't orthonormalize high oscillatory bands (Gram err ->40%), which
+  pollute fH=Σf(ε)ccᴴ. a_band sweep flat. A larger interp basis is WORSE; the fix
+  is more CENTROIDS, not more bands. DOF count (rank 1280) was fine — orthonormal
+  sampling is the wall. Trustworthy to ~nband=48-64; BSE window (<=band 33) is
+  safely inside nband=40.
+- **8v8c exciton bands** delivered with the working nband=40 interp basis (gate
+  0.855 meV); smooth, no dips. vs run-08 4v4c: E₁ uniformly −5.9 meV median /
+  −18 max — 8v8c does not change the picture (4v4c already converged for E₁).
+- **Source (agent/bse-bands-80 @ 5120fe4):** exciton driver on-grid gate tightened
+  (hard-fail >0.05 Ry, was 0.1) + capacity warn corrected -> nband=80 now aborts
+  at the gate. pytest exciton+bse 7 passed.
+- Artifacts + manifest step 10: runs/MoS2/04_mos2_12x12_bands_2026-07-18/
+  10_lorrax_exciton_bands_80interp_8v8c/ (5 PNGs, probes, logs).
+
+
 
 ## 2026-07-20: arbitrary-Q b26p — two owner investigations (principled LR basis; cutoff/n_µ audit) → arbitrary_q_bse.md §15 [study artifacts, no source changes]
 

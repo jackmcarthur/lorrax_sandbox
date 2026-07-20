@@ -1791,3 +1791,50 @@ VERDICT: the exciton-bandstructure "unsmoothness" is genuine MoS2 indirect/
 valley dispersion, NOT interpolation error and NOT a window artifact (post
 full-band fix). The interpolated V_Q exciton bandstructure is physically
 correct. D_min uses DFT energies; shape (not absolute) is the robust signal.
+
+## 80-band interp reconciliation + 8v8c exciton bands (2026-07-20, agent/bse-bands-80)
+
+Owner: use an 80-band htransform interp basis + an 8v8c BSE window, and reconcile
+the prior "min-sval → 0.2175 at nband=80" finding. Own 4×A100 alloc; restart
+READ-ONLY from 00_lorrax_cohsex (GW producer ran nband=80).
+
+### Verdict: nband=80 interp is REAL harm, and min-sval is the wrong metric
+- min-sval "0.2175" NOT reproduced: it is 0.862 at nband=80 (== the 0.885 nband=40
+  baseline). The ψ_c subspace is fine — min-sval is blind to the actual failure.
+- The damage is in the ENERGIES: on-grid conduction (26-33) round-trip error
+  (exact by construction when the basis is sound) is 955 meV at nband=80. Fresh-basis
+  scan: nband 34/40/48/64/80 -> 0.16/1.03/1.91/7.36/955 meV — a hard CLIFF at 80.
+- a_band sweep FLAT (min-sval 0.860-0.863, energy 886-1117 meV for a_band in
+  {None,28,30,33,34,36,40,54}) — the f-transform width is NOT the lever.
+- Root cause: fH=Σ f(ε_n) c_n c_nᴴ recovers eigvals=f(ε_n) ONLY if the Galerkin
+  coeffs are orthonormal. 640 centroids cannot orthonormalize the high oscillatory
+  bands — per-band Gram error ‖C_kC_kᴴ−I‖ goes 1-2% (bands 0-33) -> ~40% (bands
+  56-79); those pollute the shared α-basis and corrupt the conduction eigenvalues.
+  rank(α)=1280=ns·n_μ, so the DOF COUNT is fine (owner right there) — the
+  sampling/orthonormalization is the wall.
+- **Owner premise INVERTED: a larger interp basis is WORSE, not better.** The
+  640-centroid basis is trustworthy to ~nband=48-64; 80 is unusable for the
+  conduction caches. Correct interp basis for 8v8c = nband=40 (guards 34-39;
+  the BSE window tops out at band 33, safely inside). A denser CENTROID set (not
+  more bands) is what would extend the faithful band ceiling.
+
+### 8v8c exciton bands (deliverable) — working nband=40 interp basis
+- n_val=8 n_cond=8, 40-pt Γ-M-K-Γ, interp V_Q, a_band=33. Gate 0.855 meV /
+  min-sval 0.854. Smooth, no dips. E₁: Γ 1.1415, M 1.2033, K 1.1382 eV (K min).
+  Free-pair floor D_min [1.700, 2.112]; E₁ tracks below (physical binding).
+- vs run-08 4v4c/40-interp: ΔE₁ = −5.9 median / −7.0 mean / −18 max meV — a small
+  uniform lowering, no restructuring. 4v4c was already converged for the lowest band.
+
+### Source change (agent/bse-bands-80 @ 5120fe4, pytest 7 passed)
+src/bse/exciton_bands.py on-grid gate tightened (warn >20 meV, hard-fail >0.05 Ry;
+was 0.1 Ry = 1361 meV, so the 963 meV corruption slipped through) + the misleading
+"ns·n_mu capacity / nband=40 validated" warn replaced with the orthonormalization-
+wall mechanism. nband=80 8v8c now ABORTS at the gate; nband=40 passes.
+
+### Timing (4×A100, container-BLAS): total 635.7 s
+load 3.4 · htr_setup 8.6 · ψ_c(k+Q) 155.1 · vq_prepare 59.4 · vq_eval 2.1 ·
+solve cold(1 compile) 201.9 · solve warm(40 Q) 199.1.
+
+Artifacts: runs/MoS2/04_mos2_12x12_bands_2026-07-18/10_lorrax_exciton_bands_80interp_8v8c/
+(sp_reconcile_80_vs_40.png, sp80_aband_sweep.png, exciton_bands_40interp_8v8c.png,
+sp_dmin_40_8v8c.png, exciton_vs08_overlay.png + probes, logs).

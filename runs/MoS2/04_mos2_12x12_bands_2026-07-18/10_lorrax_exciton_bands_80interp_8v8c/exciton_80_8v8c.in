@@ -1,0 +1,56 @@
+# Exciton-bandstructure driver input — MoS2 12x12, 80-BAND htransform interp
+# basis + 8v8c BSE window (owner directive 2026-07-20; supersedes run 08's
+# nband=40 / 4v4c).
+#
+# htransform basis: nval=26/ncond=54/nband=80 -> fH built over ALL 80 bands
+# (bandstructure.bse_setup.compute_wfns_fi; single-source with the SP driver).
+# The GW producer (00_lorrax_cohsex) already ran this exact window, so
+# psi_full_y/zeta_q.h5 carry 80 bands; run 08 truncated to 40.  Owner rationale:
+# 640 centroids carry 80 bands per k (n_mu*ns=1280 >> 80); the interp should
+# plan for the full 80 so every point of every conduction band is well
+# represented.  BSE window is set on the CLI: --n-val 8 --n-cond 8 -> BSE
+# conduction bands [26,34) sit strictly INTERIOR to the 80-band fH, guarded by
+# bands 34..79 (46 guards) -> no selection boundary near any Kramers pair.
+#
+# a_band_index (--a-band): chosen from sp80_aband_sweep.py so the 8v8c
+# conduction bands 26..33 sit in the f'~1 regime (avoids the a-compression that
+# collapses the min-sval when a is taken from the dispersive top band 79).
+#
+# Same [cohsex] physics as ../00_lorrax_cohsex/cohsex.in EXCEPT the 80-band
+# window.  Same 640 centroids, 30 Ry, zeta_q.h5 trainer.  K_POINTS = the 40-pt
+# Gamma-M-K-Gamma exciton Q path (15/8/16, nodes 0/15/23/39) — identical to
+# run 08 for a 1:1 overlay.
+[cohsex]
+restart = false
+centroids_file = centroids_frac_640.txt
+nval = 26
+ncond = 54
+nband = 80
+sys_dim = 2
+x_only = false
+do_screened = true
+bispinor = false
+self_consistent = false
+use_ppm_sigma = false
+screening_method = minimax
+sigma_debug_split_contrib = true
+fermi_reference = midgap
+sigma_at_dft_extrapolate = false
+sigma_at_dft_energies = true
+use_chunked_isdf = true
+memory_per_device_gb = 28
+write_no_head_vw = false
+debug_hartree = false
+write_w_copies_debug = false
+wfn_file = WFN.h5
+output_file = eqp0.dat
+sigma_omega_h5_file = sigma_mnk.h5
+sigma_freq_debug_output = true
+bare_coulomb_cutoff = 30.0
+
+K_POINTS {crystal_b}
+4
+  0.0000 0.0000 0.0000 1   # Gamma
+  0.0000 0.5000 0.0000 15  # M
+  0.3333 0.3333 0.0000 8   # K
+  0.0000 0.0000 0.0000 16  # Gamma
