@@ -1794,3 +1794,174 @@ cond_C≈2.5e14 (0.2% B drift). The crossover ε=cond_C⁻¹ᐟ² is the recomme
 conservative default whenever junk-inertness cannot be assumed (it is *mandatory*
 on the GW Σ side); the fit-ridge and stencil/ball cutoffs are n_µ-inert and need
 no revision.
+
+---
+
+## 16. SR/LR completeness + G=0 head accounting audit (2026-07-20) — APPENDED: focused correctness audit, per-element math + numerical proof; verdict = V_coulomb captured EXACTLY ONCE (no double-count, no formalism gap); two bounded approximations named (sphere-tail ~1e-12, model/interp ~1–8%) and two head caveats named (2D finite-q uses POINT not cell-average → 4–13% near Γ; BSE-loader silent-skip if vhead absent)
+
+Owner probe: does the arbitrary-Q V_Q SR/LR split capture ALL of the Coulomb
+tile exactly — no double-count, no missing piece — INCLUDING the G=0 head across
+the Q=0 vs finite-Q boundary? Read-only source audit + numerical proof on the
+MoS2 3×3 and 6×6 fixtures. Script `primer_response_study/complete_split_head_audit.py`
+(imports the reference `REFERENCE_arbitrary_q_vq` helpers — the split/rebuild code
+under test is the campaign's own, not a re-derivation); logs
+`complete_split_head_audit_{3x3,6x6}.log`, npz alongside, provenance
+`complete_PROVENANCE.txt` (JID 56200764, srun+shifter, PYTHONPATH=lorrax_A/src
+READ-ONLY). Every number below is grep-verifiable from those logs.
+
+### 16.1 Per-element head (G=0) accounting — the load-bearing table
+
+Trace of the single G=0 Coulomb term through every place it can appear. "Once"
+= appears in exactly one channel at that Q; the columns are mutually exclusive by
+construction. `v(q,G0)` denotes the finite slab kernel `8π/|q|²·f2d/V_cell` at
+G=(0,0,0); at q=0 it is the divergent head.
+
+| # | object (file) | at exactly Q=0 | at finite Q (q≠0) | verified |
+|---|---|---|---|---|
+| a | stored `V_qmunu` tile (`compute_vcoul.compute_v_q_per_G` → `v_q_g_flat`) | **G=0 ZEROED** (`denom<1e-12 → 0`) — body head-less | **G=0 KEPT** = point `v(q,G0)` (2D: no MC avg) | stored[q=0] ≡ head-less make_vq **2.2e-15**; stored[q≠0] ≡ make_vq incl G=0 **1.0e-9** |
+| b | SR body `v_SR = v·(−expm1(−K²/4α²))` | 0 (=0·anything) | small finite piece, →0 as Q→0 (**head-free**) | vSR(G0)→0: 1.37e-4 at \|Q\|=1.2e-4 |
+| c | LR channel `v_LR = v·exp(−K²/4α²)` | 0 in stored rep (K²<1e-12 zeroed) | **carries the whole head**; v_LR(G0)/v(G0)→1 as Q→0 | LRfrac 0.634→0.9996→1.000 down the Q→0 ladder |
+| d | rank-1 injection `apply_q0_head_rank1` (`head_correction`) | **applied ONCE**: `(vhead/V_cell)·conj(g0)g0`, `g0=ζ̃(0,μ,0)` | **NOT applied** (touches `[…,0,0,0,:,:]` only) | g0 ≡ `G0_mu_nu` **0.0**; head-less body + this = full q=0 tile |
+| e | `eval_vq` rebuild (SR-interp + LR-model) | G=0 zeroed in both → delegates to (d) | SR-interp G0 + LR-model G0, **point** v_LR, no injection | split exact (16.2); model head-channel err 3.5e-2 med (16.3) |
+
+**Counted exactly once, everywhere.** At finite Q the G=0 head lives in the body
+(a, point value) and, in the arbitrary-Q rebuild, is split between SR-interp and
+LR-model (e) — `apply_q0_head_rank1` is a strict q=0-index update (d) so there is
+**no finite-Q double-count**. At exactly Q=0 the body is head-less (a) and the
+rank-1 term supplies the head once (d) — **no gap**. The Q=0↔finite-Q boundary is
+the switch from "head in body/LR channel" (finite Q, regular or divergent-but-
+representable) to "head as rank-1 mini-BZ-averaged scalar" (Q=0, not representable
+as a finite tile). No third path re-adds it; no path drops it.
+
+### 16.2 Algebraic completeness of the split (Parts A–C) — exact, not asserted
+
+- **Kernel split `v_SR+v_LR=v` per G, at every Q incl G=0** (Part A): max rel
+  deviation **≤ 1.4e-16** at coarse q, off-grid midpoint, and the full Q→0 ladder
+  (\|Q\| = 1.2e-1 … 1.2e-4). The `expm1` form is exact to machine ε; the split
+  neither double-counts nor drops any G, head included.
+- **Tile split `V_SR+V_LR=V_full` (contracted, own ζ̃, incl the isolated G=0
+  head sub-tile)** (Part B): max rel **≤ 1.8e-15** (3×3 and 6×6). The G=0 head
+  sub-tile `H = conj(ζ̃₀)·v(q,G0)·ζ̃₀` splits to **≤ 4e-16**. At q=0, `v(0,G0)=0`
+  ⇒ `‖H‖=0` (head-less body); at finite q the head is a **real, large** fraction
+  of the tile — `‖H_G0‖/‖V‖ = 0.36` (3×3 q1), **0.60** (6×6 q1 at \|q\|=0.20).
+  The split reproduces it with no residual.
+- **gset-vs-sphere LR completeness** (Part C): the LR channel is contracted over
+  the fixed superset 𝒢(α) (337 G at α=0.3) while the SR body is on the stored
+  sphere. Two-way decomposition, per q:
+  - **𝒢∖sphere** ("out-of-sphere zero" claim): contribution `‖·‖_inf = 0.0e+00`
+    **exactly** — ζ̃ is literally zero-filled off the sphere (`_sphere_slot=−1`),
+    so these channels contribute bit-zero to the rebuild. **Verified, not trusted.**
+  - **sphere∖𝒢** (the sphere tail): the *only* nonzero discrepancy, `‖tail‖_inf
+    ≤ 4e-6`, net gset-vs-sphere rel **≤ 1.8e-12**, and the identity
+    `(V_gset − V_sphere) + V_tail = 0` holds to ≤ 2e-8 ⇒ the residual is
+    *exactly* the tail and nothing else. Bounded by `exp(−cutoff/4α²) = 6.4e-37`
+    (loosely; the measured tail is set by the largest v_LR just outside 𝒢, ~1e-6).
+    A **designed truncation**, not a double-count or gap.
+
+### 16.3 Numerical completeness table — coarse / off-grid / Q→0 (6×6, validated grid)
+
+Reconstruction = SR-interp (nR7 stencil) + LR-model (b26p, 26 global coeffs). Truth
+= brute-force `Σ_G ζ̃*(q,G) v(q+G) ζ̃(q,G)` **including G=0**. "Cleaned truth" =
+`conj(S)·truth·conj(S)` (the object the cleaned coarse tiles interpolate to; the
+Tikhonov S is a separate, deliberate interpolation gauge — §12.3/13.1 — not a
+completeness question, hence the 0.99 "vs BRUTE uncleaned" row is *by design*).
+
+| test Q | kernel split | tile split | recon vs cleaned truth (max_rel med/max) | **head(G=0) channel** err (med/max) |
+|---|---|---|---|---|
+| coarse q (in-train, δ-stencil) | 1e-16 | 1e-15 | 1.2e-2 / 2.0e-2 | ~1e-15 (own split) |
+| **off-grid LOO** (held-out coarse q) | 1e-16 | — (no ζ̃ at Q) | **7.8e-2 / 1.4e-1** | **3.5e-2 / 1.9e-1** |
+| Q→0 (\|Q\|=1.2e-4) | 1e-16 | — (no ζ̃ at Q) | analytic (see below) | vSR(G0)→0, vLR(G0)→v(G0) |
+
+Reading: the **body rows** (G≠0) reconstruct at the SR-interpolation floor
+(7.8e-2 median tile on 6×6 LOO; the physical B-metric is 5.4e-3 — §13.2 — because
+M†VM forgives tile infidelity). The **head row** (G=0) is reconstructed by the
+b26p LR-model to **3.5% median / 19% worst-q** at LOO — an *interpolation/model*
+error, NOT a gap or double-count (the split that feeds it is exact, 16.2). On the
+coarse 3×3 fixture the LOO tile is 31% (only 8 training points) yet the head
+channel is still 5–7% — the head is the *well-behaved* channel, exactly as the
+finite-α design intends (the divergence is analytic; only the ζ-rotation is
+interpolated). **The SR body is head-free** (Part 4 / row b): `v_SR(K→0)→0` for the
+2D slab (`v_SR ≈ 2π·z_c·\|K∥\|/α² → 0`; 3D analog `π/α²` finite) — the divergence
+lives ONLY in v_LR, so the interpolated SR channel never carries a head.
+
+### 16.4 Owner refinement — POINT value vs mini-BZ CELL AVERAGE of the head
+
+(a) **What the current machinery uses — determined from source:**
+
+| head instance | averaging? | source |
+|---|---|---|
+| q=0 rank-1 `vhead` (`apply_q0_head_rank1`) | **mini-BZ Voronoi CELL AVERAGE** (Sobol QMC, 2¹⁸×10) | `slab_2d.q0_average` → `sample_minibz_qpoints` |
+| 3D bulk finite-q G=0 body | **MC CELL AVERAGE** per q | `compute_vcoul.build_v_head_miniBZ_avg_3d` |
+| **2D slab finite-q G=0 body** (stored `V_qmunu`) | **POINT value** `8π/\|q+G\|²·f2d` (MC flag no-op'd for 2D) | `compute_v_q_per_G`, sys_dim=2 |
+| **arbitrary-Q `eval_vq` / `v_slab_on_set`** (all G, all Q) | **POINT value**, no averaging step | reference impl + §9.6(4)/§9.8 (analytic point v) |
+
+Confirmed numerically: recomputed mini-BZ cell average `⟨8π/\|q\|²f2d⟩ = 1656.9`
+vs stored `vhead = 1655.3` (**0.094%**) ⇒ `vhead` is unambiguously a cell average
+(injected scalar `vhead/V_cell = 2.357` a.u.). So the Q=0 head is cell-averaged;
+**every finite-Q 2D head — stored body AND arbitrary-Q rebuild — is a point value.**
+
+(b) **Point-vs-cell-average magnitude** (Part F). At the nearest-Γ exciton-band
+point `Q=(1/N,0,0)` on an N×N grid, ideal head = average over Q's OWN N×N mini-BZ
+cell (min\|Q+G*\|=\|b\|/N). By symmetry `v(\|Q+G*\|)` this also covers the
+zone-boundary G*≠0 case at the same \|Q+G*\|.
+
+| N | \|Q+G*\| (1/bohr) | v_point | v_cellavg | point/avg | rel err |
+|---|---|---|---|---|---|
+| 3 | 4.04e-1 | 0.217 | 0.248 | 0.873 | **12.7%** |
+| 6 | 2.02e-1 | 0.787 | 0.867 | 0.908 | 9.2% |
+| 12 | 1.01e-1 | 2.389 | 2.551 | 0.936 | 6.4% |
+| 24 | 5.06e-2 | 6.110 | 6.424 | 0.951 | 4.9% |
+| 48 | 2.53e-2 | 13.96 | 14.58 | 0.958 | **4.2%** |
+| interior Q=(½,0,0) | 6.07e-1 | 0.097 | 0.099 | 0.985 | 1.5% |
+
+The point value **undershoots** the cell average by 4–13% at the near-Γ point
+(convexity of 1/\|K\| across the cell), converging as the grid refines. In the BZ
+interior the error is ~1.5%. So the head-averaging error the point scheme carries
+is **bounded ~10% and largest exactly at the near-Γ / zone-boundary exciton-band
+points** where the dispersion is nonanalytic (§9.5's \|Q\| cusp).
+
+(c) **`eval_vq` has NO head-averaging step** — it evaluates the analytic point
+`v(Q+G)` (via `v_slab_on_set`) at every target Q. So exciton-band dips near Γ /
+zone boundary carry this point-vs-cell-average head error (~4–13%) *on top of* the
+SR-interpolation (7.8e-2) and b26p model (3.5e-2 head-channel) errors. Whether the
+cell average is the *right* ideal at finite Q is a modeling choice — BGW itself
+uses the point `v(Q+G)` at finite Q (`mtxel_kernel.f90:688`, "never zero head of
+exchange when using finite Q") and cell-averages ONLY at Q=0; the owner's
+generalize-to-every-Q is a defensible refinement, and (b) is its size.
+
+### 16.5 One robustness gap (not a formalism gap) — BSE-loader silent head-skip
+
+`load_bse_data_from_restart_sharded` injects the rank-1 head only when
+`g0_X is not None and inject_head` **and** `cell_volume is not None and (vhead is
+not None or whead is not None)`. `_resolve_head_params` sources `vhead/whead` ONLY
+from cohsex.in overrides or the restart datasets — **there is no HeadResolver
+recompute fallback**. If a restart carries `G0_mu_nu` but no `vhead`/`whead` (the
+6×6 interp-study fixture is exactly this shape) and cohsex.in has no override, the
+inject block is **bypassed with NO warning** → the q=0 exchange tile is silently
+head-less. Production 3×3 / 12×12 restarts DO carry `vhead`/`whead`, so live runs
+are correct; but the silent-skip is a latent gap-risk. **Recommend** (owner
+sign-off, not fixed here): a loud warning (or a HeadResolver recompute) when
+`G0_mu_nu` is present but `vhead` resolves to None with `inject_head=True`.
+
+### 16.6 VERDICT
+
+**V_coulomb is captured EXACTLY ONCE — no double-count, no formalism gap.**
+
+- The SR/LR split is algebraically exact per G including G=0 (≤1.4e-16 kernel,
+  ≤1.8e-15 tile), and the head is counted once at both ends of the Q=0↔finite-Q
+  boundary (body point value at finite Q, rank-1 mini-BZ-averaged scalar at Q=0;
+  the injection is a strict q=0-index update so finite-Q is never double-counted).
+- The "out-of-sphere zero" claim is **exact** (bit-zero, verified); the LR
+  channel's only completeness cost is the sphere-tail truncation, ≤1.8e-12 rel,
+  bounded by `exp(−cutoff/4α²)`.
+- The SR body is head-free (`v_SR(K→0)→0` for 2D; `π/α²` for 3D) — the divergence
+  lives solely in v_LR — so the interpolated channel never leaks a head.
+
+**Three bounded, named approximations (none is a double-count/gap):** (1) sphere-
+tail ~1e-12; (2) SR-interp + b26p-model interpolation error, 7.8e-2 tile / 3.5e-2
+head-channel median at 6×6 LOO (forgiven to 5.4e-3 by the physical B-metric);
+(3) **point-vs-cell-average head, 4–13% at near-Γ finite-Q points** — the arbitrary-Q
+path uses the analytic point `v(Q+G)`, cell-averaging only at exactly Q=0 (owner
+refinement quantified). **One robustness gap-risk:** the BSE-loader silently drops
+the q=0 head if `vhead`/`whead` are absent (16.5) — no live-run impact, but
+recommend a guard.

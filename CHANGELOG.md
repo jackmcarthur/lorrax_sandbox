@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-07-20: arbitrary-Q SR/LR completeness + G=0 head accounting audit → arbitrary_q_bse.md §16 [read-only audit, no source changes]
+
+Owner probe: does the arbitrary-Q V_Q split capture ALL of the Coulomb tile
+exactly (no double-count, no gap) INCLUDING the G=0 head across the Q=0↔finite-Q
+boundary? Read-only source trace + numerical proof on MoS2 3×3/6×6 fixtures;
+`primer_response_study/complete_split_head_audit.py` (imports the reference
+`REFERENCE_arbitrary_q_vq` helpers), logs/npz `complete_split_head_audit_{3x3,6x6}.*`,
+JID 56200764.
+
+- **VERDICT: V_coulomb captured EXACTLY ONCE — no double-count, no formalism gap.**
+  Kernel split `v_SR+v_LR=v` per G incl G=0 exact to ≤1.4e-16; tile split ≤1.8e-15
+  incl the isolated G=0 head sub-tile (which is up to 60% of the finite-q tile norm
+  at small q). Head counted once at both boundary ends: body point value at finite
+  Q, rank-1 mini-BZ-averaged scalar at Q=0; `apply_q0_head_rank1` is a strict
+  q=0-index update so finite-Q is never double-counted. Stored `V_qmunu[q=0]` ≡
+  head-less body (2.2e-15); `G0_mu_nu` ≡ ζ̃(0,μ,0) (exact); finite-q keeps G=0 (1e-9).
+- **"out-of-sphere zero" claim VERIFIED bit-exact** (𝒢∖sphere = 0.0e+00); the only
+  gset-vs-sphere cost is the sphere-tail truncation ≤1.8e-12 (bounded exp(−cut/4α²)).
+  SR body is head-free (`v_SR(K→0)→0` 2D; `π/α²` 3D) — divergence lives ONLY in v_LR.
+- **Owner refinement (point vs cell-average head):** q=0 `vhead` IS a mini-BZ Voronoi
+  cell average (Sobol QMC; recomputed 1656.9 vs stored 1655.3, 0.094%); 3D finite-q
+  body is MC cell-averaged; but **2D finite-q body (`compute_v_q_per_G`) AND the
+  arbitrary-Q `eval_vq` use POINT `v(Q+G)`, no averaging.** Point-vs-cell-average
+  = 4–13% at the near-Γ exciton-band point (grid-matched cell), ~1.5% BZ interior.
+  BGW also uses point v at finite Q; generalizing the cell-average is a defensible
+  owner refinement, size quantified.
+- **One robustness gap-risk (not formalism):** BSE loader `load_bse_data_from_restart_sharded`
+  SILENTLY skips the q=0 head if `G0_mu_nu` present but `vhead`/`whead` absent and no
+  cohsex.in override (`_resolve_head_params` has no recompute fallback). Live 3×3/12×12
+  restarts carry the scalars (correct); recommend a warning/guard. Filed to owner, not fixed.
+
 ## 2026-07-20: nband=80 interp reconciliation + 8v8c exciton bands [agent/bse-bands-80]
 
 - **Reconciliation (owner):** nband=80 htransform interp is REAL harm, not a
