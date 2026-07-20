@@ -1838,3 +1838,114 @@ solve cold(1 compile) 201.9 · solve warm(40 Q) 199.1.
 Artifacts: runs/MoS2/04_mos2_12x12_bands_2026-07-18/10_lorrax_exciton_bands_80interp_8v8c/
 (sp_reconcile_80_vs_40.png, sp80_aband_sweep.png, exciton_bands_40interp_8v8c.png,
 sp_dmin_40_8v8c.png, exciton_vs08_overlay.png + probes, logs).
+
+## Mini-BZ head averaging + integration branch (2026-07-20, agent/bse-integration, lorrax_A worktree lorrax_A_bse_integration)
+
+Two deliverables: (1) a consolidation branch carrying the whole BSE arc + the
+scattered threshold/Coulomb fixes on ONE branch; (2) flag-gated per-Q mini-BZ
+Coulomb-head cell-averaging for arbitrary-Q V_Q, matching the BGW recipe
+(bgw_minibz_coulomb_averaging.md) under the §16 no-double-count accounting.
+
+### 1. Consolidation branch — agent/bse-integration
+
+Base = `agent/bse-bands-perf` (27 commits: base+exciton+perf) MERGED with
+`agent/bse-bands-80` (a39b3ba full-band htransform + 5120fe4 on-grid gate-tighten).
+**Correction to the task premise:** bands-perf and bands-80 are siblings off
+**9fca293**, NOT off exciton-bands — bands-perf forked ONE commit *before* a39b3ba,
+so it LACKED the full-band htransform. A 3-way merge (base 9fca293) brings BOTH
+a39b3ba and 5120fe4 in alongside the perf work. Conflicts: `bse_setup.py` one
+comment (kept both the full-band eigenvalue-axis selection note + the mesh q-axis
+sharding note); `exciton_bands.py` auto-merged clean (perf's device-side conduction
+stacks vs bands-80's full-band window + tightened gate touched disjoint regions).
+Merge commit b65401b. `liblorrax_ffi.so` + `in_container.sh` staged into the
+worktree build dir.
+
+CONSOLIDATION MANIFEST — all 14 required feature commits reachable from HEAD:
+
+| feature | commit | present |
+|---|---|---|
+| B1 dense (k-summed) Q=0 exchange | d7b51a1 | yes |
+| trial-stack BSE matvec (scan-in-shard_map) | 11bab32 | yes |
+| single-source W-column resolvent engine | 6ffe353 | yes |
+| one compiled W-resolvent (per-q recompile kill) | 0426efe | yes |
+| finite-q W_q + kgrid_shift_map | 6ca714b/c74a189 | yes |
+| W(ω) block-Lanczos-chain | f19136e | yes |
+| non-TDA (full BSE) eigensolver + solver P1 | c4c349f | yes |
+| Krylov-exhaustion ghost clamp | 196c30b | yes |
+| pair-amp M_X/M_Y hoist | 0ecc7d7 | yes |
+| vq_interp + eval_vq (F-scheme+b26p) | 1f16ea2 | yes |
+| full-band htransform | a39b3ba | yes (via merge) |
+| on-grid gate tightening (warn 20 meV / fail 0.05 Ry) | 5120fe4 | yes (via merge) |
+| bandstructure/vq_interp perf fixes | 18f5cfb..2e90edb | yes |
+
+DELIBERATELY EXCLUDED (separate branches, pending owner decision — NOT merged):
+`agent/screening-degeneracy-fix`, `agent/bse-comms-opt`, `agent/bse-phase2-zeta-ridge`.
+
+### 2. Mini-BZ head averaging — config `head_minibz_average` (default FALSE = bit-identical)
+
+Single-source averaging routine `gw.coulomb.base.minibz_average` (bare units, no
+1/celvol — callers apply their own volume convention), two BGW branches on |Q+G*|²:
+- **|shift|²<TOL & analytic_sphere (3D)**: MC of the kernel OUTSIDE the inscribed
+  sphere (÷ full N) + analytic Baldereschi-Tosatti `4·√q0sph2·celvol·N_k/π`
+  (= 32π²√q0sph2/V_mBZ, `minibzaverage.f90:79-81`).
+- **else**: adaptive MC, `N_Q=clamp(round(N_coarse·4·q0sph2/|shift|²),1,N)`
+  (`minibzaverage.f90:63-75`). 2D slab head is a |Q| cusp → pure in-plane MC,
+  no analytic sphere.
+Helpers: `minibz_voronoi_batches` (raw-array core, nmax=1→3 widened Voronoi fold,
+seed_offset for stability checks), `minibz_inscribed_sphere_r2` (q0sph2, BGW
+`vcoul_generator.f90:296-312`). `sample_minibz_qpoints` refactored to a thin
+wrapper.
+
+Consumers (all single-source `minibz_average`):
+- `bulk_3d.q0_average(analytic_sphere=)` — 3D q→0 head gains the analytic sphere
+  term (seed-independent); nmax 1→3. Off = pure-Sobol mean, bit-identical.
+- `slab_2d.v_head_minibz_avg(shift_frac, kind)` — NEW finite-q 2D cell-average
+  path (§16.4 flagged it missing); `q0_average(analytic_sphere=)` widens nmax.
+- `vq_interp.minibz_head_vlr(zx, prep, Qfrac)` — host-side: G*=argmin_G|Q+G|,
+  returns `(gstar, <v_LR(Q+G*)>_mBZ/celvol)`. Only the LR channel is averaged.
+- `vq_interp.make_eval_vq(head_minibz_average=)` — when on, `eval_vq` takes two
+  extra runtime args `(head_val, gstar)` and REPLACES the LR point value `v[gstar]`
+  with the cell average via `jnp.where(arange==gstar, head_val, v)`. The
+  phase-factored ζ̃ model `zt` (2D winding e^{-i2θ}) and the SR body V_SR
+  (carries v_SR(Q+G*) once) are UNTOUCHED — §16 no-double-count: cell-average
+  supplies MAGNITUDE, rank-1 zt supplies ANGLE. Off path = 4-arg signature, the
+  original body, guaranteed bit-identical (the on-body reduces to it under the
+  sentinel gstar=-1, a `where` no-op).
+Flag wired: `gw_config` (`_DEFAULTS` + `HeadConfig`), `compute_q0_averages` →
+`HeadResolver` (GW head path), `exciton_bands` (`--head-minibz-average` CLI
+override + `params['head_minibz_average']`). Documented in COHSEX_INPUT.md §5.
+
+### 3. §16.5 loader head-skip guard (bse_io)
+
+`load_bse_data_from_restart_sharded`: when G0_mu_nu present + inject_head but
+vhead/whead both resolve None (and/or cell_volume None), the inject block was
+SILENTLY skipped → head-less q=0 exchange tile. Now a LOUD `RuntimeWarning` +
+stderr line naming the reason and the fix (add vhead/whead to cohsex.in or the
+restart). Recompute-from-WFN is NON-TRIVIAL at the loader (no wfn/meta/sym/S_cart)
+→ warn-only, live behavior unchanged when scalars ARE present.
+
+### 4. Validation (MoS2, 1 GPU, JID 56204148)
+
+- **(a) BIT-IDENTITY (gate):** eval_vq OFF vs ON-sentinel(gstar=-1) max|ΔV| =
+  **0.000e+00** (6×6 fixture). Independently, the pre-existing jit==host parity
+  gate `test_bse_vq_interp` passes at 1e-9 with the refactored make_eval_vq.
+- **(b) point-vs-cell-average — reproduces §16.4b EXACTLY** (MoS2 6×6, Q=(1/N,0,0)):
+  point/avg = 0.873(N3)/0.908(N6)/0.936(N12)/0.951(N24)/0.957(N48) vs the audit's
+  0.873/0.908/0.936/0.951/0.958. Point undershoots cell-average 12.7%@3×3 →
+  4.2%@48×48, matching the audit; the flag-on head lands on the fine-grid truth.
+- **(c) SEED-INDEPENDENCE:** 3D analytic-sphere head rel-spread across seeds
+  **3.0e-4** vs pure-Sobol **2.0e-2** (68× more stable — the seed-drift the analytic
+  term cures); 2D slab_lr head 1.0e-4.
+- **(d) exciton flag ON vs OFF (3×3, Γ-M-K-Γ):** Γ (q=0 production tile) shift
+  EXACTLY **0.0 meV**; near-Γ finite-Q up to **0.38 meV** (in the higher
+  exchange-driven states ev2/ev3; ev0 is direct-W-dominated, ~0), decaying to
+  0.02 meV at M. median|Δ|=0.0, max|Δ|=0.38 meV — a near-Γ effect, as §16.4b
+  predicts (head error is a near-Γ / zone-boundary phenomenon; M†VM forgives
+  most of the tile change per §13.2).
+- **(e) pytest:** 38 green across every touched file (test_bse_vq_interp,
+  test_exciton_bands, test_bse_stack_matvec, test_head_correction/_wing_schur,
+  test_qp_solver_config); full plain suite `-m 'not extra'` green (flag off default).
+
+Artifacts: reports/minibz_head_averaging_2026-07-20/ (validate_minibz.py + .npz +
+RESULTS.log, compare_exciton_flag.py + exciton_flag_shift.npz, full_suite.log,
+DESIGN_PROVENANCE.md, run_wt.sh).

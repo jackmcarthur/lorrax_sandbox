@@ -234,6 +234,33 @@ Override the screened Coulomb head W(q→0, ω=0) in atomic units.
 Override the screened Coulomb head W(q→0, ω=iω_p) in atomic units. Only used
 when `use_ppm_sigma = true`. Must be set together with `vhead` and `whead_0freq`.
 
+### `head_minibz_average` (bool, default: `false`)
+Per-Q mini-BZ Coulomb-head **cell averaging** (BGW `minibzaverage_3d`/`_2d`,
+`Common/minibzaverage.f90`). Controls whether the Coulomb head is a POINT value
+or a **mini-BZ cell average** `⟨v(q+G)⟩_mBZ` (the average of the bare Coulomb over
+the q-grid's Voronoi cell).
+
+- **`false`** (default): the historical behavior, **bit-identical**. The q→0 head
+  is the pure-Sobol mini-BZ mean and every **finite-Q** exchange head (the
+  arbitrary-Q BSE `V_Q` in `bse.exciton_bands`) is the analytic POINT value
+  `v(Q+G*)`.
+- **`true`**: routes the head through the single-source
+  `gw.coulomb.base.minibz_average`:
+  - the q→0 **3D** head gains the analytic **Baldereschi-Tosatti sphere term**
+    (`32π²√q0sph2/V_mBZ`), which makes it **seed-independent** (the pure-Sobol
+    mean drifts between seeds from the few tiny `δq → 8π/|δq|²` blow-ups);
+  - the Voronoi fold widens (`nmax 1→3`, BGW `ncell=3`) for skewed cells;
+  - the BSE arbitrary-Q `eval_vq` head becomes the mini-BZ **cell average**
+    `⟨v_LR(Q+G*)⟩_mBZ`, fixing the **4–13 % near-Γ / zone-boundary**
+    point-vs-cell-average error (arbitrary_q_bse.md §16.4). Only the LR channel
+    is averaged; the SR body carries `v_SR(Q+G*)` once (no double-count, §16).
+
+The winding is unaffected: for 2D slabs the head is a `|Q|` cusp, and the
+directional `e^{-i2θ}` structure rides the phase-factored ζ̃ rank-1 term — the
+cell average supplies only the head **magnitude**. The BSE driver
+`bse.exciton_bands` also exposes `--head-minibz-average` to override this key
+per-run.
+
 ---
 
 ## 6. GN-PPM Dynamic Self-Energy

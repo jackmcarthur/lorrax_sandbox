@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-07-20: mini-BZ head averaging (flag-gated) + BSE integration branch [agent/bse-integration, lorrax_A, unmerged]
+
+Implements the §16.4 owner refinement — per-Q mini-BZ Coulomb-head **cell averaging**
+for arbitrary-Q V_Q — on a consolidated BSE-arc branch. Report:
+reports/minibz_head_averaging_2026-07-20/; PHASE2_LOG §"Mini-BZ head averaging +
+integration branch".
+
+- **Consolidation branch `agent/bse-integration`** = `agent/bse-bands-perf`
+  (base+exciton+perf) ⋃ `agent/bse-bands-80` (a39b3ba full-band htransform +
+  5120fe4 gate-tighten), 3-way merged off the 9fca293 fork (bands-perf forked one
+  commit BEFORE a39b3ba, so it lacked full-band htransform — the merge brings it in;
+  the task's "siblings off exciton-bands" premise was off by one commit). All 14
+  required feature commits reachable (B1 dense exchange, stack matvec,
+  W-resolvent/finite-q/W(ω), non-TDA + solver P1, per-q recompile kill, pair-amp
+  hoist, vq_interp+eval_vq, Krylov ghost clamp, full-band htransform, gate-tighten,
+  perf). EXCLUDED (separate branches, pending owner): screening-degeneracy-fix,
+  bse-comms-opt, bse-phase2-zeta-ridge. Merge b65401b.
+- **`head_minibz_average` config flag (default FALSE = BIT-IDENTICAL).** ON routes
+  the head through single-source `gw.coulomb.base.minibz_average` (BGW
+  minibzaverage_3d/2d): the 3D q→0 head gains the analytic Baldereschi sphere term
+  (seed-independent), Voronoi fold widens nmax 1→3, and the BSE arbitrary-Q
+  `eval_vq` head becomes the mini-BZ cell average `<v_LR(Q+G*)>_mBZ` (only the LR
+  channel; SR body carries v_SR(Q+G*) once; the 2D winding e^{-i2θ} rides the
+  phase-factored ζ̃ rank-1 term — no double-count, §16). New
+  `slab_2d.v_head_minibz_avg` finite-q cell-average path (§16.4 flagged missing).
+  Wired through gw_config/HeadResolver/exciton_bands (+`--head-minibz-average`);
+  COHSEX_INPUT.md §5.
+- **§16.5 loader guard:** bse_io `load_bse_data_from_restart_sharded` now warns
+  loudly (was silent) when G0_mu_nu present + inject_head but vhead/whead resolve
+  None → head-less q=0 tile. Warn-only (loader can't recompute — no wfn/meta/S_cart).
+- **Validation (MoS2, 1 GPU, JID 56204148):** (a) OFF vs ON-sentinel max|ΔV|=0.0
+  BIT-IDENTICAL (+ jit==host parity gate passes); (b) point/avg 0.873→0.957 vs §16.4b
+  0.873→0.958, EXACT; (c) analytic-sphere seed-spread 3.0e-4 vs pure-Sobol 2.0e-2;
+  (d) exciton flag ON−OFF: Γ exactly 0, near-Γ finite-Q up to 0.38 meV (higher
+  states), 0.02 meV at M; (e) 38 touched-file tests + full plain suite green (flag off).
+
 ## 2026-07-20: arbitrary-Q SR/LR completeness + G=0 head accounting audit → arbitrary_q_bse.md §16 [read-only audit, no source changes]
 
 Owner probe: does the arbitrary-Q V_Q split capture ALL of the Coulomb tile
