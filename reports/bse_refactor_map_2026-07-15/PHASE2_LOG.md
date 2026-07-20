@@ -1772,3 +1772,22 @@ slightly larger (5760 q over 40 bands) but off the critical path. Env-bound
 walls per the perf-log caveat (container host-BLAS; the perf branch's
 trainer/htransform-batch speedups land at merge, .dat bit-identical).
 
+
+## 12x12 SP full-band bands + D_min diagnostic (2026-07-20) — the exciton "dips" are PHYSICAL
+
+runs/MoS2/04_mos2_12x12_bands_2026-07-18/09_spbands_12x12_fullband/. Standard
+htransform SP driver on the 12x12 WFN, FULL basis (nval=26, ncond=14, nband=40),
+DFT energies, exciton 40-pt Gamma-M-K-Gamma path. Two findings:
+1. The 12x12 SP htransform bands are CLEAN with the full basis (the earlier
+   05_htransform ugly valence was the sliver window; not a 12x12 problem).
+2. The interpolated exciton E_1 (from run 08) tracks the single-particle
+   4v4c free-pair floor D_min(Q) = min_{k,c in 26:30,v in 22:26}
+   [eps_c(k+Q) - eps_v(k)] essentially perfectly in SHAPE (aligned by the
+   Gamma binding ~0.13 eV). Every feature — the Gamma-M plateau, M dip, and
+   crucially the K->Gamma dip that looked suspicious — appears in BOTH curves.
+   The exciton nearly touches D_min at the K->Gamma dip (binding -> 0 there:
+   a nearly-free indirect pair) and sits ~0.13-0.15 eV below at the peaks.
+VERDICT: the exciton-bandstructure "unsmoothness" is genuine MoS2 indirect/
+valley dispersion, NOT interpolation error and NOT a window artifact (post
+full-band fix). The interpolated V_Q exciton bandstructure is physically
+correct. D_min uses DFT energies; shape (not absolute) is the robust signal.
