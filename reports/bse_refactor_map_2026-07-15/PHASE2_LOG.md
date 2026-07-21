@@ -2429,3 +2429,33 @@ Report `reports/gw_converged_12x12_80ry_2026-07-21/`.
 - Priority follow-up for this phase: **un-replicate `fH_R`** (shard the leading
   `nk_co` axis, or keep `fH_k` and do the R-sum inside the q-batch). Until then
   the BSE is capped at coarse k-grids regardless of hardware.
+
+### 2026-07-21 addendum: the exciton run at 80 Ry was refused by its own gate — and should have been
+
+Eight configurations (full table in `reports/gw_converged_12x12_80ry_2026-07-21`
+§5). The last satisfied every structural constraint — capacity
+`nspinor·n_μ > nk·nb`, mesh divisibility, full-BZ ζ, one rank per node, clean
+GPUs — and the physics gate still refused:
+
+```
+[gate] htransform@Γ vs stored: max|Δε_c| = 338.201 meV,
+       conduction-subspace overlap min-sval = 0.3283      (thresholds 50 / 0.5)
+```
+
+| n_k | n_μ | n_b | ctilde orth | max\|Δε_c\| | min-sval |
+|---|---|---|---|---|---|
+| 144 | 1236 | 48 | 4.9e-1 | 3577.9 meV | 0.0002 |
+| 36 | 1452 | 48 | 4.5e-14 | 361.3 meV | 0.002 |
+| 36 | 1452 | 40 | 2.5e-14 | 338.2 meV | 0.328 |
+| 36 | 1496 | 48 | 2e-14 | **9.5 meV** | **0.88** | ← 30 Ry |
+
+Narrowing the window fixed the SUBSPACE, not the ENERGIES. The discriminating
+variable is **centroid density against the real-space grid**: 1496/46 080 at
+30 Ry vs ~1450/174 960 at 80 Ry. Matching it needs **n_μ ≈ 5680**, and the
+replicated `fH_R` is then **69.2 GiB/device** (6x6) or 276.9 (12x12).
+
+**So the accuracy the gate demands and the memory the implementation demands are
+mutually exclusive at 80 Ry.** This is a resolution ceiling, not a tuning
+problem, and it is set entirely by `fH_R` being `P()`. Sharded 16 ways,
+n_μ = 5680 costs 4.3 GiB/device and the whole thing runs. **That single change
+is what unblocks the BSE on any converged reference.**

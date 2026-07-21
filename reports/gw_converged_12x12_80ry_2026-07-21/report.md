@@ -27,6 +27,14 @@ exactly the convergence signature that was hoped for.
 band** (the 6x6 run's 2.942 eV was just above it). eqp0 (no Z-linearization)
 remains high at 2.934 eV; the Z factor is doing real work here.
 
+**Stage 5 (exciton bandstructure) produced no numbers.** The BSE/htransform
+interpolation machinery has a hard resolution ceiling set by a *replicated*
+array (`fH_R`), and an 80 Ry reference is above it — reaching the accuracy the
+driver's own gate requires would need ~5680 centroids, whose replicated `fH_R`
+is 69 GiB per device. Eight configurations were tried; the constraint map and
+the arithmetic are in §5. Nothing is quoted because nothing would have been
+trustworthy.
+
 ---
 
 ## 1. What was run
@@ -486,7 +494,7 @@ config key and a clearer error.
 | path | what |
 |---|---|
 | `plots/gw_bands_converged.png` | **GW bandstructure figure** — DFT vs G0W0 on the computed 12x12 k-points along Γ–M–K–Γ |
-| `plots/mos2_exciton_bandstructure.png` | **exciton bandstructure figure** (§5) |
+| *(exciton figure)* | **not produced** — the driver's own gate refused the interpolation basis at 80 Ry; see §5. No exciton numbers are quoted. |
 | `runs/MoS2/07_mos2_ref_80Ry_12x12_400b_2026-07-21/manifest.yaml` | run manifest, `yaml.safe_load`-validated |
 
 ### Scripts (all in this report dir)
@@ -502,7 +510,7 @@ config key and a clearer error.
 | `bmax_sweep.py` | htransform b_max sweep (blocked at 12x12, §4d) |
 | `gw_bands_ongrid.py` | the GW bandstructure figure (no interpolant) |
 | `gw_bands_figure.py` | htransform figure route (kept; unusable at 12x12, §4d) |
-| `plot_exciton.py` | exciton figure, GW-referenced |
+| `plot_exciton.py` | exciton figure, GW-referenced (written and ready; no trustworthy `.dat` to feed it) |
 | `gw_probe.py` | **one** experiment driver: `--cap-gib` (replication cap), `--lift-xi` (ξ floor). No source edits. |
 | `size_gw.py` | planner sizing, 60 vs 65 GB |
 | `run_gw.sh`, `run_stage4_restart.sh`, `run_stage4_side.sh`, `run_exciton.sh`, `run_qe6x6.sh`, `setup_stage4.sh` | launchers |
@@ -627,4 +635,113 @@ the QP-solver/scissor axis is exactly zero on these outputs, and the ζ-solve ro
 is worth 30 meV on the gap and ~90 meV on the far bands.** Only two of the five
 rows change a number anyone would quote, and one of them (`c_wide_omega`) changes
 it in the wrong direction for the wrong reason.
+
+---
+
+## 10. Verification
+
+* **Sanity gate** on the production run (`logs/sanity_gate_00b.log`): **ALL PASS**
+  — Σ_x ≤ 39.9 eV, Re Σ_c ≤ 5.8 eV, **Im Σ_c ≤ 11.4 meV**, Σ sane at Γ and K for
+  both VBM and CBM, direct gap positive at every one of the 144 k, indirect
+  positive, gap opens vs DFT, rank-truncate route confirmed 16x, no NaN/Inf, no
+  errors in `gw.out`. The same gate **failed** the first production run on the
+  solver-route check alone (§2), which is the whole reason it exists.
+* **LORRAX test suite** on `agent/gw-converged-campaign` (after the htransform
+  change): **261 passed, 12 skipped, 25 deselected** (`logs/pytest_full.log`);
+  the htransform/BSE/exciton subset separately **17 passed**
+  (`logs/pytest_htransform.log`).
+* **`manifest.yaml`** parses with `yaml.safe_load` — checked, since a recent run
+  shipped invalid YAML.
+* **Planner control**: the production run reproduced the independently-computed
+  plan exactly (`r_chunk = 10192`, 18 chunks, `HWM 55.22 GB/dev`).
+* **Head control**: the campaign's `W_h(q→0, ω=0) = 3443.963338` is reproduced to
+  all printed digits by `head_convergence.py` from the same `dipole.h5`, so the
+  q=0 head path is doing what the control says.
+
+### The full constraint map for `bse.exciton_bands` at 80 Ry
+
+Seven attempts, each failing for a *different* reason. Recording all of them,
+because together they are the actual specification for running a BSE on a
+converged reference and no single one of them is documented anywhere:
+
+| # | configuration | failure |
+|---|---|---|
+| 1 | 12x12, n_μ 2412, nb 48, 16 GPU | `fH_R` = **49.93 GiB/device** (replicated) — OOM before any gate |
+| 2 | 12x12, n_μ 1236, nb 48, 16 GPU | capacity: 144·48 = 6912 states > rank 2472 → gate `max\|Δε_c\|` **3577.9 meV**, min-sval 0.0002 |
+| 3 | 6x6, n_μ 1452, nb 48, 4 GPU/1 node | `vq_interp` needs **full-BZ ζ**; orbit-closed centroids write IBZ-only (nq 20 of 36) |
+| 4 | 6x6, n_μ 1452, nb 48, 4 GPU/1 node, `LORRAX_FORCE_FULL_BZ=1` | gate `max\|Δε_c\|` **361.3 meV** — window over-packed at 80 Ry |
+| 5 | 6x6, n_μ 2382, nb 40, 4 GPU/1 node | **host** RAM OOM (`oom_kill`) — 4 ranks sharing one node's RAM |
+| 6 | 6x6, n_μ 2382, nb 40, 4 nodes x 1 rank | 12.20 GiB replicated buffer in the restart load |
+| 6b | 6x6, n_μ 2382, nb 40, 16 GPU (4x4) | **divisibility**: `n_μ = 2382` not divisible by mesh y = 4 |
+| 7 | 6x6, n_μ 1452, nb 40, 16 GPU (4x4) | **divisibility**: `nq = 36` not divisible by 16 for `P(('x','y'),None,None)` |
+| 8 | 6x6, n_μ 1452, nb 40, 2x2 mesh over 4 nodes | the only configuration that satisfies all of the above |
+
+The rules extracted, for whoever runs the next one:
+
+* `nspinor · n_μ > n_k · n_b` (**capacity**, or the fH energy recovery collapses)
+* `n_k · (nspinor·n_μ)² · 16 B` must fit **per device** (`fH_R` is replicated)
+* `n_μ` divisible by the mesh's y-extent; `n_q` divisible by `px·py`
+* the interp window `n_b` should be the BSE window plus a few guards, **not** the
+  widest window that fits — over-packing shows up as gate `|Δε_c|`, not as a
+  `ctilde` orthogonality failure
+* centroids must be **numerous enough for the real-space grid**, which at 80 Ry
+  is 3.8x denser than at 30 Ry for the same n_μ
+* orbit-closed (D3h) centroids ⇒ IBZ-only ζ ⇒ `LORRAX_FORCE_FULL_BZ=1` for `vq_interp`
+* one rank per node, not four, or the host caches OOM-kill the step
+
+### Outcome: **the exciton bandstructure could not be produced at 80 Ry**, and the reason is quantitative
+
+Attempt 8 (6x6, n_μ 1452, nb 40, 2x2 mesh over 4 nodes, clean GPUs) satisfied
+every structural constraint above and got all the way to the driver's physics
+gate, which then refused it:
+
+```
+[gate] htransform@Γ vs stored: max|Δε_c| = 338.201 meV,
+       conduction-subspace overlap min-sval = 0.3283
+AssertionError: ... interp basis broken       (thresholds: 50 meV, 0.5)
+```
+
+The trend across the three configurations that reached the gate isolates the
+cause:
+
+| n_k | n_μ | n_b | `ctilde` orth. | `max\|Δε_c\|` | min-sval |
+|---|---|---|---|---|---|
+| 144 | 1236 | 48 | 4.9e-1 | 3577.9 meV | 0.0002 |
+| 36 | 1452 | 48 | 4.5e-14 | 361.3 meV | 0.002 |
+| 36 | 1452 | **40** | 2.5e-14 | **338.2 meV** | **0.3283** |
+| *36* | *1496* | *48* | *2e-14* | ***9.5 meV*** | ***0.88*** | ← **30 Ry**, for reference |
+
+Narrowing the window fixed the *subspace* (min-sval 0.002 → 0.328) but barely
+moved the *energy* error (361 → 338 meV). What separates the last row from the
+others is not the window and not the k-grid — it is that the 30 Ry run had
+**1496 centroids over 46 080 grid points** while the 80 Ry runs have ~1450 over
+**174 960**. Matching that centroid density at 80 Ry needs
+
+  n_μ = 1496 × 174960/46080 ≈ **5680**
+
+and the replicated `fH_R` at that size is
+
+| n_k | n_μ | `fH_R` replicated |
+|---|---|---|
+| 36 | 1452 | 4.5 GiB |
+| 36 | 2382 | 12.2 GiB |
+| 36 | **5680** | **69.2 GiB / device** |
+| 144 | 5680 | 276.9 GiB / device |
+
+**69 GiB per device, replicated, on top of the BSE tensors — it does not fit on
+an A100-80GB, and no device count changes it.** So at 80 Ry the interpolation
+accuracy the gate demands and the memory the implementation demands are
+mutually exclusive. That is the finding: **not "the exciton run failed", but
+"the exciton machinery has a hard resolution ceiling set by a replicated
+array, and an 80 Ry reference is above it."**
+
+The driver's gate is doing exactly the right thing by refusing — a 338 meV
+error in the recovered conduction energies would have produced a plausible-looking
+exciton band structure with meaningless binding energies. **No exciton numbers
+are reported, because none of them would have been trustworthy.**
+
+**The unblock is item 2 of §8**: shard `fH_R`. With it sharded 16 ways, n_μ =
+5680 costs 4.3 GiB/device and the whole thing runs. Until then the previous
+exciton figure (`A_bse_figures_2026-07-20`, 30 Ry) remains the most recent
+trustworthy one, and it is trustworthy *because* it sits below this ceiling.
 

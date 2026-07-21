@@ -89,6 +89,24 @@ not. So **ω-grid and ξ-floor are one knob**: widening ω to cure the far-band
 clamp requires raising `_CROSSING_A_MAX` in the same change, and §4(a) shows
 that costs only ~7 meV now.
 
+**Addendum — stage 5 (exciton bandstructure) produced NO numbers, and that is
+the result.** Eight configurations, each failing for a different documented
+reason (full constraint map in the report §5). The last one satisfied every
+structural constraint and was refused by the driver's own physics gate:
+`max|Δε_c| = 338.2 meV, min-sval = 0.3283` against thresholds 50 meV / 0.5.
+Narrowing the interp window fixed the subspace (min-sval 0.002 → 0.328) but not
+the energies (361 → 338 meV). The cause is centroid density, not the window or
+the k-grid: the 30 Ry run that passed at 9.5 meV had 1496 centroids over 46 080
+grid points; 80 Ry has 174 960, so matching it needs **n_μ ≈ 5680**, whose
+**replicated** `fH_R` is **69.2 GiB/device** at 6x6 (276.9 at 12x12). Accuracy
+and memory are mutually exclusive here. **The BSE/htransform stack has a hard
+resolution ceiling set by one replicated array, and an 80 Ry reference is above
+it.** Un-sharding `fH_R` (16-way → 4.3 GiB/device at n_μ = 5680) is the unblock.
+Nothing was quoted because a 338 meV error in the recovered conduction energies
+would have produced plausible-looking exciton bands with meaningless binding
+energies — the gate was right to refuse.
+
+
 ## 2026-07-21: BAND-RANGE-weighted centroids (the vacuum-support cure) + zeta_rcond 1e-8 + MoS2 production GW figure
 
 Branch `agent/gw-conduction-postfix` @ `b7654ee` (worktree

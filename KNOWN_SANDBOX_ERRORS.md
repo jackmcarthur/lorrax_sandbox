@@ -793,3 +793,28 @@ the default asked for 51.6 GB in a single allocation.  Fixed on
 `agent/gw-converged-campaign` (`5e50b8e`): the parameter is now a ceiling,
 lowered so a chunk stays under 6 GiB.  Memory-only (band chunking is a pure
 accumulation split), and it is what let stages 4(d) and 5 run at all.
+
+## 2026-07-21 (addendum): `bse.exciton_bands` has a RESOLUTION ceiling at 80 Ry, set by the replicated `fH_R`
+
+Extends entry (2) above with the quantitative version, after eight
+configurations on the converged reference
+(`reports/gw_converged_12x12_80ry_2026-07-21` §5 has the full table).
+
+- The driver's physics gate (`max|Δε_c|` at Γ < 50 meV, subspace min-sval > 0.5)
+  is the binding constraint, not any of the structural ones. Best achieved:
+  **338.2 meV / 0.3283** — refused, correctly.
+- The discriminating variable is **centroid density against the real-space
+  grid**, not the interpolation window and not the k-grid. The 30 Ry run that
+  passes at 9.5 meV has 1496 centroids over 46 080 grid points; 80 Ry has
+  174 960 points, so matching needs **n_μ ≈ 5680**.
+- `bse_setup.compute_wfns_fi` replicates `fH_R (nk, ns·n_μ, ns·n_μ)` c128, so
+  n_μ = 5680 costs **69.2 GiB/device** at 6x6 and **276.9 GiB/device** at 12x12.
+  Accuracy and memory are therefore mutually exclusive at 80 Ry on any GPU.
+- **Fix**: shard `fH_R`. 16-way, n_μ = 5680 is 4.3 GiB/device and the run fits.
+- Other rules discovered along the way, all undocumented, all load-bearing:
+  `nspinor·n_μ > nk·nb` (capacity); `n_μ` divisible by the mesh y-extent and
+  `n_q` by `px·py` (two separate `ValueError`s); orbit-closed D3h centroids write
+  IBZ-only ζ while `vq_interp` demands full-BZ, joined only by the env var
+  `LORRAX_FORCE_FULL_BZ=1`; and the interp window must be the BSE window plus a
+  few guards (over-packing shows up in the gate's ENERGY metric, not in `ctilde`
+  orthogonality, which stays at 1e-14 while the energies are 361 meV wrong).
