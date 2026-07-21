@@ -591,3 +591,79 @@ add sources/worktrees/lorrax_A_x` (relative dest) silently created the worktree 
 `/global/u2/.../lorrax_A/sources/worktrees/...` (home FS) instead of pscratch —
 import failures downstream. Not a doc error; the trap is symlink + `-C` + relative
 dest. FIX: always use an ABSOLUTE destination path for `git worktree add`.
+
+## 2026-07-20 — Crashed GW/JAX runs leave multi-GB GPU zombies → cascading OOMs
+
+When a `gw_jax`/GN-PPM run aborts (assert, OOM, kill) under `TF_GPU_ALLOCATOR=cuda_malloc_async`, the async allocator does **not** release device memory on abort — the process lingers holding ~10 GB, and the next sequential `srun` on the same node OOMs on startup for no logical reason. Seen during the ppm-sigma bisect/regularization sweeps (many back-to-back GN-PPM reruns). Not a doc error. WORKAROUND: between sequential GPU runs, kill leftovers explicitly — `nvidia-smi --query-compute-apps=pid --format=csv,noheader | xargs -r kill -9` (or check `nvidia-smi` and reap stale PIDs) before the next launch; or space runs across nodes.
+
+**2026-07-21 symptom refinement (rank-truncation validation):** the leftover-zombie failure does NOT always present as an OOM. Running a **bispinor** GN-PPM immediately after a scalar GN-PPM on the same GPU (no reap) crashed instead in the bispinor V_q companion-tile reader with `INVALID_ARGUMENT: phdf5 read: negative offset/valid_shape at dim 0 offset=-9223372036854775808` (INT64_MIN) — a garbage SlabIO offset, deep in `v_q_bispinor.py:get_tile → slab_io.read_slab`, with a totally misleading stack that looks like an FFI/HDF5 bug. It is the **same zombie**: a `nvidia-smi ... | xargs -r kill -9` reap before the run makes it disappear (verified — clean reap → rc=0, identical config). Takeaway: ALWAYS reap between sequential GPU `gw_jax` runs; a phdf5 negative-offset crash is a zombie tell, not a code bug.
+
+## 2026-07-21: command sandbox cleanup can panic on the synthetic `.agents` mount
+
+- **Where**: a read-only `exec_command` from the sandbox root after reading the
+  required session documents.
+- **Symptom**: the command produced its expected output, then the wrapper emitted
+  `failed to remove synthetic bubblewrap mount target .../.agents: Resource busy`
+  from `linux-sandbox/src/linux_run_main.rs`.
+- **Impact/workaround**: no data loss or failed read was observed. Treat the wrapper
+  panic as infrastructure noise when the requested command output is complete; avoid
+  relying on the resulting exit status alone to decide whether the command ran.
+
+## 2026-07-21: W(omega)-chain manifest names a missing local report
+
+- **Where**: `runs/MoS2/A_bse_w_omega_chain_2026-07-16/manifest.yaml`, in the
+  artifact list.
+- **What is wrong**: the manifest lists `report.md`, but no such file exists in
+  that run directory.
+- **Actual documentation**: the convergence, timing, and validation write-up is
+  in `reports/bse_refactor_map_2026-07-15/PHASE2_LOG.md`, under
+  `W(omega) Lanczos-chain model (2026-07-16, agent/bse-phase2, lorrax_A)`.
+
+## 2026-07-21: PPM regularization commit names a missing report
+
+- **Where**: LORRAX commit `d011a36` (`agent/gw-ppm-sigma-reg`) says its report
+  is `reports/gw_ppm_sigma_regularization_2026-07-20/`.
+- **What is wrong**: that directory exists but contains only `scratch/` logs and
+  analysis scripts; there is no `report.md` or equivalent standalone write-up.
+- **Available record**: use the detailed commit message/diff and the 2026-07-21
+  rank-truncation entry in `CHANGELOG.md` for the HGL crossing-width fix and its
+  validation status.
+
+## 2026-07-21: rank-truncation changelog entry names a missing report
+
+- **Where**: the 2026-07-21 `CHANGELOG.md` entry points to
+  `reports/gw_rank_truncation_2026-07-20/` as the feature report.
+- **What is wrong**: the directory contains only
+  `rank_truncation_recovery.png`; no `report.md` or other text report is present.
+- **Available record**: use the detailed changelog entry and LORRAX commit
+  `23af6b9` for the implementation and validation claims.
+
+## 2026-07-21: `runs/MoS2/A_bse_figures_2026-07-20/manifest.yaml` was not valid YAML
+
+- **Where**: `runs/MoS2/A_bse_figures_2026-07-20/manifest.yaml`, `steps:` block.
+- **What was wrong**: two keys were written `key:{ ... }` with no space after the
+  colon (`02_lorrax_gw_d3h_16gpu:{`, `01_lorrax_exciton_bands:{`). YAML requires
+  a space before a flow mapping, so `yaml.safe_load` failed with
+  `ScannerError: mapping values are not allowed here`. Every run directory is
+  required by `AGENTS.md` to carry a manifest; a manifest no tool can parse is a
+  silent failure — nothing reads these, so it went unnoticed since 2026-07-20.
+- **Fixed**: space inserted after both colons; the file now parses and all six
+  steps load. Swept the other `runs/*/*/manifest.yaml` for the same typo — none.
+- **Suggested guard**: a `yaml.safe_load` check on every `manifest.yaml` would
+  belong in the checkpoint routine (`skills/checkpoint/SKILL.md`); today nothing
+  validates them.
+
+## 2026-07-21: `zeta_rcond` sweep claim in the rank-truncation record is too strong
+
+- **Where**: the 2026-07-21 `CHANGELOG.md` rank-truncation entry and the
+  `charge_zeta_solve` section of `docs/docs_gwjax/COHSEX_INPUT.md`, which stated
+  that well-conditioned CCTs (n_μ ≤ pair-density rank) "are unaffected:
+  rank_truncate drops ~0 modes and equals cholesky within ~1e-13".
+- **What is wrong**: true for MoS₂ 4×4/640c, false in general. Bulk Si 4×4×4 /
+  960 centroids — the `si_cohsex_3d` BGW anchor — has CCT spectrum below
+  `1e-6·λ_max`, and the new default shifts its `sigTOT` by 1.02 meV
+  (`VH` column by 2.49 meV), i.e. above its 0.48 meV agreement with BerkeleyGW.
+  Measured sweep is in `reports/gw_conduction_postfix_2026-07-21/si_rcond_sweep.sh`
+  and is now quoted in the docs and in the fixture input.
+- **Consequence**: the Si fixture pins `zeta_rcond = 1e-10` so the BGW anchor is
+  not silently re-frozen onto a LORRAX self-value.

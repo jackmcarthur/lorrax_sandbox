@@ -1,0 +1,404 @@
+.................................................sssssssssss.s.......... [ 32%]
+.........................FFF..........F................................. [ 65%]
+........................................................................ [ 98%]
+...                                                                      [100%]
+=================================== FAILURES ===================================
+_________________ test_gw_jax_matches_reference[si_cohsex_3d] __________________
+
+output_file = PosixPath('/tmp/pytest-of-jackm/pytest-0/test_gw_jax_matches_reference_1/si_cohsex_debug/eqp_si_test.dat')
+reference_file = PosixPath('/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_gw_conduction_postfix/tests/regression/si_cohsex_debug/eqp_si_ref.dat')
+labels = ('sigSX', 'sigCOH', 'sigTOT'), atol = 0.001, case_id = 'si_cohsex_3d'
+
+    def _assert_matches_reference(output_file, reference_file, labels, atol,
+                                  case_id):
+        assert output_file.exists(), f"no output written: {output_file}"
+        if output_file.read_text() == reference_file.read_text():
+            return
+        ref_rows = parse_eqp_rows(reference_file, labels)
+        out_rows = parse_eqp_rows(output_file, labels)
+        assert out_rows.shape == ref_rows.shape, (
+            f"Row-count mismatch: output {out_rows.shape}, "
+            f"reference {ref_rows.shape}")
+        # Compare only real-valued physics columns: kpt, band, <3 Σ>, VH_re
+        # (byte-identity above is the primary check; this atol path only
+        # absorbs GPU-nondeterministic last-ULP drift).
+        try:
+>           np.testing.assert_allclose(
+                out_rows[:, :6], ref_rows[:, :6], rtol=0.0, atol=atol)
+E               AssertionError: 
+E               Not equal to tolerance rtol=0, atol=0.001
+E               
+E               Mismatched elements: 188 / 23040 (0.816%)
+E               First 5 mismatches are at indices:
+E                [52, 5]: 1.965771 (ACTUAL), 1.964331 (DESIRED)
+E                [53, 5]: 1.965771 (ACTUAL), 1.964331 (DESIRED)
+E                [54, 5]: 1.965771 (ACTUAL), 1.964331 (DESIRED)
+E                [55, 5]: 1.965771 (ACTUAL), 1.964331 (DESIRED)
+E                [56, 5]: 1.965771 (ACTUAL), 1.964331 (DESIRED)
+E               Max absolute difference among violations: 0.00249
+E               Max relative difference among violations: 0.10132648
+E                ACTUAL: array([[  0.      ,   0.      ,  -4.474531,  -8.959726, -13.434258,
+E                         3.317658],
+E                      [  0.      ,   1.      ,  -4.474531,  -8.959726, -13.434258,...
+E                DESIRED: array([[  0.      ,   0.      ,  -4.474456,  -8.959738, -13.434194,
+E                         3.317605],
+E                      [  0.      ,   1.      ,  -4.474456,  -8.959738, -13.434194,...
+
+tests/test_gw_jax_regression.py:69: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/tmp/pytest-of-jackm/pytest-0/test_gw_jax_matches_reference_1')
+case_id = 'si_cohsex_3d'
+case_dir = PosixPath('/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_gw_conduction_postfix/tests/regression/si_cohsex_debug')
+input_name = 'cohsex_si_test.in', output_name = 'eqp_si_test.dat'
+ref_name = 'eqp_si_ref.dat', labels = ('sigSX', 'sigCOH', 'sigTOT')
+atol = 0.001
+
+    @pytest.mark.regression
+    @pytest.mark.parametrize(
+        "case_id,case_dir,input_name,output_name,ref_name,labels,atol",
+        _CASES,
+        ids=[c[0] for c in _CASES],
+    )
+    def test_gw_jax_matches_reference(
+        tmp_path, case_id, case_dir, input_name, output_name, ref_name, labels, atol
+    ):
+        skip_unless_gpu(pytest)
+        reference_file = case_dir / ref_name
+        assert (case_dir / input_name).exists(), f"missing input: {input_name}"
+        assert reference_file.exists(), f"missing reference: {reference_file}"
+    
+        run_dir = copy_fixture(case_dir, tmp_path / case_dir.name)
+        result = run_gw_jax(run_dir, input_name)
+        if result.returncode != 0:
+            pytest.fail(
+                f"{case_id} regression run failed.\n"
+                f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}")
+>       _assert_matches_reference(
+            run_dir / output_name, reference_file, labels, atol, case_id)
+
+tests/test_gw_jax_regression.py:96: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+output_file = PosixPath('/tmp/pytest-of-jackm/pytest-0/test_gw_jax_matches_reference_1/si_cohsex_debug/eqp_si_test.dat')
+reference_file = PosixPath('/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_gw_conduction_postfix/tests/regression/si_cohsex_debug/eqp_si_ref.dat')
+labels = ('sigSX', 'sigCOH', 'sigTOT'), atol = 0.001, case_id = 'si_cohsex_3d'
+
+    def _assert_matches_reference(output_file, reference_file, labels, atol,
+                                  case_id):
+        assert output_file.exists(), f"no output written: {output_file}"
+        if output_file.read_text() == reference_file.read_text():
+            return
+        ref_rows = parse_eqp_rows(reference_file, labels)
+        out_rows = parse_eqp_rows(output_file, labels)
+        assert out_rows.shape == ref_rows.shape, (
+            f"Row-count mismatch: output {out_rows.shape}, "
+            f"reference {ref_rows.shape}")
+        # Compare only real-valued physics columns: kpt, band, <3 Σ>, VH_re
+        # (byte-identity above is the primary check; this atol path only
+        # absorbs GPU-nondeterministic last-ULP drift).
+        try:
+            np.testing.assert_allclose(
+                out_rows[:, :6], ref_rows[:, :6], rtol=0.0, atol=atol)
+        except AssertionError as exc:
+>           pytest.fail(
+                f"{case_id} output differs from reference beyond tolerance.\n{exc}")
+E           Failed: si_cohsex_3d output differs from reference beyond tolerance.
+E           
+E           Not equal to tolerance rtol=0, atol=0.001
+E           
+E           Mismatched elements: 188 / 23040 (0.816%)
+E           First 5 mismatches are at indices:
+E            [52, 5]: 1.965771 (ACTUAL), 1.964331 (DESIRED)
+E            [53, 5]: 1.965771 (ACTUAL), 1.964331 (DESIRED)
+E            [54, 5]: 1.965771 (ACTUAL), 1.964331 (DESIRED)
+E            [55, 5]: 1.965771 (ACTUAL), 1.964331 (DESIRED)
+E            [56, 5]: 1.965771 (ACTUAL), 1.964331 (DESIRED)
+E           Max absolute difference among violations: 0.00249
+E           Max relative difference among violations: 0.10132648
+E            ACTUAL: array([[  0.      ,   0.      ,  -4.474531,  -8.959726, -13.434258,
+E                     3.317658],
+E                  [  0.      ,   1.      ,  -4.474531,  -8.959726, -13.434258,...
+E            DESIRED: array([[  0.      ,   0.      ,  -4.474456,  -8.959738, -13.434194,
+E                     3.317605],
+E                  [  0.      ,   1.      ,  -4.474456,  -8.959738, -13.434194,...
+
+tests/test_gw_jax_regression.py:72: Failed
+_________________________ test_gnppm_matches_reference _________________________
+
+output_file = PosixPath('/tmp/pytest-of-jackm/pytest-0/gnppm_debug_session0/gnppm_debug/sigma_diag_gnppm_test.dat')
+reference_file = PosixPath('/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_gw_conduction_postfix/tests/regression/gnppm_debug/sigma_diag_gnppm_ref.dat')
+labels = ('sigX', 'sigC', 'sigXC'), atol = 1e-06, case_id = 'gnppm'
+
+    def _assert_matches_reference(output_file, reference_file, labels, atol,
+                                  case_id):
+        assert output_file.exists(), f"no output written: {output_file}"
+        if output_file.read_text() == reference_file.read_text():
+            return
+        ref_rows = parse_eqp_rows(reference_file, labels)
+        out_rows = parse_eqp_rows(output_file, labels)
+        assert out_rows.shape == ref_rows.shape, (
+            f"Row-count mismatch: output {out_rows.shape}, "
+            f"reference {ref_rows.shape}")
+        # Compare only real-valued physics columns: kpt, band, <3 Σ>, VH_re
+        # (byte-identity above is the primary check; this atol path only
+        # absorbs GPU-nondeterministic last-ULP drift).
+        try:
+>           np.testing.assert_allclose(
+                out_rows[:, :6], ref_rows[:, :6], rtol=0.0, atol=atol)
+E               AssertionError: 
+E               Not equal to tolerance rtol=0, atol=1e-06
+E               
+E               Mismatched elements: 1656 / 2484 (66.7%)
+E               First 5 mismatches are at indices:
+E                [0, 2]: -40.090021 (ACTUAL), -40.085522 (DESIRED)
+E                [0, 3]: 3.841773 (ACTUAL), 3.846213 (DESIRED)
+E                [0, 4]: -36.248248 (ACTUAL), -36.239309 (DESIRED)
+E                [0, 5]: 594.854735 (ACTUAL), 592.980472 (DESIRED)
+E                [1, 2]: -40.090021 (ACTUAL), -40.085522 (DESIRED)
+E               Max absolute difference among violations: 7.842044
+E               Max relative difference among violations: 0.15773817
+E                ACTUAL: array([[  0.      ,   0.      , -40.090021,   3.841773, -36.248248,
+E                       594.854735],
+E                      [  0.      ,   1.      , -40.090021,   3.841773, -36.248248,...
+E                DESIRED: array([[  0.      ,   0.      , -40.085522,   3.846213, -36.239309,
+E                       592.980472],
+E                      [  0.      ,   1.      , -40.085522,   3.846213, -36.239309,...
+
+tests/test_gw_jax_regression.py:69: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+gnppm_session = namespace(run_dir=PosixPath('/tmp/pytest-of-jackm/pytest-0/gnppm_debug_session0/gnppm_debug'), input_name='gnppm_test....  0.821       0.821    4.1\n    sigma.exec                                         1       3.875       3.875   19.5\n')
+
+    @pytest.mark.regression
+    def test_gnppm_matches_reference(gnppm_session):
+        """MoS2 3×3 GN-PPM frozen gate, on the session run (Tier-2's state)."""
+>       _assert_matches_reference(
+            gnppm_session.run_dir / gnppm_session.output_name,
+            REG / "gnppm_debug" / "sigma_diag_gnppm_ref.dat",
+            ("sigX", "sigC", "sigXC"), 1e-6, "gnppm")
+
+tests/test_gw_jax_regression.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+output_file = PosixPath('/tmp/pytest-of-jackm/pytest-0/gnppm_debug_session0/gnppm_debug/sigma_diag_gnppm_test.dat')
+reference_file = PosixPath('/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_gw_conduction_postfix/tests/regression/gnppm_debug/sigma_diag_gnppm_ref.dat')
+labels = ('sigX', 'sigC', 'sigXC'), atol = 1e-06, case_id = 'gnppm'
+
+    def _assert_matches_reference(output_file, reference_file, labels, atol,
+                                  case_id):
+        assert output_file.exists(), f"no output written: {output_file}"
+        if output_file.read_text() == reference_file.read_text():
+            return
+        ref_rows = parse_eqp_rows(reference_file, labels)
+        out_rows = parse_eqp_rows(output_file, labels)
+        assert out_rows.shape == ref_rows.shape, (
+            f"Row-count mismatch: output {out_rows.shape}, "
+            f"reference {ref_rows.shape}")
+        # Compare only real-valued physics columns: kpt, band, <3 Σ>, VH_re
+        # (byte-identity above is the primary check; this atol path only
+        # absorbs GPU-nondeterministic last-ULP drift).
+        try:
+            np.testing.assert_allclose(
+                out_rows[:, :6], ref_rows[:, :6], rtol=0.0, atol=atol)
+        except AssertionError as exc:
+>           pytest.fail(
+                f"{case_id} output differs from reference beyond tolerance.\n{exc}")
+E           Failed: gnppm output differs from reference beyond tolerance.
+E           
+E           Not equal to tolerance rtol=0, atol=1e-06
+E           
+E           Mismatched elements: 1656 / 2484 (66.7%)
+E           First 5 mismatches are at indices:
+E            [0, 2]: -40.090021 (ACTUAL), -40.085522 (DESIRED)
+E            [0, 3]: 3.841773 (ACTUAL), 3.846213 (DESIRED)
+E            [0, 4]: -36.248248 (ACTUAL), -36.239309 (DESIRED)
+E            [0, 5]: 594.854735 (ACTUAL), 592.980472 (DESIRED)
+E            [1, 2]: -40.090021 (ACTUAL), -40.085522 (DESIRED)
+E           Max absolute difference among violations: 7.842044
+E           Max relative difference among violations: 0.15773817
+E            ACTUAL: array([[  0.      ,   0.      , -40.090021,   3.841773, -36.248248,
+E                   594.854735],
+E                  [  0.      ,   1.      , -40.090021,   3.841773, -36.248248,...
+E            DESIRED: array([[  0.      ,   0.      , -40.085522,   3.846213, -36.239309,
+E                   592.980472],
+E                  [  0.      ,   1.      , -40.085522,   3.846213, -36.239309,...
+
+tests/test_gw_jax_regression.py:72: Failed
+____________________ test_bispinor_gnppm_matches_reference _____________________
+
+output_file = PosixPath('/tmp/pytest-of-jackm/pytest-0/bispinor_debug_session0/bispinor_debug/sigma_diag_bispinor_test.dat')
+reference_file = PosixPath('/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_gw_conduction_postfix/tests/regression/bispinor_debug/sigma_diag_bispinor_ref.dat')
+labels = ('sigX', 'sigC', 'sigXC'), atol = 1e-06, case_id = 'bispinor'
+
+    def _assert_matches_reference(output_file, reference_file, labels, atol,
+                                  case_id):
+        assert output_file.exists(), f"no output written: {output_file}"
+        if output_file.read_text() == reference_file.read_text():
+            return
+        ref_rows = parse_eqp_rows(reference_file, labels)
+        out_rows = parse_eqp_rows(output_file, labels)
+        assert out_rows.shape == ref_rows.shape, (
+            f"Row-count mismatch: output {out_rows.shape}, "
+            f"reference {ref_rows.shape}")
+        # Compare only real-valued physics columns: kpt, band, <3 Σ>, VH_re
+        # (byte-identity above is the primary check; this atol path only
+        # absorbs GPU-nondeterministic last-ULP drift).
+        try:
+>           np.testing.assert_allclose(
+                out_rows[:, :6], ref_rows[:, :6], rtol=0.0, atol=atol)
+E               AssertionError: 
+E               Not equal to tolerance rtol=0, atol=1e-06
+E               
+E               Mismatched elements: 1080 / 1620 (66.7%)
+E               First 5 mismatches are at indices:
+E                [0, 2]: -37.098912 (ACTUAL), -37.090184 (DESIRED)
+E                [0, 3]: 1.394599 (ACTUAL), 1.349857 (DESIRED)
+E                [0, 4]: -35.704313 (ACTUAL), -35.740327 (DESIRED)
+E                [0, 5]: 595.5933 (ACTUAL), 595.513102 (DESIRED)
+E                [1, 2]: -37.098912 (ACTUAL), -37.090184 (DESIRED)
+E               Max absolute difference among violations: 1.168265
+E               Max relative difference among violations: 5.03745318
+E                ACTUAL: array([[ 0.000000e+00,  0.000000e+00, -3.709891e+01,  1.394599e+00,
+E                       -3.570431e+01,  5.955933e+02],
+E                      [ 0.000000e+00,  1.000000e+00, -3.709891e+01,  1.394599e+00,...
+E                DESIRED: array([[ 0.000000e+00,  0.000000e+00, -3.709018e+01,  1.349857e+00,
+E                       -3.574033e+01,  5.955131e+02],
+E                      [ 0.000000e+00,  1.000000e+00, -3.709018e+01,  1.349857e+00,...
+
+tests/test_gw_jax_regression.py:69: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+bispinor_session = namespace(run_dir=PosixPath('/tmp/pytest-of-jackm/pytest-0/bispinor_debug_session0/bispinor_debug'), input_name='bispi...  0.944       0.944    1.9\n    sigma.exec                                         1       3.138       3.138    6.2\n')
+
+    @pytest.mark.regression
+    def test_bispinor_gnppm_matches_reference(bispinor_session):
+        """Bispinor GN-PPM frozen gate (Σ^B folded into sigX)."""
+>       _assert_matches_reference(
+            bispinor_session.run_dir / bispinor_session.output_name,
+            REG / "bispinor_debug" / "sigma_diag_bispinor_ref.dat",
+            ("sigX", "sigC", "sigXC"), 1e-6, "bispinor")
+
+tests/test_gw_jax_regression.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+output_file = PosixPath('/tmp/pytest-of-jackm/pytest-0/bispinor_debug_session0/bispinor_debug/sigma_diag_bispinor_test.dat')
+reference_file = PosixPath('/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_gw_conduction_postfix/tests/regression/bispinor_debug/sigma_diag_bispinor_ref.dat')
+labels = ('sigX', 'sigC', 'sigXC'), atol = 1e-06, case_id = 'bispinor'
+
+    def _assert_matches_reference(output_file, reference_file, labels, atol,
+                                  case_id):
+        assert output_file.exists(), f"no output written: {output_file}"
+        if output_file.read_text() == reference_file.read_text():
+            return
+        ref_rows = parse_eqp_rows(reference_file, labels)
+        out_rows = parse_eqp_rows(output_file, labels)
+        assert out_rows.shape == ref_rows.shape, (
+            f"Row-count mismatch: output {out_rows.shape}, "
+            f"reference {ref_rows.shape}")
+        # Compare only real-valued physics columns: kpt, band, <3 Σ>, VH_re
+        # (byte-identity above is the primary check; this atol path only
+        # absorbs GPU-nondeterministic last-ULP drift).
+        try:
+            np.testing.assert_allclose(
+                out_rows[:, :6], ref_rows[:, :6], rtol=0.0, atol=atol)
+        except AssertionError as exc:
+>           pytest.fail(
+                f"{case_id} output differs from reference beyond tolerance.\n{exc}")
+E           Failed: bispinor output differs from reference beyond tolerance.
+E           
+E           Not equal to tolerance rtol=0, atol=1e-06
+E           
+E           Mismatched elements: 1080 / 1620 (66.7%)
+E           First 5 mismatches are at indices:
+E            [0, 2]: -37.098912 (ACTUAL), -37.090184 (DESIRED)
+E            [0, 3]: 1.394599 (ACTUAL), 1.349857 (DESIRED)
+E            [0, 4]: -35.704313 (ACTUAL), -35.740327 (DESIRED)
+E            [0, 5]: 595.5933 (ACTUAL), 595.513102 (DESIRED)
+E            [1, 2]: -37.098912 (ACTUAL), -37.090184 (DESIRED)
+E           Max absolute difference among violations: 1.168265
+E           Max relative difference among violations: 5.03745318
+E            ACTUAL: array([[ 0.000000e+00,  0.000000e+00, -3.709891e+01,  1.394599e+00,
+E                   -3.570431e+01,  5.955933e+02],
+E                  [ 0.000000e+00,  1.000000e+00, -3.709891e+01,  1.394599e+00,...
+E            DESIRED: array([[ 0.000000e+00,  0.000000e+00, -3.709018e+01,  1.349857e+00,
+E                   -3.574033e+01,  5.955131e+02],
+E                  [ 0.000000e+00,  1.000000e+00, -3.709018e+01,  1.349857e+00,...
+
+tests/test_gw_jax_regression.py:72: Failed
+_____________________ test_fixed_point_frozen_qp_rotations _____________________
+
+gnppm_restart_baseline = namespace(run_dir=PosixPath('/tmp/pytest-of-jackm/pytest-0/gnppm_restart0/baseline'), input_name='gnppm_test.in', outp... 0.821       0.821    4.1\n    sigma.exec                                         1       3.875       3.875   19.5\n'))
+tmp_path = PosixPath('/tmp/pytest-of-jackm/pytest-0/test_fixed_point_frozen_qp_rot0')
+
+    @pytest.mark.regression
+    def test_fixed_point_frozen_qp_rotations(gnppm_restart_baseline, tmp_path):
+        import h5py
+    
+        ref_file = _GNPPM / "eqp_rotations_fixedpoint_ref.npy"
+        assert ref_file.exists(), f"missing frozen reference: {ref_file}"
+        base = gnppm_restart_baseline
+        fp_dir, _ = _run_restart_variant(
+            tmp_path, base.session, "fixed_point",
+            extra_mutations={"qp_solver = one_shot_dft": "qp_solver = fixed_point"})
+        rot_file = fp_dir / "qp_wfn_rotations.h5"
+        assert rot_file.exists(), f"missing {rot_file}"
+        with h5py.File(rot_file, "r") as f:
+            e_qp_ry = np.asarray(f["E_qp_nk_rydberg"])
+        e_ref_ry = np.load(ref_file)
+        assert e_qp_ry.shape == e_ref_ry.shape, (
+            f"shape mismatch: {e_qp_ry.shape} vs frozen {e_ref_ry.shape}")
+>       np.testing.assert_allclose(e_qp_ry, e_ref_ry, rtol=0.0, atol=1e-6)
+E       AssertionError: 
+E       Not equal to tolerance rtol=0, atol=1e-06
+E       
+E       Mismatched elements: 414 / 414 (100%)
+E       First 5 mismatches are at indices:
+E        [0, 0]: -5.516352588538328 (ACTUAL), -5.651373851027472 (DESIRED)
+E        [0, 1]: -5.51635258825251 (ACTUAL), -5.651373850865935 (DESIRED)
+E        [0, 2]: -3.5386171619613047 (ACTUAL), -3.5312816531184805 (DESIRED)
+E        [0, 3]: -3.538617161879689 (ACTUAL), -3.531281652998525 (DESIRED)
+E        [0, 4]: -3.378858456038802 (ACTUAL), -3.3513514974915437 (DESIRED)
+E       Max absolute difference among violations: 0.58472706
+E       Max relative difference among violations: 56.58647319
+E        ACTUAL: array([[-5.516353e+00, -5.516353e+00, -3.538617e+00, -3.538617e+00,
+E               -3.378858e+00, -3.378858e+00, -3.265308e+00, -3.265308e+00,
+E               -1.565534e+00, -1.565534e+00, -1.472628e+00, -1.472628e+00,...
+E        DESIRED: array([[-5.651374e+00, -5.651374e+00, -3.531282e+00, -3.531282e+00,
+E               -3.351351e+00, -3.351351e+00, -3.282746e+00, -3.282746e+00,
+E               -1.595261e+00, -1.595261e+00, -1.363405e+00, -1.363405e+00,...
+
+tests/test_invariance_gates.py:262: AssertionError
+=============================== warnings summary ===============================
+tests/test_ffi_linalg_contract.py::test_cusolvermp_solve_lu_hermitian_indefinite[complex128]
+  /opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[2,32,32]).
+  See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+    warnings.warn("Some donated buffers were not usable:"
+
+tests/test_ffi_linalg_contract.py::test_cusolvermp_solve_lu_hermitian_indefinite[float64]
+  /opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(float64[2,32,32]).
+  See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+    warnings.warn("Some donated buffers were not usable:"
+
+tests/test_ffi_linalg_contract.py::test_padding_solve_at_logical_through_ffi
+  /opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[2,13,13]).
+  See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+    warnings.warn("Some donated buffers were not usable:"
+
+tests/test_file_io.py::test_load_q_full_bz_unfold_path_exists
+  /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_gw_conduction_postfix/src/common/symmetry_maps.py:1128: UserWarning: WFN symmetry data incomplete: 24 k-points could not be mapped via stored symmetries (ntran=16). Using identity fallback. First unmatched: [0. 0. 0.]
+    warnings.warn(f"WFN symmetry data incomplete: {len(unmatched_kpts)} k-points could not be "
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_gw_jax_regression.py::test_gw_jax_matches_reference[si_cohsex_3d]
+FAILED tests/test_gw_jax_regression.py::test_gnppm_matches_reference - Failed...
+FAILED tests/test_gw_jax_regression.py::test_bispinor_gnppm_matches_reference
+FAILED tests/test_invariance_gates.py::test_fixed_point_frozen_qp_rotations
+4 failed, 203 passed, 12 skipped, 24 deselected, 4 warnings in 346.61s (0:05:46)
+NVSHMEM v3.2.5
+srun: error: nid008324: task 0: Exited with exit code 1
+srun: Terminating StepId=56272252.7

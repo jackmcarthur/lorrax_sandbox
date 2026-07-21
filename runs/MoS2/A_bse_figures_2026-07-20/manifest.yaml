@@ -1,0 +1,74 @@
+run_id: mos2_bse_figures_2026-07-20
+system: MoS2
+pipeline: qe_bgw_lorrax    # qe + LORRAX GN-PPM GW + BSE exciton bands
+platform: perlmutter
+
+system_params:
+  formula: MoS2
+  dimensionality: 2
+  n_val: 26
+  ecutwfc: 30.0
+  kgrid_gw: [6, 6, 1]       # GW producer grid (36 q)
+  kgrid_bse: [12, 12, 1]    # BSE grid via bse_k_grid (economy route)
+  metal: false
+
+route: "6x6 GN-PPM GW -> 12x12 BSE via bse_k_grid (+ coarse-W pad); only a 6x6 200-band NSCF needed"
+
+variant_of: null
+overrides:
+  centroids: "recovered-D3h 1496 (from _vhsym_exp scissor-eval); fixes V_H symmetry"
+  gw_zeta: "LORRAX_FORCE_FULL_BZ=1 -> full-BZ zeta (needed by vq_interp)"
+
+gw:
+  compute_mode: gn_ppm
+  use_ppm_sigma: true
+  nval: 26
+  ncond: 74                 # QP for bands 1..100
+  nband: 200                # sum-over-states
+  centroids: 1496
+  device_count: 16          # mandatory (Sigma_c mesh bug)
+  gap_direct_K_eV: 2.61     # correct
+  gap_global_eV: 1.436      # CORRUPTED (conduction Sigma_c broken; see report)
+  sanity_gates: {gate1_sigC_gamma_vbm: pass, gate3_vh_symmetry: pass, gate2_K_gap: FAIL}
+
+bse:
+  n_val: 8
+  n_cond: 8
+  n_eig: 8
+  interp_nband: 48
+  bse_k_grid: [12, 12, 1]
+  device_count: 4           # 2x2 (36 q not divisible by 16); mesh-invariant
+  eigh_backend: off         # cusolverMp hung on 4-GPU eigh
+  E1_gamma_eV: 1.253
+  binding_eV: 0.479
+
+figures:
+  dft_bandstructure: figures/mos2_dft_bandstructure.png
+  exciton_bandstructure: figures/mos2_exciton_bandstructure.png
+  gw_qp_bandstructure: WITHHELD   # conduction Sigma_c unphysical (Gate 2 fail)
+
+steps:
+  qe:                    { state: complete }
+  00_lorrax_gw_gnppm:    { state: complete, note: "--no-orbit 1600 centroids; superseded by 02" }
+  02_lorrax_gw_d3h_16gpu: { state: complete, note: "recovered-D3h 1496, full-BZ zeta; valence Sigma_c + V_H good, conduction broken" }
+  01_lorrax_exciton_bands: { state: complete, note: "12x12 via bse_k_grid, 4 GPU, native eigh; E_b=479 meV" }
+  03_lorrax_gw_postfix_2026-07-21:
+    state: complete
+    note: >-
+      A/B of 02 with the FIXED self-energy (agent/gw-conduction-postfix:
+      xi-floor d011a36 + rank_truncate charge zeta-solve, zeta_rcond 1e-6).
+      Byte-identical cohsex.in / WFN / 1496 centroids / 16 GPU -- only the
+      source tree differs.  PPM Z-pole CURED (38 -> 0 blow-ups, Z in
+      [0.723,1.000]; band-38 eqp1 +368 -> +11.7 eV); in-window scissor kink
+      362 -> 6.8 eV.  Far-conduction (b>=46) UNCHANGED -- separate V_H defect,
+      see reports/gw_conduction_postfix_2026-07-21.
+  gw_qp_figure:
+    state: partially_unblocked
+    note: >-
+      Bands 0-45 are now clean and renderable (htransform QP recon at [0,40)
+      325 eV -> 0.49 eV).  FULL band range still blocked, but by a DIFFERENT
+      defect: <nk|V_H|nk> (gw/cohsex_sigma.py:hartree) is an ISDF centroid
+      quadrature with no support in the slab vacuum, so vacuum-localized
+      far-conduction bands get Vxc wrong by up to 279 eV
+      (corr(|dVxc|, vacuum weight) = +0.958).  Fix: evaluate V_H on the FFT
+      grid like kin_ion, or read vxc.dat/kih.dat.

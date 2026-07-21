@@ -52,6 +52,56 @@ are ~1e-3 relative of Σ (meV–100 meV absolute); V/W-tile q-covariance
 improves ~8× at 1e-4 on Si. Diagnostic/experiments knob; do not enable in
 production comparisons without an A/B against `zeta_ridge_eps = 0`.
 
+### `charge_zeta_solve` (str, default: `rank_truncate`) — charge-only
+Selects how the charge ISDF ζ-fit factors its (identity-padded, replicated,
+mesh-invariant) CCT `C_q`:
+- **`rank_truncate`** (default) — rank-revealing `eigh` pseudo-inverse: form
+  `B = V·diag(1/√λ_keep)` keeping only `λ > zeta_rcond·λ_max`, so `B Bᴴ = C⁺`
+  (truncated pseudo-inverse) and `ζ = C⁺Z = B(BᴴZ)`. DROPS the near-null
+  directions that appear when n_μ over-completes the pair-density rank (κ~1e13),
+  which plain Cholesky otherwise amplifies into O(1) V_q errors → tens-of-eV
+  GN-PPM Σ_c blow-up (device/nband-dependent, gap-inverting). This is the
+  principled cure for the conduction-Σc catastrophe.
+- **`cholesky`** — the historical replicated / cuSolverMp Cholesky path,
+  **bit-identical to pre-2026-07 behavior**; the selectable alternative.
+
+Well-conditioned CCTs (n_μ ≤ pair-density rank) are unaffected: rank_truncate
+drops ~0 modes and equals cholesky within ~1e-13. Over-complete bases diverge —
+that is the point. Cross-code parity: MoS₂ 4×4 GN-PPM vs BGW, over-complete
+n_μ=1204 → Cholesky MAE 3.0 eV/max 12.96 eV → rank_truncate MAE 0.038 eV/max
+0.077 eV at `zeta_rcond=1e-6`. See `reports/gw_rank_truncation_2026-07-20/`.
+
+### `zeta_rcond` (float, default: `1e-6`) — charge-only, `rank_truncate` cutoff
+Relative eigenvalue cutoff for `charge_zeta_solve = rank_truncate`: drop
+eigenvalues `λ < zeta_rcond · λ_max(C_q)` (per q). Env override
+`LORRAX_ZETA_RCOND`.
+
+`1e-6` is roughly the pair-density GEMM noise floor. It is what an over-complete
+basis needs, and it is cheap — but **not free** — on a well-conditioned one:
+- **Over-complete** (MoS₂ 4×4 / 1204c): `1e-10` under-truncates and only
+  partially recovers (MAE 1.4 eV vs BGW); `1e-8`, `1e-6` and `1e-4` all collapse
+  to ~0.04 eV. `1e-6` sits inside that plateau; `1e-4` starts over-truncating.
+- **Well-conditioned** (MoS₂ 4×4 / 640c): drops ~0 modes, equals `cholesky` to
+  ~1e-13.
+- **Well-conditioned but not truncation-free** (bulk Si 4×4×4 / 960c, the
+  BGW-anchored `si_cohsex_3d` gate): this spectrum *does* extend below
+  `1e-6·λ_max`. Measured max |Δ| of `sigTOT` vs the `1e-10` freeze
+  (`reports/gw_conduction_postfix_2026-07-21/si_rcond_sweep.sh`):
+
+  | rcond | 1e-9 | 1e-8 | 1e-7 | 1e-6 | 1e-5 | 1e-4 |
+  |---|---|---|---|---|---|---|
+  | max \|Δ sigTOT\| (meV) | 0.001 | 0.054 | 0.417 | **1.021** | 2.918 | 37.2 |
+
+  So the default costs Si ~1 meV — above its 0.48 meV BGW max \|Δ\|. `1e-8` buys
+  the same over-complete cure for 0.054 meV; prefer it if a system is known to be
+  well-conditioned and sub-meV accuracy is the target. The `si_cohsex_3d` fixture
+  pins `zeta_rcond = 1e-10` for exactly this reason (it is a BGW anchor, not a
+  self-freeze).
+
+Ignored for `charge_zeta_solve = cholesky`. See
+`reports/gw_rank_truncation_2026-07-20/` and
+`reports/gw_conduction_postfix_2026-07-21/`.
+
 ---
 
 ## 2. Band Window
@@ -260,6 +310,43 @@ directional `e^{-i2θ}` structure rides the phase-factored ζ̃ rank-1 term — 
 cell average supplies only the head **magnitude**. The BSE driver
 `bse.exciton_bands` also exposes `--head-minibz-average` to override this key
 per-run.
+
+### `bse_k_grid` (str, default: `""` — off)
+
+Fine-grid **densification** of the ENTIRE BSE problem. Set to `"NX NY NZ"` (or
+`"NX,NY,NZ"`) and the GENERAL BSE init
+(`bse.bse_io.load_bse_data_from_restart_sharded`, the single choke point where
+every BSE solver obtains its `data` bundle) interpolates the whole coarse-grid
+problem onto that finer k-grid **before any solve**, so **every** BSE solver
+(`exciton_bands`, `bse_feast`, `bse_nontda`, `bse_kpm`, the W-resolvent) runs on
+the fine grid transparently — no per-driver flag. What is interpolated:
+
+- **ψ_{v,c}(k)** and **QP ε_{v,c}(k)** — one htransform fH
+  (`bandstructure.bse_setup.compute_wfns_fi` with `kgrid_fi = NX NY NZ`), the
+  same interpolator `exciton_bands` uses for its Q-path caches.
+- **V_Q exchange** — `bse.vq_interp.build_vq_evaluator` (prepared ONCE on the
+  coarse grid) evaluated at Q=0 with the **fine** mini-BZ head. A Q=0 exciton's
+  exchange is the single q=0 tile (dense in k,k'), so the fine grid's exchange
+  q-set is just q=0.
+- **W direct** — `bse_io.pad_W_R_to_grid` zero-pads the coarse `W_R` onto the
+  fine k-lattice (exact trigonometric interpolation through the coarse
+  samples), fft'd back to a fine `W_q`. This subsumes the `exciton_bands`
+  `--w-coarse-grid` W-only flag: `bse_k_grid` drives the pad automatically.
+
+Each fine length must be a **positive multiple** of the matching coarse restart
+length (coarse BZ ⊂ fine BZ). **Empty (default) or == the coarse grid → the
+coarse `data` bundle is returned byte-identically** (the fast path is untouched;
+band/μ dims and the q=0 head projectors are grid-invariant, only the k axis
+grows).
+
+Accuracy caveat: the htransform ψ/ε recovery degrades if the loaded band window
+over-packs the centroid basis — keep `nband` **modest** (≤ ~48 for MoS2/640c;
+`10_lorrax_exciton_bands_80interp_8v8c`), a few conduction guard bands above the
+BSE window, not maximal. The exchange head uses `vq_interp`'s mini-BZ LR-head
+convention (as in `exciton_bands`), which differs from the loader's GW-computed
+`vhead` rank-1 on a native fine restart; the lowest exciton is direct-term
+dominated, so this is a secondary effect. Slab (2D) only — the `vq_interp`
+exchange path asserts `q_z = 0`, same restriction as `exciton_bands`.
 
 ---
 

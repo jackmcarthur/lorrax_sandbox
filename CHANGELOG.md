@@ -1,5 +1,313 @@
 # Changelog
 
+## 2026-07-21: `zeta_rcond` default → 1e-6 + post-fix conduction audit — Z-pole CURED, far-conduction is a SEPARATE V_H defect [agent/gw-conduction-postfix off agent/gw-rank-truncation @ 23af6b9, lorrax_gw_conduction_postfix worktree, unmerged]
+
+Two things: land the owner-approved `zeta_rcond` default, and re-measure the
+conduction pathologies of `reports/scissor_farband_htransform_2026-07-20/` on the
+fixed (ξ-floor + rank_truncate) self-energy. Clean A/B: `03_lorrax_gw_postfix_2026-07-21`
+vs `02_lorrax_gw_d3h_16gpu`, byte-identical `cohsex.in`/WFN/1496 centroids/16 GPU,
+only the source tree differs. Same analysis scripts on both sides (env-parameterized
+by `SCISSOR_RUN`/`SCISSOR_OUT`); the htransform reproduced the pre-fix DFT columns
+bit-for-bit, the control that proves only the QP input changed.
+
+**VERDICT: two entangled defects, now separated.**
+- **CURED (shared root, the CCT/quadrature cure):**
+  - **PPM Z-factor pole gone.** 38 Z-blow-ups (`Z<0` or `Z>2`) → **0 / 3600**;
+    `Z ∈ [−0.611, +57.28]` → **[0.723, 1.000]** over every (k,n). Band 38 eqp1
+    **+368.18 eV → +11.74 eV max** (`Z` there now 0.77–0.81). The +8.6 eV shell
+    (244 states) max `Z` 57.28 → **0.829**.
+  - **In-window scissor smooth.** max NN kink **362 eV → 6.8 eV** (53×); in-window
+    scissor range [−8.50, +363.94] → **[−2.22, +11.74]** eV. Deep-semicore Kramers
+    degeneracy of Σ visibly restored (b0/b1 −21.54/−21.48 → −10.54/−10.54).
+  - **htransform `[0,40)` collapse gone.** On-grid QP recon **325038 → 488 meV**;
+    QP path `d2` 20045 → **3048 meV**, now *below* the DFT machinery floor (3583).
+- **NOT CURED — genuinely SEPARATE defect (bands ≳46):** far-conduction scissors
+  **+281.25 → +281.20 eV**, kink mean **105413 → 105819 meV** — identical to 3 s.f.
+  Located precisely: it is **not Σ** but `⟨nk|V_H|nk⟩` (`gw/cohsex_sigma.py:hartree`),
+  an ISDF **centroid quadrature**, feeding `Vxc = E_dft − kin_ion − V_H`. Against QE's
+  exact `kih.dat`/`vxc.dat`: |ΔVxc| far-cond (46–99) mean **53.3 → 53.8 eV**, max
+  **279.4 → 279.5 eV**; LORRAX Vxc reaches −284 eV where the true range is [−24, −4].
+  **Root cause:** density-weighted k-means puts all 1496 centroids inside the slab,
+  none in the vacuum; vacuum-localized far-conduction bands are unrepresentable.
+  `corr(|ΔVxc|, vacuum weight f_vac) = **+0.958**` (f_vac<0.05 → 1.68 eV mean;
+  f_vac 0.5–0.7 → 256 eV). Mechanism is a sign impossibility: worst state (k=28,n=91)
+  needs `V_H = −139.6` eV (vacuum, G=0-excluded Hartree is negative there) and the
+  slab-supported quadrature returns **+139.75** eV. Fix direction: evaluate `V_H` on
+  the FFT grid like `kin_ion` (same cost class), or read `vxc.dat`/`kih.dat`.
+- **nband=50 cap partially liftable.** Clean regime now extends to **b_max ≈ 44**
+  (exactly where `f_vac` starts climbing); `[0,50)` recon 348818 → **4008 meV**,
+  `[0,60)` **618 meV**. Full range `[0,90)` still 104 eV — blocked by the V_H defect,
+  not the interpolator. **A GW/QP figure over bands 0–45 is now possible.**
+
+**`zeta_rcond` 1e-10 → 1e-6** (`src/gw/gw_config.py`; the three function-signature
+defaults in `isdf/core.py`×2 + `gw/isdf_fitting.py` moved with it — one value, not two).
+Docs updated. Gates: **207 passed** after re-freeze; `LORRAX_ZETA_RCOND=1e-10` makes all
+five pass untouched, confirming every movement is the default change.
+- `cohsex` **unaffected**; bispinor transverse LU untouched.
+- Re-frozen: `gnppm` (sigX 0.069, sigC.Re 0.177, VH 7.84 eV), `bispinor` (0.103 / 0.090
+  / 1.17 eV), `fixed_point` QP rotations (max 7.96, mean 0.65 eV).
+- **`si_cohsex_3d` MOVED and was deliberately NOT re-frozen.** The BGW anchor
+  (`tests/README.md`: "do not shrink/re-freeze") is Si 4×4×4/960c, which — contrary to
+  the rank-truncation report's "well-conditioned bases truncate nothing" — *does* have
+  CCT spectrum below 1e-6·λ_max. Measured drift vs the 1e-10 freeze: rcond 1e-8 →
+  **0.054 meV**, 1e-7 → 0.417, **1e-6 → 1.021 meV**, 1e-5 → 2.918, 1e-4 → 37.2 (sigTOT).
+  1e-6 exceeds Si's 0.48 meV max|Δ| vs BGW. Fixture now pins `zeta_rcond = 1e-10` with
+  the sweep table in a comment, so the anchor stays anchored. **Owner call flagged:
+  `1e-8` buys the same over-complete cure (the 1204c recovery plateau spans 1e-8…1e-4)
+  at ~20× less drift.**
+
+Artifacts (logs, npz, plots, scripts): `reports/gw_conduction_postfix_2026-07-21/`.
+
+## 2026-07-21: Multipole full-frequency GW plan reassessed (design only)
+
+Audited `reports/multipole/MPA_IMPLEMENTATION_PLAN.md` against the current
+`lorrax_A` physics docs, refactored GN/HL PPM pipeline, July GW stabilization
+branches, and the newer BSE block-Lanczos `W(omega)` model. No MPA implementation
+exists yet. The MPA-W-only direction remains sound, but the old execution order is
+stale and omitted important contracts for complex-pole Sigma quadrature,
+partial/invalid pole residuals, pole sorting, multi-frequency head sampling, SlabIO
+staging, and branch consolidation. Added
+`reports/multipole/CURRENT_STATE_2026-07-21.md` with a revised order: first prove the
+Padé fit and sampling against selected-column W-chain truth, then build off-axis
+screening/cache and complex-pole Sigma, and only then wire `ComputeMode.MPA` and a
+new BGW full-frequency Sigma comparison. No LORRAX source was modified or tested.
+
+## 2026-07-21: Rank-revealing charge ζ-solve — the principled cure for the conduction-Σc catastrophe [agent/gw-rank-truncation off agent/gw-zeta-mesh-invariant @ ca78008 + ξ-floor d011a36 merged, lorrax_gw_rank_trunc worktree, unmerged, commit 23af6b9]
+
+Cures the GW conduction-Σc catastrophe at its source. The charge ISDF CCT `C_q`
+near-singularizes (κ≈1e13) when n_μ over-completes MoS₂'s pair-density rank; plain
+Cholesky amplifies ULP/mesh/nband roundoff into O(1) V_q errors that GN-PPM magnifies to
+tens of eV — the −47 eV conduction blow-up, the 16-GPU-good/4-GPU-garbage device
+dependence, the nband instability, AND the +13 eV K-point residual are all this one thing.
+
+**Feature** (`src/isdf/core.py`, at the replicated mesh-invariant `_factor_c_q_replicated`
+seam): a rank-revealing `eigh` pseudo-inverse charge factor `B` (`B Bᴴ = C⁺`) that DROPS
+eigenvalues `λ < zeta_rcond·λ_max` (the near-null directions), back-solved as
+`ζ = C⁺Z = B(BᴴZ)`. Config knob `charge_zeta_solve = rank_truncate | cholesky` (**DEFAULT
+rank_truncate**; `cholesky` = prior path, bit-identical, the selectable alternative) +
+`zeta_rcond` (default 1e-10, env `LORRAX_ZETA_RCOND`). Single-sourced via a new
+`replicated_rank_truncate` solver_kind; no parallel ζ-solve. Combines the ξ-floor
+(d011a36) conditioning the GN-PPM crossing quadrature.
+
+**Validated** (MoS₂ 4×4 GN-PPM vs BGW `01_bgw_gnppm/sigma_hp.log`;
+`runs/MoS2/01_mos2_4x4_cohsex_gnppm/K_rank_truncation_2026-07-21/`):
+- **Mesh-invariance EXACT**: rank_truncate ζ/Σc bit-identical 1×1≡2×2 (**0.0000 eV**) at
+  640c AND 1204c; CPU cross-mesh gate {1×1..4×1} worst‖ΔB‖=0. Device dependence GONE.
+- **Cure**: at over-complete n_μ=1204, Cholesky MAE 3.0 eV / **max 12.96 eV** (the +13 eV
+  residual; Γ VBM −8.78 vs BGW +0.55) → rank_truncate rcond=1e-6 **MAE 0.038 / max 0.077
+  eV** (Γ VBM +0.533, CBM −1.437 vs BGW +0.551/−1.513). rcond tracks over-completeness
+  (1e-10 anchor / 1e-6 over-complete). Conditioning gate: ‖ζ_chol‖/‖ζ_rt‖=1.3e12.
+- **Golden gates all pass**: cohsex + si_cohsex_3d unaffected; gnppm + bispinor +
+  fixed_point QP-rotation RE-FROZEN (Σc shifts, sigX+V_H byte-identical); bispinor
+  transverse LU untouched. `test_zeta_mesh_invariance` extended.
+- **Scope**: fixes conduction Σc (defect B). Absolute QP bandstructure additionally needs
+  the V_H C3-quadrature fix (defect A, on `agent/gw-vh-symmetry` @ 1794518) — orthogonal,
+  not on this base. Combine both branches + a band-path NSCF to render the Γ-M-K-Γ figure.
+  Report: `reports/gw_rank_truncation_2026-07-20/` (+ `rank_truncation_recovery.png`).
+
+## 2026-07-20: GN-PPM GW + BSE exciton-bandstructure figures [agent/bse-figures off agent/bse-kgrid @ 964c682, lorrax_A worktree, unmerged]
+
+Deliverables + infra shakeout for `runs/MoS2/A_bse_figures_2026-07-20/`. Route:
+6×6 GN-PPM GW → 12×12 BSE via `bse_k_grid` (only a 6×6 200-band NSCF needed; fine
+ψ/ε from the coarse ISDF, W coarse→fine zero-padded).
+
+- **BSE exciton bandstructure DELIVERED** (`figures/mos2_exciton_bandstructure.png`):
+  E_b = **479 meV**, E₁(Γ)=1.253 eV, C₃-symmetric. Exercises bse_k_grid densification +
+  coarse-W pad + V_q0 fine mini-BZ head + distributed eigh. Ran 4 GPU (2×2): the 6×6
+  restart's 36 q don't divide a 16-device mesh (vq_interp C_q eigh sharding); BSE is
+  mesh-invariant (runs 10≡11). cusolverMp hung on 4-GPU eigh → native eigh.
+- **GW/QP bandstructure WITHHELD**: recovered-D3h (1496) + 16 GPU fixes VALENCE Σ_c
+  (Re sigC(Γ VBM)=+0.197) and V_H symmetry (Gate1/Gate3 pass), and the GW **direct gap at
+  K = 2.61 eV** is correct — but the **conduction** Σ_c is still unphysical (sigC.Re(K CBM)
+  =−4.48 → inverted global gap; Gate2 FAIL). Not device/orbit/IBZ (full-BZ via
+  LORRAX_FORCE_FULL_BZ=1 identical). Delivered a clean DFT sp-bands figure instead.
+- **3 LORRAX fixes** (agent/bse-figures): `exciton_bands.py` kgrid_co←coarse meta grid
+  (bse_k_grid crash); `htransform.py` streaming_galerkin_solve trims n_μ sharding-pad
+  (centroid count not divisible by device count); `vq_interp.py` LORRAX_SKIP_VQ_GATES env
+  to skip the replicated gate battery that OOMs at large μ.
+
+## 2026-07-20: V_H C3-symmetry fix — close centroids under the charge-density point group [agent/gw-vh-symmetry off origin/main @ 6bd4dc9, lorrax_A, unmerged, commit 1794518]
+
+Fixes the MoS₂ GW bandstructure corruption diagnosed in
+`reports/gw_scissor_eval_2026-07-20/` (defect A). `⟨nk|V_H|nk⟩`
+(`gw/cohsex_sigma.py:hartree`) is an ISDF **centroid quadrature** carrying the
+same ~1e-3 relative error as `Σ_x`, but V_H ≈ **+480 eV** (~28× |Σ_x| — the full
+electron–electron Hartree), so the centroid-placement-dependent error is
+amplified into a **0.77 eV C3 split at the VBM** (up to 55 eV on far bands) and
+flows into `Vxc = E_dft − kin_ion − V_H` → the ~1.5 eV band smear. `kin_ion`
+(full-FFT-grid, symmetric to 0.4 meV) is the tell it's the *centroid quadrature*,
+not physics. **Root cause = hypothesis A (unclosed centroids)**; hypothesis B
+(degenerate subspace) ruled out (E_dft star-spread 0.0000; V_H breaks smoothly on
+all bands). Key wrinkle: the SOC `no_t_rev` WFN stores only **`ntran=2`={E,σ_h}**
+(pw2bgw drops C3), so the crystal C3 is *not* in the WFN — the orbit-aware
+k-means, which reads `wfn.ntran`, can never reach it.
+
+**Fix (in-scheme; only centroid GENERATION changes, no integration-method change):**
+`orbit_syms.recover_symmorphic_density_point_group` recovers the symmorphic point
+group leaving the **charge density** invariant (holohedry ∩ ρ-grid-invariance) —
+safe for magnetic systems (recovers the magnetic subgroup, never over-closes);
+`build_real_space_syms(…, charge_density=…)` adopts it for centroid closure only
+when it strictly contains the WFN's stored symmorphic group (never downgrades a
+non-symmorphic WFN like Si Fd-3m); `kmeans_cli` gates orbit mode on the recovered
+group size. Downstream ζ/V_q/Σ IBZ cascade still uses the WFN's stored group; the
+enlarged (D3h-closed) set is trivially {E,σ_h}-closed so the cascade now
+**activates** (20 IBZ q / 36) under the TRS-aware unfold — `x_bare` stayed
+symmetric to **0.9 meV** with the cascade ON (TRS-fix confirmed correct).
+
+Results (MoS₂ 6×6 GN-PPM, VBM band-26 star): V_H C3-spread **0.769 → 0.024 eV**
+(32×), worst over all bands **55.6 → 0.22 eV** (253×); static-COHSEX (defect-B-free)
+QP eqp1 star spread **0.718 → 0.023 eV** (31×). `test_gw_jax_regression`
+unaffected (committed-centroid fixtures never call `kmeans_cli`);
+kmeans+symmetry+invariance gates 24 passed. **Defect B (near-gap PPM Σ_c ω-grid
+instability) NOT touched** — it fires *harder* on the recovered basis (`Re Σ_c`
+−18…−29 eV vs +0.7 eV), a basis-sensitivity of the *unfixed* PPM defect; owner to
+reassess the PPM ω-grid before a GN-PPM bandstructure on orbit-closed centroids.
+Report: `reports/gw_vh_symmetry_2026-07-20/`. Files: `src/centroid/orbit_syms.py`,
+`src/centroid/kmeans_cli.py`, `docs/theory/symmetry.md §4.7`.
+
+## 2026-07-20: bse_k_grid — general BSE-init coarse→fine interpolation [agent/bse-kgrid off agent/bse-coarse-w @ a91a831, lorrax_A, unmerged]
+
+New production config knob `bse_k_grid NX NY NZ` that makes the GENERAL BSE init
+(`bse.bse_io.load_bse_data_from_restart_sharded` — the single choke point every
+BSE solver loads its `data` bundle from) interpolate the ENTIRE BSE problem — ψ,
+QP ε (htransform fH, `bse_setup.compute_wfns_fi`), V_Q exchange (`vq_interp`
+eval at Q=0 with the fine mini-BZ head), and the W direct term
+(`bse_io.pad_W_R_to_grid` zero-pad in R) — from the coarse restart grid onto the
+fine grid BEFORE any solve. So EVERY solver (exciton_bands, feast, nontda, kpm,
+resolvent) transparently runs on the fine grid; `bse_k_grid` subsumes the
+`exciton_bands --w-coarse-grid` W-only flag (drives the pad automatically).
+Consolidation: exciton_bands' inline vq_interp model build was extracted into
+`vq_interp.build_vq_evaluator`, which the general init reuses — ONE
+exchange-interp path, not two (ψ/ε via the one `compute_wfns_fi`, W via the one
+`pad_W_R_to_grid`). Fast path preserved: `bse_k_grid` unset or == coarse → the
+coarse bundle is returned byte-identically. Validation (MoS2 640c, 1 GPU):
+on-grid identity max|Δ bundle|=0 and identical exciton_bands eigenvalues; coarse
+3×3 → `bse_k_grid 12 12 1` raises the lowest exciton +1042 meV (coarse
+over-binding relaxes; RPA unchanged → the shift is the screened-W k-convergence)
+with 78 meV interp-vs-native-12×12 error; bse_feast (unmodified 2nd driver)
+picked up the key from cohsex.in and ran on 144 k-pts; golden gates 22 passed /
+1 deselected (bispinor). Report: reports/bse_kgrid_2026-07-20/. PHASE2_LOG
+§"bse_k_grid: general BSE-init coarse→fine interpolation".
+
+## 2026-07-20: 2-D-distributed cuBLASMp V_Q reconstruction (large-n_μ) [agent/bse-cublasmp-recon off agent/bse-multinode, lorrax_A, unmerged]
+
+The V_Q interpolation coarse-prep reconstruction now runs entirely on 2-D-sharded
+tiles through the cuBLASMp batched distributed GEMM, so a single n_μ×n_μ tile
+NEVER has to fit on one proc — the generalization to large centroid counts where
+n_μ² can't be replicated. Kills the cusolverMp→recon GATHER seam
+(reports/bse_multinode_2026-07-20/HLO_AUDIT.md): R stays `P('x','y')` straight off
+the eigh FFI, and S=R g Rᴴ / Vδ / V_SRc / zt all run via cuBLASMp, every n_μ²
+intermediate `P(None,'x','y')` (per-proc = n_μ/Px × n_μ/Py). Commit 5893a4c.
+Report: reports/bse_cublasmp_recon_2026-07-20/ (WORKLOG + NMU2_DISTRIBUTION +
+dats/logs/npz). PHASE2_LOG §"2D-distributed cuBLASMp reconstruction (large-n_μ)".
+
+- **Single-sourced** — `bse.vq_interp._recon_body` expresses the Tikhonov-clean →
+  SR/LR-split reconstruction ONCE; a backend arg dispatches replicated-batched
+  (local einsum, the bit-identical default) vs 2-D-distributed (cuBLASMp) prims.
+  cuBLASMp's transb='N'-only / square-mesh limits handled: S uses the RAW
+  cusolverMp buffer via transa='C' (no transpose reshard); Vδ/gemm pre-materialise
+  the transposed operand (still full-mesh sharded).
+- **Gate** — `prepare_coarse(distributed_recon=False|True|"auto")` +
+  `exciton_bands --distributed-recon`; requires `--eigh-backend cusolvermp`.
+  Default off (small-n_μ efficient; the 640 case does not regress). q-chunk is the
+  memory knob that REPLACES "the tile must fit replicated".
+- **Capability proof (16 GPU, 4×4)** — random Hermitian C_q: n_μ=32768 replicated
+  recon **OOMs** (48 GiB alloc > 40 GB A100), the distributed path completes at
+  1024 MiB/proc and closes S(C²+c²I)=C² to 5.7e-14. n_μ=16384: 256 MiB/proc dist
+  vs 4.00 GiB/proc replicated. Capability crossover ≈ n_μ 24k.
+- **Correctness** — n_μ=640 bit-match distributed vs replicated: relF(S)=1.7e-16,
+  V_SRc=2.3e-13, Fch=1.9e-15. Full exciton bands via distributed-recon vs dir10:
+  **max|ΔE| = 0.0000 meV**. vq_prepare 418 s (dist) vs 398 s (replicated) — +5%,
+  both eigh-latency-bound; distributed wins on CAPABILITY not speed at n_μ=640.
+- **N_μ² audit** — all 9 n_μ² intermediates full-mesh 2-D sharded (per-proc
+  160×160, HLO `sharding={devices=[1,4,4]}`), only λ,g replicated. See
+  NMU2_DISTRIBUTION.md.
+- **Tests** — `tests/test_bse_vq_recon_distributed.py` (1-GPU, cuBLASMp 1×1);
+  golden gates + new test = 26 passed.
+
+## 2026-07-20: coarse-W zero-pad → fine-grid BSE direct term [agent/bse-coarse-w off agent/bse-multinode, lorrax_A, unmerged]
+
+A CHEAP coarse-k-grid W (run W/GW on 6×6) can now drive the BSE direct term on a
+FINE interpolated exciton sampling (12×12): the coarse `W_R` is zero-padded from
+its coarse R-lattice onto the fine one before the `W_R ⊙ T_R` convolution.
+Zero-padding in R = EXACT trigonometric interpolation in k that passes through the
+coarse `W(k)` samples (coarse BZ ⊂ fine BZ when the fine length is a multiple).
+Report: reports/bse_coarse_w_pad_2026-07-20/ (dats, pngs, npz, driver log).
+PHASE2_LOG §"Coarse-W zero-pad → fine-grid direct term".
+
+- **Was it already there? NO.** The W k-grid was hard-tied to the WFN/BSE grid:
+  the loader forces `_read_wq_sharded(..., kgrid=(nkx,nky,nkz))` and the matvec
+  Hadamard `W_R[...]*T_R` (bse_stack_matvec.py:119) has no grid guard — a coarse
+  `W_R` would broadcast-mismatch. No pad/interp path existed.
+- **New helper** `bse.bse_io.pad_W_R_to_grid(W_R_coarse, fine_grid)` (+ the
+  per-axis `_zeropad_R_axis` index map and `decimate_W_q_to_subgrid`). Single
+  source, co-located with the W_q prep. R-centering: FFT-order reps
+  `n=fftfreq(N)·N`; low block keeps indices, negative-freq block slides to the top
+  of the fine axis, gap is zero (`concat([low, zeros, high])` per axis); even-N
+  Nyquist kept single-sided; scale `√(∏nf/∏nc)` for the ortho-FFT norm. Degenerate
+  coarse==fine → exact byte-identical no-op.
+- **Wiring**: `bse/exciton_bands.py --w-coarse-grid NX,NY,NZ` (decimate the fine
+  W_q to the coarse sub-grid → ifft → pad back → fine solver). Flag unset or equal
+  to the WFN grid → the original `W_R = _ifftn(data["W_q"])` line runs,
+  **byte-identical fast path**.
+- **Validation (1 GPU / CPU f64, NO 16-GPU gating)**: exact-agreement identity
+  `fft(pad(ifft(W_q_coarse)))|coarse-sub-points == W_q_coarse` residual **1.9e-15**
+  (6×6→12×12), machine-ε for even/odd grids and 3× multiples; no-op byte+object
+  identical. Physics smoke (MoS2 6×6, 4v4c, Γ→M→K): W-on-6×6 vs
+  W-decimated-3×3-then-padded lowest exciton at Γ 1.4938→1.4600 eV, path
+  **max|Δ|=96 meV, mean 60 meV** — the physical W k-convergence gap (3×3 is a
+  drastic 4× screening under-sample; the exciton sampling stays fine). New
+  tests/test_coarse_w_pad.py + golden gates green.
+
+## 2026-07-20: exciton pipeline runs natively multi-node (16 GPU / 4 node), cusolverMp FFI eigh [agent/bse-multinode, lorrax_A, unmerged]
+
+The exciton-bandstructure driver (V_Q interpolation + BSE solve) now runs
+correctly on a real 4-node / 16-process mesh with the C_q Hermitian eigh on the
+**cusolverMp FFI** (`--eigh-backend cusolvermp`). Branch `agent/bse-multinode`
+off `agent/bse-integration`. Report: reports/bse_multinode_2026-07-20/
+(WORKLOG.md + HLO_AUDIT.md + logs + dats + pngs + npz); PHASE2_LOG §"Multi-node
+distributed exciton pipeline (16 GPU)". Run dir
+runs/MoS2/04_mos2_12x12_bands_2026-07-18/11_lorrax_exciton_bands_minibz_16gpu/
+(variant of dir 10; dir 10 untouched).
+
+- **Proof it ran on 16 devices**: `[dist] device_count=16 process_count=16
+  mesh (4,4)`. cusolverMp FFI PROVEN firing on the mesh — the
+  `[lorrax cusolverMp] library 0.7.2, NCCL 2.26.3, comm path: NCCL, grid: 4x4`
+  banner prints inside `prepare_coarse`; standalone `cusolvermp_eigh_test
+  --grid 4 4 -n 640` = 3.9e-12 eval accuracy (no silent fallback — `_eigh_backend`
+  raises on failure).
+- **Numerics unchanged by the backend** (gate): OFF 16-GPU/cusolverMp vs dir10
+  4-GPU native `off` = **max|ΔE| = 0.0000 meV** (bit-identical to sub-µeV). Flag-ON
+  (mini-BZ head average) vs OFF = 0.675 meV max, near-Γ localized (the expected
+  head signature). Golden gates: **59 passed** on 1 GPU (incl. new
+  test_runtime_distributed).
+- **Launch model** (cusolverMp needs 1 process/GPU): `srun -N4 -n16 --gres=gpu:4
+  select_gpu.sh` (CUDA_VISIBLE_DEVICES=$SLURM_LOCALID), the proven gw.gw_jax
+  16-GPU layout; NOT `--gpus-per-task=1` (breaks JAX topology sync). Square 4×4
+  mesh. jax.distributed from SLURM env.
+- **Fixes** (5 gaps + 1 blocker): (1) distributed init in `bse/exciton_bands.py`
+  via the single-source `runtime` bootstrap (no new copy). (3) rank-0 `log()` +
+  `if process_index()==0` guard on the .dat/.png writes + plot. (4) device→host
+  gather gap — sharding-aware `_gather_host` (exciton_bands) / `_to_host`
+  (vq_interp): `device_get` fails on process-spanning shards and
+  `process_allgather(tiled=True)` DUPLICATES replicated arrays, so branch on
+  `is_fully_addressable`; valence pad-ε guard moved on-device. (host→device
+  `device_put(numpy, sharded)` is already multiprocess-correct in JAX 25.04 —
+  verified.) (5) head QMC is deterministic Sobol, no change. **Blocker**:
+  `common/wfn_transforms.py:gflat_to_rmu` band-flat sharding required
+  `nb % mesh.size == 0`; the htransform galerkin entry passes nb=40 (÷4 ok, ÷16
+  not) → pad the band axis with zero bands, trim (byte-identical when divisible).
+- **Timing** (16 GPU vs dir10 4 GPU): htransform 155→15 s (10×), solve 202→165 s
+  (faster); vq_prepare 59→398 s (per-q cusolverMp on small 640² tiles is
+  NCCL-latency-bound across nodes — the expected small-case regime; correctness
+  is the point). TOTAL 758 s (OFF) / 778 s (ON).
+- **HLO audit** (owner request): the interpolation tile assembly is a LOCAL outer
+  product — `eval_vq` (V=V_SR+conj(A_x)@A_y.T) has only small A-reshard
+  collective-permutes (c128[160,337]), `_clean_split` has ZERO collectives; NO
+  full n_μ×n_μ (640²) gather. Matvec GEMMs stay native sharded dot_general (FFI
+  is for the dense eigh only — cublasmp doesn't fit the batched pair-basis
+  einsums / single-compile scan).
+
 ## 2026-07-20: mini-BZ head averaging (flag-gated) + BSE integration branch [agent/bse-integration, lorrax_A, unmerged]
 
 Implements the §16.4 owner refinement — per-Q mini-BZ Coulomb-head **cell averaging**
@@ -35,6 +343,11 @@ integration branch".
   0.873→0.958, EXACT; (c) analytic-sphere seed-spread 3.0e-4 vs pure-Sobol 2.0e-2;
   (d) exciton flag ON−OFF: Γ exactly 0, near-Γ finite-Q up to 0.38 meV (higher
   states), 0.02 meV at M; (e) 38 touched-file tests + full plain suite green (flag off).
+- **Verified (main session):** full suite confirmed **234 passed / 12 skip / 25 desel**
+  (full_suite.log); golden gates re-run on the worktree — `test_gw_jax_regression`
+  4/4 (cohsex+si_3d+gnppm), `test_symmetry_unfold`+`test_head_correction` 21/21.
+  Committed guard added: `tests/test_minibz_average.py` (9836ee1) locks the analytic
+  Baldereschi-sphere term's seed-independence into the suite (was report-script only).
 
 ## 2026-07-20: arbitrary-Q SR/LR completeness + G=0 head accounting audit → arbitrary_q_bse.md §16 [read-only audit, no source changes]
 
