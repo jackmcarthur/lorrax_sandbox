@@ -1,0 +1,175 @@
+run_id: mos2_ref_80Ry_12x12_400b_2026-07-21
+system: MoS2
+pipeline: qe_only          # qe_only | qe_bgw | lorrax_only | qe_bgw_lorrax
+platform: perlmutter       # perlmutter | local_wsl | local_mac
+
+variant_of: null           # new top-level run: SCF cutoff change invalidates everything
+reuse_from_parent: []      # NOTHING reused — SCF/NSCF/pw2bgw all rebuilt from scratch
+overrides:
+  purpose: >
+    Converged QE reference wavefunction set for the properly-converged
+    MoS2 GW+BSE campaign.  All prior MoS2 runs are 30 Ry; the owner's
+    complaint is that every downstream battle was fought with convergence
+    parameters that were too small.  This run is the new foundation:
+    80 Ry / 12x12x1 / 400 bands.  No BGW and no LORRAX here — this
+    directory produces only the QE reference (WFN.h5 + vxc.dat + kih.dat
+    + RHO), which downstream GW/BSE variant runs consume.
+  ecutwfc: "80.0 Ry (was 30.0 Ry) -> ecutrho = 320 Ry via the QE default 4x
+    norm-conserving convention (templates/scf.in does not set ecutrho)"
+  kgrid: "12x12x1 full unshifted BZ, 144 k-points (SCF also 12x12x1)"
+  nbnd: "NSCF 400 (was 82/210); SCF 40"
+  structure: >
+    Unchanged vs every prior MoS2 run — same CELL_PARAMETERS / ATOMIC_POSITIONS
+    as templates/scf.in and runs/MoS2/A_bse_figures_2026-07-20, so the 80 Ry
+    reference is directly comparable to the 30 Ry history.
+
+system_spec:
+  formula: MoS2
+  prefix: MoS2
+  dimensionality: 2
+  n_val: 26                # Mo z_valence 14 + 2 x S z_valence 6
+  ecutwfc_ry: 80.0
+  ecutrho_ry: 320.0        # QE default 4 x ecutwfc (norm-conserving)
+  kgrid: [12, 12, 1]
+  nk_tot: 144
+  nbnd_scf: 40
+  nbnd_nscf: 400
+  metal: false
+  noncolin: true
+  lspinorb: true
+  no_t_rev: true
+  assume_isolated: '2D'
+
+pseudopotentials:
+  source: assets/pseudopotentials/standard
+  files: [Mo.upf, S.upf]
+  md5:
+    Mo.upf: 4e1c3579de4f68baf863f15f5be96aa1
+    S.upf: a7319d53700e7dada26ada44d0048388
+  note: >
+    FR-ONCVPSP PBE (PseudoDojo standard).  Byte-identical to the pseudos used by
+    runs/MoS2/A_bse_figures_2026-07-20, so the 80 Ry reference is comparable.
+
+files:
+  scf: qe/scf/scf.in
+  nscf: qe/nscf/nscf.in
+  pw2bgw: qe/nscf/pw2bgw.in
+  pw2bgw_rho: qe/nscf/pw2bgw_rho.in
+  runner: qe/run_qe.sh
+
+# Directory-level status.
+# States: pending | running | complete | failed | reused | skipped
+steps:
+  qe:
+    state: complete
+    note: >
+      SCF 16.85 s (1 node / 4 GPU, -npools 4, 10 iterations to conv_thr 1e-10,
+      E = -184.87288559 Ry).  NSCF 29.06 s (4 nodes / 16 GPU, -npools 16;
+      144 k, 400 bands, ethr 3.85e-13, avg 20.9 Davidson its).  pw2bgw
+      WFN+vxc+kih 606 s (1 rank CPU), pw2bgw RHO 35 s, wfn2hdf 121 s.
+      Total pipeline 833 s = 13 min 53 s (only 46 s of it is DFT; the rest is
+      single-rank pw2bgw matrix elements + HDF5 conversion).
+      Allocation 56276468 (own, 4 nodes; did NOT share the concurrent
+      lx-alloc-jackm 6x6 GW allocation).
+
+
+  00_lorrax_gw_2400c:
+    state: complete
+    note: >
+      Stage-3 production GW, FIRST attempt.  n_mu = 2412 band-range + D3h
+      centroids, nband = 326 (26 val + 300 cond), QP/sigma for bands 1..80,
+      GN-PPM, zeta_rcond = 1e-8, memory_per_device_gb = 65, 16 x A100-80GB.
+      Completed cleanly in 690 s.  BUT the sanity gate caught that the charge
+      zeta-solve took path=cusolvermp_cholesky, NOT the intended
+      replicated_rank_truncate: isdf/core._replicate_charge_ok caps the
+      replicated route at nq*n_rmu^2*16 <= 4 GiB and this run is 74*2416^2*16
+      = 6.44 GiB, so BOTH the rank-truncation cure (23af6b9) and the
+      mesh-invariant replicated zeta-fit (ca78008) silently disengaged.
+      Kept, not deleted: it is the honest charge_zeta_solve = cholesky arm of
+      the stage-4(b) comparison.  eqp1 K direct 2.6653 eV, indirect 2.5208 eV.
+  00b_lorrax_gw_2400c_ranktrunc:
+    state: complete
+    note: >
+      Stage-3 production GW, THE ONE TO QUOTE.  Byte-identical input to
+      00_lorrax_gw_2400c except the replication cap is raised to 8 GiB in
+      process (reports/.../gw_probe.py --cap-gib 8), which restores the
+      intended replicated_rank_truncate route (confirmed 16x in gw.out).
+      Sanity gate ALL PASS.  Wall 703 s (zeta fit 257 s over 18 r-chunks,
+      Sigma 121 s); planner HWM 55.22 GB/dev vs LORRAX-measured 54.15 GB/dev
+      (planner over-predicts 2%); nvidia-smi arena 79.4-79.8 GB of 81.9 GB.
+      eqp1 K direct 2.6356 eV, indirect 2.5079 eV, VBM at K.
+  02_lorrax_gw_1236c_bse_producer:
+    state: complete
+    note: >
+      Second GW on the SAME reference at n_mu = 1236, whose only job is to
+      drive stage 5.  bandstructure/bse_setup.compute_wfns_fi replicates
+      fH_R (nk, nspinor*n_mu, nspinor*n_mu) c128 on every device = 49.93 GiB
+      at n_mu = 2412 and OOMs an 80 GB card; the cost is quadratic in n_mu and
+      mesh-independent, so the stage-3 restart cannot drive the BSE or the
+      htransform bandstructure.  Identical in every other respect.
+  01_lorrax_exciton_bands:
+    state: complete
+    note: >
+      BSE exciton bandstructure Gamma-M-K-Gamma on the NATIVE 12x12 grid (no
+      bse_k_grid: the GW coarse grid already is 12x12, so there is no
+      coarse->fine interpolation at all, unlike the 6x6 predecessor).
+      8v8c TDA, 56 Q-points, restart from 02_lorrax_gw_1236c_bse_producer.
+  _stage4:
+    state: complete
+    note: >
+      Stage-4 knob study on the converged data (xi floor, zeta_rcond,
+      far-band clamp / scissor, htransform b_max).  Sigma-only variants
+      restart from 00b's ISDF tensors by symlink (the restart path is
+      read-only), so they cost ~2 min instead of ~12.
+  03_lorrax_gw_6x6_80Ry_bse:
+    state: complete
+    note: >
+      6x6x1 GW at 80 Ry on the SAME converged SCF density (SCF reused
+      unchanged; NSCF in _qe6x6, 36 k / 120 bands), 2382 band-range + D3h
+      centroids, LORRAX_FORCE_FULL_BZ=1 so vq_interp gets full-BZ zeta.
+      This is what stage 5 actually runs on: the native-12x12 BSE is barred
+      by the htransform capacity rule (nspinor*n_mu > nk*nb) colliding with
+      the replicated fH_R (nk, ns*n_mu, ns*n_mu).
+  _qe6x6:
+    state: complete
+    note: >
+      6x6x1 NSCF (120 bands) + pw2bgw + wfn2hdf on the reused 80 Ry SCF
+      density.  NSCF 14 s, pw2bgw 63 s, wfn2hdf 10 s.  Products:
+      WFN.h5 (1.18 GB), vxc.dat, kih.dat.
+  _figures:
+    state: complete
+    note: >
+      Workdir for the GW bandstructure figure.  The htransform interpolation
+      route was abandoned here (it returns a NEGATIVE indirect gap at 12x12,
+      see the report); the shipped figure plots the COMPUTED k-points on
+      Gamma-M-K-Gamma instead.
+verification:
+  wfn_h5: qe/nscf/WFN.h5
+  script: reports/qe_reference_80ry_12x12_2026-07-21/verify_wfn.py
+  result: ALL PASS
+  measured:
+    mnband: 400
+    ecutwfc_ry: 80.0
+    ecutrho_ry: 320.0
+    nspin: 1
+    nspinor: 2
+    kgrid: [12, 12, 1]
+    shift: [0.0, 0.0, 0.0]
+    nrk: 144
+    fft_grid: [36, 36, 135]
+    n_rtot: 174960
+    ngkmax: 8603          # ngk min/mean/max = 8436 / 8482.9 / 8603
+    ng_rho_sphere: 67737
+    cell_volume_bohr3: 702.2012
+    ntran: 2
+    k_point_K_index: 52   # (1/3,1/3,0), |dk| = 4.7e-10
+    ifmax_at_K: 26
+    direct_dft_gap_at_K_eV: 1.6954   # cf. 1.7322 eV on the 30 Ry 6x6 WFN
+    wfn_h5_bytes: 15652131296
+
+downstream_sizing:
+  note: >
+    Stage 1b of this initiative sizes the GW that will consume this WFN
+    (n_mu in {1600, 2400, 3000, 4000}, 144 q, nband ~ 326 = 26 val + 300 cond)
+    with gw/gflat_memory_model.plan_gflat_chunks.  No GW is run here.
+  report: reports/qe_reference_80ry_12x12_2026-07-21/report.md

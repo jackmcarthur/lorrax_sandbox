@@ -1,0 +1,61 @@
+[cohsex]
+# ===================================================================
+# 6x6 GW at 80 Ry -- the BSE producer that stage 5 can actually use.
+# ===================================================================
+# Same converged SCF density, same cell, same pseudopotentials and the same
+# 80 Ry cutoff as the 12x12 production run; only the NSCF k-grid differs
+# (6x6x1, 36 k, 120 bands -> ../_qe6x6/WFN.h5).
+#
+# WHY 6x6 AND NOT THE 12x12 PRODUCTION GW.  The BSE / htransform machinery is
+# squeezed between two hard constraints at fixed n_k:
+#   (a) CAPACITY   the htransform Galerkin basis must satisfy
+#                  rank = nspinor * n_mu  >  n_k * n_b, or ctilde stops being
+#                  orthonormal and fH energy recovery collapses;
+#   (b) MEMORY     bse_setup.compute_wfns_fi REPLICATES
+#                  fH_R (n_k, rank, rank) c128 on every device.
+#   At n_k = 144, n_b = 48: (a) needs n_mu > 3456, and (b) then costs
+#   144 * 6912^2 * 16 B = 102 GiB per device.  Incompatible.  Measured on the
+#   12x12 producer (n_mu = 1236): ctilde orthogonality error 4.9e-1 and the
+#   exciton driver's own gate aborted with max|dEc| = 3577.9 meV,
+#   conduction-subspace min-sval = 0.0002.
+#   At n_k = 36, n_b = 48: (a) needs n_mu > 864 and (b) costs
+#   36 * 2904^2 * 16 B = 4.5 GiB.  Both satisfied with room to spare.
+#
+# The exciton bandstructure then goes 6x6 -> 12x12 through bse_k_grid (the
+# validated coarse->fine economy route), so the BSE still samples the same
+# 12x12 grid as the production GW -- but built on an 80 Ry reference instead
+# of the 30 Ry one the previous exciton figure used.
+#
+# 2382 centroids = 207 orbit representatives x the 12-op recovered D3h density
+# point group, BAND-RANGE weighted over the full nband range w(r) =
+# sum_{n in [0,120)} sum_k w_k |psi_nk(r)|^2.
+compute_mode = gn_ppm
+restart = false
+centroids_file = centroids.txt
+nval = 26
+ncond = 34
+nband = 120
+sys_dim = 2
+x_only = false
+do_screened = true
+bispinor = false
+self_consistent = false
+use_ppm_sigma = true
+screening_method = minimax
+ppm_omega_p = 2.0
+ppm_fallback_omega = 2.0
+sigma_omega_min_ev = -10.0
+sigma_omega_max_ev = 10.0
+sigma_omega_step_ev = 0.5
+sigma_regularization_ev = 0.25
+use_chunked_isdf = true
+memory_per_device_gb = 65
+sigma_at_dft_energies = true
+sigma_freq_debug_output = true
+sigma_debug_split_contrib = true
+fermi_reference = midgap
+charge_zeta_solve = rank_truncate
+zeta_rcond = 1e-8
+wfn_file = WFN.h5
+sigma_omega_h5_file = sigma_mnk.h5
+bare_coulomb_cutoff = 80.0

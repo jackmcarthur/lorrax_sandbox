@@ -2383,3 +2383,49 @@ above: the C3 fix made ⟨nk|V_H|nk⟩ *symmetric*; this one makes it *correct*.
   `src/centroid/{kmeans_cli,charge_density}.py`, `src/gw/{gw_config,isdf_fitting}.py`,
   `src/isdf/core.py`, `docs/docs_gwjax/COHSEX_INPUT.md`,
   `skills/execute_workflow/SKILL.md`.
+
+---
+
+## 2026-07-21 — converged MoS2 campaign (80 Ry / 12x12 / 400 bands): what the BSE side learned
+
+Branch `agent/gw-converged-campaign` (off `agent/gw-conduction-postfix` `b7654ee`,
+merged with `agent/bse-figures` `cb20681`).
+Report `reports/gw_converged_12x12_80ry_2026-07-21/`.
+
+- **The BSE cannot be driven from a converged-k-grid GW today.** Two constraints
+  collide in `bandstructure/bse_setup.compute_wfns_fi`:
+  **capacity** — the Galerkin basis is an SVD of `(nk·nb, nspinor·n_μ)` and needs
+  `nspinor·n_μ > nk·nb`; **memory** — `fH_R (nk, ns·n_μ, ns·n_μ)` c128 is
+  `jax.device_put(..., P())`, i.e. **replicated on every device**. At nk = 144,
+  nb = 48 those want n_μ > 3456 and 102 GiB/device respectively. Quadratic in
+  n_μ, independent of the mesh: **more GPUs do not help.**
+- Measured: native 12x12 (n_μ = 1236) → `ctilde` orthogonality **4.9e-1**, and
+  `exciton_bands`' own gate aborted with `max|Δε_c| = 3577.9 meV,
+  min-sval = 0.0002`. At n_μ = 2412 `fH_R` alone is **49.93 GiB/device** and OOMs
+  an A100-80GB before the gate is reached. The htransform *bandstructure* figure
+  route fails the same way — its interpolated DFT bands came back with a
+  **negative** indirect gap (−1.20 eV), so the GW band figure was produced from
+  the computed k-points instead (`gw_bands_ongrid.py`, no interpolant).
+- **Orthonormal `ctilde` is necessary but not sufficient.** The 6x6 / 80 Ry /
+  1452-centroid producer had orthogonality **4.5e-14** and still failed the gate
+  at **361.3 meV**. The gate is on the *recovered ε*, and it is right to be.
+- **What made it pass** (6x6 route): centroids 1452 → **2382** (the 80 Ry
+  real-space grid is 174 960 points vs 46 080, so the same count samples it 3.8x
+  more thinly), **and** interp window nband 48 → **40** = BSE window (18–34) plus
+  6 guards — the gate's own printed advice. Result: orthogonality **2.3e-14**,
+  gate passes.
+- **`vq_interp` and the D3h centroid cure are in tension by default.** Orbit-closed
+  centroids activate the IBZ-only ζ write, and `vq_interp` requires full-BZ ζ
+  (`ValueError: ... zeta_q.h5 has nq=20 but the k-grid has nk=36`). The only
+  joint is the undocumented env var **`LORRAX_FORCE_FULL_BZ=1`**. Deserves a
+  config key and a better error.
+- **Host RAM, not GPU, is the other wall:** 4 exciton ranks on one node
+  OOM-killed at the `vq_interp`/htransform host caches (`Detected 1 oom_kill
+  event`). Spreading the same 2x2 mesh over 4 nodes (1 rank each) is the fix.
+- **Code change** `5e50b8e`: `streaming_galerkin_solve`'s `band_chunk_size` is now
+  a ceiling, lowered so one streamed ψ chunk stays under 6 GiB. It was a fixed
+  64 = **51.6 GB in one allocation** on this reference, which made every
+  htransform consumer (BSE, band figures, b_max sweep) unrunnable. Memory-only.
+- Priority follow-up for this phase: **un-replicate `fH_R`** (shard the leading
+  `nk_co` axis, or keep `fH_k` and do the R-sum inside the q-batch). Until then
+  the BSE is capped at coarse k-grids regardless of hardware.

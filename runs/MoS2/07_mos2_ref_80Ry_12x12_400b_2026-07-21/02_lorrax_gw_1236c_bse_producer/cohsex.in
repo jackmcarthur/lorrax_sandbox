@@ -1,0 +1,52 @@
+[cohsex]
+# ===================================================================
+# BSE PRODUCER -- a SECOND GW on the same converged 80 Ry / 12x12 / 400-band
+# reference, at HALF the centroid count, whose only job is to drive
+# bse.exciton_bands.
+#
+# WHY IT EXISTS.  The stage-3 production GW (n_mu = 2412) cannot drive the
+# BSE or the htransform bandstructure.  bandstructure/bse_setup.compute_wfns_fi
+# REPLICATES the real-space transform matrix
+#     fH_R : (nk_co, rank, rank) complex128,  rank = nspinor * n_mu
+# on every device ("so each q-batch is a local matmul + eigh").  That is
+#     144 * (2*2412)^2 * 16 B = 49.93 GiB PER DEVICE
+# and it OOMs an A100-80GB with the restart tensors resident (measured:
+# RESOURCE_EXHAUSTED ... 53616328704 bytes, at bse_setup.py:156
+# `fH_R_rep = jax.device_put(fH_R, rep)`).  The cost is QUADRATIC in n_mu and
+# is independent of the mesh, so no device count fixes it.
+# n_mu = 1236 -> 144 * 2472^2 * 16 = 13.1 GiB replicated, which fits.
+#
+# Everything else is IDENTICAL to 00b: same WFN, same band-range + D3h
+# centroid recipe, same nband = 326, same QP window 1..80, same GN-PPM,
+# same zeta_rcond = 1e-8, same rank-truncated charge zeta-solve.
+# ===================================================================
+compute_mode = gn_ppm
+restart = false
+centroids_file = centroids.txt
+nval = 26
+ncond = 54
+nband = 326
+sys_dim = 2
+x_only = false
+do_screened = true
+bispinor = false
+self_consistent = false
+use_ppm_sigma = true
+screening_method = minimax
+ppm_omega_p = 2.0
+ppm_fallback_omega = 2.0
+sigma_omega_min_ev = -10.0
+sigma_omega_max_ev = 10.0
+sigma_omega_step_ev = 0.5
+sigma_regularization_ev = 0.25
+use_chunked_isdf = true
+memory_per_device_gb = 65
+sigma_at_dft_energies = true
+sigma_freq_debug_output = true
+sigma_debug_split_contrib = true
+fermi_reference = midgap
+charge_zeta_solve = rank_truncate
+zeta_rcond = 1e-8
+wfn_file = WFN.h5
+sigma_omega_h5_file = sigma_mnk.h5
+bare_coulomb_cutoff = 80.0

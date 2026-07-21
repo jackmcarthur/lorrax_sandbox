@@ -28,6 +28,18 @@ incorrect sandbox scaffolding is the human's job.
 
 ## Issues
 
+### 2026-07-21: `skills/build_inputs/SKILL.md` points at three directories that do not exist
+- **Where**: `skills/build_inputs/SKILL.md` — Step 0 ("Read the pseudopotential `.upf` files … from `assets/pseudos_standard` (or `pseudos_stringent`…)"), Step 1 ("Start from the `scf.in` template in `assets/templates/`"), and Step 1 again ("Pseudopotential files live in `assets/pseudos_standard/`").
+- **What happened**: none of `assets/templates/`, `assets/pseudos_standard/`, `assets/pseudos_stringent/` exist. Following the skill literally to build `runs/MoS2/07_mos2_ref_80Ry_12x12_400b_2026-07-21` fails at the copy step.
+- **Expected**: the paths the top-level `AGENTS.md` documents and that actually exist: templates in `templates/` (repo root, not under `assets/`), pseudos in `assets/pseudopotentials/standard/` and `assets/pseudopotentials/stringent/`.
+- **Workaround**: used `templates/scf.in` + `templates/nscf.in` + `templates/pw2bgw.in` and `assets/pseudopotentials/standard/{Mo,S}.upf` (md5-verified byte-identical to the pseudos `runs/MoS2/A_bse_figures_2026-07-20` used). No physics impact; the skill's directory names are just stale.
+
+### 2026-07-21: `templates/` has two conflicting MoS2 pseudopotential sets
+- **Where**: `templates/Mo_ONCV_PBE_FR-1.0.upf` / `templates/S_ONCV_PBE_FR-1.1.upf` vs `assets/pseudopotentials/standard/{Mo,S}.upf`; `templates/nscf.in` names the former in `ATOMIC_SPECIES` while `templates/scf.in` names the latter (`Mo.upf`/`S.upf`).
+- **What happened**: the two sets are **different files** (md5 `703a6da1…`/`fca78818…` vs `4e1c3579…`/`a7319d53…`). A run built by copying `templates/scf.in` and `templates/nscf.in` verbatim would use different pseudopotentials in SCF and NSCF — silently, since QE reads whatever filename is in `ATOMIC_SPECIES` from `pseudo_dir`.
+- **Expected**: `templates/scf.in` and `templates/nscf.in` should name the same pseudopotential files.
+- **Workaround**: set both to `Mo.upf` / `S.upf` from `assets/pseudopotentials/standard/`, matching every existing MoS2 run in `runs/`.
+
 ### 2026-07-09: `module load lorrax_D lorrax_agent` fails in non-login shells (agent Bash contexts)
 - **Where**: `CLAUDE.md` compute instructions (`cd $LORRAX_SANDBOX && module use modulefiles && module load lorrax_D lorrax_agent && lxattach`).
 - **What happened**: in a non-login agent shell, `modulefiles/` (sandbox) contains only `lorrax_agent`; the `lorrax_D` base module lives in `~/modulefiles`, which is only on MODULEPATH via the login profile. Additionally, sourcing Lmod init manually and evaluating the module output in a plain non-interactive shell glob-mangles the `lxrun` shell function body (`$((nodes * 4))` — the `*` expands against CWD contents), producing a corrupted function.
@@ -667,3 +679,117 @@ When a `gw_jax`/GN-PPM run aborts (assert, OOM, kill) under `TF_GPU_ALLOCATOR=cu
   and is now quoted in the docs and in the fixture input.
 - **Consequence**: the Si fixture pins `zeta_rcond = 1e-10` so the BGW anchor is
   not silently re-frozen onto a LORRAX self-value.
+
+## 2026-07-21: `psp.get_dipole_mtxels` cannot run on a converged reference (single-process + unchunked FFT box)
+
+- **Where**: `src/psp/get_dipole_mtxels.py:main` (`sources/worktrees/lorrax_gw_converged`,
+  branch `agent/gw-converged-campaign`; the code is unchanged from `main`), via
+  `common/wfn_transforms.py:read_Gvecs_to_devices`.
+- **What is wrong**: two independent limits compound.
+  1. The tool **never calls `runtime.init_jax_distributed()`** (unlike
+     `centroid.kmeans_cli` and `gw.gw_jax`). Launching it under `srun -n 16`
+     therefore starts **16 independent single-process copies**, not one 16-GPU
+     job — the mesh it builds, `Mesh(np.array(jax.devices()).reshape(1, -1))`,
+     only ever sees the 4 (here 1, after `select_gpu.sh`) devices local to that
+     process.
+  2. `read_Gvecs_to_devices` materialises the **full FFT-box representation**
+     `(nk, nb, nspinor, nx, ny, nz)` complex128 — its own docstring flags this
+     ("still materialises the FFT-box representation for caller back-compat …
+     the g_flat path is ~6-11 % the size").
+  On the converged MoS2 reference (144 k × 326 bands × 174 960 grid points ×
+  2 spinors × 16 B) that is **262 GB in one allocation**. Measured:
+  `RESOURCE_EXHAUSTED: Out of memory while trying to allocate 262826311680 bytes`
+  — **byte-identical on 1 GPU and on 16 GPUs**, which is the fingerprint of (1).
+  Logs: `reports/gw_converged_12x12_80ry_2026-07-21/logs/dipole.log`,
+  `dipole_16gpu.log`.
+- **Why it matters**: `dipole.h5` is not optional. `gw.head_correction`
+  defaults to `wcoul0_source = s_tensor`, and with neither `eps0mat.h5` nor
+  `dipole.h5` present `resolve_head_sample` raises
+  `RuntimeError: Failed to resolve q=0 Coulomb head`. So the whole GW is gated
+  on a preprocessing tool that does not scale past roughly
+  `nk · nband · n_rtot · nspinor · 16 B ≲ 0.9 · VRAM`.
+  It has never been hit before because every prior MoS2 run was 30 Ry / 6×6
+  (36 k × 200 b × 46 080 → 21 GB, which fit).
+- **Workaround used**: a separate `dipole.in` with a reduced band window
+  (`nval 26 / ncond 38 / nband 64` → 51.6 GB, 8 m 33 s on one A100-80GB) while
+  the GW itself keeps `nband = 326`. Legitimate because `dipole.h5` feeds ONLY
+  the q=0 head, so the band window is a head-convergence parameter, not a Σ
+  parameter — and the truncation is measured, not assumed (see
+  `reports/gw_converged_12x12_80ry_2026-07-21`, `head_convergence` control).
+  Note `nband_eff = min(wfn.nbands, max(nelec + ncond, nband))`, so `ncond`
+  must be lowered too; lowering `nband` alone does nothing.
+- **Suggested fix (not done here — not this session's scope)**: call
+  `init_jax_distributed()` at the top of `get_dipole_mtxels.main`, build the
+  mesh the way `gw_jax._build_mesh` does, and take the `g_flat` path
+  (`WfnLoader.load` directly) instead of `read_Gvecs_to_devices`, transforming
+  per k-chunk. The dipole only needs `<mk|v|nk>` per k, so nothing requires the
+  whole (nk, nb) box resident at once.
+
+## 2026-07-21: two silent scale limits hit by the first converged (12x12 / 80 Ry) campaign
+
+Both are LORRAX behaviours, not doc errors, but both are *silent* — nothing in
+the log says the intended thing did not happen — so they belong here.
+
+### (1) The charge zeta-solve silently drops BOTH conditioning cures above a 4 GiB cap
+
+- **Where**: `src/isdf/core.py`, `_REPLICATED_CHOL_MAX_STACK_BYTES = 4 * 1024**3`
+  + `_replicate_charge_ok(nq, n_rmu)` + `_resolve_solver_kind_charge`.
+- **What happens**: only the *replicated* route carries the rank-revealing
+  truncation (`23af6b9`) and the mesh-invariant replicated factor (`ca78008`):
+
+      if _replicate_charge_ok(nq, n_rmu):
+          return ('replicated_rank_truncate' if charge_zeta_solve == 'rank_truncate'
+                  else 'replicated_cholesky')
+      return 'cusolvermp_cholesky' if is_2d else 'sharded_cholesky'
+
+  and the cap is `nq * n_rmu**2 * 16 <= 4 GiB`.  The converged MoS2 campaign is
+  **above** it — nq = 74 (IBZ), n_rmu = 2416 → 6.44 GiB — so `charge_zeta_solve
+  = rank_truncate` in `cohsex.in` was **accepted and then ignored**, and the run
+  took `cusolvermp_cholesky`.  The code's own comment documents the fallback
+  ("above the replication cap it silently uses the distributed Cholesky"), but
+  **no warning is emitted**: the only trace is the route name inside the
+  per-q `Computing L_q = ...  [PSD, charge channel, path=...]` line.
+- **How it was caught**: the stage-3 sanity gate asserted the route name and
+  failed; the physics gates all passed, so nothing else would have flagged it.
+  Measured consequence at convergence (rank_truncate vs the silent cholesky
+  fallback, everything else identical): K direct gap 2.6356 vs 2.6653 eV
+  (29.7 meV), indirect 2.5079 vs 2.5208 eV (12.9 meV), and per-band mean
+  |Δ⟨E_QP−E_DFT⟩| 11.5 meV (valence) → 81.4 meV (bands 61–80).  Not a
+  catastrophe, but not a no-op either.
+- **Suggested fix**: emit a WARNING when `charge_zeta_solve = rank_truncate` is
+  requested and `_replicate_charge_ok` is False, naming the cap and the actual
+  stack size.  A silently-ignored physics knob is the failure mode
+  `feedback_parsed_but_unread_not_dead` warns about, one level down.
+- **Workaround used**: `reports/gw_converged_12x12_80ry_2026-07-21/gw_probe.py
+  --cap-gib 8` rebinds the constant in-process (no source edit); the replicated
+  route then runs and the gate passes.
+
+### (2) The htransform / BSE cannot be built at production n_mu — `fH_R` is replicated
+
+- **Where**: `src/bandstructure/bse_setup.py:156`,
+  `fH_R_rep = jax.device_put(fH_R, rep)` with `rep = NamedSharding(mesh_xy, P())`.
+- **What happens**: `fH_R` is `(nk_co, rank, rank)` complex128 with
+  `rank = nspinor * n_mu`, and it is replicated on **every** device by design
+  ("so each q-batch is a local matmul + eigh").  Cost `nk * (ns*n_mu)^2 * 16`:
+  at 6x6 / n_mu = 1496 that is 5.2 GB (fine), at 12x12 / n_mu = 2412 it is
+  **49.93 GiB per device** and OOMs an A100-80GB
+  (`RESOURCE_EXHAUSTED ... 53616328704 bytes`).  It is **quadratic in n_mu and
+  independent of the device mesh**, so adding GPUs does not help.
+- **Consequence**: `bse.exciton_bands` and every `bandstructure.htransform`
+  consumer (band figures, the b_max sweep) are unrunnable on the production
+  n_mu = 2412 GW.  Workaround: a second GW at n_mu = 1236 on the same reference
+  purely as the BSE/figure producer (13.1 GiB replicated).
+- **Suggested fix**: shard `fH_R` on the leading `nk_co` axis (the q-batch loop
+  already batches over q; each batch needs the full R-sum, so this wants either
+  an all-gather per batch or a sharded Fourier sum), or store `fH_k` and do the
+  R-sum inside the batch.  Either way it should not be `P()`.
+
+### (3) (fixed in this session) htransform Galerkin band chunk was a fixed 64
+
+`streaming_galerkin_solve` streamed psi over the whole r-axis with a fixed
+`band_chunk_size = 64`, and `to_rchunk` returns ONE replicated
+`(nk, bc, nspinor, n_rtot)` array — 0.81 GB **per band** on this reference, so
+the default asked for 51.6 GB in a single allocation.  Fixed on
+`agent/gw-converged-campaign` (`5e50b8e`): the parameter is now a ceiling,
+lowered so a chunk stays under 6 GiB.  Memory-only (band chunking is a pure
+accumulation split), and it is what let stages 4(d) and 5 run at all.

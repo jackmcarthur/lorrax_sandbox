@@ -1,0 +1,29 @@
+[cohsex]
+# Bandstructure-interpolation input for the converged GW/QP figure.  Same WFN
+# and same 2412 band-range + D3h centroids as the GN-PPM producer in this
+# directory; the htransform reads the QP energies from eqp1.dat (written for
+# bands 1..80) and interpolates them onto Gamma-M-K-Gamma with the SAME fH it
+# uses for the DFT bands, so any wiggle common to both is the interpolant and
+# any separation is physics.
+#
+# nband here is the htransform's own band window, NOT the GW screening sum.
+# 48 = 26 valence + 22 conduction.  NOT the full QP range (80): the htransform
+# Galerkin build materialises a REPLICATED (nk, nb, nspinor, n_rtot) psi box
+# (144 x nb x 2 x 174960 x 16 B = 0.81 GB per band) and OOMs one A100-80GB at
+# nb = 80 (measured: 48.06 GiB single allocation, does not shard across a 2x2
+# mesh).  48 bands = 38.7 GB, fits.  The figure plots E-E_VBM in [-6, +8] eV,
+# which is entirely inside this window.
+centroids_file = centroids.txt
+nval = 26
+ncond = 22
+nband = 48
+sys_dim = 2
+bispinor = false
+wfn_file = WFN.h5
+
+K_POINTS {crystal_b}
+4
+  0.000000 0.000000 0.000000 1    # Gamma
+  0.000000 0.500000 0.000000 50   # M
+  0.333333 0.333333 0.000000 30   # K
+  0.000000 0.000000 0.000000 58   # Gamma

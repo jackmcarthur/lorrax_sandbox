@@ -1,0 +1,40 @@
+[cohsex]
+# Bandstructure-interpolation input for the converged GW/QP figure.
+#
+# QP DATA: eqp0.dat / eqp1.dat are COPIED FROM the stage-3 production run
+# 00b_lorrax_gw_2400c_ranktrunc (n_mu = 2412) -- those are the numbers the
+# campaign quotes.  eqp*.dat is a per-(k, band) table of (E_DFT, E_QP); it
+# carries no ISDF basis, so it can be interpolated in any basis.
+#
+# INTERPOLATION BASIS: the n_mu = 1236 centroid set, not the 2412 one that
+# produced the QP data.  bandstructure/bse_setup.compute_wfns_fi replicates
+# fH_R (nk, nspinor*n_mu, nspinor*n_mu) complex128 on EVERY device, which is
+# 144 * 4824^2 * 16 B = 49.93 GiB at n_mu = 2412 and OOMs an A100-80GB.  The
+# cost is quadratic in n_mu and mesh-independent.  At n_mu = 1236 it is
+# 144 * 2472^2 * 16 B = 13.1 GiB, which fits.
+#
+# The DFT bands in the figure go through the SAME fH as the QP bands, so the
+# interpolant is common-mode: any wiggle shared by both curves is the
+# interpolation, any separation between them is the self-energy.
+# GAP-CENTRED WINDOW, and it has to be.  The htransform interpolant is built
+# from an SVD of A = (nk*nb, nspinor*n_mu); when nk*nb EXCEEDS the ISDF rank
+# the basis cannot represent the states and the interpolation collapses.
+# Measured here: nval=26/ncond=22 -> 144 x 48 = 6912 states vs rank 2472,
+# ctilde orthogonality error 4.9e-1 and the interpolated "bands" came back
+# with a NEGATIVE indirect gap (-1.20 eV DFT).  At 6x6 this never bit
+# (36 x 60 = 2160 states < rank 3178, orthogonality 2e-14).
+# nval=8 / ncond=8 -> absolute bands 18..34, 144 x 16 = 2304 states < 2472.
+centroids_file = centroids.txt
+nval = 8
+ncond = 8
+nband = 16
+sys_dim = 2
+bispinor = false
+wfn_file = WFN.h5
+
+K_POINTS {crystal_b}
+4
+  0.000000 0.000000 0.000000 1    # Gamma
+  0.000000 0.500000 0.000000 50   # M
+  0.333333 0.333333 0.000000 30   # K
+  0.000000 0.000000 0.000000 58   # Gamma

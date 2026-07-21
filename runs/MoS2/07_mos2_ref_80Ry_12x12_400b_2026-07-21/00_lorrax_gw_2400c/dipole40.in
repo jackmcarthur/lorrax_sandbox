@@ -1,0 +1,29 @@
+[cohsex]
+# Dipole-only input.  IDENTICAL to cohsex.in except for the band window.
+#
+# WHY A SEPARATE FILE: psp.get_dipole_mtxels is a SINGLE-PROCESS tool (it
+# never calls runtime.init_jax_distributed) and common.wfn_transforms
+# .read_Gvecs_to_devices materialises the full FFT-box representation
+#   (nk, nb, nspinor, nx, ny, nz) complex128
+# = 144 x 326 x 2 x 174960 x 16 B = 262 GB at the production nband=326.
+# That OOMs on one A100-80GB, and launching it under -n 16 just starts 16
+# independent single-GPU copies of the same 262 GB allocation (verified:
+# byte-identical RESOURCE_EXHAUSTED on 1 and 16 GPU).  See
+# KNOWN_SANDBOX_ERRORS.md.
+#
+# dipole.h5 feeds ONLY the q=0 Coulomb head (gw.head_correction, the
+# 's_tensor' wcoul0 source: the dipole SOS chi head at q->0).  The band
+# window is therefore a HEAD-convergence parameter, not a Sigma parameter.
+# nband = 64 -> 144 x 64 x 2 x 174960 x 16 B = 51.6 GB, fits with headroom.
+# Convergence of wcoul0 in this window is measured in
+# reports/gw_converged_12x12_80ry_2026-07-21 (head_convergence.py) against
+# an nband = 40 control.
+compute_mode = gn_ppm
+centroids_file = centroids.txt
+nval = 26
+ncond = 14
+nband = 40
+sys_dim = 2
+bispinor = false
+wfn_file = WFN.h5
+bare_coulomb_cutoff = 80.0

@@ -1,0 +1,51 @@
+[cohsex]
+# BSE exciton bandstructure E_S(Q) along Gamma-M-K-Gamma, on the 80 Ry
+# reference, 6x6 -> 12x12 through bse_k_grid.
+#
+# WHY 6x6 -> 12x12 AND NOT THE NATIVE 12x12 GW.  The htransform basis that
+# supplies psi_c(k+Q) and eps_c(k+Q) is an SVD of A = (nk*nb, nspinor*n_mu);
+# it is only well posed when the ISDF rank EXCEEDS the state count:
+#     nspinor * n_mu  >  nk * nb.
+# At nk = 144, nb = 48 that demands n_mu > 3456, and bse_setup.compute_wfns_fi
+# REPLICATES fH_R (nk, nspinor*n_mu, nspinor*n_mu) c128 on every device, which
+# would then be 144 * 6912^2 * 16 B = 102 GiB per device.  The two constraints
+# are incompatible at 144 k.  Measured on the native-12x12 attempt
+# (02_lorrax_gw_1236c_bse_producer, n_mu = 1236): ctilde orthogonality error
+# 4.9e-1, and the driver's OWN gate aborted the run --
+#   max|d eps_c| = 3577.9 meV, conduction-subspace overlap min-sval = 0.0002.
+# The gate is right to refuse; the numbers would have been meaningless.
+#
+# At nk = 36 the capacity rule needs only n_mu > 864 and fH_R is 4.5 GiB.
+# 03_lorrax_gw_6x6_80Ry_bse supplies that: same converged 80 Ry SCF density,
+# same cell/pseudos/cutoff, 6x6x1 NSCF, 2382 band-range + D3h centroids.
+# bse_k_grid then interpolates to the 12x12 BSE grid (W zero-padded in R,
+# psi/eps via the htransform, V_Q0 rebuilt at the fine mini-BZ head) -- the
+# same validated economy route the 30 Ry predecessor used, but on an 80 Ry
+# reference instead.
+#
+# htransform interp window nband = 40 = 26 valence + 14 conduction, i.e. the
+# BSE window (bands 18..34) plus 6 conduction guards.  NOT 48, which is what
+# the 30 Ry predecessor used: at 80 Ry the real-space grid is 3.8x denser
+# (174960 vs 46080 points) for a similar centroid count, so the same window is
+# relatively far more over-packed, and the driver's gate measured
+# max|d eps_c| = 361.3 meV, min-sval = 0.002 with nband = 40 / 1452 centroids
+# (vs 9.5 meV / 0.88 at 30 Ry).  The gate's own advice is
+#   "the interp basis is over-packed ... Reduce nband toward the BSE window
+#    (a few guard bands)"
+# so this file does that, AND the producer's centroid count goes 1452 -> 2382.
+# Capacity check: 36 x 40 = 1440 states < rank = 2 x 2382 = 4764.  Ample.
+centroids_file = centroids.txt
+nval = 26
+ncond = 14
+nband = 40
+sys_dim = 2
+bispinor = false
+wfn_file = WFN.h5
+bse_k_grid = 12 12 1
+
+K_POINTS {crystal_b}
+4
+  0.000000 0.000000 0.000000 1    # Gamma
+  0.000000 0.500000 0.000000 20   # M
+  0.333333 0.333333 0.000000 12   # K
+  0.000000 0.000000 0.000000 23   # Gamma

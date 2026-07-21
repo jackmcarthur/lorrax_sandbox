@@ -1,0 +1,66 @@
+[cohsex]
+# ===================================================================
+# CONVERGED MoS2 G0W0 — the payoff run of the 80 Ry campaign.
+# ===================================================================
+# Reference WFN: ../qe/nscf/WFN.h5  (ecutwfc/ecutrho = 80/320 Ry,
+#   12x12x1 = 144 k, mnband = 400, FFTgrid 36x36x135 -> n_rtot 174960).
+# Every prior MoS2 GW in this sandbox sat on a 30 Ry / 6x6 WFN; this is
+# the first one on a converged reference.
+#
+# Centroids: 2412 = 208 orbit representatives x 12-op recovered D3h
+#   density point group, BAND-RANGE weighted over the FULL nband range
+#   w(r) = sum_{n in [0,326)} sum_k w_k |psi_nk(r)|^2.
+#   Both centroid fixes together (band-range weight + D3h orbit closure).
+#   n_mu / nband = 2412 / 326 = 7.40x.
+#
+# Band-window mapping (common/meta.py), nelec = 26 (spinor):
+#   nval  = 26 -> sigma valence edge  b_id_1 = nelec - nval = 0
+#   ncond = 54 -> sigma cond edge     b_id_3 = nelec + ncond = 80
+#                 => QP / sigma corrections for bands 1..80
+#   nband = 326 -> sum-over-states (screening + CH) = 26 val + 300 cond
+#
+# All five conditioning cures active on this branch
+# (agent/gw-converged-campaign <- agent/gw-conduction-postfix b7654ee):
+#   xi-floor (d011a36) . replicated zeta-fit (ca78008) .
+#   rank-truncation (23af6b9) . D3h orbit closure (1794518) .
+#   band-range centroids + zeta_rcond 1e-8 (b7654ee)
+#
+# Hardware: 16 x A100-80GB (4 nodes), memory_per_device_gb = 65.
+#   Planner (reports/qe_reference_80ry_12x12_2026-07-21) sized this at 60 GB:
+#   HWM ~51 GB/dev, wall ~1 h 17.  n_mu = 2400 does NOT fit on 40 GB.
+#   65 (not 60) because gflat_memory_model under-predicts the true BFC-arena
+#   peak by ~14% (project_planner_conservative_8x): 65 planned ~= 74 GB true,
+#   ~6 GB left for CUDA context + fragmentation.  70 planned would be ~80 GB
+#   true = the whole card, zero headroom.  The HWM sits at the structural
+#   floor (r_chunk >= n_mu), so the win from the bigger budget is FEWER,
+#   LARGER r-chunks -> less per-pass launch + HDF5 overhead.
+compute_mode = gn_ppm
+restart = true
+centroids_file = centroids.txt
+nval = 26
+ncond = 54
+nband = 326
+sys_dim = 2
+x_only = false
+do_screened = true
+bispinor = false
+self_consistent = false
+use_ppm_sigma = true
+screening_method = minimax
+ppm_omega_p = 2.0
+ppm_fallback_omega = 2.0
+sigma_omega_min_ev = -25.0
+sigma_omega_max_ev = 25.0
+sigma_omega_step_ev = 0.5
+sigma_regularization_ev = 0.25
+use_chunked_isdf = true
+memory_per_device_gb = 65
+sigma_at_dft_energies = true
+sigma_freq_debug_output = true
+sigma_debug_split_contrib = true
+fermi_reference = midgap
+charge_zeta_solve = rank_truncate
+zeta_rcond = 1e-8
+wfn_file = WFN.h5
+sigma_omega_h5_file = sigma_mnk.h5
+bare_coulomb_cutoff = 80.0
