@@ -1,5 +1,126 @@
 # Changelog
 
+## 2026-07-21: BAND-RANGE-weighted centroids (the vacuum-support cure) + zeta_rcond 1e-8 + MoS2 production GW figure
+
+Branch `agent/gw-conduction-postfix` @ `b7654ee` (worktree
+`sources/worktrees/lorrax_gw_conduction_postfix`). All four conditioning cures plus the
+V_H C3 fix are now on ONE branch: ξ-floor `d011a36` · replicated ζ-fit `ca78008` ·
+rank-truncation `23af6b9` · density-point-group orbit closure `1794518` (merged
+`b5b4d6c`) · this commit.
+
+**1. `zeta_rcond` 1e-6 → 1e-8** (gw_config + the three signature defaults; ONE value).
+The over-complete recovery plateau spans 1e-8…1e-4, so the plateau's LOW end buys the
+identical cure at ~20× less drift on the BGW-anchored Si gate (max|Δ sigTOT| 1.021 →
+**0.054 meV**, vs Si's 0.48 meV envelope vs BerkeleyGW). Gate movement:
+`si_cohsex_3d` **UNPINNED** — it pinned 1e-10 only because 1e-6 exceeded its BGW
+envelope; at 1e-8 the drift is 9× inside it, so the anchor now runs the *shipping*
+default. `gnppm` / `bispinor` / `fixed_point` re-frozen **back to their pre-1e-6
+(1e-10-era) references bit-for-bit** — the re-freeze was a revert, i.e. 1e-6 was the
+outlier. Full suite **207 passed, 12 skipped**.
+
+**2. `--centroid-weight band_range`** (`centroid/kmeans_cli.py` +
+`charge_density.py:rho_from_band_range`), the **new default for `--density-mode
+scalar`**: `w(r) = Σ_{n∈range} Σ_k w_k|ψ_nk(r)|²` instead of the occupied ρ(r), band
+range defaulting to the σ window and `--weight-bands LO:HI` overriding (pass
+`0:nband` in production). Occupied-only ρ is entirely inside a slab → **zero centroids
+in the vacuum** → vacuum-localized far-conduction states have no ISDF quadrature
+support → ⟨nk|V_H|nk⟩ comes back +139.75 eV where truth is −139.6 eV, and it all lands
+on Vxc. MoS2 6×6, 16 GPU, 1600 centroids, D3h-closed, only the weight changing,
+|ΔVxc| vs QE `kih.dat` over 36 k × 100 bands:
+
+| weight | vac. centroids | mean \|ΔVxc\| | max | corr(\|ΔVxc\|, f_vac) | valence (b<26) |
+|---|---|---|---|---|---|
+| occupied ρ | 0.8 % | 27.74 eV | 275.57 eV | **+0.942** | 2.089 eV |
+| band 0:100 | 18.6 % | 0.33 eV | 3.82 eV | −0.226 | 0.767 eV |
+| band 0:200 | 23.9 % | **0.23 eV** | **2.17 eV** | **−0.261** | **0.458 eV** |
+
+**120× on the mean, 127× on the max**, and the vacuum-weight correlation — the defect's
+signature — is gone. **No tradeoff:** the valence half improves 4.6× as well, because
+occupied-only weighting was *over-concentrating* the slab (centroid Riemann norm
+estimate 3.53 → 1.87, toward the ideal 1.0). vs BerkeleyGW (MoS2 4×4 Γ anchor): Σ_x
+improves **14×** (33 → 2.4 meV vs BGW −16.7449) and Σ_c moves ≤ 54 meV either way —
+the ~1 eV Σ_c offset on that fixture is identical in both weightings and is a separate,
+pre-existing issue. `--weight-bands 0:26` reproduces the ρ-weighted centroid set exactly
+(the code-path sanity check).
+
+**3. Production 6×6 GW + figure.**
+`runs/MoS2/A_bse_figures_2026-07-20/04_lorrax_gw_bandrange_2026-07-21/prod_gw_1600_200b`
+— 1589 band-range + D3h centroids, `nband=200`, QP for bands 1–60, 16 GPU, 55 s compute.
+**K direct gap 2.942 eV, indirect 2.885 eV** (eqp0: 3.320 / 3.228), against 1.356 eV in
+run 03 and −3.215 eV in run 02. 200 screening bands plus a centroid set that can
+represent them opens the gap from 1.36 → 2.94 eV, i.e. to just above the 2.5–2.8 eV
+monolayer-MoS2 G₀W₀ literature band. Figure (Γ–M–K–Γ, DFT vs G₀W₀, 48-band htransform,
+same fH both sides):
+`reports/gw_bandrange_centroids_2026-07-21/plots/gw_bands_prod.png`. n_μ/n_band = 7.9×
+showed **no under-completeness signature** (full-rank Galerkin SVD, ctilde orthogonality
+2e-14, smooth interpolated bands) — the rank-truncation is conditioning it.
+
+Deliverables + scripts: `reports/gw_bandrange_centroids_2026-07-21/` (gen_centroids.sh,
+centroid_support.py, run_ab.sh, gaps.py, gw_bands_figure.py, vac_*.log, pytest_*.log).
+
+## 2026-07-21: Converged MoS2 QE reference — 80 Ry / 12×12×1 / 400 bands — BUILT + VERIFIED, and the downstream GW SIZED (no GW run)
+
+The foundation for the properly-converged GW+BSE campaign. Every prior MoS2 run in this
+sandbox is 30 Ry; this is the redo, built from scratch per `skills/build_inputs` with
+**no reuse or symlinking** of any stale output. Run dir
+`runs/MoS2/07_mos2_ref_80Ry_12x12_400b_2026-07-21/` (manifest YAML-validated).
+
+**The reference** — `qe/nscf/{WFN.h5 (15.65 GB), vxc.dat, kih.dat, RHO}`, from
+`assets/pseudopotentials/standard/{Mo,S}.upf` (md5-identical to those
+`A_bse_figures_2026-07-20` used, so the 80 Ry set is comparable to the 30 Ry history).
+Verified with LORRAX's own `file_io.mf_header` reader — **ALL PASS**:
+`mnband=400`, `ecutwfc=80.0 Ry` (`ecutrho=320`, QE default 4×), `kgrid=(12,12,1)`,
+`nrk=144` unshifted, K=(⅓,⅓,0) present at file index 52 (|Δk|=4.7e-10),
+`nspinor=2`, **FFTgrid (36,36,135) → n_rtot = 174 960**, `ngkmax = 8603`.
+Physics: `ifmax=26` at K (= N_val), direct DFT gap **1.6954 eV** vs **1.7322 eV** on the
+30 Ry 6×6 WFN — the cutoff alone moves the K gap **−36.8 meV**.
+
+**Wall-times** (own allocation 56276468, 4 nodes / 16 GPU; did *not* touch the concurrent
+6×6 GW allocation): SCF **16.85 s** (4 GPU, `-npools 4`, 10 its to 1e-10) · NSCF
+**29.06 s** (16 GPU, `-npools 16`, 144 k / 400 bands) · pw2bgw WFN+vxc+kih **606 s** ·
+pw2bgw RHO 35 s · wfn2hdf 121 s · **total 833 s (13 min 53 s)**. Only **46 s is DFT** —
+k-pool parallelism is near-perfect; the other 94 % is single-rank pw2bgw computing
+144×400 = 57 600 vxc/kih diagonals plus the 15.6 GB HDF5 conversion, neither of which
+scales with nodes.
+
+**GW sizing** (`gw.gflat_memory_model.plan_gflat_chunks`, real 4×4 GPU mesh, 144 q,
+nband=326, nspinor=2). Validated first by a **control that reproduces the completed 6×6
+run's printed plan exactly** — band_chunk 16, r_chunk 32720 (2), q_chunk 36, gflat_cs 100,
+P_min 1, persistent 0.76, HWM 23.80 GB, binder `C_fit_one_rchunk`, and all five stage
+peaks. Binder is `C_fit_one_rchunk` in **every** case.
+
+| n_μ | HWM/dev @28 GB (40 GB card) | @60 GB (80 GB card) | wall (16 GPU, wide Σ) |
+|---|---|---|---|
+| 1600 | **23.77 — fits** | 50.99 — fits | ~35 min |
+| 2400 | 24.00 — 0.8 % over (fits only with narrow Σ: 23.80) | 50.96 — fits | ~1 h 17 |
+| 3000 | 31.96 — **NO** (114 %) | 50.97 — fits | ~2 h |
+| 4000 | 50.50 — **NO** (180 %) | 50.98 — fits, at the edge | ~3 h 30 |
+
+**The memory wall is closed-form and is not a knob.** Stage C floors `r_chunk ≥ n_μ`, so
+`HWM_floor(μ) = 2016·μ² + 4.562e6·μ` bytes (wide Σ, P=16) → **n_μ ≈ 2490 on 16×40 GB**
+(2670 with a narrow Σ window), **n_μ ≈ 4030 on 16×80 GB**. No chunk size or utilization
+setting moves it; only more devices, a narrower Σ window, or bigger cards.
+Consequence: **the docs' production centroid guidance (8×nband = 2608, 12× = 3912;
+`COHSEX_INPUT.md` says 8×/12×, not the 10× sometimes quoted) does NOT fit on 16×A100-40GB.**
+
+**Recommendation: n_μ = 2400 on 16 × A100-80 GB** (HWM 50.96 = 85 % of budget, ~1 h 17,
+4–5 node-hours), then a convergence ladder at **3008 and 4000** on the same nodes to
+bracket the 12× guidance. On 40 GB nodes only **n_μ = 1600** is safe. Conditioning is no
+longer the constraint (rank-truncation `zeta_rcond=1e-6`); memory and time are.
+
+Two production conventions surfaced by the control, both worth fixing:
+- **`common.meta.Meta` has no `ngkmax` field**, so `gw_init`'s
+  `getattr(meta,'ngkmax',0) or int(0.06*meta.n_rtot)` always takes the heuristic branch
+  (10497 vs the true 8603 here, +22 %; 2764 vs 1964 on the 6×6 anchor, +41 %). Dead
+  `getattr`; should bind the real value off the mf_header.
+- **`band_chunk_size` defaults to `16`, not `0`** in `gw_config`, so the planner's
+  `band_chunk` picker is overridden in every production run.
+
+Report + all scripts/logs: `reports/qe_reference_80ry_12x12_2026-07-21/`.
+Two stale-path doc errors logged to `KNOWN_SANDBOX_ERRORS.md` (build_inputs skill points
+at non-existent `assets/templates/` + `assets/pseudos_standard/`; `templates/scf.in` and
+`templates/nscf.in` name *different* MoS2 pseudopotential files).
+
 ## 2026-07-21: `zeta_rcond` default → 1e-6 + post-fix conduction audit — Z-pole CURED, far-conduction is a SEPARATE V_H defect [agent/gw-conduction-postfix off agent/gw-rank-truncation @ 23af6b9, lorrax_gw_conduction_postfix worktree, unmerged]
 
 Two things: land the owner-approved `zeta_rcond` default, and re-measure the
@@ -57,6 +178,18 @@ five pass untouched, confirming every movement is the default change.
   at ~20× less drift.**
 
 Artifacts (logs, npz, plots, scripts): `reports/gw_conduction_postfix_2026-07-21/`.
+
+## 2026-07-21: Regulator-dressed MPA alternative documented (design only)
+
+Added `reports/multipole/REGULATOR_DRESSED_MPA.md`. The note separates ordinary
+double-parallel MPA, where $+i\bar{\omega}$ is only a complex sampling coordinate,
+from a proposed RegMPA model in which LORRAX's excluded-range sine regularizer and
+its width remain part of each fitted mode. It defines the positive-time complex
+completion, regulator-dressed paired-mode kernel, variable-projection fit,
+quadrature reuse across real frequencies, width-dependent alternatives, and the
+corresponding Stage-C rule: reuse the model regulator rather than applying an
+independent HGL regularization again. This path does not use the BSE W(omega)
+Lanczos chain. No source was modified or tested.
 
 ## 2026-07-21: Multipole full-frequency GW plan reassessed (design only)
 

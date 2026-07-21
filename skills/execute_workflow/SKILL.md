@@ -133,22 +133,48 @@ too few bands — `nbnd` in NSCF must exceed `number_bands` in sigma.inp by ≥ 
 
 ### GWJAX
 
-GWJAX runs in the Shifter container (NVIDIA JAX image, JAX 0.7.2 / Python 3.12) for
+GWJAX runs in the Shifter container (NVIDIA JAX image; jax 0.5.3.dev20250415 +
+CUDA-12 plugins — verified from the image filesystem 2026-07-11; note the
+lorrax pyproject pins jax>=0.9/cuda13, a build target the pinned image does
+NOT satisfy — see KNOWN_SANDBOX_ERRORS 2026-06-15) for
 multi-GPU execution. Do not use `uv run` for multi-GPU (known NamedSharding segfault).
 
 Define the Shifter prefix once per session:
 
 ```bash
-SITE=$HOME/scratchperl/.isdf/isdf_venvs/isdf_site
-SHIFTER="shifter --module=gpu --image=nvcr.io/nvidia/jax:25.04-py3 \
-    --env=PYTHONPATH=/global/u2/j/jackm/software/lorrax/src:$SITE \
+# Shifter does NOT expand $HOME, so paths below are literal. The nvhpc/phdf5/slate
+# FFI deps live in $HOME/software (relocated off $SCRATCH 2026-06-24 — scratch is
+# purged). This is the Cray-MPICH variant (current production); for the OpenMPI/hpcx
+# variant swap the phdf5 stage to lorrax_phdf5_openmpi/stage, use nvhpc 25.5_cuda12.9,
+# and drop the mpich module + the gtl LD_PRELOAD.
+SITE=/global/homes/j/jackm/scratchperl/.isdf/isdf_venvs/isdf_site
+LORRAX_SRC=/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_D/src   # active checkout
+VOL="--volume=/global/homes/j/jackm/software/lorrax_nvhpc:/lorrax_nvhpc \
+     --volume=/global/homes/j/jackm/software/lorrax_phdf5_cray/stage:/lorrax_phdf5 \
+     --volume=/global/homes/j/jackm/software/lorrax_slate_cray/stage:/lorrax_slate"
+SHIFTER="shifter --module=gpu,mpich --image=nvcr.io/nvidia/jax:25.04-py3 $VOL \
+    --env=PYTHONPATH=$LORRAX_SRC:$SITE \
+    --env=LD_LIBRARY_PATH=/global/homes/j/jackm/software/slate/install/lib64:/lorrax_slate/lib:/lorrax_phdf5/lib:/lorrax_nvhpc/0.7.2_cuda12.9/math_libs/12.9/lib64:/opt/udiImage/modules/mpich:/opt/udiImage/modules/mpich/dep \
+    --env=LD_PRELOAD=/lorrax_slate/lib/libmpi_gtl_cuda.so.0 \
+    --env=MPICH_GPU_SUPPORT_ENABLED=1 \
     --env=JAX_ENABLE_X64=1 \
     --env=HDF5_USE_FILE_LOCKING=FALSE"
+
+# Wrap EVERY srun command as `$SEL $SHIFTER $INC python3 ...` (see Steps 5-6 below):
+#   SEL = per-rank GPU selector — sets CUDA_VISIBLE_DEVICES=$SLURM_LOCALID, required by
+#         SLATE/cuSolverMp's 1-device-per-process model (use it even single-GPU).
+#   INC = re-asserts MPICH_GPU_SUPPORT_ENABLED=1 inside the container (shifter's
+#         --module=mpich unsets it), enabling GPU-Direct RDMA for the MPI FFI libs.
+SEL=$LORRAX_SRC/ffi/common/cpp/select_gpu.sh
+INC=$LORRAX_SRC/ffi/common/cpp/in_container.sh
 ```
 
-Shifter rules: use `/global/u2/j/jackm/...` paths (Shifter may not expand `$HOME`).
-Do NOT use `isdf_pyuserbase` overlay (PJRT conflict); use `isdf_site` only. Never set
-`CUDA_VISIBLE_DEVICES` or `--gpu-bind` — JAX auto-detects GPUs from SLURM.
+Shifter rules: use literal `/global/homes/j/jackm/...` paths (Shifter does not expand
+`$HOME`; verified that `/global/homes` works as a `--volume` source).
+Do NOT use `isdf_pyuserbase` overlay (PJRT conflict); use `isdf_site` only. Do NOT use
+`--gpu-bind` or hand-set a global `CUDA_VISIBLE_DEVICES`; instead let `select_gpu.sh`
+(`$SEL`) bind one GPU per rank via `CUDA_VISIBLE_DEVICES=$SLURM_LOCALID`. Without it,
+every rank lands on GPU 0 and multi-GPU GW dies with NCCL "Duplicate GPU detected".
 
 **Step 5: Preprocessing** (single GPU each)
 
@@ -158,17 +184,33 @@ only on geometry and can be symlinked across k-grid variants of the same system.
 ```bash
 N_CENTROIDS=640   # from centroids_frac_<N>.txt
 
-# a) ISDF centroids (skip if file exists or is symlinked)
-srun --jobid=$JOBID --gres=gpu:1 -N 1 -n 1 $SHIFTER \
-    python3 -u -m centroid.kmeans_isdf $N_CENTROIDS --no-plot --seed 42
+# a) ISDF centroids (skip if file exists or is symlinked).  Entrypoint is
+#    ``centroid.kmeans_cli`` — the ``kmeans_isdf`` module is the algorithm
+#    (no __main__).  Add ``--density-mode current`` to additionally produce
+#    ``centroids_frac_<N>_current.txt`` for bispinor V_q (required when
+#    cfg.bispinor=True).
+#
+#    WEIGHT: the scalar channel defaults to ``--centroid-weight band_range``
+#    = w(r) = Σ_{n∈window} Σ_k w_k|ψ_nk(r)|² over the σ window
+#    (0, nval+ncond).  PASS ``--weight-bands 0:<nband>`` to weight by the
+#    full band range the run actually uses — on a SLAB the occupied-only
+#    ρ(r) puts zero centroids in the vacuum, so vacuum-localized conduction
+#    states have no ISDF quadrature support and their ⟨nk|V_H|nk⟩ (hence
+#    Vxc) is sign-wrong: MoS2 6×6 |ΔVxc| vs QE kih.dat 27.7 eV mean /
+#    275.6 eV max → 0.23 / 2.17 eV when weighted by bands 0:200.
+#    ``--centroid-weight charge_density`` restores the historical weight.
+#    Orbit closure runs under the charge-density point group either way.
+srun --jobid=$JOBID --gres=gpu:1 -N 1 -n 1 $SEL $SHIFTER $INC \
+    python3 -u -m centroid.kmeans_cli $N_CENTROIDS --seed 42 \
+        --weight-bands 0:$NBAND
 
-# b) Dipole matrix elements (add --kchunk N for large k-grids to control memory)
-srun --jobid=$JOBID --gres=gpu:1 -N 1 -n 1 $SHIFTER \
-    python3 -u -m psp.get_dipole_mtxels_chunked -i cohsex.in
+# b) Dipole matrix elements
+srun --jobid=$JOBID --gres=gpu:1 -N 1 -n 1 $SEL $SHIFTER $INC \
+    python3 -u -m psp.get_dipole_mtxels -i cohsex.in
 
-# c) Kinetic + ionic Hamiltonian (add --kchunk N for large k-grids)
-srun --jobid=$JOBID --gres=gpu:1 -N 1 -n 1 $SHIFTER \
-    python3 -u -m gw.kin_ion_io_chunked -i cohsex.in
+# c) Kinetic + ionic Hamiltonian
+srun --jobid=$JOBID --gres=gpu:1 -N 1 -n 1 $SEL $SHIFTER $INC \
+    python3 -u -m gw.kin_ion_io -i cohsex.in
 ```
 
 Verify: `ls centroids_frac_*.txt dipole.h5 kin_ion.h5`
@@ -177,17 +219,20 @@ Verify: `ls centroids_frac_*.txt dipole.h5 kin_ion.h5`
 
 ```bash
 srun --jobid=$JOBID --gres=gpu:4 -N $NODES -n $((NODES*4)) \
-    $SHIFTER \
+    $SEL $SHIFTER \
     --env=XLA_PYTHON_CLIENT_PREALLOCATE=false \
     --env=XLA_PYTHON_CLIENT_MEM_FRACTION=0.95 \
+    $INC \
     python3 -u -m gw.gw_jax -i $(pwd)/cohsex.in \
     2>&1 | tee gw.out
 ```
 
 Verify: `ls eqp0.dat sigma_freq_debug.dat sigma_mnk.h5`
 
-If `eqp0.dat` lacks `sigC_EDFT` columns, check that `kin_ion.h5` exists and
-`sigma_at_dft_energies = true` is in cohsex.in.
+If `eqp0.dat` lacks `sigC_EDFT` columns, check that `kin_ion.h5` exists.
+(The at-DFT Σ_c interpolation always runs in dynamic modes; the legacy
+`sigma_at_dft_energies` key is deprecated — `qp_solver = one_shot_dft` is
+the default.)
 
 **Timing reference** (MoS2, 16 GPUs / 4 nodes):
 
@@ -203,9 +248,10 @@ If `eqp0.dat` lacks `sigC_EDFT` columns, check that `kin_ion.h5` exists and
 ```bash
 for KG in 4x4 5x5 6x6; do
     srun --jobid=$JOBID --exclusive --gres=gpu:4 -N 1 -n 4 \
-        $SHIFTER \
+        $SEL $SHIFTER \
         --env=XLA_PYTHON_CLIENT_PREALLOCATE=false \
         --env=XLA_PYTHON_CLIENT_MEM_FRACTION=0.95 \
+        $INC \
         python3 -u -m gw.gw_jax -i $PSCRATCH/kgrid_cluster/$KG/cohsex.in \
         > $PSCRATCH/kgrid_cluster/$KG/gw.out 2>&1 &
 done
@@ -280,9 +326,9 @@ Verify: `grep "Job Done" sigma.out && ls sigma_hp.log`
 **Steps 5–6: LORRAX** (all modules accept `-i <path-to-input>`)
 
 ```bash
-uv run python -u -m centroid.kmeans_isdf $N_CENTROIDS --no-plot --seed 42
-uv run python -u -m psp.get_dipole_mtxels_chunked -i $(pwd)/cohsex.in
-uv run python -u -m gw.kin_ion_io_chunked -i $(pwd)/cohsex.in
+uv run python -u -m centroid.kmeans_cli $N_CENTROIDS --seed 42
+uv run python -u -m psp.get_dipole_mtxels -i $(pwd)/cohsex.in
+uv run python -u -m gw.kin_ion_io -i $(pwd)/cohsex.in
 uv run python -u -m gw.gw_jax -i $(pwd)/cohsex.in 2>&1 | tee gw.out
 ```
 
@@ -307,5 +353,5 @@ test systems like CO at Gamma). No extra environment setup needed.
 | Session dies | No foreground process | `salloc ... bash -c "sleep 14300"` |
 | cuFFT OOM | XLA scratch | `memory_per_device_gb = 28` |
 | sigma silent fail | Too few bands | NSCF nbnd > number_bands + 2 |
-| No sigC_EDFT | Missing kin_ion.h5 | Run kin_ion_io; `sigma_at_dft_energies = true` |
+| No sigC_EDFT | Missing kin_ion.h5 | Run kin_ion_io (at-DFT Σ_c always on in dynamic modes) |
 | Restart fails | Stale tensors | Delete `tmp/isdf_tensors_*.h5`, `restart = false` |

@@ -74,7 +74,11 @@ off = np.concatenate([[0], np.cumsum(ngk)])
 Nx, Ny, Nz = (int(v) for v in fftg)
 
 # centroid grid indices (fractional -> nearest FFT grid point)
-cf = np.loadtxt(os.path.join(RUN, "centroids_frac_1496.txt"))
+import glob
+CENT = os.environ.get("VAC_CENT") or sorted(
+    glob.glob(os.path.join(RUN, "centroids*.txt")))[0]
+print(f"centroid file: {CENT}", flush=True)
+cf = np.loadtxt(CENT)
 if cf.ndim == 1:
     cf = cf.reshape(1, -1)
 cf = cf[:, :3]
@@ -130,11 +134,15 @@ for (k, n), d in fd.items():
 KIHr = np.array([[kih[k][b + 1] for b in range(NB)] for k in range(nk)])
 err = np.abs((ki + VH) - KIHr)
 
-np.savez(os.path.join(OUT, "vacuum_weight.npz"),
+TAG = os.environ.get("VAC_TAG", "")
+np.savez(os.path.join(OUT, f"vacuum_weight{TAG}.npz"),
          f_vac=f_vac, f_cent=f_cent, err=err, Edft=Ed, kin_ion=ki, V_H=VH,
          KIH_ref=KIHr, rho_z_val=rho_z_val, vac=vac)
 
 print("\n=== correlation ===")
+print(f"  OVERALL |dVxc|: mean {err.mean():8.2f}  max {err.max():8.2f} eV "
+      f"(N={err.size}); bands<{NVAL}: mean {err[:, :NVAL].mean():.3f} "
+      f"max {err[:, :NVAL].max():.3f} eV")
 print(f"  corr(|dVxc|, f_vac ) = {np.corrcoef(err.ravel(), f_vac.ravel())[0,1]:+.3f}")
 print(f"  corr(|dVxc|, 1-f_cent) = {np.corrcoef(err.ravel(), 1-f_cent.ravel())[0,1]:+.3f}")
 print(f"  corr(|dVxc|, E_dft ) = {np.corrcoef(err.ravel(), Ed.ravel())[0,1]:+.3f}")

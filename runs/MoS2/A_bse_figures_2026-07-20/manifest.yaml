@@ -62,13 +62,30 @@ steps:
       [0.723,1.000]; band-38 eqp1 +368 -> +11.7 eV); in-window scissor kink
       362 -> 6.8 eV.  Far-conduction (b>=46) UNCHANGED -- separate V_H defect,
       see reports/gw_conduction_postfix_2026-07-21.
-  gw_qp_figure:
-    state: partially_unblocked
+  04_lorrax_gw_bandrange_2026-07-21:
+    state: complete
     note: >-
-      Bands 0-45 are now clean and renderable (htransform QP recon at [0,40)
-      325 eV -> 0.49 eV).  FULL band range still blocked, but by a DIFFERENT
-      defect: <nk|V_H|nk> (gw/cohsex_sigma.py:hartree) is an ISDF centroid
-      quadrature with no support in the slab vacuum, so vacuum-localized
-      far-conduction bands get Vxc wrong by up to 279 eV
-      (corr(|dVxc|, vacuum weight) = +0.958).  Fix: evaluate V_H on the FFT
-      grid like kin_ion, or read vxc.dat/kih.dat.
+      BAND-RANGE-weighted centroid selection (agent/gw-conduction-postfix
+      b7654ee) -- the cure for the V_H vacuum-support defect below.  Contains
+      kmeans_wd/ (the weight sweep at fixed N_c=1600, D3h-closed:
+      cent_{rho,br026,br052,br100,br200}.txt), ab_{rho,br100,br200}/ (the 16-GPU
+      GW A/B, identical cohsex.in / WFN / shared kin_ion+dipole -- ONLY the
+      centroid file differs), and prod_gw_1600_200b/ (the production run).
+      |dVxc| vs QE kih.dat over 36k x 100 bands: 27.74 -> 0.23 eV mean,
+      275.57 -> 2.17 eV max, corr(|dVxc|,f_vac) +0.942 -> -0.261.  Valence half
+      improves too (2.089 -> 0.458 eV): occupied-only rho was OVER-concentrating
+      the slab, so this is a rebalancing, not a dilution.
+      Report: reports/gw_bandrange_centroids_2026-07-21.
+  gw_qp_figure:
+    state: complete
+    note: >-
+      UNBLOCKED and rendered.  The far-conduction V_H defect (<nk|V_H|nk> is an
+      ISDF centroid quadrature with no support in the slab vacuum;
+      corr(|dVxc|, vacuum weight) = +0.958) is fixed at its source by weighting
+      the centroid k-means with the density of the BAND RANGE IN USE instead of
+      the occupied rho -- no change to the V_H evaluation itself.
+      prod_gw_1600_200b: 1589 band-range + D3h centroids, nband=200, QP for
+      bands 1-60, 16 GPU, 55 s compute.  K direct gap 2.942 eV / indirect
+      2.885 eV (was 1.356 / 1.246 in run 03), into the 2.5-2.8 eV monolayer
+      G0W0 literature band.  Figure:
+      reports/gw_bandrange_centroids_2026-07-21/plots/gw_bands_prod.png

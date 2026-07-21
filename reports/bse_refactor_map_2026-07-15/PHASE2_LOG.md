@@ -2334,3 +2334,52 @@ Cross-ref (not BSE, logged here for session visibility). Fixes defect A from
   on the recovered basis; owner to reassess separately.
 - Report `reports/gw_vh_symmetry_2026-07-20/`. Files: `src/centroid/orbit_syms.py`,
   `src/centroid/kmeans_cli.py`, `docs/theory/symmetry.md §4.7`.
+
+## Band-range-weighted centroids + zeta_rcond 1e-8 (GW; agent/gw-conduction-postfix, commit b7654ee, 2026-07-21)
+
+Cross-ref (not BSE, logged here for session visibility). Completes the V_H story
+above: the C3 fix made ⟨nk|V_H|nk⟩ *symmetric*; this one makes it *correct*.
+
+- **Integration.** `agent/gw-vh-symmetry` @ 1794518 merged into
+  `agent/gw-conduction-postfix` (merge `b5b4d6c`), so one branch now carries
+  ξ-floor `d011a36` + replicated ζ-fit `ca78008` + rank-truncation `23af6b9` +
+  D3h orbit closure `1794518` + this commit. All four verified present.
+- **`zeta_rcond` 1e-6 → 1e-8** (one value: gw_config DEFAULTS + `isdf/core.py` ×2 +
+  `gw/isdf_fitting.py`). The over-complete recovery plateau spans 1e-8…1e-4, so the
+  low end gives the same cure at 20× less drift on the BGW Si anchor (1.021 →
+  0.054 meV). `si_cohsex_3d` **unpinned** — the pin existed only because 1e-6
+  exceeded its 0.48 meV BGW envelope; the anchor now runs the shipping default.
+  `gnppm`/`bispinor`/`fixed_point` re-frozen **back to their 1e-10-era references
+  bit-for-bit** (the re-freeze is a revert — 1e-6 was the outlier). Full suite
+  **207 passed**.
+- **Root fixed.** Occupied-only ρ(r) is entirely inside the slab → the weighted
+  k-means puts ZERO centroids in the vacuum → vacuum-localized far-conduction
+  states have no ISDF quadrature support → ⟨nk|V_H|nk⟩ = +139.75 eV where truth is
+  −139.6 eV, all of it landing on `Vxc = E_dft − kin_ion − V_H`
+  (`corr(|ΔVxc|, f_vac) = +0.958`).
+- **Fix (centroid GENERATION only, again in-scheme):** `--centroid-weight
+  band_range` — `w(r) = Σ_{n∈range} Σ_k w_k|ψ_nk(r)|²` — now the default for the
+  scalar channel; band range = the σ window by default (ONE resolver shared with
+  the pivoted-Cholesky prune window), `--weight-bands LO:HI` to override.
+  Symmetrized over the recovered density point group (τ=0 guard) so the weight
+  can't break the k-star symmetry the closure protects.
+- **Results (MoS2 6×6, 16 GPU, 1600 centroids, only the weight changing):**
+  |ΔVxc| vs QE `kih.dat` **27.74 → 0.23 eV mean, 275.57 → 2.17 eV max (120×/127×)**,
+  `corr(|ΔVxc|, f_vac)` **+0.942 → −0.261**. **No tradeoff**: the valence half
+  improves 4.6× too (2.089 → 0.458 eV) because occupied-only weighting was
+  *over-concentrating* the slab (centroid norm estimate 3.53 → 1.87 → ideal 1.0).
+  vs BGW (4×4 Γ): Σ_x 14× better (33 → 2.4 meV), Σ_c within 54 meV either way.
+- **Production:** 6×6 / 1589 band-range+D3h centroids / nband=200 / QP 1–60 / 16 GPU
+  → **K direct gap 2.942 eV, indirect 2.885 eV** (was 1.356 eV in run 03), i.e. into
+  the 2.5–2.8 eV G₀W₀ literature band.
+- **b_max ceiling LIFTED.** htransform QP path smoothness (max |2nd-diff|, meV) at
+  b_max = 44/48/56/64/80/90 — occupied-weight **3756 / 9371 / 13475 / 18933 /
+  144804 / 75186**, band-range **3036 / 2811 / 3812 / 4274 / 4622 / 2986**: it now
+  tracks the DFT machinery floor (1765–4202) at *every* b_max instead of breaking
+  at ≈44. On-grid QP reconstruction error 6.4–113.6 eV → ≤ 1.74 eV; near-gap
+  leakage (bands 24–27) unchanged.
+  `reports/gw_bandrange_centroids_2026-07-21/bmax/`.
+- Report `reports/gw_bandrange_centroids_2026-07-21/`. Files:
+  `src/centroid/{kmeans_cli,charge_density}.py`, `src/gw/{gw_config,isdf_fitting}.py`,
+  `src/isdf/core.py`, `docs/docs_gwjax/COHSEX_INPUT.md`,
+  `skills/execute_workflow/SKILL.md`.

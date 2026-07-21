@@ -69,18 +69,21 @@ Well-conditioned CCTs (n_μ ≤ pair-density rank) are unaffected: rank_truncate
 drops ~0 modes and equals cholesky within ~1e-13. Over-complete bases diverge —
 that is the point. Cross-code parity: MoS₂ 4×4 GN-PPM vs BGW, over-complete
 n_μ=1204 → Cholesky MAE 3.0 eV/max 12.96 eV → rank_truncate MAE 0.038 eV/max
-0.077 eV at `zeta_rcond=1e-6`. See `reports/gw_rank_truncation_2026-07-20/`.
+0.077 eV across the whole `zeta_rcond` = 1e-8…1e-4 plateau.
+See `reports/gw_rank_truncation_2026-07-20/`.
 
-### `zeta_rcond` (float, default: `1e-6`) — charge-only, `rank_truncate` cutoff
+### `zeta_rcond` (float, default: `1e-8`) — charge-only, `rank_truncate` cutoff
 Relative eigenvalue cutoff for `charge_zeta_solve = rank_truncate`: drop
 eigenvalues `λ < zeta_rcond · λ_max(C_q)` (per q). Env override
 `LORRAX_ZETA_RCOND`.
 
-`1e-6` is roughly the pair-density GEMM noise floor. It is what an over-complete
-basis needs, and it is cheap — but **not free** — on a well-conditioned one:
+The cure an over-complete basis needs is a **plateau**, not a point — so the
+default sits at the plateau's LOW end, because truncation is cheap but **not
+free** on a well-conditioned basis:
 - **Over-complete** (MoS₂ 4×4 / 1204c): `1e-10` under-truncates and only
   partially recovers (MAE 1.4 eV vs BGW); `1e-8`, `1e-6` and `1e-4` all collapse
-  to ~0.04 eV. `1e-6` sits inside that plateau; `1e-4` starts over-truncating.
+  to ~0.04 eV. The recovery plateau spans `1e-8 … 1e-4`; `1e-4` starts
+  over-truncating at its top end.
 - **Well-conditioned** (MoS₂ 4×4 / 640c): drops ~0 modes, equals `cholesky` to
   ~1e-13.
 - **Well-conditioned but not truncation-free** (bulk Si 4×4×4 / 960c, the
@@ -90,17 +93,18 @@ basis needs, and it is cheap — but **not free** — on a well-conditioned one:
 
   | rcond | 1e-9 | 1e-8 | 1e-7 | 1e-6 | 1e-5 | 1e-4 |
   |---|---|---|---|---|---|---|
-  | max \|Δ sigTOT\| (meV) | 0.001 | 0.054 | 0.417 | **1.021** | 2.918 | 37.2 |
+  | max \|Δ sigTOT\| (meV) | 0.001 | **0.054** | 0.417 | 1.021 | 2.918 | 37.2 |
 
-  So the default costs Si ~1 meV — above its 0.48 meV BGW max \|Δ\|. `1e-8` buys
-  the same over-complete cure for 0.054 meV; prefer it if a system is known to be
-  well-conditioned and sub-meV accuracy is the target. The `si_cohsex_3d` fixture
-  pins `zeta_rcond = 1e-10` for exactly this reason (it is a BGW anchor, not a
-  self-freeze).
+  `1e-8` is the plateau's bottom: identical over-complete cure, ~20× less drift
+  on the BGW anchor than `1e-6` (0.054 vs 1.021 meV). That 0.054 meV is well
+  inside Si's 0.48 meV max \|Δ\| vs BerkeleyGW, so the `si_cohsex_3d` fixture
+  no longer needs to pin `zeta_rcond` away from production — it runs at the
+  default and the gate therefore exercises the shipping code path.
 
 Ignored for `charge_zeta_solve = cholesky`. See
-`reports/gw_rank_truncation_2026-07-20/` and
-`reports/gw_conduction_postfix_2026-07-21/`.
+`reports/gw_rank_truncation_2026-07-20/`,
+`reports/gw_conduction_postfix_2026-07-21/` and
+`reports/gw_bandrange_centroids_2026-07-21/`.
 
 ---
 
