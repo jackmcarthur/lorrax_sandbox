@@ -1,5 +1,99 @@
 # Changelog
 
+## 2026-07-21 (later): the htransform capacity ceiling is the ISDF *rank*, not `nspinor·n_μ` — and the 8v8c exciton on converged G0W0
+
+Branch `agent/bse-exciton-converged` (worktree `sources/worktrees/lorrax_bse_exciton_conv`),
+off `agent/gw-converged-campaign` @ `5e50b8e`.
+Report `reports/bse_exciton_converged_2026-07-21/`.
+Run `runs/MoS2/08_mos2_exciton_converged_2026-07-21/`.
+Everything consumes the converged 80 Ry / 12x12 / n_μ = 2412 G0W0 **unchanged** —
+no new QE, no new centroids, no new self-energy.
+
+**1. The band-window sweep (nb = 16…40) settles the capacity question, and the
+nominal rule is wrong at the boundary.** The Galerkin basis is an SVD of
+`(nk·nb, nspinor·n_μ)`, so the rule looks like `nspinor·n_μ > nk·nb` ⇒ nb < 33.5
+here. Measured:
+
+| nb | SVD rank | ctilde ortho | gate max\|Δε_c\| | min-sval | verdict |
+|---|---|---|---|---|---|
+| 16 | 2304 | 1.2e-14 | 0.000 meV | **0.0917** | FAIL (zero guard bands) |
+| 20 | 2880 | 1.2e-14 | 0.000 meV | 0.9544 | **PASS** |
+| 24 | 3456 | 1.4e-14 | 0.000 meV | 0.9544 | **PASS** |
+| **28** | **4032** | **9.8e-15** | **0.000 meV** | **0.9544** | **PASS** |
+| 32 | **4568** | 8.2e-02 | **60.5 meV** | 0.9539 | FAIL |
+| 36 | 4716 | 2.3e-01 | 817.8 meV | 0.9440 | FAIL |
+| 40 | 4804 | 4.5e-01 | 1314.1 meV | 0.8574 | FAIL |
+
+**nb = 32 fails.** The ψ-at-centroids matrix is rank-deficient *before* the
+nominal bound: its numerical rank at `rtol = 1e-8` is **4570**, not
+`nspinor·n_μ` = 4824. The real rule is `nk·nb < rank(ψ_μ)`, i.e. **nb < 31.74**
+on this data. 2412 D3h-orbit-closed centroids on a 174 960-point grid span ~95 %
+of their nominal column space, and that 5 % is exactly the margin the prediction
+spent. Orthogonality of `ctilde` announces the crossing five orders of magnitude
+before the gate does; `min-sval` never sees it at all (0.954 at both nb = 28 and
+nb = 32) — the ENERGY metric is the only one that discriminates.
+
+**2. "The BSE needs n_μ ≈ 5680 / 69 GiB per device" no longer binds.** Three
+memory-only fixes:
+* `bse_setup.compute_wfns_fi` no longer replicates `fH_R` (11–50 GiB/device *and*
+  a host gather of the same size). It stays `P(None,'x','y')`; the q-Fourier sum
+  runs over the unsharded R axis so each device builds its own (i,j) tile
+  locally, with ONE all-to-all onto the q axis before the eigh. Bit-identical
+  outputs (nb = 16 gate reproduced 0.000 meV / 0.0917 exactly).
+* Two `with_sharding_constraint` calls on the `build_fH_R` and `_q_batch` einsum
+  **outputs** — XLA otherwise materialises the full `(nk, rank, rank)` and
+  `(bs, rank, rank)` products on every device (measured 57.8 GiB and 9 × 11.4 GiB).
+* The retained SVD rank is now mesh-aligned (`lcm(mesh.x, mesh.y)`), which is
+  what a rank-deficient window needs to avoid a hard `device_put` ValueError.
+
+Every window 16–40 now runs at n_μ = 2412 / nk = 144 on 16 × A100-80GB with a
+**~17 GiB** high-water mark.
+
+**3. A correction to the parent report.** "A non-zero `b_start` is separately
+broken" is not a bug: `nband` is `Meta.b_id_4_user`, an ABSOLUTE band index, and
+`load_centroids_band_chunked` zeroes every band above it. A gap-centred window
+needs `nband ≥ nelec + ncond`; set to `nval+ncond` it falls below `b_start` and
+the loader zeroes the whole window, giving rank 0. The gap-centred window was
+reachable all along — and it is the right window, because it drops MoS2's deep
+semicore states (band 1 at −66 eV) out of the SVD.
+
+**4. The 8v8c exciton bandstructure on the converged G0W0** —
+`01_lorrax_exciton_8v8c_gw`, fH window 28, Γ-M-K-Γ, 630 s on 16 GPUs.
+
+| | |
+|---|---|
+| **E₁(Γ)** (bright) | **2.0921 eV** |
+| **binding vs the GW direct gap 2.6356 eV @ K** | **543.5 meV** |
+| A–B splitting at Γ | 116.4 meV |
+| **minimum: M** (= K→Λ), Λ 4.6 meV above | **1.9552 eV**, 136.9 meV below E₁(Γ) |
+| E₁(K), intervalley K→K′ | 2.0882 eV (3.8 meV from Γ — as it must be) |
+| Γ path closure, all 8 branches | **0.000000 meV** |
+| Γ A-doublet splitting (TRS-degenerate) | 0.741 meV |
+
+**The exciton minimum is momentum-indirect and tracks the CBM move** the parent
+campaign found: with the VBM at K and the CBM at Λ = ½ΓK, both M and Λ map the K
+valence valley onto a Λ conduction valley, and they come out 4.6 meV apart.
+
+Two driver additions made it possible: **`--eqp`** puts QP energies on *both*
+legs (stored ε_v/ε_c re-sliced on the corrected `enk_full`, and the htransform's
+`enk_sigma` replaced) so nothing is scissor-shifted; and **`--vq-mode ongrid`**
+uses the exact stored `V_qmunu[wrap(−Q)]` tile at every on-grid Q — no
+interpolation error, no mini-BZ head model, and no need for the full-BZ
+`zeta_q.h5` the D3h centroids do not produce. Cost: the Q path is limited to the
+13 points Γ-M-K-Γ has on a 12×12 grid.
+
+**Caveats:** only the valley-commensurate Q (Γ, Λ, K, M) are converged sampling
+points — the Q between them are mesh-limited and read as a zigzag; and 543 meV is
+the expected binding magnitude for a 12×12 mesh, not a converged one. Both are
+marked on the figure and stated in §2.
+
+**Verification:** LORRAX suite on this branch **261 passed, 12 skipped, 25
+deselected** — identical to the base. Four further defects logged in
+`KNOWN_SANDBOX_ERRORS.md` (the `nband` correction, the rank alignment, the
+silent eqp-parser fallback in `htransform.read_eqp_energies`, and the IBZ assert
+in `apply_eqp_corrections`).
+
+
 ## 2026-07-21: converged MoS2 G0W0 (80 Ry / 12x12 / 400 bands) — VBM moves to K, gap 2.64 eV, and two of the five cures were silently off at production scale
 
 Branch `agent/gw-converged-campaign` (worktree `sources/worktrees/lorrax_gw_converged`),

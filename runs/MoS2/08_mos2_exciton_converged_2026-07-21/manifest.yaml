@@ -1,0 +1,59 @@
+run_id: mos2_exciton_converged_2026-07-21
+system: MoS2
+pipeline: lorrax_only
+platform: perlmutter
+
+# Everything below consumes the converged G0W0 reference unchanged.  No QE, no
+# new centroids, no new self-energy: the k-grid, cutoff, band count, centroid
+# set and Sigma are exactly the parent's.
+variant_of: mos2_ref_80Ry_12x12_400b_2026-07-21
+reuse_from_parent:
+  - 00b_lorrax_gw_2400c_ranktrunc/WFN.h5
+  - 00b_lorrax_gw_2400c_ranktrunc/centroids.txt
+  - 00b_lorrax_gw_2400c_ranktrunc/eqp1.dat
+  - 00b_lorrax_gw_2400c_ranktrunc/tmp/isdf_tensors_2412.h5
+overrides:
+  htransform_band_window: "gap-centred [26-nval, 26+ncond) instead of [0, nband)"
+  bse_energies: "quasiparticle (eqp1.dat) instead of DFT"
+  exchange: "exact on-grid V_qmunu[wrap(-Q)] tiles instead of vq_interp"
+
+reference:
+  ecutwfc_ry: 80
+  kgrid: [12, 12, 1]
+  nk: 144
+  n_mu: 2412
+  nband_screening: 326
+  qp_bands: [1, 80]
+  gap_direct_K_eqp1_ev: 2.6356
+  gap_indirect_eqp1_ev: 2.5079
+  vbm: K
+  cbm: [0.1667, 0.1667, 0.0]
+
+branch: agent/bse-exciton-converged
+worktree: /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_bse_exciton_conv
+base_commit: 5e50b8e
+
+steps:
+  00_htransform_window_sweep:
+    state: complete
+    note: "TASK 1 — fH band window nb in {16,20,24,28,32,36,40}; largest passing nb=28
+      (DFT gate 0.000 meV / min-sval 0.9544).  nb=32 FAILS at 60.5 meV: psi-at-centroids
+      numerical rank is 4570, not nspinor*n_mu=4824, so the ceiling is nb < 31.74"
+  01_lorrax_exciton_8v8c_gw:
+    state: complete
+    note: "TASK 2/3 — 8v8c exciton bandstructure Gamma-M-K-Gamma on QP energies
+      (--eqp) with exact on-grid exchange tiles (--vq-mode ongrid), fH window 28.
+      E1(Gamma) = 2.092053 eV; binding 543.5 meV vs the 2.6356 eV GW direct gap;
+      minimum momentum-indirect at M 1.955182 eV (Lambda 4.6 meV above, both
+      K->Lambda); Gamma closure 0.000000 meV.  630 s on 16 x A100-80GB."
+
+results:
+  E1_Gamma_ev: 2.092053
+  binding_vs_direct_gap_mev: 543.5
+  E1_min_ev: 1.955182
+  E1_min_at: M
+  E1_min_below_Gamma_mev: 136.9
+  gamma_closure_mev: 0.0
+  htransform_window_nb: 28
+  n_Q: 13
+  wall_s: 630.3

@@ -2459,3 +2459,49 @@ mutually exclusive at 80 Ry.** This is a resolution ceiling, not a tuning
 problem, and it is set entirely by `fH_R` being `P()`. Sharded 16 ways,
 n_μ = 5680 costs 4.3 GiB/device and the whole thing runs. **That single change
 is what unblocks the BSE on any converged reference.**
+
+### 2026-07-21 (later): the exciton run the addendum above said was impossible, and why the addendum was wrong
+
+`agent/bse-exciton-converged`, off `agent/gw-converged-campaign` @ `5e50b8e`.
+Deliverables `reports/bse_exciton_converged_2026-07-21/`.
+
+The addendum above concluded that the driver's gate and the implementation's
+memory were "mutually exclusive at 80 Ry", needing n_μ ≈ 5680 whose replicated
+`fH_R` is 69–277 GiB/device. Both halves of that turn out to be wrong, for the
+same reason: the sweep was run at **fixed nb = 40–80** and only n_μ was allowed
+to move.
+
+**Capacity scales with `nk·nb`, so drive nb down.** An 8v8c exciton needs 16
+bands plus guards, not 48. Sweeping the fH window instead of the centroid count,
+on the SAME converged n_μ = 2412 data:
+
+| nb | SVD rank | ctilde ortho | gate max\|Δε_c\| | verdict |
+|---|---|---|---|---|
+| 16 | 2304 | 1.2e-14 | 0.000 meV (min-sval 0.0917) | FAIL — zero guards |
+| 20 / 24 / **28** | 2880 / 3456 / **4032** | 1e-14 | **0.000 meV** | **PASS** |
+| 32 | 4568 | 8.2e-02 | 60.5 meV | FAIL |
+| 36 / 40 | 4716 / 4804 | 2.3e-01 / 4.5e-01 | 818 / 1314 meV | FAIL |
+
+So the interpolation basis was never the problem at converged n_μ — the
+*window* was. The ceiling is `nk·nb < rank(ψ_μ)`; the measured rank is **4570**,
+not `nspinor·n_μ` = 4824, so nb < 31.74 and nb = 32 already fails. Note the
+diagnostic hierarchy this establishes: `ctilde` orthogonality moves five orders
+of magnitude at the crossing, the ENERGY gate moves 60 meV, and **`min-sval`
+does not move at all** (0.9544 at nb = 28, 0.9539 at nb = 32). The addendum's
+table read min-sval as a co-equal metric; it is not, and the gate's own comment
+already said so.
+
+**And `fH_R` did not have to be replicated.** Next-step #2 is done: it stays
+`P(None,'x','y')` and the q-Fourier sum is device-local over the unsharded R
+axis, with one all-to-all before the eigh. Two extra
+`with_sharding_constraint`s were needed on the `build_fH_R` / `_q_batch` einsum
+**outputs** — XLA will not partition a contraction whose output is unannotated
+even when the operands are sharded, and it was silently materialising
+`(nk, rank, rank)` (57.8 GiB) and `(bs, rank, rank)` × 9 (102 GiB) per device.
+Peak is now ~17 GiB at every window 16–40.
+
+**The exciton bandstructure that follows** (`--eqp`, QP energies on both legs;
+`--vq-mode ongrid`, exact stored exchange tiles, no ζ needed): E₁(Γ) = 2.0921 eV,
+binding **543.5 meV** vs the converged 2.6356 eV direct gap, minimum
+**momentum-indirect** at M (1.9552 eV) with Λ 4.6 meV above — both K→Λ. 630 s on
+16 GPUs. Figure and caveats in the report.

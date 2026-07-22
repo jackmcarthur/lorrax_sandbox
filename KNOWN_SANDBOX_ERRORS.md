@@ -818,3 +818,79 @@ configurations on the converged reference
   `LORRAX_FORCE_FULL_BZ=1`; and the interp window must be the BSE window plus a
   few guards (over-packing shows up in the gate's ENERGY metric, not in `ctilde`
   orthogonality, which stays at 1e-14 while the energies are 361 meV wrong).
+
+## 2026-07-21 (agent/bse-exciton-converged): four htransform defects, and a correction to the entry above
+
+Found while sweeping the htransform fH band window on the SAME converged
+12x12 / 80 Ry / n_mu = 2412 data.  Deliverables:
+`reports/bse_exciton_converged_2026-07-21/`.
+
+### (A) CORRECTION — "a non-zero `b_start` is separately broken" is not a bug
+
+The parent report (`gw_converged_12x12_80ry_2026-07-21` §4d) recorded that a
+gap-centred window (bands 18-34) came back with `rank = 0`, `sigma_max = 0`, and
+filed it as a separate breakage.  It is not.  `common/wfn_transforms.
+load_centroids_band_chunked` ends with
+
+```python
+nb_user_in_range = max(0, meta.b_id_4_user - b_start)
+if nb_user_in_range < nb_total:      # zero the user-band-pad rows
+```
+
+`b_id_4_user` is the input's `nband`, an **ABSOLUTE** band index, while the
+window is `[nelec - nval, nelec + ncond)`.  Setting `nband = nval + ncond` (the
+natural reading of "the htransform's own band window", and what
+`gwbands.in` does when `nval = nelec`) makes `b_id_4_user < b_start` for any
+gap-centred window, so EVERY band is zeroed and the SVD of an all-zero matrix
+returns rank 0.  The rule is `nband >= nelec + ncond`.
+**Suggested fix**: raise in `Meta.from_system` when `nband < nelec + ncond`
+instead of silently zeroing psi downstream.
+
+### (B) The retained SVD rank is not mesh-aligned — hard crash whenever psi_mu is rank-deficient
+
+- **Where**: `src/bandstructure/htransform.py`, `streaming_galerkin_solve`,
+  `rank = int((s_host > s_host.max() * rtol).sum())`.
+- **What happens**: `G`, its Cholesky factor, `ctilde` and `fH` all live on a
+  `(rank, rank)` face sharded `P('x','y')`.  When `nk*nb` reaches the numerical
+  rank of the centroid-sampled psi the retained rank is an arbitrary integer and
+  the first `device_put` onto that face raises
+  `ValueError: ... dimension 0 should be divisible by 4, but it is equal to 4570`.
+  Reproduced at nb = 32 (rank 4570) on a 4x4 mesh.
+- **Fixed on this branch**: round the retained rank DOWN to
+  `lcm(mesh.x, mesh.y)`; the dropped directions sit at the `rtol` threshold
+  (sigma/sigma_max ~ 1e-8).  A `[warn] psi-at-centroids is RANK-DEFICIENT` line
+  now prints the measured capacity bound.
+
+### (C) `htransform.read_eqp_energies` cannot read LORRAX's own `eqp1.dat`, and fails SILENTLY
+
+- **Where**: `src/bandstructure/htransform.py:539` and its only caller,
+  `initialize_wfns(..., eqp_file=...)`.
+- **What happens**: the parser expects `k-point N:` blocks with `n=… EQP=…`
+  text; LORRAX's GW writes the BGW columnar form (`kx ky kz nbands` then
+  `spin band EDFT EQP`).  `initialize_wfns` wraps the call in
+  `try/except Exception` and logs `EQP override skipped: …`, so a caller that
+  asks for QP energies silently gets **DFT** ones.  Two parsers exist for the
+  same file family (`bse.bse_io.read_bgw_eqp` reads it correctly).
+- **Worked around** in `bse.exciton_bands --eqp` by routing both legs through
+  `bse_io.read_bgw_eqp`.  **Suggested fix**: delete
+  `htransform.read_eqp_energies`, call `bse_io.read_bgw_eqp`, and let the
+  exception propagate.
+
+### (D) `apply_eqp_corrections(input_file=...)` asserts the eqp file is IBZ-sized
+
+`bse/bse_io.py:1210` does `assert nk_ibz == sym.nk_red`.  LORRAX's GW writes
+`eqp1.dat` on the FULL BZ (144 blocks here), so passing `input_file` aborts and
+only the `input_file=None` energy-matching branch works.  The branch is O(nk^2 nb)
+Python but correct; the k-order is in fact the identity (verified: the file's
+own E_DFT column reproduces `enk_full` to 0.0000 meV over (144, 80)).
+
+### (E) Entry (2)/(addendum) above is now FIXED, and its "n_mu ~ 5680" conclusion does not bind
+
+`compute_wfns_fi` no longer replicates `fH_R`; it stays `P(None,'x','y')` and the
+q-Fourier sum is device-local (the R axis is unsharded), with one all-to-all onto
+the q axis before the eigh.  Two further `with_sharding_constraint` calls were
+needed — on the `build_fH_R` einsum output and on the `_q_batch` einsum output —
+because XLA otherwise materialises the full `(nk, rank, rank)` / `(bs, rank, rank)`
+products on every device (measured 57.8 GiB and 9 x 11.4 GiB respectively).
+With those three changes the htransform runs at n_mu = 2412 / nk = 144 at every
+window in {16 … 40} on 16 x A100-80GB, peak ~17 GiB.
