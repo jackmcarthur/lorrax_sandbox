@@ -1,5 +1,74 @@
 # Changelog
 
+## 2026-07-21 (latest): the off-grid exciton failure is a Galerkin REGRESSION, not a run configuration
+
+Branch `agent/bse-exciton-offgrid` (worktree `sources/lorrax_A_exciton_wt`),
+commits `ed20e7f` + `6713351`, **pushed to origin**. Sandbox commit `febd263a`.
+Run `runs/MoS2/10_mos2_exciton_anchored_2026-07-21/`. 16 × A100-80GB, job 56301922.
+(Independently reached the same G-accumulation conclusion as the concurrent
+`agent/htransform-distributed-eigh` entry below — that entry's FFI eigh work and
+this fix are the same root cause found from two directions.)
+
+Yesterday's 39-Q arbitrary-Q run produced eV-scale garbage off-grid, and the
+diagnosis on record was two input regressions: `nval` not anchored at E_min,
+and `--a-band` omitted. **Both were applied here and neither is what fixed it.**
+
+**Root cause.** `bandstructure/htransform.py::streaming_galerkin_solve` builds
+`Q[a,x] = Σ_{k,n} inv_s[a]·Uᴴ[a,(k,n)]·ψ[(k,n),x]` and `G = Q Qᴴ`. The
+contraction runs over the pair index `(k,n)`; `x = (spinor, r)` is free. So
+splitting `x` and summing `G` over the pieces is exact, but splitting the
+**contracted** `(k,n)` axis and summing `G` is not — `Σ_bc Q_bc Q_bcᴴ` drops
+every `bc ≠ bc'` cross term. The loop did the second. It fails **silently**:
+`G` stays Hermitian positive-definite, the Cholesky succeeds, and the only
+symptom is `ctilde` coming out non-orthonormal, so `fH = Σ_n f(ε_n) c_n c_nᴴ`
+loses its eigenvalue property and recovered energies drift ~1.7 eV. Latent
+while `band_chunk_size` defaulted to a fixed 64 ≥ nb (one chunk); went live
+with `5e50b8e`, which sizes the chunk to the ψ box (80 Ry / nb=40 → 6 chunks).
+
+**Control that proves it** — the 2026-07-20 known-good run's own files
+(30 Ry / 12×12 / 640 centroids), whose figure IS a smooth 40-Q exciton band:
+
+| source | `ctilde` ortho err | on-grid max&#124;Δε_c&#124; |
+|---|---|---|
+| known-good-era src (pre-`5e50b8e`) | — | 0.63 meV |
+| this branch, before fix | 4.9e-01 | **1742.48 meV** |
+| this branch, after fix | 4.3e-04 | 0.78 meV |
+
+**Eps-leg gate on the converged 80 Ry / 12×12 / n_μ=2412 reference**, anchored
+`nval=26 / ncond=14 / nband=40` + explicit `--a-band`, production M-Γ-K path.
+Off-grid `|2nd difference|` of `eps_c(k+Q)`, max / mean in meV:
+
+| configuration | Γ-M | Γ-K | on-grid |
+|---|---|---|---|
+| 2026-07-21 failure (`nval=14`, no `--a-band`) | 2905 / 387 | 2391 / 269 | 7.09 meV |
+| anchored + `--a-band`, **before** fix | 4784 / 720 | 4785 / 671 | 311.24 meV |
+| anchored + `--a-band`, **after** fix | **186 / 23.8** | **170 / 28.8** | **7.44 meV** |
+| 30 Ry known-good reference, same harness | 187 / 22.5 | 185 / 27.6 | 0.78 meV |
+
+The driver's own on-grid gate passes: max|Δε_c| = 57.9 meV over all 144 k,
+conduction-subspace min-sval 0.954. Note the anchored window on its own made
+things *worse* (311 meV) — anchoring only pays off once the Gram matrix is right.
+
+**The "few meV" absolute target is not reachable and is not the right gate.**
+The reference calculation that produced the genuinely smooth 2026-07-20 figure
+measures 187/185 meV max and 22.5/27.6 meV mean in this same metric: `d2` does
+not vanish for a correct calculation (real curvature + sorted-branch kinks).
+The gate used is "at or below the known-good reference", which the fixed
+configuration meets.
+
+**Also fixed**: `device_put(jnp.zeros(...), sharding)` in the Galerkin build
+materialised 23.4 GB on one device before distributing (now allocated already
+sharded); `exciton_bands` held the htransform intermediates through the V_Q
+model build, OOMing `vq_interp.build_cq`'s 16.8 GB host gather.
+
+**Scope warning**: the regression is in `htransform.py`, which the standalone
+SP bandstructure driver also uses. Every htransform bandstructure produced on
+this branch family since `5e50b8e` with `nb > band_chunk_size` is suspect.
+
+Test suite unchanged vs HEAD (211 passed / 34 skipped / 1 failed / 28 errors,
+all pre-existing). Production 39-Q + 2 symmetry-image run was mid-flight at
+hand-off; see the run directory for its `.dat` / `.png` / gate JSON.
+
 ## 2026-07-21 (htransform fH_q eigh through the distributed-linalg FFI): it works, it is exact, and it is NOT the wide-window lever — the Galerkin G-accumulation is
 
 Branch `agent/htransform-distributed-eigh` (worktree `sources/lorrax_A_htffi_wt`),
