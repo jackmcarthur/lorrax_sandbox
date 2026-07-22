@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-07-22 (latest): public-release FFI staging sources and CUDA support boundary
+
+- LORRAX branch `agent/release-staging-package`, commit `b924917`, was pushed to origin.
+- Wheels now include the FFI CMake, C++/CUDA, header, porting, and staging-script sources;
+  sdists additionally include cluster configuration templates and installation docs. The
+  ignored `src/ffi/common/cpp/build/` tree is explicitly excluded.
+- Installation docs now match `pyproject.toml`: JAX >=0.9 / CUDA 13 is the public pure-JAX
+  default, while the complete native FFI stack remains validated only in the Perlmutter
+  CUDA-12.9 reference environment. No license, checksum policy, vendor binary, or prebuilt
+  `liblorrax_ffi.so` was added.
+- Packaging checks found 67 intended native files in the wheel payload and 380 entries in
+  an asserted sdist archive. Focused FFI contracts: 1 passed / 22 skipped on CPU in 5.24 s;
+  the full GPU suite was waived for the shutdown window. Full record:
+  `reports/release_staging_package_2026-07-22/report.md`.
+- Added `exports/lorrax_run_templates_20260722T075941Z.zip`: a 36-file clean
+  agent digest covering MoS2 QE/GN-PPM GW, full-band htransform, arbitrary-Q
+  BSE, and bulk-Si BSE symmetry diagnostics from the prior week. Large numerical
+  products and generated state are excluded; selection record:
+  `reports/run_template_export_2026-07-22/report.md`.
+
 ## 2026-07-21 (latest): the off-grid exciton failure is a Galerkin REGRESSION, not a run configuration
 
 Branch `agent/bse-exciton-offgrid` (worktree `sources/lorrax_A_exciton_wt`),
@@ -5370,3 +5390,49 @@ What still looks worth improving:
 - **Code (agent/bse-exciton-bands):** `exciton_bands.py` full-band-window enforcement + guard-band logging (raise if the BSE conduction window exceeds the fH window; warn on <4 guards or a too-wide window); `bse_setup.compute_wfns_fi` single-source contract docstring. ONE fH builder (`htransform.build_fH_R`) shared with the SP driver; census stays 1 `solve_path` compile. pytest 4/4 (test_exciton_bands + test_bse_vq_interp).
 - **Capacity cap is an artifact (confirmed).** SVD (5760,1280) → rank=1280 (column-limited) yet htransform@Γ gate min-sval **0.8853** == narrow 0.8852. 40 bands interpolate cleanly at nk=144. `--a-band 28` ties a to the flat conduction band (f'≈1 region). The old nband=80 failure (0.2175) was the extra high oscillatory bands 40-79 + a-compression, not 40 bands.
 - **Verdict (full 40-pt).** On-grid nodes (Γ/M/K/…) coincide E_1 <0.3 meV (htransform on-grid exact both ways). Off-grid dips LIFTED onto the smooth trend: iQ 9 +187.8, iQ 17 +85.8, iQ 6 +46.6, iQ 16 +29.4 meV. Census = 1 compile; 1520.8 s / 14.08 s/Q on 4 GPU. Deliverables: `exciton_bands_fullbasis.{dat,png}` + `exciton_bands_fullbasis_vs_640c_GMKG.png`; full timing table + writeup in `reports/bse_refactor_map_2026-07-15/PHASE2_LOG.md`.
+
+## 2026-07-22 — LORRAX main consolidation before the 15-day outage
+
+`origin/main` @ `8558400` (was `6bd4dc9`). 65 commits, verified **264 passed /
+13 skipped / 0 failed / 0 errors** with the FFI freshly built in the
+consolidation worktree.
+
+Merged: the full BSE arc (`bse-exciton-smooth`, 49 commits — which absorbed
+`bse-phase2`, `bse-figures`, `gw-converged-campaign`), the Gram-matrix fix
+(`bse-exciton-offgrid`), the distributed-eigh dispatch
+(`htransform-distributed-eigh`), `agent-A/finite-q-head-interp`,
+`agent/orbital-magnetization`, plus the cusolverMg deletion and the new
+`src/bse/EXCITON_BANDS.md`.
+
+**Deferred, with reasons — do not re-attempt blindly:**
+
+* `agent/bse-cublasmp-recon` (1 commit, `5893a4c`). Its non-distributed arm is
+  a STALE older version — calls the deleted `_eigh_backend` and a 5-arg
+  `_clean_split` that now takes 7. Only its `use_dist` arm is new. Correct
+  resolution = keep HEAD's loop (per-chunk `C_herm`, `dispatch_eigh`,
+  `keep_host_mirrors`) and graft only the `_recon_distributed_chunk` call,
+  then thread `distributed_recon` through `build_vq_evaluator`. Needs a real
+  run to verify; it is a large-n_μ scaling feature, unnecessary at the 640
+  centroids the BSE actually wants.
+* `agent/minimax-solver-speed` (5 commits; subsumes `agent/suite-speedup`).
+  Merges cleanly except the bispinor golden. Carries a genuine PPM fix
+  (magnitude-based GN mode classification) and useful test speedups, but both
+  GN-PPM regression goldens then fail at **atol=1e-6, max abs diff 1e-6, max
+  rel 3.2e-7, 70/2484 elements** — i.e. last-ULP drift, not physics. Needs a
+  golden RE-FREEZE, which is a physics judgement call, not a merge conflict.
+  Note its fixture and reference are a matched pair (25 Ry regen); taking one
+  side's `.dat` with the other's `WFN.h5` compares apples to oranges.
+* `agent-A/chi0-sigma-unify`, `agent-A/ppm-nonsymmorphic-fix`,
+  `agent-A/ppm-head-guard`, `agent-A/chi0-cleanup`, `agent-A/runtime-init`.
+  **Superseded, not pending.** Every symbol from chi0-sigma-unify is already
+  on main in different files (`build_G_tau`→`ppm_tau_kernel.py`,
+  `MinimaxNodes`→`ppm_windows.py`, `minimax_tau_integrate_sigma`→`w_isdf.py`,
+  plus `cohsex_sigma.py`/`minimax_screening.py`/`wavefunction_bundle.py`).
+  4 of 5 ppm-head-guard fixes already landed; its tip is a WIP stash against a
+  `gw_jax.py` since split into `head_correction`/`ppm_pipeline`/
+  `ppm_accumulators`/`sigma_dispatch`. The 16–17 conflicts are the signature
+  of "this already happened differently", and merging risks reverting the head
+  architecture. `runtime-init` is subsumed by ppm-nonsymmorphic-fix.
+
+Rescued to `rescue/lorrax-D-*` (unreviewed, purely so they survive the
+outage): lorrax_D's uncommitted doc edits and a 2026-05-04 head-wing-fix stash.
