@@ -1,0 +1,67 @@
+run_id: mos2_htransform_ffi_eigh_2026-07-21
+system: MoS2
+pipeline: lorrax_only       # qe_only | qe_bgw | lorrax_only | qe_bgw_lorrax
+platform: perlmutter
+
+variant_of: mos2_ref_80Ry_12x12_400b_2026-07-21
+reuse_from_parent:
+  - qe/nscf/WFN.h5                       # via 00b_lorrax_gw_2400c_ranktrunc/WFN.h5
+  - 00b_lorrax_gw_2400c_ranktrunc/eqp1.dat
+  - 09_mos2_exciton_smooth/tmp_fullbz/isdf_tensors_2412.h5   # enk_full only
+  - centroids.txt (2412 band-range + D3h, copied from run 10's eps gate)
+overrides:
+  purpose: >
+    Route bandstructure/bse_setup.compute_wfns_fi's fH_q eigendecomposition
+    through the distributed-linalg FFI (ffi.common.dispatch.dispatch_eigh ->
+    cusolvermp | slate) so a WIDE, E_min-anchored band window is not blocked by
+    a per-q (rank, rank) matrix sitting whole on one device.  Measures the
+    native batched baseline first, then gates the FFI path against it ABSOLUTELY
+    (on-grid |d eps_c| AND the off-grid 2nd difference of eps_c(k+Q) along Q),
+    and reports per-q cost both ways.
+  branch: agent/htransform-distributed-eigh (worktree sources/lorrax_A_htffi_wt)
+  mesh: >
+    2x2 = 4 x A100-80GB, ONE JAX PROCESS PER GPU (the LORRAX process model, and
+    what both FFI eigh wrappers require).  Deliberately NOT 16 GPUs: gates must
+    run on modest hardware.
+  windows: >
+    fH windows given as (nval, ncond) with nval = n_occ = 26 ANCHORED AT E_min
+    (semicore included - a hard constraint from the owner).  rank = min(nk*nb,
+    numerical rank <= nspinor*n_mu = 4824), so widening the window is what
+    drives the matrix the eigh has to carry.
+
+steps:
+  00_baseline:
+    state: complete
+    note: >
+      Native q-batched jnp.linalg.eigh reference + the OOM hunt.  Under the BFC
+      pool at MEM_FRACTION=0.95 the anchored windows OOM on 4 GPUs
+      (RESOURCE_EXHAUSTED on a 25.4 GiB allocation at rank 3892); under the
+      cuda_malloc_async / platform allocator the SAME window runs.  So the
+      4-GPU ceiling reported here is an ALLOCATOR ceiling, not a capacity one.
+      Several runs were destroyed by a co-tenant agent's node-wide
+      `pkill -9 -u $USER -f "[p]ython3"` and by the JAX coordinator-port
+      collision - both logged in KNOWN_SANDBOX_ERRORS.md and worked around
+      (run_shifter.sh pins a per-launch JAX_COORDINATOR_ADDRESS; run_gate.sh
+      retries and separates SIGKILL from RESOURCE_EXHAUSTED).
+  01_ffi:
+    state: complete
+    note: >
+      Matched native-vs-cusolverMp gates.  rank 1728 (window 8v+4c, 39 off-grid
+      Q): max |eps_c(native) - eps_c(cusolvermp)| = 1.45e-11 meV; on-grid
+      |d eps_c| = 0.000 meV BOTH ways; off-grid 2nd differences identical to
+      every printed digit (M-Gamma 2606.102 meV, Gamma-K 1997.854 meV - large
+      because the interpolation basis is the open problem of run 09/10, NOT the
+      backend).  Cost: native 126.0 ms/q, cusolverMp 8533.1 ms/q (68x).
+      rank 4452 (window 26v+8c, E_min-anchored): native 578.7 ms/q, on-grid
+      21.550 meV.
+  bench_dispatch:
+    state: complete
+    note: >
+      common.eigh_benchmark --mode dispatch: ms PER MATRIX, q-batched native
+      (batch 32 over 4 devices) vs ONE distributed tile, complex128, 2x2 mesh.
+      cusolvermp 640x / 249x / 281x / 94x slower at n = 512 / 1024 / 2048 /
+      4096; slate 221x / 164x / 216x at n = 512 / 1024 / 2048.  This is the
+      measured basis for keeping the batched native path the default.
+verification:
+  correctness_gate: reports/htransform_distributed_eigh_2026-07-21/eigh_backend_gate.py
+  contract_tests: tests/test_ffi_linalg_contract.py (compute_wfns_fi cells, 1x1 mesh)

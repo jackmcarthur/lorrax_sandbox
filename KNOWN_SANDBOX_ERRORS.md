@@ -975,3 +975,88 @@ because XLA otherwise materialises the full `(nk, rank, rank)` / `(bs, rank, ran
 products on every device (measured 57.8 GiB and 9 x 11.4 GiB respectively).
 With those three changes the htransform runs at n_mu = 2412 / nk = 144 at every
 window in {16 … 40} on 16 x A100-80GB, peak ~17 GiB.
+
+## 2026-07-21 — a co-tenant agent's `pkill -9` kills other agents' job steps
+
+**Symptom.** Steps launched into the shared `lx-alloc-$USER` allocation die with
+`srun: error: nid00XXXX: task N: Killed` (rc=137) 40-60 s in, with no Python
+traceback, no `RESOURCE_EXHAUSTED`, and no host OOM. Confirmed NOT an OOM:
+`/sys/fs/cgroup/system.slice/slurmstepd.scope/job_<JID>/memory.events` reports
+`oom_kill 0` and `memory.current` 41 GB against a `memory.max` of 241 GB, with
+190-217 GB free on every node.
+
+**Cause.** Run scripts under `runs/MoS2/09_*` and `runs/MoS2/10_*` open with a
+node-wide reaper step. Observed live on 2026-07-21 22:50 (agent A's exciton
+production launcher, `runs/MoS2/10_mos2_exciton_anchored_2026-07-21/run_exciton.sh`):
+
+```
+srun --jobid=$JID --overlap --immediate=90 -N4 -n4 --gres=gpu:4 \
+     bash -c 'pkill -9 -u $USER -f "[p]ython3"; exit 0'
+```
+
+`pkill -9 -u $USER -f "[p]ython3"` kills **every** python3 process the user owns
+on all four nodes — including a co-tenant agent's live multi-rank run. Sibling
+scripts use narrower patterns (`[b]se.exciton_bands`, `[e]ps_window_sweep`), but
+the bracketing only stops the reaper from matching *itself*; nothing scopes it
+to the launching step. Three separate measurement runs were destroyed by this.
+
+**Rule.** Never `pkill -9 -u $USER` in a shared allocation. Scope the kill to
+your own step — `scancel --signal=KILL <JID>.<STEPID>` from `squeue -s`, or
+match on a per-agent job name (`lxrun` already tags steps `lx-<AGENT>-*`), or
+`pkill -9 -f "$PWD"` so the pattern is anchored to your own run directory.
+
+**Workaround while this persists.** `runs/MoS2/11_mos2_htransform_ffi_eigh_2026-07-21/run_gate.sh`
+retries (`TRIES=N`) and distinguishes a collision (bare SIGKILL) from a real
+device OOM (which comes back through Python as `RESOURCE_EXHAUSTED` and is
+recorded in the gate JSON's `failures` block).
+
+
+## 2026-07-21 — concurrent LORRAX steps in one allocation collide on the JAX coordinator port
+
+**Symptom.** A second run started while another is live dies with
+`ABORTED: /job:jax_worker/replica:0/task:N unexpectedly tried to connect with a
+different incarnation. It has likely restarted.` (rc=134), or hangs until srun
+SIGKILLs every task (rc=137). Nothing is wrong with either program.
+
+**Cause.** `jax.distributed.initialize()` with no arguments uses JAX's SLURM
+cluster detection, which derives the coordinator **port from `SLURM_JOB_ID`**.
+Every step of one allocation therefore lands on the same host:port, so two
+concurrent runs join one coordinator, disagree about the world size, and abort.
+In a shared pool (agents A-D on one `salloc`) this fires constantly.
+
+**Fix (landed on `agent/htransform-distributed-eigh`).** `runtime.init_jax_distributed`
+now takes the explicit `(coordinator_address, num_processes, process_id)` path
+whenever `JAX_COORDINATOR_ADDRESS` is set, and passes `local_device_ids` on that
+path too (without it the explicit form assumes each process owns every local GPU
+and dies with `CUDA_ERROR_INVALID_DEVICE: invalid device ordinal` under the
+one-GPU-per-process binding `select_gpu.sh` sets up). Launchers should pass a
+per-launch address, and must pin `--nodelist` so process 0's host is known:
+
+```
+--env=JAX_COORDINATOR_ADDRESS=<first node of --nodelist>:<port unique to the launch>
+```
+
+See `runs/MoS2/11_mos2_htransform_ffi_eigh_2026-07-21/run_shifter.sh`.
+
+
+## 2026-07-21 — `liblorrax_ffi.so` must be dlopened AFTER h5py binds its HDF5
+
+**Symptom.** `ValueError: Not a datatype (not a datatype)` from `h5py/h5t.pyx`
+when a test or script loads the FFI library and only then imports a LORRAX
+module that pulls `h5py` (e.g. `bandstructure.bse_setup`).
+
+**Cause.** `liblorrax_ffi.so` links the Cray parallel HDF5 staged at
+`/lorrax_phdf5`; h5py imported afterwards initialises against those symbols.
+
+**Fix.** `tests/test_ffi_linalg_contract.py` now imports `h5py` at module scope
+before the FFI availability probes. Any new script that dlopens the FFI must do
+the same.
+
+
+## 2026-07-21 — the FFI shared object is a per-checkout build artifact
+
+`src/ffi/common/cpp/build/liblorrax_ffi.so` is gitignored, so a fresh worktree
+has no FFI at all and every `needs_ffi` test SKIPS — silently, which reads as
+"passed". Either run `src/ffi/common/cpp/run_shifter.sh bash src/ffi/common/cpp/build.sh`
+in the new worktree, or symlink the `.so` from a sibling checkout after
+confirming `diff -rq` on every `src/ffi/*/cpp` tree is empty.

@@ -1,5 +1,103 @@
 # Changelog
 
+## 2026-07-21 (htransform fH_q eigh through the distributed-linalg FFI): it works, it is exact, and it is NOT the wide-window lever — the Galerkin G-accumulation is
+
+Branch `agent/htransform-distributed-eigh` (worktree `sources/lorrax_A_htffi_wt`),
+off `agent/bse-exciton-smooth` @ `bc808a1`.
+Run `runs/MoS2/11_mos2_htransform_ffi_eigh_2026-07-21/`, 4 x A100-80GB (2x2, ONE
+JAX PROCESS PER GPU), on the converged 80 Ry / 12x12 / n_mu = 2412 reference.
+
+**1. The FFI routing is in and it is exact.** `bandstructure.bse_setup.compute_wfns_fi`
+takes `eigh_backend = auto|off|cusolvermp|slate`; the FFI arms reshard fH_q per q
+to `P('x','y')` and call the ONE dispatcher `ffi.common.dispatch.dispatch_eigh`
+(moved out of `bse.vq_interp._eigh_backend`, which is deleted — one dispatcher,
+not two). Gated against the native path at rank 1728, 39 off-grid Q on M-Gamma-K:
+
+    max |eps_c(native) - eps_c(cusolvermp)|   1.45e-11 meV
+    on-grid max |d eps_c|                     0.000 meV      BOTH backends
+    off-grid max |2nd difference| M-Gamma     2606.101981 meV BOTH backends
+    off-grid max |2nd difference| Gamma-K     1997.853745 meV BOTH backends
+
+(The off-grid numbers are large because the interpolation basis is the open
+problem of runs 09/10 — they are IDENTICAL across backends, which is what this
+gate is for. On-grid agreement alone would have been blind to it.)
+
+**2. It costs 68x per q, and 94-640x per matrix.** `common.eigh_benchmark --mode
+dispatch` (new), ms PER MATRIX, complex128, 2x2 mesh, native batch 32:
+
+    n        512     1024     2048     4096
+    native   4.8     11.1     39.2    205.4   ms/matrix
+    cusolvermp 3043.4 2763.6 11011.7 19400.1  ( 640x  249x  281x   94x )
+    slate    1525.5  1844.1   8526.0     -    ( 221x  164x  216x )
+
+In the driver at rank 1728: native 126.0 ms/q, cusolverMp 8533.1 ms/q. Both FFI
+backends are dominated by fixed per-call cost, so the ratio only narrows slowly
+with n. The batched native path stays the default on MEASURED performance.
+
+**3. The negative result that matters: the eigh is not what blocks wide windows.**
+At rank 1728 the XLA high-water mark is **15.677713664 GB per device for BOTH
+backends — identical to the byte**. The peak is reached before the eigh. Every
+rank-4452 (E_min-anchored 26v+8c) failure on 4 GPUs is the SAME backend-independent
+allocation, 31156877456 B = 5 x (rank, nspinor, n_rtot/ndev) c128 in
+`streaming_galerkin_solve`'s G accumulation (matches to within padding at both
+rank 3892 and rank 4452), and `build_fH_R`'s module wants 63.79 GiB against a
+39.72 GiB floor. The per-q eigh is ~2.5 GiB/device there (batch 32 / 4 devices),
+about 4% of the peak. Since `rank <= nspinor*n_mu`, ONE fH_q tile stays under
+2.1 GiB even at the n_mu ~ 5680 the accuracy target wants — it cannot be the
+constraint on this system at any n_mu the ISDF would use. **Next lever: shard the
+G-accumulation r-chunk and `fH_R`'s R axis, not the eigh.** `compute_wfns_fi`'s
+existing `batch_size` already buys the eigh-memory reduction linearly with no
+wall-clock penalty and is not exposed on any CLI.
+
+**4. Allocator, not capacity.** Under the BFC pool at `MEM_FRACTION=0.95` the
+anchored windows OOM on 4 GPUs; under `XLA_PYTHON_CLIENT_ALLOCATOR=platform` /
+`cuda_malloc_async` the same rank-4452 window runs in 67 s (578.7 ms/q, on-grid
+21.550 meV). Quote the allocator with any htransform ceiling.
+
+**5. Two sandbox hazards fixed / logged** (`KNOWN_SANDBOX_ERRORS.md`):
+`jax.distributed`'s SLURM auto-detection derives the coordinator port from
+`SLURM_JOB_ID`, so concurrent steps in one shared allocation collide —
+`runtime.init_jax_distributed` now honours an explicit `JAX_COORDINATOR_ADDRESS`
+(and passes `local_device_ids` on that path, which it did not). And a co-tenant
+agent's `pkill -9 -u $USER -f "[p]ython3"` across all four nodes destroyed three
+measurement runs; that pattern must never be used in a shared pool.
+
+pytest (1 node, 4 GPUs visible, nothing else of mine running): **264 passed, 13
+skipped, 25 deselected, 0 failed** (base was 261 / 12; +3 new cells pass, +1 skips
+on the unbuilt host `.so`). All four golden gates green. Earlier runs of the same
+suite reported 2 failed / 2 errors — every one a `RESOURCE_EXHAUSTED`, i.e. GPU
+contention with concurrent steps, not code. The native default path is unchanged:
+on a matched 4x4 mesh it reproduces the pre-change `gate_capacity.json` reference
+BIT-IDENTICALLY (on-grid 40.71868612597966 meV, M-Gamma 5966.277013782405 meV,
+Gamma-K 6138.184559930639 meV, and the per-Q dict); on a 2x2 mesh the same numbers
+agree to 1.4e-11 meV (float reassociation from the different reduction order).
+
+New contract cells
+`tests/test_ffi_linalg_contract.py::test_compute_wfns_fi_*` (cusolvermp + slate
+vs native on a 1x1 mesh, plus a CPU-platform cell and a bad-backend rejection)
+pass on ONE GPU — no 16-GPU gating.
+
+## 2026-07-21 (minimax off-axis follow-on)
+
+Branch `agent/minimax-solver-speed`, commit `5bb668c`; report
+`reports/minimax_solver_speed_2026-07-21/report.md`.
+
+Added the missing absorptive Lorentzian target and a certified noncrossing fit
+for `1/(x+i*omega)` using real decay nodes and complex weights. Complex weights
+now survive the minimax disk cache, `MinimaxNodes` conversion, and the two chi0
+host prefactor folds. Automatic generation stops Lawson work at the requested
+dense tolerance, prefers the lower-L1 solution when multiple starts pass, and
+skips fits with dimensionless weight L1 above `1e4` to avoid severe cancellation.
+
+Representative complex fits take 0.9-3.8 s and 10-14 total nodes across tested
+`R=8-200` cases. The analytic projected-Jacobian experiment was rejected after
+causing much slower convergence and worse local minima outside its best case.
+Focused suite: **19 passed**. CPU-compatible suite: **176 passed, 22 skipped**;
+three unrelated CPU-backend config expectations fail. The user waived rerunning
+the full GPU suite for this follow-on; the preceding crossing-solver commit passed
+208 GPU tests. This covers noncrossing off-axis samples only; the interior
+crossing/complex-time chi0 kernel remains separate work.
+
 ## 2026-07-21 (later still): arbitrary-Q exciton path — the b26p exchange is EXACT to 0.026 meV, but off-grid `eps_c(k+Q)` collapses; full-BZ zeta hits the rank-truncation cap
 
 Branch `agent/bse-exciton-smooth` (worktree
