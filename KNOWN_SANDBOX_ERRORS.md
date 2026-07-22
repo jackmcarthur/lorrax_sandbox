@@ -28,6 +28,24 @@ incorrect sandbox scaffolding is the human's job.
 
 ## Issues
 
+### 2026-07-21: `lorrax_C` module requests a nonexistent Shifter source mount
+- **Where**: privileged `lxrun` of the full test suite on GPU allocation 56296339 after loading `lorrax_C` and `lorrax_agent`.
+- **What happened**: Shifter aborted before pytest with `shifter_realpath: failed to lstat /var/udiMount/pscratch/sd/j/jackm/lorrax_nvhpc` and `FAILED to find real path for volume "from": /pscratch/sd/j/jackm/lorrax_nvhpc`.
+- **Expected**: the module's `LORRAX_SHIFTER` mount should point to an existing source/environment path, allowing the active `sources/lorrax_D` checkout to run.
+- **Workaround**: inspect the installed LORRAX modules and use the module whose mount configuration targets the active `lorrax_D` environment.
+
+### 2026-07-21: sandboxed `lxrun` cannot query an active allocation
+- **Where**: full LORRAX checkpoint test launch on active GPU allocation 56296339.
+- **What happened**: the launcher printed repeated `environment: line ...: ERROR:: command not found` messages and `lx_pool: timeout running squeue -j 56296339 --noheader -o '%i|%j|%N|%L'`; pytest never started.
+- **Expected**: `lxrun python3 -m pytest -q tests` should select the free node in the active allocation and launch the test process.
+- **Workaround**: rerun the identical launcher outside the filesystem sandbox so its Slurm queries and inherited module environment work normally.
+
+### 2026-07-21: sandboxed `lxalloc` cannot read Slurm `udiRoot.conf`
+- **Where**: checkpoint GPU allocation for the minimax-solver optimization (`module load lorrax_C ... && lxalloc 1 00:30:00`).
+- **What happened**: `lxalloc` reached `salloc`, which printed `udiRoot.conf must be owned by user root!` and `salloc: error: FAILED to read udiRoot configuration file!`, then exited with a segmentation fault (status 139).
+- **Expected**: `lxalloc` should start a one-node interactive GPU allocation for the required full LORRAX test suite.
+- **Workaround**: rerun the allocation outside the filesystem sandbox so Slurm can inspect its root-owned configuration.
+
 ### 2026-07-21: `skills/build_inputs/SKILL.md` points at three directories that do not exist
 - **Where**: `skills/build_inputs/SKILL.md` — Step 0 ("Read the pseudopotential `.upf` files … from `assets/pseudos_standard` (or `pseudos_stringent`…)"), Step 1 ("Start from the `scf.in` template in `assets/templates/`"), and Step 1 again ("Pseudopotential files live in `assets/pseudos_standard/`").
 - **What happened**: none of `assets/templates/`, `assets/pseudos_standard/`, `assets/pseudos_stringent/` exist. Following the skill literally to build `runs/MoS2/07_mos2_ref_80Ry_12x12_400b_2026-07-21` fails at the copy step.
@@ -763,6 +781,69 @@ the log says the intended thing did not happen — so they belong here.
 - **Workaround used**: `reports/gw_converged_12x12_80ry_2026-07-21/gw_probe.py
   --cap-gib 8` rebinds the constant in-process (no source edit); the replicated
   route then runs and the gate passes.
+
+#### 2026-07-21 (addendum): the cap scales with the q AXIS, so `--cap-gib 8` is
+#### not enough the moment you ask for full-BZ zeta — and it fails silently again
+
+- **Where**: same three symbols.  The stack is `nq * n_rmu**2 * 16`, and `nq`
+  is the number of q **written to disk** — 74 under the IBZ cascade, 144 with
+  `LORRAX_FORCE_FULL_BZ=1`.
+- **What happens**: regenerating the converged MoS2 ζ on the full BZ (needed
+  because `bse.vq_interp` refuses IBZ-only storage) doubles the stack from
+  6.9 GiB to **13.36 GiB**, back above the campaign's raised 8 GiB cap.  The
+  route silently reverts to `cusolvermp_cholesky` and `charge_zeta_solve =
+  rank_truncate` is ignored a second time — with **no warning**, exactly as
+  entry (1) predicts.
+- **Measured consequence** (`reports/bse_exciton_smooth_2026-07-21`):
+  the ζ that comes out is **~4.5× larger in norm** than the production ζ at the
+  same q (thin-slice relF 4.6 against the IBZ file), and rebuilding
+  `V(q) = conj(ζ̃√v)(ζ̃√v)^T` from it misses the production `V_qmunu` tiles by
+  **relF 15.9 – 31.9 at every one of the 144 q** (median 29.7).  The production
+  IBZ ζ rebuilds the same tiles to **1.8e-15 (Γ) / 5.2e-9**, so the rebuild
+  machinery and every convention in it are correct — only the solve route
+  changed.  A near-singular CCT (κ≈1e13) run through plain Cholesky instead of
+  the rank-revealing pseudo-inverse is the whole difference.
+- **Workaround used**: the same wrapper with a bigger number,
+  `gw_probe.py --cap-gib 16`, plus a hard check for
+  `path=replicated_rank_truncate` in the log.
+- **Suggested fix (unchanged, now with a second data point)**: warn — loudly —
+  when `charge_zeta_solve = rank_truncate` is requested and
+  `_replicate_charge_ok` is False, printing the cap and the actual stack size.
+  Better still, make the cap a `cohsex.in` key so it is set with the physics
+  rather than rebound by a probe wrapper.  A knob whose silent disengagement
+  costs a factor 4.5 in ζ should not be discoverable only by asserting on a
+  log substring.
+
+#### 2026-07-21 (addendum 2): the arbitrary-Q exciton path has NO off-grid gate, and off-grid `eps_c(k+Q)` collapses
+
+- **Where**: `bse/exciton_bands.py` — `gate_htransform_vs_stored` is called at
+  the ONE guaranteed on-grid point (Gamma) only, and `--vq-mode ongrid` forces
+  every Q on-grid, so nothing in the pipeline has ever tested the interpolated
+  conduction leg at an OFF-grid Q.
+- **What happens**: on the converged 12x12 / 80 Ry / n_mu = 2412 reference with
+  fH window nb = 28, a 39-Q M-Gamma-K path (`--vq-mode interp`) returns **11 of
+  its 37 off-grid Q with the WHOLE eigenvalue multiplet collapsed 166-1066 meV
+  below the local trend**, while all 3 on-grid Q are exact. The collapses are
+  isolated single points, not dispersion: e.g. Q=(0, 0.1316, 0) gives
+  E1 = 1.2454 eV between neighbours at 2.3330 and 2.2895 eV.
+- **It is NOT the exchange model.** The companion run (11 Q, all on the mesh,
+  `--vq-mode interp` vs run 08's exact stored `V_qmunu[wrap(-Q)]` tiles) agrees
+  to **max |dE1| = 0.009 meV, 0.026 meV over all 8 branches**. The b26p V_Q
+  interpolation is exonerated; the defect is on the interpolated
+  `eps_c(k+Q)` / `psi_c(k+Q)` htransform leg.
+- **Likely cause, already documented as a knob**: the driver's own `--a-band`
+  help says "a large default `a` from a dispersive top guard band can collapse
+  off-grid eps_c(k+Q) by eV" — the f-transform width `a = 4*BW` is taken from
+  the top band of the fH window, and the selected conduction caches then land in
+  the `f' -> 0` compression zone at particular k+Q. Untested because the window
+  sweep that chose nb = 28 was itself entirely on-grid.
+- **Suggested fix**: (i) add an OFF-grid gate — the driver already knows which Q
+  are on the mesh, so a smoothness/2nd-difference check on `eps_c(k+Q)` across
+  the Q list costs nothing and would have caught this; (ii) sweep `--a-band`
+  and re-measure; (iii) until then, `--vq-mode interp` results at off-grid Q
+  must not be reported as physics.
+- **Data**: `reports/bse_exciton_smooth_2026-07-21/offgrid_collapse.json`,
+  `exciton_bands.npz`, `plots/mos2_exciton_arbitraryQ_diagnostic.png`.
 
 ### (2) The htransform / BSE cannot be built at production n_mu — `fH_R` is replicated
 

@@ -2505,3 +2505,41 @@ Peak is now ~17 GiB at every window 16–40.
 binding **543.5 meV** vs the converged 2.6356 eV direct gap, minimum
 **momentum-indirect** at M (1.9552 eV) with Λ 4.6 meV above — both K→Λ. 630 s on
 16 GPUs. Figure and caveats in the report.
+
+---
+
+## 2026-07-21 — arbitrary-Q exciton path: exchange EXACT, conduction leg BROKEN off-grid
+
+`agent/bse-exciton-smooth` off `agent/bse-exciton-converged` @ `86d9e6b`
+(worktree `sources/worktrees/lorrax_bse_exciton_smooth`).
+Deliverables `reports/bse_exciton_smooth_2026-07-21/`, run
+`runs/MoS2/09_mos2_exciton_smooth_2026-07-21/`.
+
+**The b26p V_Q interpolation is exonerated, quantitatively.** Run it at 11 Q
+that all lie ON the 12x12 mesh and compare against the EXACT stored production
+tiles `V_qmunu[wrap(-Q)]` at the same Q — the only apples-to-apples test there
+is — and the two agree to **max |dE1| = 0.009 meV, 0.026 meV over all 8
+branches**. That is the accuracy number backing every off-grid point, and it is
+~100x better than the "few meV" bar. `E1(Gamma) = 2.092053 eV` reproduces the
+on-grid run exactly (as it must: Q = 0 takes the production head-body tile in
+both modes, so Gamma tests everything EXCEPT the exchange model).
+
+**The conduction leg is what fails.** On a 39-Q M-Gamma-K path, 11 of the 37
+off-grid Q return their whole eigenvalue multiplet 166-1066 meV below the local
+trend — isolated single points, not dispersion — while all 3 on-grid Q are
+exact. Cause is the interpolated `eps_c(k+Q)`, the mode `--a-band`'s own help
+text describes. It survived because **every gate in this pipeline is on-grid**:
+the driver gates at Gamma only, `--vq-mode ongrid` pins all Q to the mesh, and
+the nb-window sweep that chose nb = 28 was on-grid throughout. A 2nd-difference
+check on `eps_c(k+Q)` over the Q list is free and would have caught it.
+
+**Memory work that had to land first** (all layout-only): `build_cq`'s `P_R`
+was 53.6 GB replicated (now face-sharded 3.35 GB/device, and allocated sharded
+— `device_put(jnp.zeros(...))` materialises before it reshards); zeta/V/W0 are
+now lazy h5py pulled per q-slice instead of 74.6 GB/process; `prepare_coarse`
+drops two 13.4 GB host mirrors that only the skipped diagnostics read; and the
+replicated charge factor is batched over q (its workspace asked for 42.55 GB in
+one allocation at nq = 144).
+
+**Next**: sweep `--a-band`, add the off-grid `eps_c` gate, then re-run the 39-Q
+path. Until then no arbitrary-Q exciton dispersion should be reported as physics.

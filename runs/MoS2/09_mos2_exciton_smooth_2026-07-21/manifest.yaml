@@ -1,0 +1,67 @@
+run_id: mos2_exciton_smooth_2026-07-21
+system: MoS2
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: mos2_exciton_converged_2026-07-21
+reuse_from_parent:
+  - runs/MoS2/07_mos2_ref_80Ry_12x12_400b_2026-07-21/qe/nscf/WFN.h5
+  - runs/MoS2/07_mos2_ref_80Ry_12x12_400b_2026-07-21/00b_lorrax_gw_2400c_ranktrunc/tmp/isdf_tensors_2412.h5
+  - runs/MoS2/07_mos2_ref_80Ry_12x12_400b_2026-07-21/00b_lorrax_gw_2400c_ranktrunc/eqp1.dat
+  - runs/MoS2/07_mos2_ref_80Ry_12x12_400b_2026-07-21/00b_lorrax_gw_2400c_ranktrunc/centroids.txt
+overrides:
+  vq_mode: interp
+  note: >-
+    Arbitrary-Q exciton path (b26p V_Q interpolation) instead of run 08's
+    --vq-mode ongrid, which restricted Q to the 13 points of the 12x12 mesh
+    that lie on Gamma-M-K-Gamma. The ONLY thing regenerated is the ISDF zeta
+    tensor, refitted on the FULL BZ (144 q) because the production fit stored
+    it IBZ-only (74 q, D3h orbit closure -> IBZ cascade) and bse.vq_interp
+    requires nq == nk. Same WFN, same 2412 centroids, same self-energy, same
+    eqp1.dat, same 8v8c TDA BSE, same fH window nb = 28.
+
+branch: agent/bse-exciton-smooth
+worktree: sources/worktrees/lorrax_bse_exciton_smooth
+base_commit: 86d9e6b
+
+physics:
+  kgrid: [12, 12, 1]
+  ecutwfc_ry: 80.0
+  n_mu: 2412
+  bse_window: 8v8c
+  bse_bands_absolute: [18, 34]
+  fh_window_nb: 28
+  fh_window_bands_absolute: [12, 40]
+  eqp: eqp1.dat
+  scissor: none
+  tda: true
+  gap_direct_K_eV: 2.6356
+  gap_indirect_eV: 2.5079
+
+steps:
+  00_zeta_fullbz:
+    state: complete
+    note: >-
+      LORRAX_FORCE_FULL_BZ=1 + LORRAX_EXIT_AFTER_ZETA=1 + gw_probe.py --cap-gib 16;
+      144 q; 16 GPU / 4 nodes; 394 s. The cap raise is REQUIRED: without it the
+      charge zeta-solve silently drops to cusolvermp_cholesky and the zeta is
+      4.5x too large (see reports/.../logs/zeta_fullbz_BAD_cholesky_fallback.log).
+      Gated: rebuilt V_q vs production V_qmunu max relF 1.166e-08 over all 144 q.
+  01_lorrax_exciton_interp_ongrid_check:
+    state: complete
+    note: >-
+      11 Q, all on the 12x12 mesh; --vq-mode interp; every Q also appears in run
+      08's ongrid path. interp vs EXACT stored tiles: max |dE1| = 0.009 meV,
+      max over all 8 branches = 0.026 meV. E1(Gamma) = 2.092053 eV, reproducing
+      run 08 exactly. 749 s, solve scan compiled ONCE.
+  02_lorrax_exciton_smooth_40q:
+    state: failed
+    note: >-
+      M->Gamma->K, 19+19 intervals = 20 Q on Gamma->M + 20 on Gamma->K, 39 total.
+      RAN to completion (1999 s, solve scan compiled ONCE over all 39 Q) but the
+      OFF-GRID points are NOT USABLE: 11 of the 37 off-grid Q have their whole
+      eigenvalue multiplet collapse 166-1066 meV below the local trend, while
+      every on-grid Q is exact. The exchange model is exonerated by step 01
+      (0.026 meV); the defect is on the interpolated eps_c(k+Q) / psi_c(k+Q)
+      htransform leg. Deliverable is a DIAGNOSTIC figure, not a physics result.
+      See reports/.../offgrid_collapse.json.

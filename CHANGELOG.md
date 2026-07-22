@@ -1,5 +1,89 @@
 # Changelog
 
+## 2026-07-21 (later still): arbitrary-Q exciton path — the b26p exchange is EXACT to 0.026 meV, but off-grid `eps_c(k+Q)` collapses; full-BZ zeta hits the rank-truncation cap
+
+Branch `agent/bse-exciton-smooth` (worktree
+`sources/worktrees/lorrax_bse_exciton_smooth`), off `agent/bse-exciton-converged`
+@ `86d9e6b`. Report `reports/bse_exciton_smooth_2026-07-21/`.
+Run `runs/MoS2/09_mos2_exciton_smooth_2026-07-21/`. 16 x A100-80GB, job 56292479.
+The converged 80 Ry / 12x12 / n_mu = 2412 G0W0 is reused unchanged — same WFN,
+centroids, Sigma, `eqp1.dat`, `V_qmunu`, `W0_qmunu`. Only the ISDF zeta was
+regenerated, on the FULL BZ, because `bse.vq_interp` refuses IBZ-only storage.
+
+**1. The exchange interpolation is not the resolution limit — it is exact.**
+11 Q on the 12x12 mesh, `--vq-mode interp` (b26p arbitrary-Q V_Q) against run
+08's EXACT stored `V_qmunu[wrap(-Q)]` tiles at the same 11 Q:
+**max |dE1| = 0.009 meV, max over all 8 branches = 0.026 meV**, median 0.000.
+`E1(Gamma) = 2.092053 eV` reproduces run 08 exactly. 749 s, and the Q-scan
+compiles **ONCE** (`solve_path: cold 238.01s (incl. ONE compile) over 11 Q`).
+
+**2. The 39-Q arbitrary-Q path RAN but its off-grid points are NOT PHYSICS.**
+20 Q on Gamma->M + 20 on Gamma->K, 1999 s, scan compiled **ONCE** over all 39 Q.
+**11 of the 37 off-grid Q collapse 166-1066 meV below the local trend** (whole
+multiplet, isolated single points); all 3 on-grid Q are exact. Since (1)
+exonerates the exchange, the defect is the interpolated `eps_c(k+Q)` /
+`psi_c(k+Q)` htransform leg — the failure mode the driver's own `--a-band` help
+already names ("a large default a ... can collapse off-grid eps_c(k+Q) by eV"),
+never caught because **every gate in the pipeline is on-grid**: the Gamma gate,
+run 08's ongrid path, and the nb-window sweep that chose nb = 28. Logged in
+KNOWN_SANDBOX_ERRORS with the suggested off-grid gate. **No smooth exciton
+bandstructure is claimed**; the deliverable is a diagnostic figure with the
+collapsed Q marked and excluded.
+
+**3. The rank-truncation cap scales with the q axis, and bit again.**
+`charge_zeta_solve = rank_truncate` is honoured ONLY on the replicated solve
+route, gated by `nq * n_mu^2 * 16 <= _REPLICATED_CHOL_MAX_STACK_BYTES`. Going
+IBZ (74 q, 6.9 GiB) -> full BZ (144 q, 13.4 GiB) puts it back above the
+campaign's raised 8 GiB cap, silently reverting to `cusolvermp_cholesky`.
+Measured: the resulting zeta is **4.5x too large in norm** and rebuilding V_q
+from it misses the production tiles by **relF 15.9-31.9 at every q** (the
+production IBZ zeta rebuilds them to **1.8e-15**). With `gw_probe.py --cap-gib 16`
+the full-BZ zeta gates at **max relF 1.166e-08 over all 144 q** (tol 5e-6).
+
+**4. Four memory defects fixed to make the arbitrary-Q path runnable at all**
+at converged n_mu — none of them physics:
+`build_cq`'s `P_R` accumulator was 53.6 GB replicated (now (mu,nu)-face sharded,
+3.35 GB/device, and allocated sharded rather than `device_put(jnp.zeros(...))`);
+zeta / `V_qmunu` / `W0_qmunu` were materialised per process (47.8 + 13.4 + 13.4 GB;
+now lazy h5py, pulled per q-slice); `prepare_coarse` kept two (nq,n_mu,n_mu)
+host mirrors used only by the skipped diagnostics (26.8 GB/process — the host
+OOM); and the replicated charge factor's XLA workspace scaled with nq, asking
+for a single 42.55 GB allocation at 144 q (now batched).
+
+### Source changes
+
+| file | change |
+|---|---|
+| `bse/vq_interp.py` | lazy on-disk zeta/V/W0; `build_cq` P_R face-sharded + sharded allocation + reshape-matmuls rewritten as einsums (verified equal to 1e-15); `prepare_coarse` per-chunk hermitisation, memory-sized q-chunk, optional host mirrors |
+| `isdf/core.py` | `factor_c_q_replicated_batched` — the replicated charge factor in bounded q-batches |
+| `tests/test_bse_vq_interp.py` | `build_cq` now takes the mesh |
+
+
+## 2026-07-21 (minimax solver audit): remove a discarded initializer; 2.3x-19.5x faster HGL generation
+
+Branch `agent/minimax-solver-speed`, commit `4d71e2d`.
+Report `reports/minimax_solver_speed_2026-07-21/report.md`.
+
+Audited the nonlinear crossing-quadrature generator against variable-projection
+and exponential-sum Remez practice. The existing SVD VarPro-LM, Lawson, and final
+minimax-LP architecture is sound, but the candidate-grid LP followed by repeated
+backward-elimination LPs dominated runtime and its result was discarded in favor
+of the Chebyshev start on every profiled shipped HGL case. Removed that initializer,
+ordered the useful starts Chebyshev then uniform, and added tolerance-aware early
+certification of Lawson passes and starts.
+
+At `eps=1e-6`, HGL generation improved from 11.49 to 2.68 s at A=30 (4.3x),
+66.07 to 28.97 s at A=40 (2.28x), and 149.10 to 7.65 s at A=60 (19.5x), with
+the same node counts and essentially unchanged dense-grid errors. Added an A=20
+dense 20,001-point accuracy and weight-conditioning regression. Full GPU suite:
+**208 passed, 24 deselected**.
+
+Exact Golub-Pereyra Jacobians, N-continuation, minimum node separation, and binary
+search over N were tested but rejected: with the current clip-and-sort node
+coordinates they produced severe coefficient cancellation or skipped valid local
+solutions. The next solver work should use ordered-gap coordinates plus an explicit
+conditioning guard before retrying those literature-supported techniques.
+
 ## 2026-07-21 (later): the htransform capacity ceiling is the ISDF *rank*, not `nspinor·n_μ` — and the 8v8c exciton on converged G0W0
 
 Branch `agent/bse-exciton-converged` (worktree `sources/worktrees/lorrax_bse_exciton_conv`),
