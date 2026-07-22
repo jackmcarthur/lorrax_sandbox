@@ -71,10 +71,29 @@ steps:
   01_lorrax_exciton_anchored_40q:
     state: complete
     note: >
-      Production: 39 Q + 2 --extra-q symmetry images, 8v8c TDA BSE on
-      quasiparticle energies (--eqp eqp1.dat), --vq-mode interp,
-      --head-minibz-average off (point-value head), 16 GPUs / 4x4 mesh,
-      cusolverMp eigh.  See reports/bse_exciton_smooth_2026-07-21/.
+      Production: 39 Q (20 on Gamma-M, 20 on Gamma-K) + 2 --extra-q symmetry
+      images, 8v8c TDA BSE on quasiparticle energies (--eqp eqp1.dat),
+      --vq-mode interp, point-value head, 16 GPUs / 4x4 mesh.  ONE compile:
+      solve_path cold 879.01 s over 41 Q; vq_prepare 182.8 s; htransform
+      ~30 min (rank 4700).  Driver on-grid gate PASSED: max|d eps_c| =
+      57.902 meV over all 144 k, conduction-subspace min-sval 0.9544.
+        E_1(Gamma)        = 2.094357 eV
+        binding vs direct = 541 meV  (G0W0 direct gap 2.6356 eV at K)
+        E_1 min           = 1.9552 eV at M; Gamma->K min 1.9598 eV at
+                            (0.158, 0.158)
+        E_1 bandwidth     = 381 meV
+      E_1 |2nd difference| max/mean: Gamma-M 63.3/19.9 meV, Gamma-K
+      101.7/33.5 meV (run 09 was 2132/717 and 1404/569; the 30 Ry
+      known-good reference is 43.5-61.4 max, 17.5-31.7 mean).
+      REFERENCE-FREE sigma_v mirror check on the --extra-q images:
+      dE_1 = -0.538 and +0.069 meV, max over 8 branches 2.391 and 1.620 meV.
+      Took three launches: attempt 1 OOMed in vq_interp.build_cq's 16.8 GB
+      host gather (fixed by freeing the htransform intermediates, lorrax
+      6713351), attempt 2 was host-OOM-killed by transient node pressure,
+      attempt 3 succeeded.  run_shifter.sh switched to
+      XLA_PYTHON_CLIENT_ALLOCATOR=platform + TF_GPU_ALLOCATOR=cuda_malloc_async
+      (the known-good run11.sh setting) after attempt 1; attempt 3 carried it.
+      Figure: reports/bse_exciton_smooth_2026-07-21/exciton_bands_anchored_converged.png
   02_probe_rank800:
     state: failed
     note: >

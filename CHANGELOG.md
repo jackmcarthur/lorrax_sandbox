@@ -66,8 +66,22 @@ SP bandstructure driver also uses. Every htransform bandstructure produced on
 this branch family since `5e50b8e` with `nb > band_chunk_size` is suspect.
 
 Test suite unchanged vs HEAD (211 passed / 34 skipped / 1 failed / 28 errors,
-all pre-existing). Production 39-Q + 2 symmetry-image run was mid-flight at
-hand-off; see the run directory for its `.dat` / `.png` / gate JSON.
+all pre-existing).
+
+**The figure landed** —
+`reports/bse_exciton_smooth_2026-07-21/exciton_bands_anchored_converged.png`.
+39 Q + 2 symmetry images, ONE compile (`solve_path` cold 879 s over 41 Q).
+`E_1(Γ) = 2.094357 eV`, binding 541 meV vs the 2.6356 eV direct gap, `E_1` min
+1.9552 eV at M, bandwidth 381 meV. Driver on-grid gate passed at 57.9 meV over
+all 144 k (min-sval 0.954). `E_1` |2nd difference| max/mean: Γ-M 63.3/19.9 meV,
+Γ-K 101.7/33.5 meV — 21-34× better than run 09 (2132/717, 1404/569) and at the
+30 Ry reference's level (43.5-61.4 max, 17.5-31.7 mean).
+
+**Reference-free gate — this is the few-meV statement.** The σ_v mirror
+(h,k)→(k,h) is a lattice symmetry, so a Q and its image must give identical
+`E_S`; two images rode the same scan via `--extra-q`: `ΔE_1` = −0.538 and
++0.069 meV, max over all 8 branches 2.391 and 1.620 meV. Sub-meV on `E_1`,
+< 2.4 meV across the multiplet, with no external reference.
 
 ## 2026-07-21 (htransform fH_q eigh through the distributed-linalg FFI): it works, it is exact, and it is NOT the wide-window lever — the Galerkin G-accumulation is
 
