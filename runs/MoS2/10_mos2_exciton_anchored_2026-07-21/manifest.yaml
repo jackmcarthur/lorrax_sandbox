@@ -1,0 +1,85 @@
+run_id: mos2_exciton_anchored_2026-07-21
+system: MoS2
+pipeline: lorrax_only       # qe_only | qe_bgw | lorrax_only | qe_bgw_lorrax
+platform: perlmutter
+
+variant_of: mos2_exciton_smooth_2026-07-21   # runs/MoS2/09_...
+reuse_from_parent:
+  - 07_mos2_ref_80Ry_12x12_400b_2026-07-21/00b_lorrax_gw_2400c_ranktrunc/WFN.h5
+  - 07_mos2_ref_80Ry_12x12_400b_2026-07-21/00b_lorrax_gw_2400c_ranktrunc/eqp1.dat
+  - 07_mos2_ref_80Ry_12x12_400b_2026-07-21/00b_lorrax_gw_2400c_ranktrunc/centroids.txt
+  - 07_mos2_ref_80Ry_12x12_400b_2026-07-21/00b_lorrax_gw_2400c_ranktrunc/tmp/isdf_tensors_2412.h5
+  - 09_mos2_exciton_smooth_2026-07-21/00_zeta_fullbz/tmp/zeta_q.h5   # FULL-BZ zeta for --vq-mode interp
+
+overrides:
+  purpose: >
+    Smooth arbitrary-Q 8v8c exciton bandstructure E_S(Q) on the CONVERGED
+    MoS2 G0W0 (80 Ry / 12x12x1 / 400 bands; eqp1 direct gap 2.6356 eV at K),
+    20 Q along Gamma-M and 20 along Gamma-K, off-grid points through the
+    htransform, --vq-mode interp, 16 GPUs, single compile.
+  vs_run_09: >
+    Run 09 produced eV-scale garbage off-grid.  Two input changes were
+    suspected (nval not anchored at E_min; --a-band omitted) and BOTH are
+    applied here — but neither is what fixed it.  The actual cause was a
+    REGRESSION in bandstructure/htransform.py::streaming_galerkin_solve: the
+    Galerkin Gram matrix G = Q Q^H was accumulated over BAND chunks as if the
+    split were linear, which drops every cross-chunk term of the (k,n)
+    contraction.  Latent while band_chunk_size defaulted to a fixed 64 >= nb
+    (one chunk); went live with commit 5e50b8e, which sizes the chunk to the
+    psi box (80 Ry / nb=40 -> 6 chunks).  Fixed on agent/bse-exciton-offgrid.
+  htransform_window: >
+    nval = 26 = n_occ, so the fH window is ABSOLUTE bands [0, 40) —
+    contiguous from E_min with the semicore states included.  ncond = 14,
+    nband = 40.  BSE window 8v8c = conduction bands [26, 34), interior to the
+    fH window with 6 guards.  --a-band 33 = top of the BSE conduction
+    selection (the known-good 2026-07-20 value).
+  q_path: "M -> Gamma -> K, 19 + 19 intervals = 39 Q, Gamma counted once"
+  extra_q: >
+    Two sigma_v mirror images (h,k)->(k,h) of Gamma->M points, appended with
+    --extra-q so they ride the SAME scan (one compile).  Reference-free
+    symmetry check: a Q and its point-group image must give identical E_S.
+
+steps:
+  00_eps_gate:
+    state: complete
+    note: >
+      Cheap htransform-only gate (no BSE) at the production off-grid Q.
+      Anchored window, --a-band auto.  BEFORE the Galerkin fix: on-grid
+      max|d eps_c| = 311.24 meV, off-grid |2nd diff| max 4784 / 4785 meV
+      (Gamma-M / Gamma-K), mean 720 / 671.  AFTER: 7.44 meV, 186 / 170 meV
+      max, 23.8 / 28.8 meV mean — i.e. at the known-good reference's level.
+  00b_eps_gate_control_30Ry:
+    state: complete
+    note: >
+      CONTROL — the same gate pointed at the 2026-07-20 known-good run
+      (runs/MoS2/04_.../11_lorrax_exciton_bands_minibz_16gpu, 30 Ry, 640
+      centroids, DFT energies) whose figure is a genuinely smooth 40-Q
+      exciton bandstructure.  This is what proved the regression: the
+      known-good-era source gives on-grid 0.63 meV, the current branch gave
+      1742.48 meV on the SAME files, and the fix restores 0.78 meV.
+      Also fixes the scale of the smoothness gate: 187 / 185 meV max and
+      22.5 / 27.6 meV mean off-grid |2nd diff| for a run that IS smooth.
+  00c_eps_gate_6x6:
+    state: skipped
+    note: >
+      6x6 -> 12x12 route (07_.../03_lorrax_gw_6x6_80Ry_bse, n_mu = 1452) was
+      set up as the capacity-clean fallback (nk*nb = 1440 < nspinor*n_mu =
+      2904) in case the native 12x12 could not carry the anchored window.
+      Not needed once the Galerkin fix made the native 12x12 pass.  Its
+      earlier abort (07_.../01_lorrax_exciton_bands, gate 338.2 meV) is the
+      same regression and should now pass; left for a follow-up.
+  01_lorrax_exciton_anchored_40q:
+    state: complete
+    note: >
+      Production: 39 Q + 2 --extra-q symmetry images, 8v8c TDA BSE on
+      quasiparticle energies (--eqp eqp1.dat), --vq-mode interp,
+      --head-minibz-average off (point-value head), 16 GPUs / 4x4 mesh,
+      cusolverMp eigh.  See reports/bse_exciton_smooth_2026-07-21/.
+  02_probe_rank800:
+    state: failed
+    note: >
+      Discarded 7-Q probe from the (wrong) rank-cap hypothesis, kept as the
+      record of it: the driver's own on-grid gate aborted at max|d eps_c| =
+      1222.3 meV, which independently confirmed the eps-leg gate harness
+      before the root cause was found.  The rank-cap knob it exercised was
+      removed once the Galerkin fix made it unnecessary.
