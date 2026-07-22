@@ -40,7 +40,8 @@ srun --jobid=$JID --overlap --immediate=120 -N "$NNODES" -n "$NTASKS" \
     --env=JAX_ENABLE_X64=1 \
     --env=JAX_COMPILATION_CACHE_DIR="$JAXCACHE" \
     --env=XLA_PYTHON_CLIENT_PREALLOCATE=false \
-    --env=XLA_PYTHON_CLIENT_MEM_FRACTION=0.95 \
+    --env=XLA_PYTHON_CLIENT_ALLOCATOR=platform \
+    --env=TF_GPU_ALLOCATOR=cuda_malloc_async \
     --env=MPLBACKEND=Agg \
     --env=OMP_NUM_THREADS=16 \
     ${EXTRA_ENV:-} \

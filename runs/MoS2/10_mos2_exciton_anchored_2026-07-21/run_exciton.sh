@@ -95,7 +95,7 @@ sleep 3
 XQ=""; [ -n "$EXTRAQ" ] && XQ="--extra-q $EXTRAQ"
 echo "=== exciton start $(date +%T)  dir=${DIR}  NM=${NM} NK=${NK}  ${NT} GPU"
 JID=$JID NNODES=$NN NTASKS=$NT GRES=4 \
-  EXTRA_ENV="--env=LORRAX_SKIP_VQ_GATES=1" "$SH" "$RD" \
+  EXTRA_ENV="--env=LORRAX_SKIP_VQ_GATES=1 --env=LORRAX_GALERKIN_CHUNK_GIB=${GCHUNK:-6}" "$SH" "$RD" \
   python3 -u -m bse.exciton_bands -i exciton.in \
     --n-val 8 --n-cond 8 --n-eig $NEIG --block-size 8 --max-iter 40 \
     --vq-mode interp --eqp eqp1.dat --a-band 33 \

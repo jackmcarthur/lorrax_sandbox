@@ -38,6 +38,9 @@ OUT = sys.argv[2]
 GAP_D = float(os.environ.get("EX_GAP_DIRECT", "2.6356"))
 GAP_I = float(os.environ.get("EX_GAP_INDIRECT", "2.5079"))
 NBR = int(os.environ.get("EX_NBRANCH", "6"))
+# fH window size for the caption — it is a property of the RUN, not of
+# this script; run 09 baked in its own 28 and every later run inherited it.
+NBWIN = os.environ.get("EX_NBWIN", "40")
 AGREE = os.environ.get("EX_AGREE")
 ONGRID = os.environ.get("EX_ONGRID_DAT")
 TITLE = os.environ.get(
@@ -238,7 +241,7 @@ ax.set_xlabel(r"$\longleftarrow\ \Gamma\!\rightarrow\!$M"
               r"$\Gamma\!\rightarrow\!$K$\ \longrightarrow$",
               fontsize=9.0, color=INK2, labelpad=6)
 ax.set_ylabel(r"$E_S(\mathbf{Q})$  (eV)", fontsize=10.5, color=INK)
-ax.set_title(TITLE, fontsize=10.6, color=INK, pad=9)
+ax.set_title(TITLE, fontsize=9.2, color=INK, pad=9, wrap=True)
 ax.tick_params(colors=INK2, labelsize=9)
 for sp in ("top", "right"):
     ax.spines[sp].set_visible(False)
@@ -269,7 +272,7 @@ leg.get_frame().set_facecolor(SURFACE)
 for t in leg.get_texts():
     t.set_color(INK2)
 
-sub1 = (f"12$\\times$12 k · 80 Ry · $n_\\mu$=2412 · fH window 28 bands · "
+sub1 = (f"12$\\times$12 k · 80 Ry · $n_\\mu$=2412 · fH window {NBWIN} bands · "
         f"{len(leg_M)} $\\mathbf{{Q}}$ on $\\Gamma\\!\\rightarrow\\!$M + "
         f"{len(leg_K)} on $\\Gamma\\!\\rightarrow\\!$K, arbitrary "
         f"$\\mathbf{{Q}}$ (b26p $V_Q$ interpolation) · QP energies, no scissor")
