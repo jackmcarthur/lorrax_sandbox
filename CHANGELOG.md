@@ -80,18 +80,24 @@ JAX PROCESS PER GPU), on the converged 80 Ry / 12x12 / n_mu = 2412 reference.
 takes `eigh_backend = auto|off|cusolvermp|slate`; the FFI arms reshard fH_q per q
 to `P('x','y')` and call the ONE dispatcher `ffi.common.dispatch.dispatch_eigh`
 (moved out of `bse.vq_interp._eigh_backend`, which is deleted — one dispatcher,
-not two). Gated against the native path at rank 1728, 39 off-grid Q on M-Gamma-K:
+not two). Gated against the native path at TWO ranks, 39 off-grid Q on M-Gamma-K
+(the same metric `reports/bse_exciton_smooth_2026-07-21/eps_window_sweep.py`
+defines — its `d2`/gather helpers are IMPORTED, not restated):
 
-    max |eps_c(native) - eps_c(cusolvermp)|   1.45e-11 meV
-    on-grid max |d eps_c|                     0.000 meV      BOTH backends
-    off-grid max |2nd difference| M-Gamma     2606.101981 meV BOTH backends
-    off-grid max |2nd difference| Gamma-K     1997.853745 meV BOTH backends
+    rank 1728  max |eps_c(native) - eps_c(cusolvermp)|   1.45e-11 meV
+               max |eps_c(native) - eps_c(slate)|        2.11e-11 meV
+    rank 4452  max |eps_c(native) - eps_c(cusolvermp)|   6.19e-11 meV
+               (E_min-ANCHORED 26v+8c, the production window)
+    on-grid max |d eps_c|      0.000 meV (r1728) / 21.550185 meV (r4452), EQUAL
+    off-grid max |2nd diff|    r1728 M-Gamma 2606.101981 / Gamma-K 1997.853745
+                               r4452 M-Gamma 3794.339324 / Gamma-K 5178.322593
+                               every backend, every digit
 
 (The off-grid numbers are large because the interpolation basis is the open
 problem of runs 09/10 — they are IDENTICAL across backends, which is what this
 gate is for. On-grid agreement alone would have been blind to it.)
 
-**2. It costs 68x per q, and 94-640x per matrix.** `common.eigh_benchmark --mode
+**2. It costs 11-41x per q in the driver, 94-640x per matrix in isolation.** `common.eigh_benchmark --mode
 dispatch` (new), ms PER MATRIX, complex128, 2x2 mesh, native batch 32:
 
     n        512     1024     2048     4096
@@ -99,9 +105,18 @@ dispatch` (new), ms PER MATRIX, complex128, 2x2 mesh, native batch 32:
     cusolvermp 3043.4 2763.6 11011.7 19400.1  ( 640x  249x  281x   94x )
     slate    1525.5  1844.1   8526.0     -    ( 221x  164x  216x )
 
-In the driver at rank 1728: native 126.0 ms/q, cusolverMp 8533.1 ms/q. Both FFI
-backends are dominated by fixed per-call cost, so the ratio only narrows slowly
-with n. The batched native path stays the default on MEASURED performance.
+In the DRIVER, SERIALIZED (one run at a time on one node — a concurrent step
+inflates ms/q by 2-3x, so contended timings are not quotable), 39 off-grid Q:
+
+    rank   native   cusolvermp        slate
+    1728   78.4     2030.2 ( 26x)   3194.3 ( 41x)   ms/q
+    4452   277.5    3087.5 ( 11x)   SEGFAULT
+
+Both FFI backends are dominated by fixed per-call cost, so the ratio narrows with
+n but never closes.  `slate` segfaults on the first solve at n = 4452 on a 2x2
+mesh (reproducible, undiagnosed, logged in KNOWN_SANDBOX_ERRORS) — it is only
+validated to n ~ 1728 multi-rank; cuSOLVERMp has no such limit here.  The batched
+native path stays the default on MEASURED performance.
 
 **3. The negative result that matters: the eigh is not what blocks wide windows.**
 At rank 1728 the XLA high-water mark is **15.677713664 GB per device for BOTH
@@ -120,8 +135,11 @@ wall-clock penalty and is not exposed on any CLI.
 
 **4. Allocator, not capacity.** Under the BFC pool at `MEM_FRACTION=0.95` the
 anchored windows OOM on 4 GPUs; under `XLA_PYTHON_CLIENT_ALLOCATOR=platform` /
-`cuda_malloc_async` the same rank-4452 window runs in 67 s (578.7 ms/q, on-grid
-21.550 meV). Quote the allocator with any htransform ceiling.
+`cuda_malloc_async` the same rank-4452 window runs in 36 s. So the widest window
+that fits on 4 x A100-80GB is the SAME before and after this change — the full
+E_min-anchored 26v+8c (rank 4452, the capacity ceiling nspinor*n_mu = 4824) —
+and it is the allocator, not the eigh, that decides. Quote the allocator with any
+htransform ceiling.
 
 **5. Two sandbox hazards fixed / logged** (`KNOWN_SANDBOX_ERRORS.md`):
 `jax.distributed`'s SLURM auto-detection derives the coordinator port from

@@ -1060,3 +1060,25 @@ has no FFI at all and every `needs_ffi` test SKIPS — silently, which reads as
 "passed". Either run `src/ffi/common/cpp/run_shifter.sh bash src/ffi/common/cpp/build.sh`
 in the new worktree, or symlink the `.so` from a sibling checkout after
 confirming `diff -rq` on every `src/ffi/*/cpp` tree is empty.
+
+
+## 2026-07-21 — `ffi.slate.distributed_eigh` SEGFAULTS at n = 4452 on a 2x2 mesh
+
+**Symptom.** `srun: error: nidXXXXXX: task 0: Segmentation fault` (rc=139) on the
+FIRST call, reproducible across two attempts, with no SLATE-level message. The
+same wrapper is fine at n = 1728 on the same mesh (39 consecutive solves,
+3194.3 ms each) and passes the 1x1-mesh contract test at n = 32/64.
+
+**How to reproduce.**
+```
+cd runs/MoS2/11_mos2_htransform_ffi_eigh_2026-07-21
+JID=<jid> NNODES=1 PX=2 PY=2 BACKEND=slate ALLOC=async NCOND=2 \
+  KSTRIDE=144 WINDOWS="26,8" TAG=t_slate_26v8 WD=$PWD/02_timing ./run_gate.sh
+```
+(`n` = the htransform `rank`; the window 26v+8c on MoS2 12x12 / n_mu 2412 gives
+rank 4452, which is divisible by 2 so the layout guard passes.)
+
+**Status.** NOT diagnosed — out of scope for the distributed-eigh initiative,
+which uses cuSOLVERMp for the same call and completes (3087.5 ms/q). Recorded so
+the next agent does not rediscover it: `eigh_backend = slate` is only validated
+up to n ~ 1728 on a multi-rank mesh. cuSOLVERMp has no such limit here.
