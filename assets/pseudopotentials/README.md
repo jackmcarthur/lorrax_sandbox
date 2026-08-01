@@ -10,7 +10,7 @@ using ONCVPSP v3.3.0.
 Both sets are PBE exchange-correlation, fully relativistic (`relativistic="full"`),
 compatible with QE `noncolin=.true., lspinorb=.true.` calculations.
 
-Source: `/home/jackm/SOURCES/agent_tasks/qe-gw-pipeline/assets/`
+Source: PseudoDojo FR-ONCVPSP PBE distribution (fetched 2026; original staging path is gone)
 
 ## Usage
 

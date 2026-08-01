@@ -1,0 +1,30 @@
+# CLAIMS.md — measurement and decision ledger
+
+One line per claim. Append; never delete. When a claim is overturned, set
+its verdict to REFUTED or add the superseding row's number to its last
+column — do not edit the statement. A claim not in this ledger, or without
+a jobid/artifact, is a hypothesis: test it, do not cite it. Deep context
+for any row: grep `/scratch2/08271/jackmc/lorrax_setup/docs/SPEEDUP_SCORECARD.md`
+for the jobid.
+
+Verdicts: GREEN (measured, holds) | REFUTED | RULE (binding practice,
+evidence-backed) | FIXED (defect closed) | OPEN.
+
+| # | Date | Claim | Evidence | Verdict | Superseded by |
+|---|---|---|---|---|---|
+| 1 | 2026-07-31 | Full 4x4 GW pipeline on the vendored template: rc=0 in 2:37; eqp parity exact-0; sigma_mnk.h5 parity 1.1e-13 eV vs pinned baseline | jobs 7884609, 7884612 | GREEN | |
+| 2 | 2026-07-31 | W-densifier compiles with 0 gather-class collectives in both output modes; numeric parity 0.000e+00 | job 7884609 probe step; repo `tools/probe_w_densifier_hlo.py` | GREEN | |
+| 3 | 2026-07-28 | jax CPU collectives `mpi` green at AQ 4962c/P=64, both distributed tiers forced; Dyson residual <= 7.5e-15 | jobs 7877754 (warm, 554 s), 7877789 (cold, 514 s) | GREEN — production transport | |
+| 4 | 2026-07-28 | gloo/ib0 fails reproducibly at P=64 distributed tiers (ReduceScatter tcp read timeout, gloo `buffer.cc:72`); also observed silently corrupting ~5% of reduce-scatters | 2 reps warm+cold, 211/227 s to failure; scorecard §AY (lines 9477-9792) | REFUTED as transport for P>=64 | |
+| 5 | 2026-07-28 | Collective-table gates are valid only cache-cold: cache-hit modules never re-dump HLO, so warm tables under-report | scorecard §AY | RULE | |
+| 6 | 2026-07-28 | Flat-k MKL FFT (DFTI API) FFI: sigma.exec 272 -> 71.9 s (3.78x) at AQ 4962c/P=64; tau FFT trio 38.5x; HLO transposes 6 -> 0; unit gate 1e-16; h5 parity 2.5e-14 eV | jobs 7878708/7878719/7878727/7878745; repo commit 5918cf6 | GREEN — certified opt-in | |
+| 7 | 2026-07-28 | Global k-leading relabel ("route b") would help the FFT layout | HLO probe job 7879370 (repo 068286c): batched minor-most FFTs move 0.00 MB; relabel pushes BSE into the costly layout | REFUTED | 6 |
+| 8 | 2026-07-27 | `warm_mesh_cliques(mesh)` must run (x + y + world cliques) before the first jitted mpi collective; without it BSE TDA Lanczos dies with thread-main refusals (32 refusals at P=16) | failure job 7879458; discriminating controls 7881053; gate 7881216; enforcement `src/common/collectives.py::warm_mesh_cliques` | RULE | |
+| 9 | 2026-07-28 | `check_hermitian` eagerly transposed the sharded (mu,mu) W tile, gathering 399 MB per operand per call; fixed with `with_sharding_constraint` (one fused jit was NOT enough) | repo test `test_check_hermitian_sharded_no_full_gather`; scorecard §AY | FIXED | |
+| 10 | 2026-07-28 | Omega-cube fix (consume tiles where reduce-scatter left them, existing 2D mesh): gathers eliminated, byte-identical results | jobs 7878707, 7878722 | GREEN | |
+| 11 | 2026-07-28 | Gram-build column-blocked fix removes the 98 GB single-node centroid Gram wall; byte-identical at c2475; mu~7k centroids fit 192 GB nodes | gate job 7878488 | GREEN | |
+| 12 | 2026-07-28 | Memory model needs no recalibration: planner-vs-VmHWM 0.97-1.06 across ladder rungs 1-4 (walls 514/434/495/795/1217 s); memory wall extrapolates to mu~26k at P=64. `sacct` MaxRSS undersamples peaks; `/proc` VmHWM is authoritative | ladder record, scorecard §AY + `lorrax_setup/wk_REL/` ladder notes | GREEN | |
+| 13 | 2026-07-28 | Intel MPI provider is `mlx` in-container; `FI_PROVIDER=tcp` only as the rtx escape hatch | `config/frontera/mpi_transport_env.sh`; scorecard | RULE | |
+| 14 | 2026-07-28 | mu-convergence is non-monotone at 512b (-240/-183 meV c4951->c6947) vs +47/+38 meV at 256b | ladder record | OPEN — physics observation | |
+| 15 | 2026-07-28 | `test_slate_cholesky_trsm_cpu` hangs; pre-existing, identical on the AW lib | scorecard | OPEN | |
+| 16 | 2026-07-28 | zeta-apply performs a full-mu gather [1,4992,5760] under the distributed tier, O(mu*N_r/sqrt(P)) | scorecard | OPEN | |

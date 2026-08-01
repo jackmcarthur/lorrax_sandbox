@@ -20,8 +20,22 @@ Produces:
     <artifacts>/retrace_details.txt Per jit name, the input signatures (arg types)
                                      that caused each new compiled module.
 
+The summary also carries a "Layout boundaries" table (transpose / copy /
+bitcast counts per module, largest instance with source line) — the cheap
+proxy for layout churn at sharding boundaries.
+
 Usage:
     python3 analyze_hlo_dump.py <artifacts_dir> [--top 20]
+    python3 analyze_hlo_dump.py <dump_dir> --forbid all-gather,all-to-all
+
+The second form exits 2 if any forbidden collective appears — the batch
+version of the repo's tools/probe_w_densifier_hlo.py check. Tables are
+only trustworthy on a CACHE-COLD dump (ISDF_JAX_CACHE_DIR=""): cache-hit
+modules never re-dump HLO. Works on dumps from any backend (CPU included;
+"HBM" in headers then reads as host memory). See docs/HLO_HOWTO.md.
+
+History: moved from scripts/profiling/ (Perlmutter era) 2026-07-31 and
+extended with layout-op counting and the --forbid gate.
 """
 from __future__ import annotations
 
@@ -161,13 +175,35 @@ def parse_optimized_hlo(path: Path) -> dict:
     collectives: list[dict] = []
     custom_calls: dict[str, int] = defaultdict(int)
     remats: list[dict] = []
+    layout_ops: dict[str, dict] = {}
 
     coll_names = ("all-gather-start", "all-gather", "reduce-scatter",
                   "all-reduce", "collective-permute",
                   "all-to-all", "collective-broadcast")
+    # Layout-boundary ops: data movement XLA inserts when producer and
+    # consumer disagree on layout/sharding.  Counting them per module is the
+    # cheap proxy for "did my change add a layout churn" (the FFT-FFI work
+    # drove flat-k transposes 6 -> 0 this way).
+    layout_names = ("transpose", "copy-start", "copy", "bitcast")
 
     for i, line in enumerate(lines):
         stripped = line.strip().lstrip("%")
+        # Layout-boundary ops (count + largest instance)
+        for ln_op in layout_names:
+            idx = stripped.find(ln_op + "(")
+            if idx == -1:
+                continue
+            head = stripped[:idx].strip()
+            out_ty = head.split("=", 1)[1].strip() if "=" in head else head
+            nbytes = _shape_bytes(out_ty)
+            slot = layout_ops.setdefault(
+                ln_op, {"count": 0, "max_bytes": 0, "max_source": ""})
+            slot["count"] += 1
+            if nbytes > slot["max_bytes"]:
+                sf, sl = _extract_source(line)
+                slot["max_bytes"] = nbytes
+                slot["max_source"] = _short_source(sf, sl)
+            break
         # Collectives
         for cn in coll_names:
             idx = stripped.find(cn + "(")
@@ -214,6 +250,7 @@ def parse_optimized_hlo(path: Path) -> dict:
         "collectives": collectives,
         "custom_calls": dict(custom_calls),
         "remats": remats,
+        "layout_ops": layout_ops,
         "raw_lines": lines,
     }
 
@@ -269,8 +306,11 @@ def scan(dump_dir: Path) -> dict:
     agg_collectives: list[dict] = []
     agg_remats: list[dict] = []
     agg_custom: dict[str, int] = defaultdict(int)
+    agg_layout: list[dict] = []
     for mod_id, v in modules.items():
         hlo = v.get("hlo") or {}
+        for op, slot in (hlo.get("layout_ops") or {}).items():
+            agg_layout.append({"module": mod_id, "op": op, **slot})
         for c in hlo.get("collectives", []):
             agg_collectives.append({"module": mod_id, **c})
         for r in hlo.get("remats", []):
@@ -289,6 +329,7 @@ def scan(dump_dir: Path) -> dict:
         "agg_custom_calls": dict(agg_custom),
         "agg_collectives": agg_collectives,
         "agg_remats": agg_remats,
+        "agg_layout_ops": agg_layout,
         "modules": dict(modules),
     }
 
@@ -352,6 +393,22 @@ def render_markdown(summary: dict, top_n: int = 20,
             L.append(f"| `{c['module']}` | `{c['op']}` | "
                      f"{_hb(c['output_bytes'])} | "
                      f"`{src}` | `{out_ty}` |")
+    L.append("")
+
+    # ─────── Layout boundaries ───────
+    L.append("## Layout boundaries — transpose/copy/bitcast per module")
+    L.append("")
+    lay = sorted(summary.get("agg_layout_ops", []),
+                 key=lambda r: r.get("max_bytes", 0), reverse=True)
+    if not lay:
+        L.append("_No layout-boundary ops found._")
+    else:
+        L.append("| Module | Op | Count | Largest instance | Source of largest |")
+        L.append("|---|---|---:|---:|---|")
+        for r in lay[:top_n]:
+            src = (r.get("max_source") or "").replace("|", "\\|")
+            L.append(f"| `{r['module']}` | `{r['op']}` | {r['count']} | "
+                     f"{_hb(r['max_bytes'])} | `{src}` |")
     L.append("")
 
     # ─────── Rematerialization ───────
@@ -532,7 +589,7 @@ def write_retrace_details(summary: dict, out_path: Path, top_n: int) -> None:
                 out.append(f"    sig: {sig}")
         out.append("")
     if not rows:
-        out.append("_No function retraced more than once._ 🎉")
+        out.append("_No function retraced more than once._")
     out_path.write_text("\n".join(out) + "\n")
 
 
@@ -548,6 +605,11 @@ def main() -> int:
                     help="How many rows per table (default 20)")
     ap.add_argument("--out-md", default=None)
     ap.add_argument("--out-json", default=None)
+    ap.add_argument("--forbid", default=None, metavar="OPS",
+                    help="Comma-separated collective ops (e.g. "
+                         "'all-gather,all-to-all'); exit 2 if any appear. "
+                         "Only meaningful on a CACHE-COLD dump "
+                         "(ISDF_JAX_CACHE_DIR='').")
     args = ap.parse_args()
 
     root = Path(args.artifacts_dir).resolve()
@@ -590,6 +652,20 @@ def main() -> int:
     print(f"[analyze_hlo_dump] wrote {root/'collectives_details.txt'}")
     print(f"[analyze_hlo_dump] wrote {root/'remat_details.txt'}")
     print(f"[analyze_hlo_dump] wrote {root/'retrace_details.txt'}")
+
+    if args.forbid:
+        forbidden = {op.strip() for op in args.forbid.split(",") if op.strip()}
+        hits = [c for c in summary["agg_collectives"] if c["op"] in forbidden]
+        if hits:
+            print(f"[analyze_hlo_dump] FORBIDDEN collectives present "
+                  f"({len(hits)}):", file=sys.stderr)
+            for c in hits[:20]:
+                print(f"  {c['module']}  {c['op']}  "
+                      f"{_hb(c.get('output_bytes', 0))}  {c.get('source','')}",
+                      file=sys.stderr)
+            return 2
+        print(f"[analyze_hlo_dump] forbid gate clean: none of "
+              f"{sorted(forbidden)} present")
     return 0
 
 

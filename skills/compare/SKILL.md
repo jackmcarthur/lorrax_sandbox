@@ -147,7 +147,7 @@ Column set varies by mode — dynamic PPM runs emit
 `E_dft Edft-Ef kin_ion V_H x_bare [x_head] sig_c(Edft).Re sig_c(Edft).Im
 [sig_c_head(Edft).Re sig_c_head(Edft).Im] eqp0 eqp1`; static runs emit
 `sex_0/coh_0` in place of the `sig_c(Edft)` pair. Use the header-driven parser —
-never positional indices (the 2026-07-02 KNOWN_SANDBOX_ERRORS entry documents an
+never positional indices (the 2026-07-02 entry in `_archive/KNOWN_SANDBOX_ERRORS.md` documents an
 8 eV-scale wrong-column comparison from trusting the old fixed layout).
 
 Key comparison quantity: **`sig_c(Edft).Re`** vs BGW `Cor'`. The head correction
@@ -267,8 +267,14 @@ def parse_sos_cor_gn(path):
 
 ### Running the SoS code
 
+HISTORICAL (2026-07-31): `isdf_sos_debug.py` no longer exists in any
+current tree — it lived in Perlmutter-era run directories. The flag
+semantics below are kept because they document the SoS decomposition;
+recover the script from the old runs in git history (`6324f27a`) if a
+three-way comparison is ever needed again.
+
 ```bash
-uv run -- python isdf_sos_debug.py \
+python3 isdf_sos_debug.py \
   -g cohsex.in \
   --n-valence 26 --n-cond-solve 6 --n-sum-states 80 \
   --transpose-eps 1 --patch-head 1 --zero-q0-wings 1 \
@@ -296,9 +302,11 @@ For a gamma-only or single-k comparison where both files are available:
 Use `compare_bgw_gwjax.py` for multi-k comparisons. It matches k-points by
 crystal coordinates via WFN.h5 and handles the BGW symmetry-reduced grid:
 
+The script is `tools/compare_bgw_gwjax.py` (needs numpy/h5py/matplotlib:
+run in-container — a 1-node dev job or interactive shell, not login):
+
 ```bash
-MPLBACKEND=Agg uv run --project /home/jackm/projects/lorrax python \
-  compare_bgw_gwjax.py \
+MPLBACKEND=Agg python3 tools/compare_bgw_gwjax.py \
   --bgw-hp /path/to/sigma_hp.log \
   --gw-eqp /path/to/eqp0.dat \
   --wfn /path/to/WFN.h5 \

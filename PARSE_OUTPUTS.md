@@ -223,4 +223,4 @@ Detailed frequency decomposition (PPM runs only, when
 
 **Note**: The header comment "sig_c(Edft) includes head" is misleading —
 sig_c(Edft) does NOT include the head unless `apply_head_diagonal = true`.
-See `KNOWN_SANDBOX_ERRORS.md`.
+See `_archive/KNOWN_SANDBOX_ERRORS.md`.

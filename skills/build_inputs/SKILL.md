@@ -325,7 +325,7 @@ system:
 
 pipeline: qe+bgw+gwjax    # one of: qe, qe+bgw, qe+gwjax, qe+bgw+gwjax
 
-platform: perlmutter       # or: laptop
+platform: frontera         # frontera | other (Perlmutter era is archived)
 
 files:
   scf: scf.in

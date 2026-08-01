@@ -1,6 +1,6 @@
 # QE Parallel Tuning Notes (Runtime-Focused)
 
-Source: `/home/jackm/SOURCES/q-e-qe-7.4/Doc/user_guide.tex`
+Source: Quantum ESPRESSO 7.4 `Doc/user_guide.tex` (extracted 2026; original local checkout is gone)
 
 This file extracts only runtime-relevant guidance for parallel execution and tuning:
 - Parallel execution hierarchy (images, pools, bands, PW, task groups, linear-algebra group)

@@ -5,17 +5,20 @@ overrides required to make BerkeleyGW and LORRAX (GWJAX) produce
 **numerically matched** self-energies for the same QE wavefunction.
 
 It is *not* a tutorial on BGW or LORRAX inputs. It assumes you have working
-runs of both codes and want them to agree. The receipts column points at the
-8 keeper reports under `reports/` that established each convention.
+runs of both codes and want them to agree. The receipts column cites the
+8 keeper reports that established each convention; `reports/` was purged
+2026-07-31, so receipts now live in git history at commit `6324f27a`
+(e.g. `git show 6324f27a:reports/<keeper>/report.md`).
 
 Scope: static COHSEX and GN-PPM. Hybertsen-Louie PPM has additional caveats
-not captured here (see `reports/log_anomalies_2026-05-07/` and CHANGELOG entry
-2026-05-06 "HL-PPM mismatch traced…").
+not captured here (see `git show 6324f27a:reports/log_anomalies_2026-05-07/report.md`
+and the 2026-05-06 entry "HL-PPM mismatch traced…" in `_archive/CHANGELOG.md`).
 
 ## Two modes per material
 
-`examples/<material>/` ships two BGW configurations and two LORRAX
-configurations per Σ-scheme:
+A material is benchmarked with two BGW configurations and two LORRAX
+configurations per Σ-scheme (the old `examples/<material>/` pairs are in
+git history at `6324f27a`):
 
 | Mode | BGW config | LORRAX config |
 |---|---|---|
@@ -33,7 +36,7 @@ COHSEX, ~100 meV for GN-PPM at converged centroid budgets.
 |---|---|---|---|---|
 | 1 | Coulomb cutoff for screening | `screened_coulomb_cutoff = ecutwfc` | `bare_coulomb_cutoff = ecutwfc`  ⚠ LORRAX default is 4·ecutwfc | `mos2_3x3_nosym_cohsex_barecut_headnk_2026-04-10` |
 | 2 | 2D slab truncation | `cell_slab_truncation` in epsilon.inp **and** sigma.inp | `sys_dim = 2` in cohsex.in | `head_fix_2026-04-04` |
-| 3 | 0D truncation | `cell_box_truncation` (epsilon + sigma) | `sys_dim = 0` | (CO regression in CHANGELOG 2026-04-04) |
+| 3 | 0D truncation | `cell_box_truncation` (epsilon + sigma) | `sys_dim = 0` | (CO regression, `_archive/CHANGELOG.md` 2026-04-04) |
 | 4 | Static-CH formula | `exact_static_ch 0` in sigma.inp | (implicit — LORRAX implements scheme 0) | `cohsex_head_investigation_2026-04-04` |
 | 5 | Body v(q+G) overlay | (BGW MC-averages internally; needs `write_vcoul`) | `use_bgw_vcoul = true` + `bgw_vcoul_file = <bgw_dir>/vcoul` | `bse_bgw_vcoul_2026-04-23` |
 | 6a | W head at q→0 (auto) | (BGW reads eps0mat.h5 epshead) | `wcoul0_source = epshead` (reads BGW eps0mat.h5) | `cohsex_head_investigation_2026-04-04` |
@@ -121,18 +124,17 @@ When you want LORRAX to match a BGW run on the same QE wavefunction:
 ## What is *not* yet a stable convention
 
 - **HL-PPM matching**: known mismatch traced to LORRAX's finite-band
-  two-point surrogate vs BGW's f-sum-rule density (CHANGELOG 2026-05-06).
+  two-point surrogate vs BGW's f-sum-rule density (`_archive/CHANGELOG.md` 2026-05-06).
   No flag-level fix lands today.
 - **Bispinor (SOC) ζ-fit μ_L = i**: must use LU not Cholesky
   (`project_bispinor_isdf` memory). Active development; conventions may
   shift.
 - **CrI3 6×6 80 Ry NSCF with `nosym=.true.`** crashes on GPU
-  (`KNOWN_SANDBOX_ERRORS.md` 2026-05-07). Workaround: drop `nosym`,
+  (`_archive/KNOWN_SANDBOX_ERRORS.md` 2026-05-07). Workaround: drop `nosym`,
   keep `no_t_rev=.true. noinv=.true.` only.
 
 ## See also
 
-- `reports/<keeper>/report.md` for the receipts cited above.
+- `git show 6324f27a:reports/<keeper>/report.md` for the receipts cited above.
 - `docs/docs_gwjax/COHSEX_INPUT.md` for the exhaustive `cohsex.in` flag reference.
 - `docs/docs_bgw/` for BGW input file specs.
-- `examples/<material>/` for ready-to-run pairs.
