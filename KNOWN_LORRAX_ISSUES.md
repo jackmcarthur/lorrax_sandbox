@@ -35,9 +35,9 @@ else is agent-actionable. Replaces the archived KNOWN_SANDBOX_ERRORS.
 ## htransform
 | issue | evidence | smallest fix | status |
 |---|---|---|---|
-| replicated SVD family: A=(nk*nb, ns*N_mu), Vh, B_at_mu — last N_mu^2-replicated core in the chain | BD.4; htransform.py:262,356,626 | Gram-eigh of A A^H via ffi.linalg plan + mu-shard | open |
-| bandstructure.dat written by EVERY rank (shared-FS race) | BD.4; htransform.py:1437,1570 | rank-0 writer gate | open |
-| Gamma-label comparison right only by coincidence (norm-0 tie) | BE; htransform.py:1422 | compare canonical label | open |
+| replicated SVD family: A=(nk*nb, ns*N_mu), Vh, B_at_mu — last N_mu^2-replicated core in the chain | BD.4; htransform.py:262,356,626 | Gram-eigh of A A^H via ffi.linalg plan + mu-shard | FIXED 62ba395 — eigh(A A^H) (nk·nb square, N_mu-free) via ffi.linalg plan (deck key eigh_backend, pzheevd available), Vh/B_at_mu mu-sharded on 'y' (B fitted at true n_mu); gauge-class, measured exact-0 at file precision everywhere: fastloop 7885090 PASS both legs, b300 P=1 dft+qp and srun P=4 exact-0 vs baselines (job 7885093); d4 mu 4962→18084 VmHWM slope 1.9→1.2 GB (replica term gone), wall 67→44 s; CLAIMS 25 |
+| bandstructure.dat written by EVERY rank (shared-FS race) | BD.4; htransform.py:1437,1570 | rank-0 writer gate | FIXED 62ba395 — process_index()==0 gate; P=4 srun leg job 7885093: one writer, file exact-0 vs baseline |
+| Gamma-label comparison right only by coincidence (norm-0 tie) | BE; htransform.py:1422 | compare canonical label | FIXED 62ba395 — compares the canonical 'Γ' _clean_label emits; argmin fallback now excludes the zero pad rows (the old tie) |
 | ~12 stray eager 1-op modules remain | BE, job 7884871 | jit when touched | low |
 | P>1 thread-main refusal | BD.3 | prepare_mesh routing | FIXED 24e4dc3; subsumed by e97e8ed (mesh + warm-up now from initialize_communicator_stack) |
 
