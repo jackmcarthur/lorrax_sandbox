@@ -23,7 +23,7 @@ else is agent-actionable. Replaces the archived KNOWN_SANDBOX_ERRORS.
 ## gw
 | issue | evidence | smallest fix | status |
 |---|---|---|---|
-| zeta-fit factor: nq x mu^3 eigh on EVERY rank, zero P-scaling; 64% of GW wall at 2979c | BC, job 7884656 (cholesky 105.1 s) | q-parallel factor plan, auto above size threshold | open |
+| zeta-fit factor: nq x mu^3 eigh on EVERY rank, zero P-scaling; 64% of GW wall at 2979c | BC, job 7884656 (cholesky 105.1 s) | q-parallel factor plan, auto above size threshold | FIXED 854af1f — folded INTO the replicated plan as its P>1 schedule (not a third resolution; W-solve LOCAL-plan idiom), auto above nq·mu³≥5e9, LORRAX_ZETA_QPARALLEL=0/1 override; b300 8x2 A/B job 7885024: cholesky 104.4→11.8 s (8.9x), GW wall 336→215 s, eqp/sigma parity exact-0 vs control AND vs 7884656; bit-identity gate max_abs=0.0; CLAIMS 23 |
 | chi0_W_probe re-runs chi+W nearly in full (~9.6 s) | BC | reuse the real pass | open |
 | sigma.exec 88% d2h_wait — host accumulator not overlapped | BC | double-buffer the tau d2h | open |
 | Sigma_c is PPM-only; no full-frequency cross-check | gw_config.py:306 | validation mode on bse/w_omega_chain.py | open |
