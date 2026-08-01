@@ -35,12 +35,13 @@ sigma_omega_step_ev = 0.5
 sigma_regularization_ev = 0.25
 fermi_reference = midgap
 memory_per_device_gb = 40.0
-# slab_io pinned to the serial tier, NOT auto: the fastloop launches bare
-# single processes (no srun, no PMI), and auto's PHDF5_FFI tier calls
-# MPI_Init_thread, which aborts without a PMI environment (job 7884926 —
-# a fastloop catch; repo-side demotion gap reported). At P=1 the
-# allgather tier is a plain rank-0 h5py write.
-slab_io = h5py_allgather
+# slab_io = auto ON PURPOSE: the fastloop launches bare single processes
+# (no srun, no PMI), where auto must probe MPI bootstrapability and
+# demote to the allgather tier with an announcement instead of aborting
+# in MPI_Init_thread (job 7884926 catch; fixed repo-side in aef6710).
+# Every fastloop gw run is therefore a standing regression test of that
+# router. At P=1 the demoted tier is a plain rank-0 h5py write.
+slab_io = auto
 charge_zeta_solve = rank_truncate
 distributed_cholesky = auto
 distributed_lu = auto

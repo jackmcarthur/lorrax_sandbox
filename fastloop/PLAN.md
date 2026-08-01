@@ -1,5 +1,12 @@
 # fastloop — mini-deck driver-chain loop
 
+Status 2026-08-01: CERTIFIED, wrapper-free. The gw stage runs bare like
+every other stage (the GW_WRAPPER workaround is gone — CLAIMS 22, repo
+d3465cc) and the deck runs `slab_io = auto` as a standing regression test
+of the bare-launch demotion (CLAIMS 21, repo aef6710). Re-validated at
+repo e97e8ed..d3465cc: check mode rc=0, parity PASS both legs, twice
+(job 7884986 step 1; job 7884989 phase 2 — the wrapper-free acceptance).
+
 Status 2026-07-31: BUILT AND CERTIFIED (CLAIMS rows 17-19). Deck built by
 job 7884926 (QE leg green); pins + both check legs green in job 7884936:
 p1 rerun exact-0 on every compared quantity, shard4 (2x2 host-device
@@ -124,11 +131,9 @@ every driver a real 2x2 mesh with no code changes.
 
 ## What remains (honest list)
 
-1. `run_fastloop.sbatch` has not yet run as its OWN sbatch job (the
-   certification job invoked the identical runner + env through
-   `build_minideck.sbatch`; the wrapper adds only module load + apptainer
-   exec + the login guard, and is bash -n checked). First standalone use
-   should confirm rc=0 and add the jobid here.
+1. RESOLVED 2026-08-01: `run_fastloop.sbatch` ran standalone (invoked by
+   jobs 7884986/7884989 wrapper scripts) — check mode rc=0, parity PASS
+   on both legs, repeatedly.
 2. HLO forbid-gate as a hard failure: `--hlo-diag` only summarizes
    (cache-cold dump + `tools/hlo/analyze_hlo_dump.py`). It cannot be a
    hard `--forbid all-gather` gate yet because known-open gathers exist
@@ -143,17 +148,20 @@ every driver a real 2x2 mesh with no code changes.
 4. BSE/absorption drivers are NOT in the chain (kmeans/dipole/kin-ion/
    gw/htransform only). Extending needs a decision on which BSE outputs
    to pin.
-5. Two repo-side findings to fix in src (REPORTED, not patched — sandbox
-   discipline): (a) `slab_io=auto` resolves to PHDF5_FFI whenever the
-   host .so exports the handler and then dies in `MPI_Init_thread` when
-   no PMI environment exists (bare single-process launch); auto should
-   probe MPI bootstrapability, or demote with an announcement, the way
-   the GPU router degrades (job 7884926). (b) `gw.gw_jax` completes
-   `main()` and then hangs indefinitely in interpreter teardown on a
-   bare P=1 launch (>=4 min observed, job 7884928); the fastloop works
-   around it with an `os._exit` wrapper (`GW_WRAPPER` in
-   `run_fastloop.py`) — suspects: FFI/MKL or XLA:CPU client teardown
-   (gw is the only chain driver exercising the FFT/GEMM FFI paths).
+5. RESOLVED 2026-08-01 — both repo-side findings fixed and the fixes are
+   now exercised by every fastloop run: (a) `slab_io=auto` probes MPI
+   bootstrapability (launcher PMI env, else a throwaway-subprocess
+   singleton-init probe) and demotes with an announcement on bare
+   launches (repo aef6710; the deck runs `slab_io = auto` on purpose as
+   the standing regression test — CLAIMS 21). (b) The teardown hang was
+   root-caused to jax's atexit `clean_up()` destroying the XLA:CPU
+   client, whose pool shutdown deadlocks after a fully-cold in-process
+   compile storm (reproduced deterministically twice in job 7884989;
+   thread census in `work/accept.7884989.d/`); `gw.gw_jax` now ends
+   through `runtime.finalize_process` (ordered explicit teardown +
+   announced `os._exit`, repo d3465cc) and the `GW_WRAPPER` was REMOVED
+   from this runner — check mode exiting 0 without it (job 7884989
+   phase 2) is the acceptance record (CLAIMS 22).
 6. Superseded: the old `run_minideck.py` scaffold (in-process stage
    stubs, synthetic-deck plan) was replaced by this runner; the
    downsample-vs-synthesize question resolved itself — the certified QE

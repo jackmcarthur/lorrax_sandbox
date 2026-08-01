@@ -93,19 +93,11 @@ STAGE_TIMEOUT = {"kmeans": 900, "dipole": 900, "kin_ion": 1200,
                  "gw": 1200, "eqp_convert": 300, "ht_dft": 1200,
                  "ht_qp": 1200}
 
-# gw_jax completes main() (all outputs on disk, timing table printed) and
-# then HANGS in interpreter teardown on a bare single-process launch —
-# measured >=4 min of silence, job 7884928. Harness-side fix: hard-exit
-# after main() returns, the same os._exit pattern the repo's own
-# install_failfast_excepthook uses on P>1 failure paths. Root cause
-# reported as a repo-side finding (suspects: FFI/MKL or XLA:CPU client
-# teardown — gw is the only chain driver exercising the FFT/GEMM FFI).
-GW_WRAPPER = (
-    "import os, sys\n"
-    "from gw.gw_jax import main\n"
-    "rc = main(['-i', 'deck.in'])\n"
-    "sys.stdout.flush(); sys.stderr.flush()\n"
-    "os._exit(int(rc) if rc else 0)\n")
+# The gw stage runs bare (python -m gw.gw_jax), like every other stage.
+# A GW_WRAPPER os._exit workaround lived here 2026-07-31..08-01 for the
+# job-7884928 interpreter-teardown hang (CLAIMS 19); it was removed once
+# the hang was closed repo-side — check mode exiting 0 without it is the
+# acceptance test for that fix.
 
 
 def log(msg):
@@ -279,7 +271,7 @@ def run_leg(leg_dir, deck, env, ladder):
         ("kin_ion", [py, "-u", "-m", "gw.kin_ion_io", "-i", "deck.in",
                      "-o", "kin_ion.h5", "-n", str(nb), "--hartree"],
          leg_dir),
-        ("gw", [py, "-u", "-c", GW_WRAPPER], leg_dir),
+        ("gw", [py, "-u", "-m", "gw.gw_jax", "-i", "deck.in"], leg_dir),
         ("eqp_convert", [py, "-u", MAKE_EQP, leg_dir,
                          os.path.join(leg_dir, "eqp_ht.dat")], leg_dir),
         ("ht_dft", [py, "-u", "-m", "bandstructure.htransform",
@@ -652,7 +644,8 @@ def _hlo_diag(leg_dir, args):
     dump = os.path.join(leg_dir, "hlo_dump")
     env = stage_env(args.threads, args.src, args.ffi_so, shard4=True,
                     extra_xla="--xla_dump_to=%s" % dump, cache_cold=True)
-    rc, _ = run_stage("gw_hlo", [sys.executable, "-u", "-c", GW_WRAPPER],
+    rc, _ = run_stage("gw_hlo", [sys.executable, "-u", "-m", "gw.gw_jax",
+                                 "-i", "deck.in"],
                       leg_dir, env, leg_dir)
     if rc != 0:
         log("hlo-diag: gw re-run failed rc=%d (diagnostic only)" % rc)

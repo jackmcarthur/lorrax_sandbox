@@ -11,7 +11,7 @@ else is agent-actionable. Replaces the archived KNOWN_SANDBOX_ERRORS.
 | psi-at-centroids sharded on ONE mesh axis (sqrt(P) scaling) | BD.4; wfn_transforms.py:1933,2002 | both-axes mu-shard | open |
 | weight field built replicated on full r-grid (7 s unscaled) | BD.4 | grid-shard like Lloyd | open |
 | pair tensors col-blocked only on single-device path | BD.4; pivoted_cholesky.py:800 | extend col-blocking to multi-device | open |
-| P>1 thread-main refusal | BD.3, job 7884867 | prepare_mesh routing | FIXED 24e4dc3 |
+| P>1 thread-main refusal | BD.3, job 7884867 | prepare_mesh routing | FIXED 24e4dc3; subsumed by e97e8ed (mesh + warm-up now from initialize_communicator_stack) |
 
 ## dipole / kin-ion
 | issue | evidence | smallest fix | status |
@@ -27,8 +27,8 @@ else is agent-actionable. Replaces the archived KNOWN_SANDBOX_ERRORS.
 | chi0_W_probe re-runs chi+W nearly in full (~9.6 s) | BC | reuse the real pass | open |
 | sigma.exec 88% d2h_wait — host accumulator not overlapped | BC | double-buffer the tau d2h | open |
 | Sigma_c is PPM-only; no full-frequency cross-check | gw_config.py:306 | validation mode on bse/w_omega_chain.py | open |
-| slab_io=auto -> PHDF5_FFI aborts in MPI_Init on a PMI-less bare launch (no srun) instead of demoting | CLAIMS 18, job 7884926; fastloop catch | auto probes MPI bootstrapability, announced demotion (GPU router precedent) | open |
-| gw_jax hangs indefinitely in interpreter teardown after main() at bare P=1 (only FFT/GEMM-FFI chain driver) | CLAIMS 19, job 7884928; fastloop catch | root-cause FFI/XLA:CPU teardown; interim: fastloop GW_WRAPPER os._exit | open |
+| slab_io=auto -> PHDF5_FFI aborts in MPI_Init on a PMI-less bare launch (no srun) instead of demoting | CLAIMS 18, job 7884926; fastloop catch | auto probes MPI bootstrapability, announced demotion (GPU router precedent) | FIXED aef6710 (launcher-PMI check + subprocess singleton-init probe; announced demotion; jobs 7884987/7884989; CLAIMS 21) |
+| gw_jax hangs indefinitely in interpreter teardown after main() at bare P=1 (only FFT/GEMM-FFI chain driver) | CLAIMS 19, job 7884928; fastloop catch | root-cause FFI/XLA:CPU teardown; interim: fastloop GW_WRAPPER os._exit | FIXED d3465cc (root cause: jax atexit clean_up destroys the XLA:CPU client and its pool shutdown deadlocks after fully-cold compile storms — reproduced 2x, job 7884989; runtime.finalize_process does the ordered teardown explicitly; GW_WRAPPER removed; CLAIMS 22) |
 
 ## htransform
 | issue | evidence | smallest fix | status |
@@ -37,7 +37,7 @@ else is agent-actionable. Replaces the archived KNOWN_SANDBOX_ERRORS.
 | bandstructure.dat written by EVERY rank (shared-FS race) | BD.4; htransform.py:1437,1570 | rank-0 writer gate | open |
 | Gamma-label comparison right only by coincidence (norm-0 tie) | BE; htransform.py:1422 | compare canonical label | open |
 | ~12 stray eager 1-op modules remain | BE, job 7884871 | jit when touched | low |
-| P>1 thread-main refusal | BD.3 | prepare_mesh routing | FIXED 24e4dc3 |
+| P>1 thread-main refusal | BD.3 | prepare_mesh routing | FIXED 24e4dc3; subsumed by e97e8ed (mesh + warm-up now from initialize_communicator_stack) |
 
 ## bse / exciton bands
 | issue | evidence | smallest fix | status |
