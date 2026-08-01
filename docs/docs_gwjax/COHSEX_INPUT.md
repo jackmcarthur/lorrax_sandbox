@@ -5,10 +5,12 @@ e**X**cited state package). This is the exhaustive reference for every parameter
 in the GWJAX input file. All parameters
 are read by `gw_init.read_cohsex_input()` from a `[cohsex]` INI section.
 
-Currency note (2026-07-31): written during the Perlmutter campaigns. The
-reader (`read_cohsex_input`) is unchanged in the current repo, but for any
-flag added since mid-2026 the repo `manual/` and the parser source win
-over this page.
+Currency note (2026-07-31): **Perlmutter-era document.** Written during the
+Perlmutter campaigns; the AUTHORITATIVE flag reference is now the repo's
+`docs/input_reference.md`, backed by the parser source
+(`src/gw/gw_config.py::_DEFAULTS`). The reader (`read_cohsex_input`) is
+unchanged in the current repo, but for any flag added or changed since
+mid-2026 the repo reference and the parser source win over this page.
 
 ---
 
@@ -119,34 +121,31 @@ The GW calculation partitions bands into windows defined by four edges b0..b4.
 The number of electrons `nelec` is read from the WFN file.
 
 ### `nval` (int, default: `5`)
-Number of **valence** (occupied) bands in the sigma evaluation window. Sets
-`b1 = nelec − nval`. These are the highest occupied bands for which Σ is computed.
+Sets `b1 = nelec − nval` (see the corrected band-window paragraph below).
 
 ### `ncond` (int, default: `5`)
-Number of **conduction** (unoccupied) bands in the sigma evaluation window. Sets
-`b3 = nelec + ncond`. These are the lowest unoccupied bands for which Σ is computed.
+Sets `b3 = nelec + ncond`, the top of the Σ/QP evaluation window.
 
 ### `nband` (int, default: `100`)
-Total number of bands loaded from the WFN for screening (χ₀) and self-energy sums.
-Sets `b4 = nband`. Must match `number_bands` in BGW's epsilon.inp and sigma.inp
-for fair comparison. The WFN file must contain at least this many bands.
+Total number of bands loaded from the WFN for screening (χ₀) and self-energy
+sums. Must match `number_bands` in BGW's epsilon.inp and sigma.inp for fair
+comparison. The WFN file must contain at least this many bands.
 
-**Band edge summary** (all 0-indexed):
-```
-b0 = 0          (bottom of full range)
-b1 = nelec − nval   (bottom of sigma window, within valence)
-b2 = nelec          (Fermi level: top of occupied)
-b3 = nelec + ncond  (top of sigma window, within conduction)
-b4 = nband          (top of full range for screening)
-```
-
-**Wavefunction slices** built from these:
-| Slice | Range | Used for |
-|-------|-------|----------|
-| `v_slice` | b0 : b2 | Valence (occupied) bands in χ₀ |
-| `c_slice` | b2 : b4 | Conduction (unoccupied) bands in χ₀ |
-| `l_slice` | b0 : b3 | Sigma window bands (for SX Green's function) |
-| `coh_slice` | b0 : b4 | All bands (for COH resolution of identity and PPM G) |
+**Band window — corrected 2026-07-31.** The `v_slice/c_slice/l_slice/
+coh_slice` table and the "b1 = bottom of the sigma window" story that stood
+here described a convention the code does not have. The single source of
+truth is `gw.wavefunction_bundle.BandSlices`, built from
+`meta.band_edges = (b0, b1, b2, b3, b4)` with `b0 = 0`,
+`b1 = nelec − nval`, `b2 = nelec` (first unoccupied), `b3 = nelec + ncond`,
+and `b4 = round_up(nband, device_count)` — the band axis is PADDED so it
+divides the device mesh; the user's `nband` is kept as `b_id_4_user`,
+output writers slice back to it, and pad bands contribute exactly zero.
+The named slices (all LOCAL, i.e. relative to b0) are
+`val = [0, b2−b0)`, `cond = [b2−b0, b4−b0)`, `sigma = [0, b3−b0)`,
+`full = [0, b4−b0)`, `occ = val`. The Σ/QP evaluation window is the whole
+of `[b0, b3)` (`nb_sigma = b3 − b0`), **not** `[b1, b3)` — a duplicate
+`Meta.band_ranges` namespace carrying that wrong `sigma = (b1, b3)`
+convention was deleted from the code (`src/common/meta.py`).
 
 ### `sys_dim` (int, default: `2`)
 System dimensionality controlling the Coulomb truncation:

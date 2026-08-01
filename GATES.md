@@ -18,7 +18,7 @@ gate is added or flipped. Enumerate candidates with
 | `FI_PROVIDER` | libfabric autodetect | `mlx` in-container; `tcp` only as rtx escape hatch (CLAIMS row 13) | No. |
 | `slab_io` (input file key, `src/file_io/`) | `auto` | `auto` -> tier 1 parallel-HDF5 FFI writer when the probe passes; falls back to the allgather tier | No. |
 | `LORRAX_CHECK_REPLICA` | `0` | debug-only; keep off in production | No. |
-| `LORRAX_MPI_FORCE_THREAD_MAIN` and transport glue | per `mpi_transport_env.sh` | exactly as the certified template sets them — do not hand-tune | No. |
+| `LORRAX_MPI_FORCE_THREAD_MAIN` and transport glue | per `mpi_transport_env.sh` | the certified template deliberately leaves `LORRAX_MPI_FORCE_THREAD_MAIN` UNSET — its role is superseded by `warm_mesh_cliques`; other transport glue exactly as the template sets it, do not hand-tune | No. |
 
 Not gates: `LORRAX_IMPI_ROOT`, `LORRAX_MKL_ROOT`, `LORRAX_SIF`,
 `LORRAX_BUNDLE`, `LORRAX_FFI_*_DIR` and similar are build/launch

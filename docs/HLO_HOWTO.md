@@ -37,6 +37,16 @@ python3 tools/hlo/analyze_hlo_dump.py <dir-containing-xla_dump>            # tab
 python3 tools/hlo/analyze_hlo_dump.py <dump> --forbid all-gather,all-to-all  # gate, exit 2 on hit
 ```
 
+**Scope the `--forbid` list per consumer** — it is not a blanket rule.
+The invariant forbids gather-class collectives on **N_mu^2-class
+operands** (no rank may ever hold a full mu-square tile). A
+volume-preserving staged reshard (`common.staged_reshard`,
+`contract_bands_block_reshard`) legitimately emits **exactly 2
+`all-to-all`s** on shard-sized payloads; a module that consumes one must
+gate on the *count* (== 2) and operand sizes, not on the bare opcode, or
+the gate refuses correct code. Keep `--forbid all-gather,all-to-all` for
+kernels that promise zero gather-class traffic.
+
 Outputs: `hlo_summary.md` (memory, collectives, layout boundaries, remat,
 retraces, custom calls — each row with `source_file:line`) plus four
 `*_details.txt` companions.

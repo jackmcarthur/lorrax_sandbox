@@ -33,8 +33,10 @@ plainly rather than claimed fixed.
 
 Also requested: Frontera-vs-Perlmutter and MKL-vs-Cray guidance has one
 home (`docs/PORTABILITY.md`), pointing at repo docs; the CUDA wheel pin is
-stated as the repo states it (`jax[cuda13]`; a cuda12 row is possible
-future, `pyproject.toml` authoritative).
+stated as the repo states it (`jax[cuda12]` — pyproject switched from
+`cuda13` to `cuda12`; flip back only for a newer-driver machine;
+`pyproject.toml` authoritative). *(Corrected 2026-07-31: this sentence had
+the pin backwards.)*
 
 ## Fresh-agent orientation
 

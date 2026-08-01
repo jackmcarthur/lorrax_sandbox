@@ -35,7 +35,13 @@ pipeline.
    certified full-size run (jobids recorded in CLAIMS.md), tolerance per
    stage; plus the HLO forbid-gate
    (`tools/hlo/analyze_hlo_dump.py --forbid all-gather,all-to-all`)
-   on the sigma and W stages.
+   on the sigma and W stages. Scope the forbid list per stage: the
+   invariant is "no gather-class collective on an N_mu^2-class operand",
+   and a stage that consumes a volume-preserving staged reshard
+   (`common.staged_reshard` / `contract_bands_block_reshard`)
+   legitimately emits exactly 2 shard-sized `all-to-all`s — gate that
+   stage on count and operand size instead of the bare opcode
+   (see `docs/HLO_HOWTO.md`).
 4. Only after 1-3 hold: wire into the checkpoint skill as the mandatory
    pre-commit semantic check.
 
