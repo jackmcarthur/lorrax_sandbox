@@ -29,3 +29,9 @@ Running fully distributed (no N_mu^2 tile on any rank): the per-stage
 deck keys (`distributed_zeta_solve` / `distributed_lu` / `w_dyson_solver`
 / `eigh_backend`), their auto-thresholds with calibration, and the
 certified example jobs live in repo `docs/dev/large_nmu_operation.md`.
+
+Numerics-affecting opt-in deck keys (NOT env gates): `ppm_probe_chi_reuse`
+(off | auto, default off) folds the GN probe χ₀ into the static τ sweep on
+augmented nodes — same quadrature-error contract, not bit-identical, and
+NO net win at b300 scale (planning cost ≈ node saving; CLAIMS 27, repo
+`docs/input_reference.md`). Keep off for pinned-baseline decks.
