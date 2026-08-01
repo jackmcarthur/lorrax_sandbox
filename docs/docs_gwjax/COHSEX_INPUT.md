@@ -5,6 +5,11 @@ e**X**cited state package). This is the exhaustive reference for every parameter
 in the GWJAX input file. All parameters
 are read by `gw_init.read_cohsex_input()` from a `[cohsex]` INI section.
 
+Currency note (2026-07-31): written during the Perlmutter campaigns. The
+reader (`read_cohsex_input`) is unchanged in the current repo, but for any
+flag added since mid-2026 the repo `manual/` and the parser source win
+over this page.
+
 ---
 
 ## 1. Restart & ISDF Basis

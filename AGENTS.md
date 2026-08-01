@@ -87,4 +87,4 @@ never a competing copy of the source.
 | `_archive/` | dated historical record, non-normative |
 
 New session read order: this file, then `CLAIMS.md`, `GATES.md`,
-`INVARIANTS.md`, then whatever the task needs (~370 lines total).
+`INVARIANTS.md`, then whatever the task needs (~165 lines total).
