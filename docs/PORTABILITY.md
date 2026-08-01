@@ -19,7 +19,7 @@ owns the details; do not duplicate them here.
 | GEMM (vendor BLAS via runtime dlsym per symbol with announced refusal; fallback to XLA path) | certified, `auto` | repo `src/ffi/gemm.py`, `gemm_batch_ffi.cc`; pattern description in `ffi_layout.md` §7 |
 | Dense-solver legs: SLATE and ScaLAPACK FFI (`LORRAX_SLATE_*`, `LORRAX_SCALAPACK_*`) | built on Frontera; `test_slate_cholesky_trsm_cpu` hang is OPEN (CLAIMS row 15) | repo `src/ffi/slate/`, `src/ffi/scalapack/`, `docs/architecture/ffi_layout.md` |
 | Parallel HDF5 writer (`slab_io=auto` tier 1) | certified | repo `src/ffi/phdf5/`, `src/file_io/` |
-| CUDA wheel pin | `pyproject.toml` is authoritative for all Python-side pins (jax 0.9 line; `jax[cuda13]` for uv installs — a CUDA-12 row is a possible future support-matrix entry, not offered). The Frontera container venv is CPU; bundles strip GPU plugin files. | repo `docs/installation/index.md`, `pyproject.toml` |
+| CUDA wheel pin | `pyproject.toml` is authoritative for all Python-side pins (jax 0.9 line; `jax[cuda12]` for uv installs (switched from cuda13: Frontera rtx driver 535 supports CUDA <= 12; flip back to `jax[cuda13]` only on a newer-driver machine, per the comment in pyproject.toml)). The Frontera container venv is CPU; bundles strip GPU plugin files. | repo `docs/installation/index.md`, `pyproject.toml` |
 
 Rule of thumb: every vendor dependency enters through an FFI facade with
 runtime resolution and announced refusal — absent engine means slower and

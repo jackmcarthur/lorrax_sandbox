@@ -7,7 +7,7 @@ file. Read it once, completely.
 ## Which tree is truth
 
 The LORRAX repository is `/work2/08271/jackmc/frontera/lorrax`, branch
-`fix/zq-band-gather-device-invariance` at `ecf461e`, ~150 commits ahead of
+`fix/zq-band-gather-device-invariance` (check HEAD with `git -C /work2/08271/jackmc/frontera/lorrax log --oneline -1`; hash pins in this sandbox are as-of stamps and go stale by design), ~150 commits ahead of
 origin, NOT pushed. Work lands on that branch the same day it is validated.
 Jobs never read the live tree: they read frozen source bundles built by
 `config/frontera/build_cpu_runtime_bundle.sh`. Pinned 4x4 physics baselines
@@ -85,6 +85,15 @@ never a competing copy of the source.
 | `runs/`, `reports/`, `scripts/` | empty after the 2026-07-31 purge; READMEs state what belongs |
 | `docs/` | reference documentation (see table above) |
 | `_archive/` | dated historical record, non-normative |
+| `ASSERTIONS.md` | rebuild caveats and known-unresolved items — read before trusting any sandbox TOOL's output (some are syntax-checked, never run) |
 
 New session read order: this file, then `CLAIMS.md`, `GATES.md`,
-`INVARIANTS.md`, then whatever the task needs (~165 lines total).
+`INVARIANTS.md`, then `ASSERTIONS.md` if you will run any sandbox tool,
+then whatever the task needs (~225 lines total).
+
+Shorthand decoder (campaign labels appear in ledger evidence columns):
+`AQ` = the 4962-centroid 4x4-deck P=64 rehearsal (2026-07-28); `c<N>`/`<N>c`
+= centroid count; `<N>b` = band count; `rtx` = Frontera GPU dev nodes
+(Quadro RTX 5000, driver 535); `AW lib` = the host FFI .so certified in
+the linalg/IO environment audit; two-letter codes (AY, BB, ...) = scorecard
+sections in /scratch2/08271/jackmc/lorrax_setup/docs/SPEEDUP_SCORECARD.md.
