@@ -6,6 +6,8 @@ file. Read it once, completely.
 
 ## Which tree is truth
 
+A reference BerkeleyGW source copy is at `/home1/08271/jackmc/software/BerkeleyGW-master` (comparison target for `tools/compare_bgw_gwjax.py`; read-only — LORRAX output conventions follow its file formats).
+
 The LORRAX repository is `/work2/08271/jackmc/frontera/lorrax`, branch
 `fix/zq-band-gather-device-invariance` (check HEAD with `git -C /work2/08271/jackmc/frontera/lorrax log --oneline -1`; hash pins in this sandbox are as-of stamps and go stale by design), ~150 commits ahead of
 origin, NOT pushed. Work lands on that branch the same day it is validated.
