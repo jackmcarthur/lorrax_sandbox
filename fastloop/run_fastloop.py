@@ -125,9 +125,11 @@ def stage_env(threads, src, ffi_so, shard4, extra_xla="", cache_cold=False):
         "OPENBLAS_NUM_THREADS": str(threads),
         "MKL_NUM_THREADS": str(threads),
     })
-    # certified opt-in perf stack (GATES.md); overridable from outside
-    env.setdefault("LORRAX_FFT_FFI", "1")
-    env.setdefault("LORRAX_FFT_FFI_FUSED", "1")
+    # The FFI stack (FFT/FUSED/GEMM) is the REQUIRED default since the
+    # 2026-08-01 ruling (repo docs/architecture/decisions.md): no explicit
+    # gate exports — every leg now exercises the required-FFI semantics
+    # end-to-end (startup enforcement included).  Externally-set values
+    # still pass through for debugging.
     if ffi_so and os.path.exists(ffi_so):
         env["LORRAX_FFI_HOST_SO"] = ffi_so
     env["LD_LIBRARY_PATH"] = LDLP_PREFIX + (

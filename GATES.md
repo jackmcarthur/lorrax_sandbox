@@ -10,10 +10,10 @@ gate is added or flipped. Enumerate candidates with
 
 | Gate | Default | Certified setting | Flip pending? |
 |---|---|---|---|
-| `LORRAX_FFT_FFI` (`src/ffi/fft.py`) | `off` (modes off/on, no auto) | `on` — CPU: MKL FFT (DFTI API) strided flat-k; CUDA: cuFFT `cufftPlanMany64` mirror. sigma.exec 3.78x (CLAIMS row 6) | Yes: becomes the permanent backend of `make_sharded_ifftn_3d` after the FFTW-many + dlsym rework (repo `docs/architecture/ffi_layout.md` §7), measurement-gated. An `auto` mode is an owner call. |
-| `LORRAX_FFT_FFI_FUSED` (`src/ffi/fft.py`) | `off` | `on` together with `LORRAX_FFT_FFI` (fused gw_conv target) | Rides the same §7 plan. |
+| `LORRAX_FFT_FFI` (`src/ffi/fft.py`) | `on` — REQUIRED (repo decisions.md 2026-08-01); missing library = startup refusal naming the .so; `=0` REFUSES (the XLA flat-k twin is deleted) | `on` — CPU: MKL FFT (DFTI API) strided flat-k; CUDA: cuFFT `cufftPlanMany64` mirror. sigma.exec 3.78x (CLAIMS row 6) | Flip LANDED 2026-08-01 for the flat-k layer. The `make_sharded_ifftn_3d` shard_map-interior layer still has NO FFI route (repo `docs/architecture/ffi_layout.md` §7 rework still open; that layer is KEPT XLA by the ruling until a route exists). |
+| `LORRAX_FFT_FFI_FUSED` (`src/ffi/fft.py`) | `on` (2026-08-01); `=0` = announced opt-out to the decomposed chain (itself FFI-served) | `on` together with `LORRAX_FFT_FFI` (fused gw_conv target) | No — flip landed. |
 | `LORRAX_FFT_FFI_LOG` / `_THREADS` / `_CHUNK` | unset | tuning knobs; no certified values | No. |
-| `LORRAX_BANDS_GEMM_FFI` (`src/ffi/gemm.py`) | `auto` (owner order) | `auto` — vendor GEMM (MKL host / cuBLAS CUDA) when probe passes | No. |
+| `LORRAX_BANDS_GEMM_FFI` (`src/ffi/gemm.py`) | `on` — REQUIRED (2026-08-01); `auto` mode DELETED (stale `=auto` resolves to default, announced); `=0` = announced UNCERTIFIED opt-out onto the XLA einsum arm (retained for the structural `extra='minor'` case) | `on` — vendor GEMM (MKL host; CUDA runs XLA's native cuBLAS dot — the dial does not exist there) | No — flip landed. |
 | `JAX_CPU_COLLECTIVES_IMPLEMENTATION` | jax default (`gloo`) | `mpi` — set by `config/frontera/mpi_transport_env.sh`; gloo banned at distributed tiers (CLAIMS rows 3-4) | Owner-gated docs rescoping gloo to P<=16; production already `mpi`. |
 | `FI_PROVIDER` | libfabric autodetect | `mlx` in-container; `tcp` only as rtx escape hatch (CLAIMS row 13) | No. |
 | `slab_io` (input file key, `src/file_io/`) | `auto` | `auto` -> tier 1 parallel-HDF5 FFI writer when the probe passes; falls back to the allgather tier | No. |

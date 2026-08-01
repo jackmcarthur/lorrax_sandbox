@@ -25,8 +25,12 @@ never a competing copy of the source.
   sigma_mnk.h5 parity 1.1e-13 eV vs pinned baseline.
 - Production transport: jax CPU collectives implementation `mpi`;
   gloo is banned at distributed tiers (`CLAIMS.md` rows 3-4).
-- Certified opt-in perf stack: `LORRAX_FFT_FFI`(+`_FUSED`), vendor GEMM
-  FFI, `slab_io=auto` parallel-HDF5 writer. Details in `GATES.md`.
+- FFI stack is REQUIRED and on by default (repo decisions.md 2026-08-01):
+  `LORRAX_FFT_FFI`(+`_FUSED`), vendor GEMM FFI — missing library refuses
+  at startup; `slab_io=auto` parallel-HDF5 writer stays a service-tier
+  demotion. Per-knob `=0` semantics in `GATES.md` / repo env_vars.md.
+- Process meshes are SQUARE-ONLY (same ruling): `resolve_mesh` refuses a
+  non-perfect-square device count, naming the square count to request.
 - Architecture: three AST-gated levels — L1 physics drivers, L2 numerical
   routines, L3 substrate. Repo `docs/architecture/{layers,services,ffi_layout}.md`.
 

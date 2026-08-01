@@ -51,9 +51,13 @@ with sharding semantics still exercised via
 `XLA_FLAGS=--xla_force_host_platform_device_count=4` (2x2 mesh of host
 devices, no MPI) — the repo `tools/probe_w_densifier_hlo.py` trick,
 scaled from one L2 routine to the whole chain. Every driver resolves its
-mesh through `common.collectives.resolve_mesh`, which takes the
-most-square factorisation of `jax.devices()`, so 4 host devices give
-every driver a real 2x2 mesh with no code changes.
+mesh through `common.collectives.resolve_mesh`, which builds the square
+s x s mesh over `jax.devices()` (square-only ruling 2026-08-01;
+non-square device counts refuse), so 4 host devices give every driver a
+real 2x2 mesh with no code changes. Since 2026-08-01 the runner exports
+NO FFI gate values: the FFI stack is the required default (repo
+decisions.md), so every fastloop run exercises the required-FFI startup
+enforcement end-to-end.
 
 ## What exists (this session)
 
