@@ -27,6 +27,8 @@ else is agent-actionable. Replaces the archived KNOWN_SANDBOX_ERRORS.
 | chi0_W_probe re-runs chi+W nearly in full (~9.6 s) | BC | reuse the real pass | open |
 | sigma.exec 88% d2h_wait — host accumulator not overlapped | BC | double-buffer the tau d2h | open |
 | Sigma_c is PPM-only; no full-frequency cross-check | gw_config.py:306 | validation mode on bse/w_omega_chain.py | open |
+| slab_io=auto -> PHDF5_FFI aborts in MPI_Init on a PMI-less bare launch (no srun) instead of demoting | CLAIMS 18, job 7884926; fastloop catch | auto probes MPI bootstrapability, announced demotion (GPU router precedent) | open |
+| gw_jax hangs indefinitely in interpreter teardown after main() at bare P=1 (only FFT/GEMM-FFI chain driver) | CLAIMS 19, job 7884928; fastloop catch | root-cause FFI/XLA:CPU teardown; interim: fastloop GW_WRAPPER os._exit | open |
 
 ## htransform
 | issue | evidence | smallest fix | status |

@@ -25,7 +25,7 @@ plainly rather than claimed fixed.
 | Finding | Status |
 |---|---|
 | (a) Provenance archaeology | ADDRESSED: `CLAIMS.md`, 16 seeded rows with jobids, append-only directive. Caveat: the gloo-failure reps are cited via scorecard §AY rather than individual jobids. |
-| (b) No fast execution loop | SCAFFOLDED, NOT SOLVED: `fastloop/` has the plan and a runner that refuses at the unimplemented deck stage. The 30-120 min loop still stands until PLAN items 1-3 are built. |
+| (b) No fast execution loop | SCAFFOLDED, NOT SOLVED at rebuild time. *(Superseded 2026-07-31, same day: `fastloop/` was built and certified — jobs 7884926/7884936, CLAIMS rows 17-19; the loop is now ~3 min for both legs. See `fastloop/PLAN.md`.)* |
 | (c) Sharding invisible at call sites | ADDRESSED: existing analyzer checked against current needs — collectives it already had; layout-boundary (transpose/copy/bitcast) table and `--forbid` gate added; `docs/HLO_HOWTO.md` written. Caveat: the new code is syntax-checked (login python 3.7) but has not yet run against a real dump — first user should treat its output with rule-2 skepticism. |
 | (d) Gated-path combinatorics | ADDRESSED: `GATES.md`, defaults read from `src/ffi/{fft,gemm,gate}.py` at `ecf461e`. |
 | (e) Physics-machine seam bugs | ADDRESSED: `INVARIANTS.md`, 9 rows, enforcing refusal named where one exists (`rank_criterion.py`, `collectives.py::warm_mesh_cliques`). |
