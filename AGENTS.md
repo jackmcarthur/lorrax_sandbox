@@ -80,7 +80,7 @@ never a competing copy of the source.
 | Path | Contents |
 |---|---|
 | `CLAIMS.md`, `GATES.md`, `INVARIANTS.md` | the three ledgers (see table above) |
-| `fastloop/` | single-process mini-deck fast loop — scaffold only; `fastloop/PLAN.md` states what exists vs planned |
+| `fastloop/` | mini-deck driver-chain loop, CERTIFIED 2026-07-31 (jobs 7884926/7884936, CLAIMS rows 17-19): checked-in 2x2/40-band deck + `run_fastloop.sbatch` runs kmeans->dipole->kin-ion->gw->htransform at P=1 AND on a 4-host-device 2x2 mesh in ~3 min, gated against pinned references — run it before committing driver changes; `fastloop/PLAN.md` has usage and honest status |
 | `tools/` | working analysis tools (`hlo/analyze_hlo_dump.py`, `compare_bgw_gwjax.py`) |
 | `skills/` | task recipes: build_inputs, execute_workflow, compare, checkpoint |
 | `templates/`, `assets/` | QE/BGW input templates; pseudopotentials |
