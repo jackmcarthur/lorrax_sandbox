@@ -87,6 +87,8 @@ never a competing copy of the source.
 | `runs/`, `reports/`, `scripts/` | empty after the 2026-07-31 purge; READMEs state what belongs |
 | `docs/` | reference documentation (see table above) |
 | `_archive/` | dated historical record, non-normative |
+| `KNOWN_LORRAX_ISSUES.md` | live defect register for the six drivers — read BEFORE debugging anything |
+| `runs/mos2_4x4_b300/` | worked example: full certified chain, harnesses + small outputs (EXAMPLES.md points at heavy artifacts) |
 | `ASSERTIONS.md` | rebuild caveats and known-unresolved items — read before trusting any sandbox TOOL's output (some are syntax-checked, never run) |
 
 New session read order: this file, then `CLAIMS.md`, `GATES.md`,
