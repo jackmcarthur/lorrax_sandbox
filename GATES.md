@@ -24,3 +24,8 @@ Not gates: `LORRAX_IMPI_ROOT`, `LORRAX_MKL_ROOT`, `LORRAX_SIF`,
 `LORRAX_BUNDLE`, `LORRAX_FFI_*_DIR` and similar are build/launch
 environment plumbing, owned by `config/frontera/build_cpu_runtime_bundle.sh`
 and the sbatch template.
+
+Running fully distributed (no N_mu^2 tile on any rank): the per-stage
+deck keys (`distributed_zeta_solve` / `distributed_lu` / `w_dyson_solver`
+/ `eigh_backend`), their auto-thresholds with calibration, and the
+certified example jobs live in repo `docs/dev/large_nmu_operation.md`.
