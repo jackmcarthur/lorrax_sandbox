@@ -1,0 +1,58 @@
+# LORRAX fastloop mini-deck descriptor — MoS2 primitive cell (3 atoms),
+# 2x2x1 k-grid, ecutwfc=30 Ry (FFT grid 24x24x80, inherited from the ONE
+# converged SCF density of the 4x4 example), 40 NSCF bands, SYMMETRY ON.
+# Shrunk from runs/mos2_4x4_b300/deck_b300.in; built by
+# fastloop/build_minideck.sbatch via the job-7884642 QE recipe.
+#
+# BAND WINDOW (mirrors the b300 contract: nval = nelec so the sigma/ht
+# window starts at band 0 and the eqp -> htransform override covers every
+# interpolated band):
+#   nband = 40  -> chi/W band sum: ALL 40 NSCF bands.
+#   nval  = 26  -> ALL valence bands (nelec = 26 spinor bands).
+#   ncond = 4   -> sigma DIAGONAL conduction window.
+#   => Meta.b_id_1 = 0, b_id_3 = 30: sigma diagonals for bands [0, 30).
+#
+# FASTLOOP RULE: this deck proves plumbing and sharding semantics, NOT
+# physics (4 empty-ish conduction states cannot converge screening); no
+# physics conclusion may cite a number from this deck.
+[cohsex]
+restart = false
+centroids_file = centroids_mini.txt
+nval = 26
+ncond = 4
+nband = 40
+sys_dim = 2
+do_screened = true
+bispinor = false
+qp_solver = one_shot_dft
+use_ppm_sigma = true
+screening_method = minimax
+ppm_omega_p = 2.0
+ppm_fallback_omega = 2.0
+sigma_omega_min_ev = -10.0
+sigma_omega_max_ev = 10.0
+sigma_omega_step_ev = 0.5
+sigma_regularization_ev = 0.25
+fermi_reference = midgap
+memory_per_device_gb = 40.0
+# slab_io = auto ON PURPOSE: the fastloop launches bare single processes
+# (no srun, no PMI), where auto must probe MPI bootstrapability and
+# demote to the allgather tier with an announcement instead of aborting
+# in MPI_Init_thread (job 7884926 catch; fixed repo-side in aef6710).
+# Every fastloop gw run is therefore a standing regression test of that
+# router. At P=1 the demoted tier is a plain rank-0 h5py write.
+slab_io = h5py_allgather
+charge_zeta_solve = rank_truncate
+distributed_cholesky = auto
+distributed_lu = auto
+hartree_source = auto
+wfn_file = WFN.h5
+sigma_diag_file = sigma_diag.dat
+sigma_omega_h5_file = sigma_mnk.h5
+
+K_POINTS {crystal_b}
+4
+  0.0000 0.0000 0.0000 10   # gamma
+  0.0000 0.5000 0.0000 10   # M
+  0.3333 0.3333 0.0000 10   # K
+  0.0000 0.0000 0.0000 10   # gamma

@@ -1,0 +1,512 @@
+"""Tests for ``common.wfn_transforms``.
+
+Verifies each transform against an independent numpy reference built
+from the loader's G-flat output, exercises the zero-sentinel-gather
+contract for empty FFT-box cells, and confirms band-axis sharding is
+preserved through every output rank.
+"""
+from __future__ import annotations
+
+import os
+
+import h5py
+import jax
+import jax.numpy as jnp
+import numpy as np
+import pytest
+
+from jax.sharding import Mesh
+
+from common.wfn_transforms import (
+    to_box, to_rbox, to_rmu, to_rchunk,
+    to_rchunk_inner, to_rmu_inner,
+    gflat_to_rmu)
+from file_io.wfn_loader import WfnLoader
+
+from tests.test_wfn_loader_eager import _synth_wfn, _MOS2_WFN
+
+
+# Every public transform in this module takes a ``mesh`` kwarg.  For
+# the single-device test bench we use a 1×1 mesh — same code path as
+# multi-rank production, no None branches anywhere.
+MESH = Mesh(np.asarray(jax.devices()[:1]).reshape(1, 1),
+             axis_names=('x', 'y'))
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def synth_loader(tmp_path):
+    path = _synth_wfn(tmp_path)
+    with WfnLoader(path) as loader:
+        yield loader
+
+
+@pytest.fixture
+def mos2_loader():
+    if not os.path.exists(_MOS2_WFN):
+        pytest.skip("MoS2 3x3 WFN not present")
+    with WfnLoader(_MOS2_WFN) as loader:
+        yield loader
+
+
+# ---------------------------------------------------------------------------
+# Independent reference: numpy scatter
+# ---------------------------------------------------------------------------
+
+def _np_scatter_to_box(
+    psi: np.ndarray,
+    gvecs: np.ndarray,
+    ngk_valid: np.ndarray,
+    fft_grid: tuple[int, int, int],
+) -> np.ndarray:
+    """Direct (slow) reference scatter: write each valid (k, g) entry
+    into its (nx, ny, nz) FFT-box cell.  Output is ``(n_k, nb, ns, nx,
+    ny, nz)``.  Pad rows of psi are zero by contract so we can scatter
+    only the valid prefix per k."""
+    n_k, nb, ns, _ = psi.shape
+    nx, ny, nz = fft_grid
+    out = np.zeros((n_k, nb, ns, nx, ny, nz), dtype=np.complex128)
+    fft_grid_np = np.asarray(fft_grid, dtype=np.int64)
+    # NumPy fancy indexing with three integer-array indices in the
+    # trailing positions moves the broadcast axis to the front, so we
+    # write the per-k box one G-vector at a time to keep axis order
+    # explicit.
+    for k in range(n_k):
+        n = int(ngk_valid[k])
+        gv = gvecs[k, :n] % fft_grid_np[None, :]
+        for g in range(n):
+            out[k, :, :, gv[g, 0], gv[g, 1], gv[g, 2]] = psi[k, :, :, g]
+    return out
+
+
+# ---------------------------------------------------------------------------
+# to_box
+# ---------------------------------------------------------------------------
+
+def _check_to_box(loader, k_spec):
+    b_hi = min(4, int(loader.nbands))
+    psi = loader.load(bands=(0, b_hi), k=k_spec)
+    g_index = loader.box_index(k=k_spec)
+    psi_box = np.asarray(to_box(psi, g_index, loader.fft_grid, mesh=MESH))
+
+    psi_ref = _np_scatter_to_box(
+        np.asarray(psi),
+        loader.gvecs(k=k_spec),
+        loader.ngk_valid(k=k_spec),
+        tuple(int(s) for s in loader.fft_grid),
+    )
+    np.testing.assert_array_equal(psi_box, psi_ref)
+
+
+def test_to_box_ibz_synth(synth_loader):
+    _check_to_box(synth_loader, k_spec="ibz")
+
+
+def test_to_box_full_bz_synth(synth_loader):
+    _check_to_box(synth_loader, k_spec="full_bz")
+
+
+def test_to_box_ibz_mos2(mos2_loader):
+    _check_to_box(mos2_loader, k_spec="ibz")
+
+
+def test_to_box_full_bz_mos2(mos2_loader):
+    _check_to_box(mos2_loader, k_spec="full_bz")
+
+
+def test_to_box_empty_cells_are_zero(synth_loader):
+    """FFT-box cells outside the G-sphere must be exactly zero."""
+    b_hi = min(3, int(synth_loader.nbands))
+    psi = synth_loader.load(bands=(0, b_hi), k="ibz")
+    g_index = synth_loader.box_index(k="ibz")
+    psi_box = np.asarray(to_box(psi, g_index, synth_loader.fft_grid, mesh=MESH))
+    ngkmax = int(synth_loader.ngkmax)
+
+    # An FFT-box cell is empty iff g_index[k, x, y, z] == ngkmax.
+    sentinel_mask = (np.asarray(g_index) == ngkmax)
+    # Broadcast to (n_k, nb, ns, nx, ny, nz).
+    sentinel_mask_b = sentinel_mask[:, None, None, :, :, :]
+    assert np.all(np.abs(psi_box[np.broadcast_to(
+        sentinel_mask_b, psi_box.shape)]) == 0)
+
+
+# ---------------------------------------------------------------------------
+# to_rbox = IFFT(to_box)
+# ---------------------------------------------------------------------------
+
+def test_to_rbox_matches_ifft_of_to_box(synth_loader):
+    psi = synth_loader.load(bands=(0, 3), k="full_bz")
+    g_index = synth_loader.box_index(k="full_bz")
+    psi_box = np.asarray(to_box(psi, g_index, synth_loader.fft_grid, mesh=MESH))
+    psi_r_box = np.asarray(to_rbox(psi, g_index, synth_loader.fft_grid, mesh=MESH))
+    expected = np.fft.ifftn(psi_box, axes=(-3, -2, -1))
+    np.testing.assert_allclose(psi_r_box, expected, atol=1e-13, rtol=0)
+
+
+# ---------------------------------------------------------------------------
+# to_rmu vs index of to_rbox
+# ---------------------------------------------------------------------------
+
+def test_to_rmu_matches_rbox_take(synth_loader):
+    psi = synth_loader.load(bands=(0, 3), k="full_bz")
+    g_index = synth_loader.box_index(k="full_bz")
+    nx, ny, nz = (int(s) for s in synth_loader.fft_grid)
+
+    rng = np.random.default_rng(1)
+    n_rmu = 5
+    r_mu = np.stack([
+        rng.integers(0, nx, size=n_rmu),
+        rng.integers(0, ny, size=n_rmu),
+        rng.integers(0, nz, size=n_rmu),
+    ], axis=-1).astype(np.int32)
+
+    psi_rmu = np.asarray(to_rmu(psi, g_index, synth_loader.fft_grid, r_mu, mesh=MESH))
+    psi_r_box = np.asarray(to_rbox(psi, g_index, synth_loader.fft_grid, mesh=MESH))
+    expected = psi_r_box[:, :, :, r_mu[:, 0], r_mu[:, 1], r_mu[:, 2]]
+    np.testing.assert_allclose(psi_rmu, expected, atol=1e-14, rtol=0)
+
+
+# ---------------------------------------------------------------------------
+# to_rchunk vs flat-r slice of to_rbox
+# ---------------------------------------------------------------------------
+
+def test_to_rchunk_matches_rbox_flat_slab(synth_loader):
+    psi = synth_loader.load(bands=(0, 3), k="full_bz")
+    g_index = synth_loader.box_index(k="full_bz")
+    nx, ny, nz = (int(s) for s in synth_loader.fft_grid)
+    n_rtot = nx * ny * nz
+
+    r0, r_len = nx * ny + 2, 12  # arbitrary slab
+    psi_rchunk = np.asarray(to_rchunk(
+        psi, g_index, synth_loader.fft_grid, r0, r_len, mesh=MESH))
+
+    psi_r_box = np.asarray(to_rbox(psi, g_index, synth_loader.fft_grid, mesh=MESH))
+    expected = psi_r_box.reshape(*psi_r_box.shape[:3], n_rtot)[
+        :, :, :, r0:r0 + r_len]
+    np.testing.assert_allclose(psi_rchunk, expected, atol=1e-14, rtol=0)
+
+
+def test_to_rchunk_rejects_out_of_bounds(synth_loader):
+    psi = synth_loader.load(bands=(0, 2), k="ibz")
+    g_index = synth_loader.box_index(k="ibz")
+    nx, ny, nz = (int(s) for s in synth_loader.fft_grid)
+    with pytest.raises(ValueError):
+        to_rchunk(psi, g_index, synth_loader.fft_grid, nx * ny * nz - 2, 10, mesh=MESH)
+
+
+# ---------------------------------------------------------------------------
+# to_rchunk_inner (Path D §4b scaffolding) — must match to_rchunk
+# numerically when called on the same per-rank-local inputs.  Tested
+# both without and with the Bloch phase, since the two paths take
+# different branches inside to_rchunk's shard_map body.
+# ---------------------------------------------------------------------------
+
+def test_to_rchunk_inner_matches_to_rchunk_no_phase(synth_loader):
+    """to_rchunk_inner is the shard_map-less body of to_rchunk.  On a
+    1×1 mesh the wrapper is trivial, so per-rank-local output must
+    agree to floating point."""
+    psi = synth_loader.load(bands=(0, 3), k="full_bz")
+    g_index = synth_loader.box_index(k="full_bz")
+    nx, ny, nz = (int(s) for s in synth_loader.fft_grid)
+    r0, r_len = nx * ny + 2, 12
+
+    psi_inner = np.asarray(to_rchunk_inner(
+        psi, jnp.asarray(g_index, dtype=jnp.int32),
+        synth_loader.fft_grid, r0, r_len, norm="backward"))
+    psi_wrapped = np.asarray(to_rchunk(
+        psi, g_index, synth_loader.fft_grid, r0, r_len, mesh=MESH,
+        norm="backward"))
+    np.testing.assert_allclose(psi_inner, psi_wrapped, atol=1e-14, rtol=0)
+
+
+def test_to_rchunk_inner_matches_to_rchunk_with_phase(synth_loader):
+    """Bloch-phase branch — apply_bloch_phase_on_slice should run
+    identically inside vs outside the shard_map wrapper."""
+    psi = synth_loader.load(bands=(0, 3), k="full_bz")
+    g_index = synth_loader.box_index(k="full_bz")
+    nk = int(psi.shape[0])
+    nx, ny, nz = (int(s) for s in synth_loader.fft_grid)
+    r0, r_len = nx * ny + 2, 12
+
+    rng = np.random.default_rng(0)
+    kvecs_frac = rng.uniform(-0.5, 0.5, size=(nk, 3)).astype(np.float64)
+
+    psi_inner = np.asarray(to_rchunk_inner(
+        psi, jnp.asarray(g_index, dtype=jnp.int32),
+        synth_loader.fft_grid, r0, r_len,
+        kvecs_frac=jnp.asarray(kvecs_frac, dtype=jnp.float64),
+        norm="backward"))
+    psi_wrapped = np.asarray(to_rchunk(
+        psi, g_index, synth_loader.fft_grid, r0, r_len, mesh=MESH,
+        kvecs_frac=kvecs_frac, norm="backward"))
+    np.testing.assert_allclose(psi_inner, psi_wrapped, atol=1e-14, rtol=0)
+
+
+def test_to_rchunk_inner_traced_r0(synth_loader):
+    """The r0 arg must accept a traced scalar — the eventual Path D
+    consumer will pass ``r_start_dyn`` (a jit input) here."""
+    psi = synth_loader.load(bands=(0, 3), k="full_bz")
+    g_index = synth_loader.box_index(k="full_bz")
+    nx, ny, nz = (int(s) for s in synth_loader.fft_grid)
+    r_len = 12
+
+    @jax.jit
+    def fn(psi_, g_index_, r0_):
+        return to_rchunk_inner(psi_, g_index_, synth_loader.fft_grid,
+                                r0_, r_len, norm="backward")
+
+    r0_val = nx * ny + 2
+    r0 = jnp.int32(r0_val)
+    out = np.asarray(fn(psi, jnp.asarray(g_index, dtype=jnp.int32), r0))
+    expected = np.asarray(to_rchunk(
+        psi, g_index, synth_loader.fft_grid, r0_val, r_len, mesh=MESH,
+        norm="backward"))
+    np.testing.assert_allclose(out, expected, atol=1e-14, rtol=0)
+
+
+# ---------------------------------------------------------------------------
+# to_rmu_inner (Defect 3 mirror scaffolding) — pure-jax body of to_rmu,
+# must match the shard_map-wrapped version on a 1×1 mesh.
+# ---------------------------------------------------------------------------
+
+def test_to_rmu_inner_matches_to_rmu_no_phase(synth_loader):
+    """to_rmu_inner is the shard_map-less body of to_rmu.  On a 1×1
+    mesh the wrapper is a no-op, so per-rank-local output must agree
+    to floating point."""
+    psi = synth_loader.load(bands=(0, 3), k="full_bz")
+    g_index = synth_loader.box_index(k="full_bz")
+    nx, ny, nz = (int(s) for s in synth_loader.fft_grid)
+
+    rng = np.random.default_rng(11)
+    n_rmu = 7
+    r_mu = np.stack([
+        rng.integers(0, nx, size=n_rmu),
+        rng.integers(0, ny, size=n_rmu),
+        rng.integers(0, nz, size=n_rmu),
+    ], axis=1).astype(np.int32)
+
+    psi_inner = np.asarray(to_rmu_inner(
+        psi, jnp.asarray(g_index, dtype=jnp.int32),
+        synth_loader.fft_grid, jnp.asarray(r_mu, dtype=jnp.int32),
+        norm="backward"))
+    psi_wrapped = np.asarray(to_rmu(
+        psi, g_index, synth_loader.fft_grid, r_mu, mesh=MESH,
+        norm="backward"))
+    np.testing.assert_allclose(psi_inner, psi_wrapped, atol=1e-14, rtol=0)
+
+
+def test_to_rmu_inner_matches_to_rmu_with_phase(synth_loader):
+    """Bloch-phase branch — applied to the full FFT box before the
+    centroid gather; should run identically inside vs outside the
+    shard_map wrapper."""
+    psi = synth_loader.load(bands=(0, 3), k="full_bz")
+    g_index = synth_loader.box_index(k="full_bz")
+    nk = int(psi.shape[0])
+    nx, ny, nz = (int(s) for s in synth_loader.fft_grid)
+
+    rng = np.random.default_rng(12)
+    kvecs_frac = rng.uniform(-0.5, 0.5, size=(nk, 3)).astype(np.float64)
+    n_rmu = 9
+    r_mu = np.stack([
+        rng.integers(0, nx, size=n_rmu),
+        rng.integers(0, ny, size=n_rmu),
+        rng.integers(0, nz, size=n_rmu),
+    ], axis=1).astype(np.int32)
+
+    psi_inner = np.asarray(to_rmu_inner(
+        psi, jnp.asarray(g_index, dtype=jnp.int32),
+        synth_loader.fft_grid, jnp.asarray(r_mu, dtype=jnp.int32),
+        kvecs_frac=jnp.asarray(kvecs_frac, dtype=jnp.float64),
+        norm="backward"))
+    psi_wrapped = np.asarray(to_rmu(
+        psi, g_index, synth_loader.fft_grid, r_mu, mesh=MESH,
+        kvecs_frac=kvecs_frac, norm="backward"))
+    np.testing.assert_allclose(psi_inner, psi_wrapped, atol=1e-14, rtol=0)
+
+
+# ---------------------------------------------------------------------------
+# gflat_to_rmu (Defect 3 structural fix) — must match the bc-loop +
+# concatenate path that lives in load_centroids_band_chunked today.
+# Same three-flavour pattern as gflat_to_rchunk: no-phase / with-phase /
+# chunked-vs-oneshot.
+# ---------------------------------------------------------------------------
+
+
+def _gflat_to_rmu_reference(
+    psi_G, g_index, fft_grid, r_mu, *,
+    band_chunks, kvecs_frac=None, norm="ortho",
+):
+    """Reference path: per-bc ``to_rmu`` calls then ``jnp.concatenate``
+    along the band axis — what ``load_centroids_band_chunked`` does
+    today (modulo the optional inner k-chunk loop)."""
+    parts = []
+    for (b_lo, b_hi) in band_chunks:
+        parts.append(to_rmu(
+            psi_G[:, b_lo:b_hi, :, :], g_index, fft_grid, r_mu,
+            mesh=MESH, kvecs_frac=kvecs_frac, norm=norm))
+    return jnp.concatenate(parts, axis=1)
+
+
+def test_gflat_to_rmu_no_phase(synth_loader):
+    """One shard_map+scan call equals the bc-loop + concatenate path
+    (no Bloch phase) to floating-point precision."""
+    nb = min(8, int(synth_loader.nbands))
+    psi = synth_loader.load(bands=(0, nb), k="full_bz")
+    g_index = synth_loader.box_index(k="full_bz")
+    nx, ny, nz = (int(s) for s in synth_loader.fft_grid)
+
+    rng = np.random.default_rng(13)
+    n_rmu = 13
+    r_mu = np.stack([
+        rng.integers(0, nx, size=n_rmu),
+        rng.integers(0, ny, size=n_rmu),
+        rng.integers(0, nz, size=n_rmu),
+    ], axis=1).astype(np.int32)
+
+    band_chunks = [(0, 4), (4, nb)]
+    ref = np.asarray(_gflat_to_rmu_reference(
+        psi, g_index, synth_loader.fft_grid, r_mu,
+        band_chunks=band_chunks, kvecs_frac=None, norm="ortho"))
+
+    out = np.asarray(gflat_to_rmu(
+        psi, g_index, r_mu, mesh=MESH, fft_grid=synth_loader.fft_grid,
+        kvecs_frac=None, norm="ortho", chunk_size=None))
+    np.testing.assert_allclose(out, ref, rtol=1e-10, atol=1e-12)
+
+
+def test_gflat_to_rmu_with_phase(synth_loader):
+    """Bloch-phase branch — apply_bloch_phase semantics (sign=+1) on
+    the centroid-sampled cells must match identically inside the scan
+    body."""
+    nb = min(8, int(synth_loader.nbands))
+    psi = synth_loader.load(bands=(0, nb), k="full_bz")
+    g_index = synth_loader.box_index(k="full_bz")
+    nk = int(psi.shape[0])
+    nx, ny, nz = (int(s) for s in synth_loader.fft_grid)
+
+    rng = np.random.default_rng(14)
+    kvecs_frac = rng.uniform(-0.5, 0.5, size=(nk, 3)).astype(np.float64)
+    n_rmu = 15
+    r_mu = np.stack([
+        rng.integers(0, nx, size=n_rmu),
+        rng.integers(0, ny, size=n_rmu),
+        rng.integers(0, nz, size=n_rmu),
+    ], axis=1).astype(np.int32)
+
+    band_chunks = [(0, 3), (3, 6), (6, nb)]
+    ref = np.asarray(_gflat_to_rmu_reference(
+        psi, g_index, synth_loader.fft_grid, r_mu,
+        band_chunks=band_chunks, kvecs_frac=kvecs_frac, norm="ortho"))
+
+    out = np.asarray(gflat_to_rmu(
+        psi, g_index, r_mu, mesh=MESH, fft_grid=synth_loader.fft_grid,
+        kvecs_frac=kvecs_frac, norm="ortho", chunk_size=None))
+    np.testing.assert_allclose(out, ref, rtol=1e-10, atol=1e-12)
+
+
+def test_gflat_to_rmu_chunked_matches_oneshot(synth_loader):
+    """chunk_size sweep — every choice (incl. one that triggers
+    zero-padding) must produce the same output to ULP precision."""
+    nb = min(6, int(synth_loader.nbands))
+    psi = synth_loader.load(bands=(0, nb), k="full_bz")
+    g_index = synth_loader.box_index(k="full_bz")
+    nk = int(psi.shape[0])
+    nx, ny, nz = (int(s) for s in synth_loader.fft_grid)
+
+    rng = np.random.default_rng(15)
+    kvecs_frac = rng.uniform(-0.5, 0.5, size=(nk, 3)).astype(np.float64)
+    n_rmu = 11
+    r_mu = np.stack([
+        rng.integers(0, nx, size=n_rmu),
+        rng.integers(0, ny, size=n_rmu),
+        rng.integers(0, nz, size=n_rmu),
+    ], axis=1).astype(np.int32)
+
+    # 1×1 mesh ⇒ nb_local = nb; flat axis N = nk · nb.
+    nb_local = nb
+    N = nk * nb_local
+    one_shot = np.asarray(gflat_to_rmu(
+        psi, g_index, r_mu, mesh=MESH, fft_grid=synth_loader.fft_grid,
+        kvecs_frac=kvecs_frac, norm="ortho", chunk_size=None))
+
+    for cs in (1, 3, N, N + 1):
+        chunked = np.asarray(gflat_to_rmu(
+            psi, g_index, r_mu, mesh=MESH, fft_grid=synth_loader.fft_grid,
+            kvecs_frac=kvecs_frac, norm="ortho", chunk_size=cs))
+        np.testing.assert_allclose(
+            chunked, one_shot, rtol=1e-10, atol=1e-12,
+            err_msg=f"chunk_size={cs} disagrees with one-shot")
+
+
+# ---------------------------------------------------------------------------
+# Pad-row hygiene: pad ψ rows of zero must NOT corrupt the box
+# (the gather contract guarantees this — pad indices in g_index would
+# only ever point at sentinel + zero slot)
+# ---------------------------------------------------------------------------
+
+def test_pad_rows_dont_leak_into_box(synth_loader):
+    """Force the band-pad case (replicated, no mesh → no band pad), and
+    G-pad case (ngk[k] < ngkmax for each k); confirm the FFT-box
+    contents at G-positions corresponding to valid coefficients agree
+    with the raw IBZ slab, and pad columns are inert."""
+    psi = synth_loader.load(bands=(0, 4), k="ibz")
+    g_index = synth_loader.box_index(k="ibz")
+    psi_box = np.asarray(to_box(psi, g_index, synth_loader.fft_grid, mesh=MESH))
+
+    # Reconstruct the box from raw IBZ coefficients (bypassing loader's
+    # padding logic).
+    gvecs_per_k = [synth_loader.get_gvec_nk(ik)
+                    for ik in range(int(synth_loader.nkpts))]
+    ref = _np_scatter_to_box(
+        np.asarray(psi)[:, :, :, : int(synth_loader.ngkmax)],
+        synth_loader.gvecs(k="ibz"),
+        synth_loader.ngk_valid(k="ibz"),
+        tuple(int(s) for s in synth_loader.fft_grid),
+    )
+    np.testing.assert_array_equal(psi_box, ref)
+
+
+# ---------------------------------------------------------------------------
+# Shape sanity for non-trivial nspinor and uneven k counts
+# ---------------------------------------------------------------------------
+
+def test_apply_bloch_phase_matches_4d_reference():
+    """The separable 1D-factor application of exp(2πi k·r) must
+    byte-match an explicit 4D-construction reference."""
+    from common.wfn_transforms import apply_bloch_phase
+
+    rng = np.random.default_rng(7)
+    n_k, nb, ns = 3, 2, 2
+    nx, ny, nz = 5, 7, 4
+    psi_r_box = (rng.standard_normal((n_k, nb, ns, nx, ny, nz))
+                 + 1j * rng.standard_normal((n_k, nb, ns, nx, ny, nz)))
+    kvecs = rng.standard_normal((n_k, 3))
+
+    # Reference: explicit 4D phase (the implementation we removed).
+    fx = np.arange(nx) / nx
+    fy = np.arange(ny) / ny
+    fz = np.arange(nz) / nz
+    phase4d = np.exp(
+        2j * np.pi * (
+            kvecs[:, 0, None, None, None] * fx[None, :, None, None]
+            + kvecs[:, 1, None, None, None] * fy[None, None, :, None]
+            + kvecs[:, 2, None, None, None] * fz[None, None, None, :]
+        )
+    )
+    expected = psi_r_box * phase4d[:, None, None, :, :, :]
+
+    got = np.asarray(apply_bloch_phase(
+        jnp.asarray(psi_r_box), jnp.asarray(kvecs), (nx, ny, nz)))
+    np.testing.assert_allclose(got, expected, atol=1e-13, rtol=0)
+
+
+def test_to_box_shape(synth_loader):
+    psi = synth_loader.load(bands=(0, 3), k="full_bz")
+    g_index = synth_loader.box_index(k="full_bz")
+    nx, ny, nz = (int(s) for s in synth_loader.fft_grid)
+    out = to_box(psi, g_index, synth_loader.fft_grid, mesh=MESH)
+    assert out.shape == (psi.shape[0], psi.shape[1], psi.shape[2], nx, ny, nz)
+    assert out.dtype == jnp.complex128
