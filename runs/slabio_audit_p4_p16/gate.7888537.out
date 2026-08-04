@@ -1,0 +1,64 @@
+=== leg env: src@1fc2759  P=4  N=2  coord=c207-013:13537
+    bundle  /scratch2/08271/jackmc/b600_p64/bundle_1fc2759/lorrax_cpu_bundle.tar
+    ffi so  e3a41279d9afc4d6
+    mpiw    d0113a789d8c7388
+=== gate: rev=8050e34 so=f0ecf821bcb005ae job=7888537
+
+##### [repro] timeout=420s -- 11:40:57 #####
+[repro] srun rc=0 wall=15s 
+  per-rank rc: rc=0 rank=0 rc=0 rank=1 rc=0 rank=2 rc=0 rank=3 
+  [padrank-gate] case=repro world=4 mesh=(2, 2) mu=5 mu_padded=8 loc=2 pad_rows=3
+  [padrank-gate] round-trip: 0 mismatched of 80; max|delta| = 0.000e+00
+  [padrank-gate] VERDICT case=repro mu=5: PASS
+  [padrank-gate] wholly-padded ranks: [3]
+
+##### [control] timeout=420s -- 11:41:12 #####
+[control] srun rc=0 wall=6s 
+  per-rank rc: rc=0 rank=0 rc=0 rank=1 rc=0 rank=2 rc=0 rank=3 
+  [padrank-gate] case=control world=4 mesh=(2, 2) mu=7 mu_padded=8 loc=2 pad_rows=1
+  [padrank-gate] round-trip: 0 mismatched of 112; max|delta| = 0.000e+00
+  [padrank-gate] VERDICT case=control mu=7: PASS
+  [padrank-gate] wholly-padded ranks: none
+
+##### [exact] timeout=420s -- 11:41:18 #####
+[exact] srun rc=0 wall=7s 
+  per-rank rc: rc=0 rank=0 rc=0 rank=1 rc=0 rank=2 rc=0 rank=3 
+  [padrank-gate] case=exact world=4 mesh=(2, 2) mu=8 mu_padded=8 loc=2 pad_rows=0
+  [padrank-gate] round-trip: 0 mismatched of 128; max|delta| = 0.000e+00
+  [padrank-gate] VERDICT case=exact mu=8: PASS
+  [padrank-gate] wholly-padded ranks: none
+
+##### [read_pad] timeout=420s -- 11:41:25 #####
+[read_pad] srun rc=0 wall=6s 
+  per-rank rc: rc=0 rank=0 rc=0 rank=1 rc=0 rank=2 rc=0 rank=3 
+  [padrank-gate] case=read_pad world=4 mesh=(2, 2) mu=5 mu_padded=8 loc=2 pad_rows=3
+  [padrank-gate rank=0] block rows [0,2)  mismatched=0
+  [padrank-gate rank=1] block rows [2,4)  mismatched=0
+  [padrank-gate rank=2] block rows [4,6)  mismatched=0
+  [padrank-gate rank=3] block rows [6,8) (WHOLLY PADDED) mismatched=0
+  [padrank-gate] wholly-padded ranks: [3]
+
+##### [oob_write] timeout=420s -- 11:41:31 #####
+[oob_write] srun rc=0 wall=7s 
+  per-rank rc: rc=0 rank=0 rc=0 rank=1 rc=0 rank=2 rc=0 rank=3 
+  [padrank-gate] case=oob_write world=4 mesh=(2, 2) mu=5 mu_padded=8 loc=2 pad_rows=3
+  [padrank-gate] issuing the overrunning write: offset=(0,1,0) valid=(.,5,.) vs extent 5
+  [padrank-gate rank=0] REFUSED (correct): JaxRuntimeError: INTERNAL: phdf5 async write: logical slab out of bounds ds=/zeta_like extent=[2,5,8] offset_base=[0,1,0] valid_shape=[2,5,8] (this rank: offset=[0,1,0] count=[2,2,8]) rank=0 -- refused identically on every rank
+  [padrank-gate rank=1] REFUSED (correct): JaxRuntimeError: INTERNAL: phdf5 async write: logical slab out of bounds ds=/zeta_like extent=[2,5,8] offset_base=[0,1,0] valid_shape=[2,5,8] (this rank: offset=[0,3,0] count=[2,2,8]) rank=1 -- refused identically on every rank
+  [padrank-gate rank=2] REFUSED (correct): JaxRuntimeError: INTERNAL: phdf5 async write: logical slab out of bounds ds=/zeta_like extent=[2,5,8] offset_base=[0,1,0] valid_shape=[2,5,8] (this rank: offset=[0,5,0] count=[2,1,8]) rank=2 -- refused identically on every rank
+  [padrank-gate rank=3] REFUSED (correct): JaxRuntimeError: INTERNAL: phdf5 async write: logical slab out of bounds ds=/zeta_like extent=[2,5,8] offset_base=[0,1,0] valid_shape=[2,5,8] (this rank: offset=[0,7,0] count=[2,0,8]) rank=3 -- refused identically on every rank
+  [padrank-gate] wholly-padded ranks: [3]
+
+##### [oob_read] timeout=420s -- 11:41:38 #####
+[oob_read] srun rc=0 wall=6s 
+  per-rank rc: rc=0 rank=0 rc=0 rank=1 rc=0 rank=2 rc=0 rank=3 
+  [padrank-gate] case=oob_read world=4 mesh=(2, 2) mu=5 mu_padded=8 loc=2 pad_rows=3
+  [padrank-gate] issuing the overrunning read: offset=(0,1,0) valid=(.,5,.) vs extent 5
+  [padrank-gate rank=0] REFUSED (correct): JaxRuntimeError: INVALID_ARGUMENT: phdf5 read: logical slab out of bounds extent=[2,5,8] offset_base=[0,1,0] valid_shape=[2,5,8] rank=0 -- refused identically on every rank
+  [padrank-gate rank=1] REFUSED (correct): JaxRuntimeError: INVALID_ARGUMENT: phdf5 read: logical slab out of bounds extent=[2,5,8] offset_base=[0,1,0] valid_shape=[2,5,8] rank=1 -- refused identically on every rank
+  [padrank-gate rank=2] REFUSED (correct): JaxRuntimeError: INVALID_ARGUMENT: phdf5 read: logical slab out of bounds extent=[2,5,8] offset_base=[0,1,0] valid_shape=[2,5,8] rank=2 -- refused identically on every rank
+  [padrank-gate rank=3] REFUSED (correct): JaxRuntimeError: INVALID_ARGUMENT: phdf5 read: logical slab out of bounds extent=[2,5,8] offset_base=[0,1,0] valid_shape=[2,5,8] rank=3 -- refused identically on every rank
+  [padrank-gate] wholly-padded ranks: [3]
+
+[gate SUMMARY] job=7888537  (all six expect rc=0; 124 = hang)
+  repro=0 control=0 exact=0 read_pad=0 oob_write=0 oob_read=0

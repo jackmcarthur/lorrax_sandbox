@@ -1,0 +1,13 @@
+. /scratch2/08271/jackmc/b600_p64/harness/inner_common.sh
+export PYTHONPATH=/scratch2/08271/jackmc/slabio_audit/src_base/src:$PYTHONPATH
+export LORRAX_PHDF5_WRITE_DEBUG=1
+export SLABIO_CASE=rt
+export SLABIO_OOB=write
+export SLABIO_DIR=/scratch2/08271/jackmc/slabio_audit/run.7888470/p16_rt
+cd /scratch2/08271/jackmc/slabio_audit/run.7888470/p16_rt
+taskset -c $(( ${SLURM_LOCALID:-0} * 28 ))-$(( ${SLURM_LOCALID:-0} * 28 + 27 )) \
+  "$LORRAX_PY" -u -m slabio_probe \
+    > /scratch2/08271/jackmc/slabio_audit/run.7888470/p16_rt/rank_${SLURM_PROCID}.out 2> /scratch2/08271/jackmc/slabio_audit/run.7888470/p16_rt/rank_${SLURM_PROCID}.err
+RC=$?
+echo "rc=$RC rank=${SLURM_PROCID}" >> /scratch2/08271/jackmc/slabio_audit/run.7888470/p16_rt/rc.txt
+exit $RC

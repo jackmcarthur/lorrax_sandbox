@@ -1,0 +1,50 @@
+MPI startup(): Could not import some environment variables. Intel MPI process pinning will not be used.
+               Possible reason: Using the Slurm srun command. In this case, Slurm pinning will be used.
+[sitecustomize] skip_atexit: NOT registering MpiCollectives.Finalize
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/scratch2/08271/jackmc/vh2d/lorrax_frozen/src/vh2d_check.py", line 189, in <module>
+    finalize_process(main())
+                     ^^^^^^
+  File "/scratch2/08271/jackmc/vh2d/lorrax_frozen/src/vh2d_check.py", line 113, in main
+    V_corner = compute_local_V_k_2d(
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/scratch2/08271/jackmc/vh2d/lorrax_frozen/src/psp/get_DFT_mtxels.py", line 591, in compute_local_V_k_2d
+    return fn(jnp.asarray(psi_m_sphere, dtype=jnp.complex128),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+jax.errors.UnexpectedTracerError: Encountered an unexpected tracer. A function transformed by JAX had a side effect, allowing for a reference to an intermediate value with type int32[1,12,12,20] wrapped in a DynamicJaxprTracer to escape the scope of the transformation.
+JAX transformations require that functions explicitly return their outputs, and disallow saving intermediate values to global state.
+The function being traced when the value leaked was fn at /scratch2/08271/jackmc/vh2d/lorrax_frozen/src/psp/get_DFT_mtxels.py:566 traced for jit.
+------------------------------
+The leaked intermediate value was created on line /scratch2/08271/jackmc/vh2d/lorrax_frozen/src/common/wfn_transforms.py:142:10 (_cached_gindex_dev). 
+------------------------------
+When the value was created, the final 5 stack frames (most recent last) excluding JAX-internal frames were:
+------------------------------
+/scratch2/08271/jackmc/vh2d/lorrax_frozen/src/psp/get_DFT_mtxels.py:572:20 (compute_local_V_k_2d.<locals>.build.<locals>.fn)
+/scratch2/08271/jackmc/vh2d/lorrax_frozen/src/common/wfn_transforms.py:414:16 (to_rbox)
+/scratch2/08271/jackmc/vh2d/lorrax_frozen/src/common/wfn_transforms.py:142:10 (_cached_gindex_dev)
+------------------------------
+
+To catch the leak earlier, try setting the environment variable JAX_CHECK_TRACER_LEAKS or using the `jax.checking_leaks` context manager.
+See https://docs.jax.dev/en/latest/errors.html#jax.errors.UnexpectedTracerError
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+
+*** LORRAX FAIL-FAST: rank 2/4 died with UnexpectedTracerError: Encountered an unexpected tracer. A function transformed by JAX had a side effect, allowing for a reference to an intermediate value with type int32[1,12,12,20] wrapped in a DynamicJaxprTracer to escape the scope of the transformation.
+JAX transformations require that functions explicitly return their outputs, and disallow saving intermediate values to global state.
+The function being traced when the value leaked was fn at /scratch2/08271/jackmc/vh2d/lorrax_frozen/src/psp/get_DFT_mtxels.py:566 traced for jit.
+------------------------------
+The leaked intermediate value was created on line /scratch2/08271/jackmc/vh2d/lorrax_frozen/src/common/wfn_transforms.py:142:10 (_cached_gindex_dev). 
+------------------------------
+When the value was created, the final 5 stack frames (most recent last) excluding JAX-internal frames were:
+------------------------------
+/scratch2/08271/jackmc/vh2d/lorrax_frozen/src/psp/get_DFT_mtxels.py:572:20 (compute_local_V_k_2d.<locals>.build.<locals>.fn)
+/scratch2/08271/jackmc/vh2d/lorrax_frozen/src/common/wfn_transforms.py:414:16 (to_rbox)
+/scratch2/08271/jackmc/vh2d/lorrax_frozen/src/common/wfn_transforms.py:142:10 (_cached_gindex_dev)
+------------------------------
+
+To catch the leak earlier, try setting the environment variable JAX_CHECK_TRACER_LEAKS or using the `jax.checking_leaks` context manager.
+See https://docs.jax.dev/en/latest/errors.html#jax.errors.UnexpectedTracerError
+*** Exiting rc=1 WITHOUT teardown so this failure reaches the job's exit code.  Peer ranks are blocked in a collective this rank will never join; srun will now kill the step.  (Disable with LORRAX_FAILFAST=0.)
+
