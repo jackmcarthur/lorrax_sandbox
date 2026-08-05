@@ -10,6 +10,7 @@ Session artifacts, 2026-08-04/05. Read order for a newcomer:
 | `DESIGN_draft.md` | Draft of the proposed lorrax docs/architecture/DESIGN.md — the three-layer spec, the O(N³) identity, JAX discipline ("the traced graph is the bill"), mesh/process rules | draft, needs owner edit |
 | `EVIDENCE_DESIGN.md` | Synthesis of three research sweeps (ML tracking, scientific provenance, HPC benchmarking) on evidence-record design; validates the CLAIMS pattern, prescribes the harness-written JSONL layer | synthesis |
 | `RULES_seed.md` | Raw mined rules from lorrax origin @ 2026-07-22 (~140 rules with file:line + enforcement status) — evidence base for RULES_v2; re-sweep after consolidation | raw evidence |
+| `ANTIPATTERN_ENFORCEMENT.md` | Idiom-propagation diagnosis (3 failure classes, from an 18-idiom parity audit of gw/psp vs lagging modules) + the 8-rung enforcement stack: scaffolds, routed context, edit-time hooks, ast-grep corpus, import contracts, extractions, jaxtyping, behavioral gates | synthesis |
 | `rules_gate.py` + `rules_gate_allowlist.json` | Working banned-pattern gate (raw jnp.fft, device_put) with ratcheting allowlist; python 3.7 stdlib; tested against origin (203 sites frozen) | draft tool, tested |
 
 Caveat on scope: everything code-facing here was derived from the GitHub
