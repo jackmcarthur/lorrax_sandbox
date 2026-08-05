@@ -1,0 +1,17 @@
+HloModule jit_gather, is_scheduled=true, entry_computation_layout={(c128[9,1963]{1,0}, s32[1]{0})->c128[1963]{0}}, allow_spmd_sharding_propagation_to_parameters={false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="7cdad9f7abba618421459b8928312ae9"}
+
+%fused_dynamic_slice (param_0: c128[9,1963], param_1.2: s32[1]) -> c128[1,1963] {
+  %param_0 = c128[9,1963]{1,0} parameter(0)
+  %param_1.2 = s32[1]{0} parameter(1)
+  %bitcast.27.1 = s32[] bitcast(%param_1.2)
+  %constant_21_1 = s32[] constant(0)
+  ROOT %dynamic-slice.8.1 = c128[1,1963]{1,0} dynamic-slice(%param_0, %bitcast.27.1, %constant_21_1), dynamic_slice_sizes={1,1963}
+}
+
+ENTRY %main.4_spmd (param.2.0: c128[9,1963], param.3.0: s32[1]) -> c128[1963] {
+  %param.3.0 = s32[1]{0} parameter(1), sharding={replicated}, metadata={op_name="args[1]"}
+  %param.2.0 = c128[9,1963]{1,0} parameter(0), sharding={replicated}, metadata={op_name="args[0]"}
+  %loop_dynamic_slice_fusion = c128[1,1963]{1,0} fusion(%param.2.0, %param.3.0), kind=kLoop, calls=%fused_dynamic_slice
+  ROOT %bitcast.1.0 = c128[1963]{0} bitcast(%loop_dynamic_slice_fusion), metadata={op_name="jit(gather)/jit(main)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/gw/v_q_g_flat.py" source_line=439}
+}
+

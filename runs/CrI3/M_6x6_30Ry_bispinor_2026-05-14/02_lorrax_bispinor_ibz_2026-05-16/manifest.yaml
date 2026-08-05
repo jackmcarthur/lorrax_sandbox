@@ -1,0 +1,38 @@
+run_id: cri3_6x6_30Ry_bispinor_ibz_2026-05-16
+system: CrI3
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: cri3_6x6_30Ry_bispinor_testbed_2026-05-14
+reuse_from_parent:
+  - qe/nscf/WFN.h5
+  - qe/nscf/vxc.dat
+  - qe/nscf/kih.dat
+  - 00_lorrax/centroids_frac_300.txt
+  - 00_lorrax/centroids_frac_298_current.txt
+overrides:
+  bispinor_use_ibz: true    # new IBZ cascade with 3-vector Lorentz mixing
+
+purpose: |
+  New IBZ cascade activated. Pair partner is ../01_lorrax_bispinor_fullbz_ibz_gate_2026-05-16.
+  Both runs reuse the same WFN/centroids; the only difference is
+  bispinor_use_ibz (false in the reference, true here). On the gate,
+  max |ΔΣ^B| over all (k, n) must be < 1 meV.
+
+# LORRAX cohsex
+lorrax:
+  bispinor: true
+  bispinor_use_ibz: true
+  x_only: true
+  do_screened: false
+  screening: cohsex
+  memory_per_device_gb: 45.0
+  band_chunk_size: 2
+  r_chunk_size: 8192
+  ngpu_per_node: 2
+  source_branch: agent/bispinor-ibz
+  source_commit: 882ed4a
+
+steps:
+  lorrax_cohsex_sigma_x: { state: complete, note: "Σ^B + bare Σ_X printed; kin_ion crash downstream (pre-existing bispinor bug). V_q 4.18× faster than ../01 reference (IBZ 8q vs full-BZ 36q)" }
+  e2e_gate_vs_runA:      { state: complete, note: "PASS — max |ΔΣ^B[k,n]| = 0.0507 meV vs ../01_lorrax_bispinor_fullbz_ibz_gate_2026-05-16/" }

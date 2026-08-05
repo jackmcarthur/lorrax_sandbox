@@ -1,0 +1,41 @@
+run_id: cri3_6x6_80Ry_bispinor_hlo_calibration_2026-05-17
+system: CrI3
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: cri3_6x6_80Ry_bispinor_fullbz_16gpu_2026-05-16
+reuse_from_parent:
+  - WFN.h5
+  - kin_ion.h5
+  - vxc.dat, kih.dat, eqp0.dat, eqp1.dat
+  - qp_wfn_rotations.h5
+  - centroids_frac_1508.txt (charge channel)
+  - centroids_frac_1504_current.txt (transverse)
+overrides:
+  hlo_dump: enabled
+  r_chunk_size: 24576    # B5 winner
+  band_chunk_size: 32    # B5 winner
+  gflat_chunk_size: 360  # B5 default
+
+purpose: |
+  HLO calibration of the planner's two free constants
+  (pair_density_slots, fft_box_factor_D) for the agent_d_hlo_calibration
+  task (reports/memory_model_refit_2026-05-17/).  Runs are killed after
+  the fit_one_rchunk + accumulate_rchunk_to_gflat JITs have compiled —
+  we only need the memory-usage-report.txt files in xla_dump/.
+
+  M1: pair_density_slots (Peak C) — bispinor 4-channel ζ-fit, r=24576, b=32
+  M2: fft_box_factor_D (Peak D) — same run, accumulate_rchunk_to_gflat
+  M3: gflat=1 variant — see ../lorrax_D_bispinor_hlo_gflat1_2026-05-17/
+  M4: cross-check against ../lorrax_A_hlo_dump_2026-05-13/ (non-bispinor)
+
+steps:
+  lorrax_compile_and_dump: { state: complete, note: "all 4 bispinor channels' fit_one_rchunk fused jit + accumulate_rchunk_to_gflat dumped; 2 r-chunks per channel" }
+result:
+  pair_density_slots_empirical: 3
+  fft_box_factor_D_empirical:   2.0
+  per_slot_bytes_charge_GiB:    20.04
+  per_slot_bytes_transverse_GiB: 19.83
+  per_FFT_box_bytes_GiB:        6.03
+  fit_one_rchunk_total_GiB:     61.77
+  accumulate_total_GiB:         20.92  # at gflat_chunk_size=360

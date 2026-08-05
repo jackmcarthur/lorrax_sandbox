@@ -1,0 +1,15 @@
+run_id: cri3_path_d_hlo_2026-05-13
+variant_of: cri3_hlo_dump_2026-05-13
+overrides:
+  branch: agent/zeta-bc-scan-shardmap @ 5cadd4b (Path D structural fix landed)
+  budget_gb: 60.0
+  band_chunk_size: 16
+  r_chunk_size: 0  # planner-picked
+  psig_k_chunk_size: RETIRED (knob removed in 5cadd4b)
+  gflat_to_rchunk_chunk_size: 0  # auto-picked from memory_per_device_gb
+purpose: |
+  THE killer test for Path D. Compare against lorrax_A_hlo_dump_2026-05-13
+  (the OOMing morning baseline): predict 200 GiB total preallocated-temp →
+  ~3-10 GiB, FFT-box-class slot count 58 → ~1 (aliased by scan-internal
+  XLA allocator inside gflat_to_rchunk's shard_map). If this lands, the
+  zero-replicated-intermediates principle is satisfied for fit_one_rchunk.

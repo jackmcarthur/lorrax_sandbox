@@ -1,0 +1,48 @@
+run_id: mos2_3x3_sym_vs_nosym_pr3_2026-05-14
+system: MoS2
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: 03_mos2_3x3_soc_2026-05-14
+reuse_from_parent:
+  - WFN.h5 (run_sym ← 00_mos2_3x3_cohsex/qe/nscf, run_nosym ← 02_mos2_3x3_nosym/qe/nscf)
+  - vxc.dat / kih.dat (same)
+
+overrides:
+  x_only: true                # was false in 03 baseline
+  do_screened: false          # Σ_X only
+  bare_coulomb_cutoff: 30.0   # explicit
+
+purpose: |
+  Task #30 — load-bearing end-to-end gate for the PR3 ψ-side TRS-fix.
+  Two LORRAX cohsex runs on the SAME Phase-2 code (commit 8504994 +
+  dft_operators a45f039), using the SAME orbit-closed centroid file,
+  on two WFNs that describe the same physics but differ only in
+  whether symmetry was used to fold k-points:
+
+    run_sym/   ← WFN with ntran=2 (D3h spatial, no_t_rev), nk=9
+                 PR1+PR2+PR3 unfold paths fire on TRS k-points {1,3,4,5}.
+    run_nosym/ ← WFN with ntran=1 (identity only), nk=9
+                 No unfold; IBZ cascade short-circuits.
+
+  Pass gate: max |ΔΣ_X(k,n)| ≤ 1 meV across all 9 k-points × 56 bands.
+
+# Sym structure (sym WFN side):
+sym_structure:
+  ntran:         2          # E + σ_h
+  len_sym_mats_k: 4         # 2*ntran with TRS
+  n_trs_k:       4          # {1, 3, 4, 5}  (TRS-folded in unfold)
+  has_inversion: false
+
+steps:
+  run_sym/kmeans:   { state: complete, note: "13s, 399 orbit-closed centroids, 206 reps" }
+  run_sym/dipole:   { state: complete }
+  run_sym/kin_ion:  { state: complete }
+  run_sym/cohsex:   { state: complete, note: "12.4s wall, x_only=true" }
+  run_nosym/cohsex: { state: complete, note: "12.5s wall, reuses sym centroids" }
+  compare:          { state: complete, note: "PASS — max |ΔΣ_X| = 0.090 meV ≤ 1.0 meV gate" }
+
+# Source commit (lorrax_B agent/trs-aware-sym-fix):
+#   a45f039  dft_operators: fix generate_gvectors_k after P5 SymMaps API migration
+#   8504994  symmetry_maps: PR3 — unfold_psi free function + bispinor U_spinor TRS fix
+#   796c043  symmetry_maps + tests: fix PR2 mechanical migration gaps

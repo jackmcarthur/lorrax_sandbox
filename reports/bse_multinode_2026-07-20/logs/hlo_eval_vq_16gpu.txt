@@ -1,0 +1,1089 @@
+HloModule jit_eval_vq, is_scheduled=true, entry_computation_layout={(f64[3]{0}, c128[144,160,160]{2,1,0}, c128[7,144]{1,0}, c128[1,640]{1,0}, c128[1,640]{1,0}, /*index=5*/c128[6,640]{1,0}, c128[10,640]{1,0}, c128[6,640]{1,0}, c128[1,640]{1,0}, c128[1,640]{1,0})->c128[160,160]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,false,true,true,true,true,true,true,true,true}, num_partitions=16, frontend_attributes={fingerprint_before_lhs="f814e93f631702023da11be74db6a21b"}
+
+%fused_dynamic_slice (param_0.1: c128[160,337], param_1.12: s32[23], param_2.16: s32[]) -> c128[160,1] {
+  %param_0.1 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.1"}
+  %constant_326_1 = s32[] constant(0)
+  %param_1.12 = s32[23]{0} parameter(1), metadata={scheduling_name="param_1.12"}
+  %param_2.16 = s32[] parameter(2), metadata={scheduling_name="param_2.16"}
+  %dynamic-slice.184.3 = s32[1]{0} dynamic-slice(%param_1.12, %param_2.16), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.184.3"}
+  %bitcast.2039.1 = s32[] bitcast(%dynamic-slice.184.3), metadata={scheduling_name="bitcast.2039.1"}
+  ROOT %dynamic-slice.186.1 = c128[160,1]{1,0} dynamic-slice(%param_0.1, %constant_326_1, %bitcast.2039.1), dynamic_slice_sizes={160,1}, metadata={scheduling_name="dynamic-slice.186.1"}
+}
+
+%fused_dynamic_update_slice (param_0.2: c128[160,337], param_1.13: c128[160,1], param_2.17: c128[23,160], param_3.13: s32[], param_4.10: pred[], param_5.7: s32[23]) -> c128[160,337] {
+  %param_0.2 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.2"}
+  %param_4.10 = pred[] parameter(4), metadata={scheduling_name="param_4.10"}
+  %broadcast.382.1 = pred[160,1]{1,0} broadcast(%param_4.10), dimensions={}, metadata={scheduling_name="broadcast.382.1"}
+  %param_2.17 = c128[23,160]{1,0} parameter(2), metadata={scheduling_name="param_2.17"}
+  %param_3.13 = s32[] parameter(3), metadata={scheduling_name="param_3.13"}
+  %constant_326_3 = s32[] constant(0)
+  %dynamic-slice.185.1 = c128[1,160]{1,0} dynamic-slice(%param_2.17, %param_3.13, %constant_326_3), dynamic_slice_sizes={1,160}, metadata={scheduling_name="dynamic-slice.185.1"}
+  %bitcast.2030.3 = c128[160,1]{1,0} bitcast(%dynamic-slice.185.1), metadata={scheduling_name="bitcast.2030.3"}
+  %param_1.13 = c128[160,1]{1,0} parameter(1), metadata={scheduling_name="param_1.13"}
+  %select.65.3 = c128[160,1]{1,0} select(%broadcast.382.1, %bitcast.2030.3, %param_1.13), metadata={scheduling_name="select.65.3"}
+  %param_5.7 = s32[23]{0} parameter(5), metadata={scheduling_name="param_5.7"}
+  %dynamic-slice.184.1 = s32[1]{0} dynamic-slice(%param_5.7, %param_3.13), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.184.1"}
+  %bitcast.2039.2 = s32[] bitcast(%dynamic-slice.184.1), metadata={scheduling_name="bitcast.2039.2"}
+  ROOT %dynamic-update-slice.42.1 = c128[160,337]{1,0} dynamic-update-slice(%param_0.2, %select.65.3, %constant_326_3, %bitcast.2039.2), metadata={scheduling_name="dynamic-update-slice.42.1"}
+}
+
+%and.reduce_sub_computation (lhs: pred[], rhs: pred[]) -> pred[] {
+  %rhs = pred[] parameter(1), metadata={scheduling_name="rhs"}
+  %lhs = pred[] parameter(0), metadata={scheduling_name="lhs"}
+  ROOT %and.44 = pred[] and(%lhs, %rhs), metadata={scheduling_name="and.44"}
+}
+
+%fused_reduce (param_0.9: s32[23], param_1.15: s32[]) -> pred[] {
+  %constant_326_2 = s32[] constant(0)
+  %broadcast.380.1 = s32[2]{0} broadcast(%constant_326_2), dimensions={}, metadata={scheduling_name="broadcast.380.1"}
+  %constant_325_1 = s32[1]{0} constant({0})
+  %param_0.9 = s32[23]{0} parameter(0), metadata={scheduling_name="param_0.9"}
+  %param_1.15 = s32[] parameter(1), metadata={scheduling_name="param_1.15"}
+  %dynamic-slice.184.2 = s32[1]{0} dynamic-slice(%param_0.9, %param_1.15), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.184.2"}
+  %concatenate.44.1 = s32[2]{0} concatenate(%constant_325_1, %dynamic-slice.184.2), dimensions={0}, metadata={scheduling_name="concatenate.44.1"}
+  %compare.125.1 = pred[2]{0} compare(%broadcast.380.1, %concatenate.44.1), direction=LE, metadata={scheduling_name="compare.125.1"}
+  %iota.39.1 = s32[2]{0} iota(), iota_dimension=0, metadata={scheduling_name="iota.39.1"}
+  %constant_328_1 = s32[] constant(336)
+  %broadcast.381.1 = s32[2]{0} broadcast(%constant_328_1), dimensions={}, metadata={scheduling_name="broadcast.381.1"}
+  %multiply.266.1 = s32[2]{0} multiply(%iota.39.1, %broadcast.381.1), metadata={scheduling_name="multiply.266.1"}
+  %compare.126.1 = pred[2]{0} compare(%multiply.266.1, %concatenate.44.1), direction=GE, metadata={scheduling_name="compare.126.1"}
+  %and.45.1 = pred[2]{0} and(%compare.125.1, %compare.126.1), metadata={scheduling_name="and.45.1"}
+  %constant_327_1 = pred[] constant(true)
+  ROOT %reduce.24.1 = pred[] reduce(%and.45.1, %constant_327_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.24.1"}
+}
+
+%fused_add (param_0.7: s32[]) -> s32[] {
+  %param_0.7 = s32[] parameter(0), metadata={scheduling_name="param_0.7"}
+  %constant_324_1 = s32[] constant(1)
+  ROOT %add.55.1 = s32[] add(%param_0.7, %constant_324_1), metadata={scheduling_name="add.55.1"}
+}
+
+%while_body.sunk.clone (param.32.0: (s32[], c128[160,337], c128[23,160])) -> (s32[], c128[160,337], c128[23,160]) {
+  %constant_281__sunk_1_0 = s32[23]{0} constant({...})
+  %param.32.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.32.0"}
+  %get-tuple-element.182 = s32[] get-tuple-element(%param.32.0), index=0, metadata={scheduling_name="get-tuple-element.182"}
+  %input_reduce_fusion = pred[] fusion(%constant_281__sunk_1_0, %get-tuple-element.182), kind=kInput, calls=%fused_reduce, metadata={deduplicated_name="input_reduce_fusion" scheduling_name="input_reduce_fusion"}
+  %get-tuple-element.183 = c128[160,337]{1,0} get-tuple-element(%param.32.0), index=1, metadata={scheduling_name="get-tuple-element.183"}
+  %get-tuple-element.187 = c128[23,160]{1,0} get-tuple-element(%param.32.0), index=2, metadata={scheduling_name="get-tuple-element.187"}
+  %loop_dynamic_slice_fusion = c128[160,1]{1,0} fusion(%get-tuple-element.183, %constant_281__sunk_1_0, %get-tuple-element.182), kind=kLoop, calls=%fused_dynamic_slice, metadata={deduplicated_name="loop_dynamic_slice_fusion" scheduling_name="loop_dynamic_slice_fusion"}
+  %loop_dynamic_update_slice_fusion = c128[160,337]{1,0} fusion(%get-tuple-element.183, %loop_dynamic_slice_fusion, %get-tuple-element.187, %get-tuple-element.182, %input_reduce_fusion, /*index=5*/%constant_281__sunk_1_0), kind=kLoop, calls=%fused_dynamic_update_slice, control-predecessors={%loop_dynamic_slice_fusion}, metadata={deduplicated_name="loop_dynamic_update_slice_fusion" scheduling_name="loop_dynamic_update_slice_fusion"}
+  %loop_add_fusion = s32[] fusion(%get-tuple-element.182), kind=kLoop, calls=%fused_add, control-predecessors={%loop_dynamic_update_slice_fusion, %loop_dynamic_slice_fusion, %input_reduce_fusion}, metadata={deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion"}
+  ROOT %tuple.54 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%loop_add_fusion, %loop_dynamic_update_slice_fusion, %get-tuple-element.187), metadata={scheduling_name="tuple.54"}
+}
+
+%fused_compare (param_0: s32[]) -> pred[] {
+  %param_0 = s32[] parameter(0), metadata={scheduling_name="param_0"}
+  %constant_323_1 = s32[] constant(23)
+  ROOT %compare.124.1 = pred[] compare(%param_0, %constant_323_1), direction=LT, metadata={scheduling_name="compare.124.1"}
+}
+
+%while_cond.clone (param.31.0: (s32[], c128[160,337], c128[23,160])) -> pred[] {
+  %param.31.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.31.0"}
+  %get-tuple-element.87.0 = s32[] get-tuple-element(%param.31.0), index=0, metadata={scheduling_name="get-tuple-element.87.0"}
+  ROOT %loop_compare_fusion = pred[] fusion(%get-tuple-element.87.0), kind=kLoop, calls=%fused_compare, metadata={deduplicated_name="loop_compare_fusion" scheduling_name="loop_compare_fusion"}
+}
+
+%fused_dynamic_slice.1 (param_0.10: c128[160,337], param_1.27: s32[23], param_2.35: s32[]) -> c128[160,1] {
+  %param_0.10 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.10"}
+  %constant_332_1 = s32[] constant(0)
+  %param_1.27 = s32[23]{0} parameter(1), metadata={scheduling_name="param_1.27"}
+  %param_2.35 = s32[] parameter(2), metadata={scheduling_name="param_2.35"}
+  %dynamic-slice.187.3 = s32[1]{0} dynamic-slice(%param_1.27, %param_2.35), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.187.3"}
+  %bitcast.2086.1 = s32[] bitcast(%dynamic-slice.187.3), metadata={scheduling_name="bitcast.2086.1"}
+  ROOT %dynamic-slice.189.1 = c128[160,1]{1,0} dynamic-slice(%param_0.10, %constant_332_1, %bitcast.2086.1), dynamic_slice_sizes={160,1}, metadata={scheduling_name="dynamic-slice.189.1"}
+}
+
+%fused_dynamic_update_slice.1 (param_0.11: c128[160,337], param_1.28: c128[160,1], param_2.36: c128[23,160], param_3.27: s32[], param_4.21: pred[], param_5.15: s32[23]) -> c128[160,337] {
+  %param_0.11 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.11"}
+  %param_4.21 = pred[] parameter(4), metadata={scheduling_name="param_4.21"}
+  %broadcast.385.1 = pred[160,1]{1,0} broadcast(%param_4.21), dimensions={}, metadata={scheduling_name="broadcast.385.1"}
+  %param_2.36 = c128[23,160]{1,0} parameter(2), metadata={scheduling_name="param_2.36"}
+  %param_3.27 = s32[] parameter(3), metadata={scheduling_name="param_3.27"}
+  %constant_332_3 = s32[] constant(0)
+  %dynamic-slice.188.1 = c128[1,160]{1,0} dynamic-slice(%param_2.36, %param_3.27, %constant_332_3), dynamic_slice_sizes={1,160}, metadata={scheduling_name="dynamic-slice.188.1"}
+  %bitcast.2077.3 = c128[160,1]{1,0} bitcast(%dynamic-slice.188.1), metadata={scheduling_name="bitcast.2077.3"}
+  %param_1.28 = c128[160,1]{1,0} parameter(1), metadata={scheduling_name="param_1.28"}
+  %select.66.3 = c128[160,1]{1,0} select(%broadcast.385.1, %bitcast.2077.3, %param_1.28), metadata={scheduling_name="select.66.3"}
+  %param_5.15 = s32[23]{0} parameter(5), metadata={scheduling_name="param_5.15"}
+  %dynamic-slice.187.1 = s32[1]{0} dynamic-slice(%param_5.15, %param_3.27), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.187.1"}
+  %bitcast.2086.2 = s32[] bitcast(%dynamic-slice.187.1), metadata={scheduling_name="bitcast.2086.2"}
+  ROOT %dynamic-update-slice.43.1 = c128[160,337]{1,0} dynamic-update-slice(%param_0.11, %select.66.3, %constant_332_3, %bitcast.2086.2), metadata={scheduling_name="dynamic-update-slice.43.1"}
+}
+
+%fused_reduce.1 (param_0.18: s32[23], param_1.30: s32[]) -> pred[] {
+  %constant_332_2 = s32[] constant(0)
+  %broadcast.383.1 = s32[2]{0} broadcast(%constant_332_2), dimensions={}, metadata={scheduling_name="broadcast.383.1"}
+  %constant_331_1 = s32[1]{0} constant({0})
+  %param_0.18 = s32[23]{0} parameter(0), metadata={scheduling_name="param_0.18"}
+  %param_1.30 = s32[] parameter(1), metadata={scheduling_name="param_1.30"}
+  %dynamic-slice.187.2 = s32[1]{0} dynamic-slice(%param_0.18, %param_1.30), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.187.2"}
+  %concatenate.45.1 = s32[2]{0} concatenate(%constant_331_1, %dynamic-slice.187.2), dimensions={0}, metadata={scheduling_name="concatenate.45.1"}
+  %compare.127.1 = pred[2]{0} compare(%broadcast.383.1, %concatenate.45.1), direction=LE, metadata={scheduling_name="compare.127.1"}
+  %iota.40.1 = s32[2]{0} iota(), iota_dimension=0, metadata={scheduling_name="iota.40.1"}
+  %constant_334_1 = s32[] constant(336)
+  %broadcast.384.1 = s32[2]{0} broadcast(%constant_334_1), dimensions={}, metadata={scheduling_name="broadcast.384.1"}
+  %multiply.267.1 = s32[2]{0} multiply(%iota.40.1, %broadcast.384.1), metadata={scheduling_name="multiply.267.1"}
+  %compare.128.1 = pred[2]{0} compare(%multiply.267.1, %concatenate.45.1), direction=GE, metadata={scheduling_name="compare.128.1"}
+  %and.46.1 = pred[2]{0} and(%compare.127.1, %compare.128.1), metadata={scheduling_name="and.46.1"}
+  %constant_333_1 = pred[] constant(true)
+  ROOT %reduce.25.1 = pred[] reduce(%and.46.1, %constant_333_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.25.1"}
+}
+
+%fused_add.1 (param_0.16: s32[]) -> s32[] {
+  %param_0.16 = s32[] parameter(0), metadata={scheduling_name="param_0.16"}
+  %constant_330_1 = s32[] constant(1)
+  ROOT %add.56.1 = s32[] add(%param_0.16, %constant_330_1), metadata={scheduling_name="add.56.1"}
+}
+
+%while_body.1.sunk.clone (param.34.0: (s32[], c128[160,337], c128[23,160])) -> (s32[], c128[160,337], c128[23,160]) {
+  %constant_282__sunk_1_0 = s32[23]{0} constant({...})
+  %param.34.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.34.0"}
+  %get-tuple-element.191 = s32[] get-tuple-element(%param.34.0), index=0, metadata={scheduling_name="get-tuple-element.191"}
+  %input_reduce_fusion.1 = pred[] fusion(%constant_282__sunk_1_0, %get-tuple-element.191), kind=kInput, calls=%fused_reduce.1, metadata={deduplicated_name="input_reduce_fusion" scheduling_name="input_reduce_fusion.1"}
+  %get-tuple-element.192 = c128[160,337]{1,0} get-tuple-element(%param.34.0), index=1, metadata={scheduling_name="get-tuple-element.192"}
+  %get-tuple-element.196 = c128[23,160]{1,0} get-tuple-element(%param.34.0), index=2, metadata={scheduling_name="get-tuple-element.196"}
+  %loop_dynamic_slice_fusion.1 = c128[160,1]{1,0} fusion(%get-tuple-element.192, %constant_282__sunk_1_0, %get-tuple-element.191), kind=kLoop, calls=%fused_dynamic_slice.1, metadata={deduplicated_name="loop_dynamic_slice_fusion" scheduling_name="loop_dynamic_slice_fusion.1"}
+  %loop_dynamic_update_slice_fusion.1 = c128[160,337]{1,0} fusion(%get-tuple-element.192, %loop_dynamic_slice_fusion.1, %get-tuple-element.196, %get-tuple-element.191, %input_reduce_fusion.1, /*index=5*/%constant_282__sunk_1_0), kind=kLoop, calls=%fused_dynamic_update_slice.1, control-predecessors={%loop_dynamic_slice_fusion.1}, metadata={deduplicated_name="loop_dynamic_update_slice_fusion" scheduling_name="loop_dynamic_update_slice_fusion.1"}
+  %loop_add_fusion.1 = s32[] fusion(%get-tuple-element.191), kind=kLoop, calls=%fused_add.1, control-predecessors={%loop_dynamic_update_slice_fusion.1, %loop_dynamic_slice_fusion.1, %input_reduce_fusion.1}, metadata={deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.1"}
+  ROOT %tuple.57 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%loop_add_fusion.1, %loop_dynamic_update_slice_fusion.1, %get-tuple-element.196), metadata={scheduling_name="tuple.57"}
+}
+
+%fused_compare.1 (param_0.64: s32[]) -> pred[] {
+  %param_0.64 = s32[] parameter(0), metadata={scheduling_name="param_0.64"}
+  %constant_366_1 = s32[] constant(23)
+  ROOT %compare.139.1 = pred[] compare(%param_0.64, %constant_366_1), direction=LT, metadata={scheduling_name="compare.139.1"}
+}
+
+%while_cond.clone.clone (param.45.0: (s32[], c128[160,337], c128[23,160])) -> pred[] {
+  %param.45.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.45.0"}
+  %get-tuple-element.161.0 = s32[] get-tuple-element(%param.45.0), index=0, metadata={scheduling_name="get-tuple-element.161.0"}
+  ROOT %loop_compare_fusion.1 = pred[] fusion(%get-tuple-element.161.0), kind=kLoop, calls=%fused_compare.1, metadata={deduplicated_name="loop_compare_fusion" scheduling_name="loop_compare_fusion.1"}
+}
+
+%fused_dynamic_slice.2 (param_0.19: c128[160,337], param_1.42: s32[23], param_2.54: s32[]) -> c128[160,1] {
+  %param_0.19 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.19"}
+  %constant_338_1 = s32[] constant(0)
+  %param_1.42 = s32[23]{0} parameter(1), metadata={scheduling_name="param_1.42"}
+  %param_2.54 = s32[] parameter(2), metadata={scheduling_name="param_2.54"}
+  %dynamic-slice.190.3 = s32[1]{0} dynamic-slice(%param_1.42, %param_2.54), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.190.3"}
+  %bitcast.2133.1 = s32[] bitcast(%dynamic-slice.190.3), metadata={scheduling_name="bitcast.2133.1"}
+  ROOT %dynamic-slice.192.1 = c128[160,1]{1,0} dynamic-slice(%param_0.19, %constant_338_1, %bitcast.2133.1), dynamic_slice_sizes={160,1}, metadata={scheduling_name="dynamic-slice.192.1"}
+}
+
+%fused_dynamic_update_slice.2 (param_0.20: c128[160,337], param_1.43: c128[160,1], param_2.55: c128[23,160], param_3.41: s32[], param_4.32: pred[], param_5.23: s32[23]) -> c128[160,337] {
+  %param_0.20 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.20"}
+  %param_4.32 = pred[] parameter(4), metadata={scheduling_name="param_4.32"}
+  %broadcast.388.1 = pred[160,1]{1,0} broadcast(%param_4.32), dimensions={}, metadata={scheduling_name="broadcast.388.1"}
+  %param_2.55 = c128[23,160]{1,0} parameter(2), metadata={scheduling_name="param_2.55"}
+  %param_3.41 = s32[] parameter(3), metadata={scheduling_name="param_3.41"}
+  %constant_338_3 = s32[] constant(0)
+  %dynamic-slice.191.1 = c128[1,160]{1,0} dynamic-slice(%param_2.55, %param_3.41, %constant_338_3), dynamic_slice_sizes={1,160}, metadata={scheduling_name="dynamic-slice.191.1"}
+  %bitcast.2124.3 = c128[160,1]{1,0} bitcast(%dynamic-slice.191.1), metadata={scheduling_name="bitcast.2124.3"}
+  %param_1.43 = c128[160,1]{1,0} parameter(1), metadata={scheduling_name="param_1.43"}
+  %select.67.3 = c128[160,1]{1,0} select(%broadcast.388.1, %bitcast.2124.3, %param_1.43), metadata={scheduling_name="select.67.3"}
+  %param_5.23 = s32[23]{0} parameter(5), metadata={scheduling_name="param_5.23"}
+  %dynamic-slice.190.1 = s32[1]{0} dynamic-slice(%param_5.23, %param_3.41), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.190.1"}
+  %bitcast.2133.2 = s32[] bitcast(%dynamic-slice.190.1), metadata={scheduling_name="bitcast.2133.2"}
+  ROOT %dynamic-update-slice.44.1 = c128[160,337]{1,0} dynamic-update-slice(%param_0.20, %select.67.3, %constant_338_3, %bitcast.2133.2), metadata={scheduling_name="dynamic-update-slice.44.1"}
+}
+
+%fused_reduce.2 (param_0.27: s32[23], param_1.45: s32[]) -> pred[] {
+  %constant_338_2 = s32[] constant(0)
+  %broadcast.386.1 = s32[2]{0} broadcast(%constant_338_2), dimensions={}, metadata={scheduling_name="broadcast.386.1"}
+  %constant_337_1 = s32[1]{0} constant({0})
+  %param_0.27 = s32[23]{0} parameter(0), metadata={scheduling_name="param_0.27"}
+  %param_1.45 = s32[] parameter(1), metadata={scheduling_name="param_1.45"}
+  %dynamic-slice.190.2 = s32[1]{0} dynamic-slice(%param_0.27, %param_1.45), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.190.2"}
+  %concatenate.46.1 = s32[2]{0} concatenate(%constant_337_1, %dynamic-slice.190.2), dimensions={0}, metadata={scheduling_name="concatenate.46.1"}
+  %compare.129.1 = pred[2]{0} compare(%broadcast.386.1, %concatenate.46.1), direction=LE, metadata={scheduling_name="compare.129.1"}
+  %iota.41.1 = s32[2]{0} iota(), iota_dimension=0, metadata={scheduling_name="iota.41.1"}
+  %constant_340_1 = s32[] constant(336)
+  %broadcast.387.1 = s32[2]{0} broadcast(%constant_340_1), dimensions={}, metadata={scheduling_name="broadcast.387.1"}
+  %multiply.268.1 = s32[2]{0} multiply(%iota.41.1, %broadcast.387.1), metadata={scheduling_name="multiply.268.1"}
+  %compare.130.1 = pred[2]{0} compare(%multiply.268.1, %concatenate.46.1), direction=GE, metadata={scheduling_name="compare.130.1"}
+  %and.47.1 = pred[2]{0} and(%compare.129.1, %compare.130.1), metadata={scheduling_name="and.47.1"}
+  %constant_339_1 = pred[] constant(true)
+  ROOT %reduce.26.1 = pred[] reduce(%and.47.1, %constant_339_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.26.1"}
+}
+
+%fused_add.2 (param_0.25: s32[]) -> s32[] {
+  %param_0.25 = s32[] parameter(0), metadata={scheduling_name="param_0.25"}
+  %constant_336_1 = s32[] constant(1)
+  ROOT %add.57.1 = s32[] add(%param_0.25, %constant_336_1), metadata={scheduling_name="add.57.1"}
+}
+
+%while_body.2.sunk.clone (param.36.0: (s32[], c128[160,337], c128[23,160])) -> (s32[], c128[160,337], c128[23,160]) {
+  %constant_283__sunk_1_0 = s32[23]{0} constant({...})
+  %param.36.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.36.0"}
+  %get-tuple-element.200 = s32[] get-tuple-element(%param.36.0), index=0, metadata={scheduling_name="get-tuple-element.200"}
+  %input_reduce_fusion.2 = pred[] fusion(%constant_283__sunk_1_0, %get-tuple-element.200), kind=kInput, calls=%fused_reduce.2, metadata={deduplicated_name="input_reduce_fusion" scheduling_name="input_reduce_fusion.2"}
+  %get-tuple-element.201 = c128[160,337]{1,0} get-tuple-element(%param.36.0), index=1, metadata={scheduling_name="get-tuple-element.201"}
+  %get-tuple-element.205 = c128[23,160]{1,0} get-tuple-element(%param.36.0), index=2, metadata={scheduling_name="get-tuple-element.205"}
+  %loop_dynamic_slice_fusion.2 = c128[160,1]{1,0} fusion(%get-tuple-element.201, %constant_283__sunk_1_0, %get-tuple-element.200), kind=kLoop, calls=%fused_dynamic_slice.2, metadata={deduplicated_name="loop_dynamic_slice_fusion" scheduling_name="loop_dynamic_slice_fusion.2"}
+  %loop_dynamic_update_slice_fusion.2 = c128[160,337]{1,0} fusion(%get-tuple-element.201, %loop_dynamic_slice_fusion.2, %get-tuple-element.205, %get-tuple-element.200, %input_reduce_fusion.2, /*index=5*/%constant_283__sunk_1_0), kind=kLoop, calls=%fused_dynamic_update_slice.2, control-predecessors={%loop_dynamic_slice_fusion.2}, metadata={deduplicated_name="loop_dynamic_update_slice_fusion" scheduling_name="loop_dynamic_update_slice_fusion.2"}
+  %loop_add_fusion.2 = s32[] fusion(%get-tuple-element.200), kind=kLoop, calls=%fused_add.2, control-predecessors={%loop_dynamic_update_slice_fusion.2, %loop_dynamic_slice_fusion.2, %input_reduce_fusion.2}, metadata={deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.2"}
+  ROOT %tuple.60 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%loop_add_fusion.2, %loop_dynamic_update_slice_fusion.2, %get-tuple-element.205), metadata={scheduling_name="tuple.60"}
+}
+
+%fused_compare.2 (param_0.65: s32[]) -> pred[] {
+  %param_0.65 = s32[] parameter(0), metadata={scheduling_name="param_0.65"}
+  %constant_367_1 = s32[] constant(23)
+  ROOT %compare.140.1 = pred[] compare(%param_0.65, %constant_367_1), direction=LT, metadata={scheduling_name="compare.140.1"}
+}
+
+%while_cond.clone.clone.1 (param.46.0: (s32[], c128[160,337], c128[23,160])) -> pred[] {
+  %param.46.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.46.0"}
+  %get-tuple-element.162.0 = s32[] get-tuple-element(%param.46.0), index=0, metadata={scheduling_name="get-tuple-element.162.0"}
+  ROOT %loop_compare_fusion.2 = pred[] fusion(%get-tuple-element.162.0), kind=kLoop, calls=%fused_compare.2, metadata={deduplicated_name="loop_compare_fusion" scheduling_name="loop_compare_fusion.2"}
+}
+
+%fused_dynamic_slice.3 (param_0.28: c128[160,337], param_1.57: s32[23], param_2.73: s32[]) -> c128[160,1] {
+  %param_0.28 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.28"}
+  %constant_344_1 = s32[] constant(0)
+  %param_1.57 = s32[23]{0} parameter(1), metadata={scheduling_name="param_1.57"}
+  %param_2.73 = s32[] parameter(2), metadata={scheduling_name="param_2.73"}
+  %dynamic-slice.193.3 = s32[1]{0} dynamic-slice(%param_1.57, %param_2.73), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.193.3"}
+  %bitcast.2180.1 = s32[] bitcast(%dynamic-slice.193.3), metadata={scheduling_name="bitcast.2180.1"}
+  ROOT %dynamic-slice.195.1 = c128[160,1]{1,0} dynamic-slice(%param_0.28, %constant_344_1, %bitcast.2180.1), dynamic_slice_sizes={160,1}, metadata={scheduling_name="dynamic-slice.195.1"}
+}
+
+%fused_dynamic_update_slice.3 (param_0.29: c128[160,337], param_1.58: c128[160,1], param_2.74: c128[23,160], param_3.55: s32[], param_4.43: pred[], param_5.31: s32[23]) -> c128[160,337] {
+  %param_0.29 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.29"}
+  %param_4.43 = pred[] parameter(4), metadata={scheduling_name="param_4.43"}
+  %broadcast.391.1 = pred[160,1]{1,0} broadcast(%param_4.43), dimensions={}, metadata={scheduling_name="broadcast.391.1"}
+  %param_2.74 = c128[23,160]{1,0} parameter(2), metadata={scheduling_name="param_2.74"}
+  %param_3.55 = s32[] parameter(3), metadata={scheduling_name="param_3.55"}
+  %constant_344_3 = s32[] constant(0)
+  %dynamic-slice.194.1 = c128[1,160]{1,0} dynamic-slice(%param_2.74, %param_3.55, %constant_344_3), dynamic_slice_sizes={1,160}, metadata={scheduling_name="dynamic-slice.194.1"}
+  %bitcast.2171.3 = c128[160,1]{1,0} bitcast(%dynamic-slice.194.1), metadata={scheduling_name="bitcast.2171.3"}
+  %param_1.58 = c128[160,1]{1,0} parameter(1), metadata={scheduling_name="param_1.58"}
+  %select.68.3 = c128[160,1]{1,0} select(%broadcast.391.1, %bitcast.2171.3, %param_1.58), metadata={scheduling_name="select.68.3"}
+  %param_5.31 = s32[23]{0} parameter(5), metadata={scheduling_name="param_5.31"}
+  %dynamic-slice.193.1 = s32[1]{0} dynamic-slice(%param_5.31, %param_3.55), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.193.1"}
+  %bitcast.2180.2 = s32[] bitcast(%dynamic-slice.193.1), metadata={scheduling_name="bitcast.2180.2"}
+  ROOT %dynamic-update-slice.45.1 = c128[160,337]{1,0} dynamic-update-slice(%param_0.29, %select.68.3, %constant_344_3, %bitcast.2180.2), metadata={scheduling_name="dynamic-update-slice.45.1"}
+}
+
+%fused_reduce.3 (param_0.36: s32[23], param_1.60: s32[]) -> pred[] {
+  %constant_344_2 = s32[] constant(0)
+  %broadcast.389.1 = s32[2]{0} broadcast(%constant_344_2), dimensions={}, metadata={scheduling_name="broadcast.389.1"}
+  %constant_343_1 = s32[1]{0} constant({0})
+  %param_0.36 = s32[23]{0} parameter(0), metadata={scheduling_name="param_0.36"}
+  %param_1.60 = s32[] parameter(1), metadata={scheduling_name="param_1.60"}
+  %dynamic-slice.193.2 = s32[1]{0} dynamic-slice(%param_0.36, %param_1.60), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.193.2"}
+  %concatenate.47.1 = s32[2]{0} concatenate(%constant_343_1, %dynamic-slice.193.2), dimensions={0}, metadata={scheduling_name="concatenate.47.1"}
+  %compare.131.1 = pred[2]{0} compare(%broadcast.389.1, %concatenate.47.1), direction=LE, metadata={scheduling_name="compare.131.1"}
+  %iota.42.1 = s32[2]{0} iota(), iota_dimension=0, metadata={scheduling_name="iota.42.1"}
+  %constant_346_1 = s32[] constant(336)
+  %broadcast.390.1 = s32[2]{0} broadcast(%constant_346_1), dimensions={}, metadata={scheduling_name="broadcast.390.1"}
+  %multiply.270.1 = s32[2]{0} multiply(%iota.42.1, %broadcast.390.1), metadata={scheduling_name="multiply.270.1"}
+  %compare.132.1 = pred[2]{0} compare(%multiply.270.1, %concatenate.47.1), direction=GE, metadata={scheduling_name="compare.132.1"}
+  %and.48.1 = pred[2]{0} and(%compare.131.1, %compare.132.1), metadata={scheduling_name="and.48.1"}
+  %constant_345_1 = pred[] constant(true)
+  ROOT %reduce.27.1 = pred[] reduce(%and.48.1, %constant_345_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.27.1"}
+}
+
+%fused_add.3 (param_0.34: s32[]) -> s32[] {
+  %param_0.34 = s32[] parameter(0), metadata={scheduling_name="param_0.34"}
+  %constant_342_1 = s32[] constant(1)
+  ROOT %add.58.1 = s32[] add(%param_0.34, %constant_342_1), metadata={scheduling_name="add.58.1"}
+}
+
+%while_body.3.sunk.clone (param.38.0: (s32[], c128[160,337], c128[23,160])) -> (s32[], c128[160,337], c128[23,160]) {
+  %constant_284__sunk_1_0 = s32[23]{0} constant({...})
+  %param.38.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.38.0"}
+  %get-tuple-element.209 = s32[] get-tuple-element(%param.38.0), index=0, metadata={scheduling_name="get-tuple-element.209"}
+  %input_reduce_fusion.3 = pred[] fusion(%constant_284__sunk_1_0, %get-tuple-element.209), kind=kInput, calls=%fused_reduce.3, metadata={deduplicated_name="input_reduce_fusion" scheduling_name="input_reduce_fusion.3"}
+  %get-tuple-element.210 = c128[160,337]{1,0} get-tuple-element(%param.38.0), index=1, metadata={scheduling_name="get-tuple-element.210"}
+  %get-tuple-element.214 = c128[23,160]{1,0} get-tuple-element(%param.38.0), index=2, metadata={scheduling_name="get-tuple-element.214"}
+  %loop_dynamic_slice_fusion.3 = c128[160,1]{1,0} fusion(%get-tuple-element.210, %constant_284__sunk_1_0, %get-tuple-element.209), kind=kLoop, calls=%fused_dynamic_slice.3, metadata={deduplicated_name="loop_dynamic_slice_fusion" scheduling_name="loop_dynamic_slice_fusion.3"}
+  %loop_dynamic_update_slice_fusion.3 = c128[160,337]{1,0} fusion(%get-tuple-element.210, %loop_dynamic_slice_fusion.3, %get-tuple-element.214, %get-tuple-element.209, %input_reduce_fusion.3, /*index=5*/%constant_284__sunk_1_0), kind=kLoop, calls=%fused_dynamic_update_slice.3, control-predecessors={%loop_dynamic_slice_fusion.3}, metadata={deduplicated_name="loop_dynamic_update_slice_fusion" scheduling_name="loop_dynamic_update_slice_fusion.3"}
+  %loop_add_fusion.3 = s32[] fusion(%get-tuple-element.209), kind=kLoop, calls=%fused_add.3, control-predecessors={%loop_dynamic_update_slice_fusion.3, %loop_dynamic_slice_fusion.3, %input_reduce_fusion.3}, metadata={deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.3"}
+  ROOT %tuple.63 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%loop_add_fusion.3, %loop_dynamic_update_slice_fusion.3, %get-tuple-element.214), metadata={scheduling_name="tuple.63"}
+}
+
+%fused_compare.3 (param_0.66: s32[]) -> pred[] {
+  %param_0.66 = s32[] parameter(0), metadata={scheduling_name="param_0.66"}
+  %constant_368_1 = s32[] constant(23)
+  ROOT %compare.141.1 = pred[] compare(%param_0.66, %constant_368_1), direction=LT, metadata={scheduling_name="compare.141.1"}
+}
+
+%while_cond.clone.clone.2 (param.47.0: (s32[], c128[160,337], c128[23,160])) -> pred[] {
+  %param.47.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.47.0"}
+  %get-tuple-element.163.0 = s32[] get-tuple-element(%param.47.0), index=0, metadata={scheduling_name="get-tuple-element.163.0"}
+  ROOT %loop_compare_fusion.3 = pred[] fusion(%get-tuple-element.163.0), kind=kLoop, calls=%fused_compare.3, metadata={deduplicated_name="loop_compare_fusion" scheduling_name="loop_compare_fusion.3"}
+}
+
+%fused_dynamic_slice.4 (param_0.37: c128[160,337], param_1.72: s32[23], param_2.92: s32[]) -> c128[160,1] {
+  %param_0.37 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.37"}
+  %constant_350_1 = s32[] constant(0)
+  %param_1.72 = s32[23]{0} parameter(1), metadata={scheduling_name="param_1.72"}
+  %param_2.92 = s32[] parameter(2), metadata={scheduling_name="param_2.92"}
+  %dynamic-slice.196.3 = s32[1]{0} dynamic-slice(%param_1.72, %param_2.92), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.196.3"}
+  %bitcast.2227.1 = s32[] bitcast(%dynamic-slice.196.3), metadata={scheduling_name="bitcast.2227.1"}
+  ROOT %dynamic-slice.198.1 = c128[160,1]{1,0} dynamic-slice(%param_0.37, %constant_350_1, %bitcast.2227.1), dynamic_slice_sizes={160,1}, metadata={scheduling_name="dynamic-slice.198.1"}
+}
+
+%fused_dynamic_update_slice.4 (param_0.38: c128[160,337], param_1.73: c128[160,1], param_2.93: c128[23,160], param_3.69: s32[], param_4.54: pred[], param_5.39: s32[23]) -> c128[160,337] {
+  %param_0.38 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.38"}
+  %param_4.54 = pred[] parameter(4), metadata={scheduling_name="param_4.54"}
+  %broadcast.394.1 = pred[160,1]{1,0} broadcast(%param_4.54), dimensions={}, metadata={scheduling_name="broadcast.394.1"}
+  %param_2.93 = c128[23,160]{1,0} parameter(2), metadata={scheduling_name="param_2.93"}
+  %param_3.69 = s32[] parameter(3), metadata={scheduling_name="param_3.69"}
+  %constant_350_3 = s32[] constant(0)
+  %dynamic-slice.197.1 = c128[1,160]{1,0} dynamic-slice(%param_2.93, %param_3.69, %constant_350_3), dynamic_slice_sizes={1,160}, metadata={scheduling_name="dynamic-slice.197.1"}
+  %bitcast.2218.3 = c128[160,1]{1,0} bitcast(%dynamic-slice.197.1), metadata={scheduling_name="bitcast.2218.3"}
+  %param_1.73 = c128[160,1]{1,0} parameter(1), metadata={scheduling_name="param_1.73"}
+  %select.69.3 = c128[160,1]{1,0} select(%broadcast.394.1, %bitcast.2218.3, %param_1.73), metadata={scheduling_name="select.69.3"}
+  %param_5.39 = s32[23]{0} parameter(5), metadata={scheduling_name="param_5.39"}
+  %dynamic-slice.196.1 = s32[1]{0} dynamic-slice(%param_5.39, %param_3.69), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.196.1"}
+  %bitcast.2227.2 = s32[] bitcast(%dynamic-slice.196.1), metadata={scheduling_name="bitcast.2227.2"}
+  ROOT %dynamic-update-slice.46.1 = c128[160,337]{1,0} dynamic-update-slice(%param_0.38, %select.69.3, %constant_350_3, %bitcast.2227.2), metadata={scheduling_name="dynamic-update-slice.46.1"}
+}
+
+%fused_reduce.4 (param_0.45: s32[23], param_1.75: s32[]) -> pred[] {
+  %constant_350_2 = s32[] constant(0)
+  %broadcast.392.1 = s32[2]{0} broadcast(%constant_350_2), dimensions={}, metadata={scheduling_name="broadcast.392.1"}
+  %constant_349_1 = s32[1]{0} constant({0})
+  %param_0.45 = s32[23]{0} parameter(0), metadata={scheduling_name="param_0.45"}
+  %param_1.75 = s32[] parameter(1), metadata={scheduling_name="param_1.75"}
+  %dynamic-slice.196.2 = s32[1]{0} dynamic-slice(%param_0.45, %param_1.75), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.196.2"}
+  %concatenate.48.1 = s32[2]{0} concatenate(%constant_349_1, %dynamic-slice.196.2), dimensions={0}, metadata={scheduling_name="concatenate.48.1"}
+  %compare.133.1 = pred[2]{0} compare(%broadcast.392.1, %concatenate.48.1), direction=LE, metadata={scheduling_name="compare.133.1"}
+  %iota.43.1 = s32[2]{0} iota(), iota_dimension=0, metadata={scheduling_name="iota.43.1"}
+  %constant_352_1 = s32[] constant(336)
+  %broadcast.393.1 = s32[2]{0} broadcast(%constant_352_1), dimensions={}, metadata={scheduling_name="broadcast.393.1"}
+  %multiply.271.1 = s32[2]{0} multiply(%iota.43.1, %broadcast.393.1), metadata={scheduling_name="multiply.271.1"}
+  %compare.134.1 = pred[2]{0} compare(%multiply.271.1, %concatenate.48.1), direction=GE, metadata={scheduling_name="compare.134.1"}
+  %and.49.1 = pred[2]{0} and(%compare.133.1, %compare.134.1), metadata={scheduling_name="and.49.1"}
+  %constant_351_1 = pred[] constant(true)
+  ROOT %reduce.28.1 = pred[] reduce(%and.49.1, %constant_351_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.28.1"}
+}
+
+%fused_add.4 (param_0.43: s32[]) -> s32[] {
+  %param_0.43 = s32[] parameter(0), metadata={scheduling_name="param_0.43"}
+  %constant_348_1 = s32[] constant(1)
+  ROOT %add.59.1 = s32[] add(%param_0.43, %constant_348_1), metadata={scheduling_name="add.59.1"}
+}
+
+%while_body.4.sunk.clone (param.40.0: (s32[], c128[160,337], c128[23,160])) -> (s32[], c128[160,337], c128[23,160]) {
+  %constant_285__sunk_1_0 = s32[23]{0} constant({...})
+  %param.40.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.40.0"}
+  %get-tuple-element.218 = s32[] get-tuple-element(%param.40.0), index=0, metadata={scheduling_name="get-tuple-element.218"}
+  %input_reduce_fusion.4 = pred[] fusion(%constant_285__sunk_1_0, %get-tuple-element.218), kind=kInput, calls=%fused_reduce.4, metadata={deduplicated_name="input_reduce_fusion" scheduling_name="input_reduce_fusion.4"}
+  %get-tuple-element.219 = c128[160,337]{1,0} get-tuple-element(%param.40.0), index=1, metadata={scheduling_name="get-tuple-element.219"}
+  %get-tuple-element.223 = c128[23,160]{1,0} get-tuple-element(%param.40.0), index=2, metadata={scheduling_name="get-tuple-element.223"}
+  %loop_dynamic_slice_fusion.4 = c128[160,1]{1,0} fusion(%get-tuple-element.219, %constant_285__sunk_1_0, %get-tuple-element.218), kind=kLoop, calls=%fused_dynamic_slice.4, metadata={deduplicated_name="loop_dynamic_slice_fusion" scheduling_name="loop_dynamic_slice_fusion.4"}
+  %loop_dynamic_update_slice_fusion.4 = c128[160,337]{1,0} fusion(%get-tuple-element.219, %loop_dynamic_slice_fusion.4, %get-tuple-element.223, %get-tuple-element.218, %input_reduce_fusion.4, /*index=5*/%constant_285__sunk_1_0), kind=kLoop, calls=%fused_dynamic_update_slice.4, control-predecessors={%loop_dynamic_slice_fusion.4}, metadata={deduplicated_name="loop_dynamic_update_slice_fusion" scheduling_name="loop_dynamic_update_slice_fusion.4"}
+  %loop_add_fusion.4 = s32[] fusion(%get-tuple-element.218), kind=kLoop, calls=%fused_add.4, control-predecessors={%loop_dynamic_update_slice_fusion.4, %loop_dynamic_slice_fusion.4, %input_reduce_fusion.4}, metadata={deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.4"}
+  ROOT %tuple.66 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%loop_add_fusion.4, %loop_dynamic_update_slice_fusion.4, %get-tuple-element.223), metadata={scheduling_name="tuple.66"}
+}
+
+%fused_compare.4 (param_0.67: s32[]) -> pred[] {
+  %param_0.67 = s32[] parameter(0), metadata={scheduling_name="param_0.67"}
+  %constant_369_1 = s32[] constant(23)
+  ROOT %compare.142.1 = pred[] compare(%param_0.67, %constant_369_1), direction=LT, metadata={scheduling_name="compare.142.1"}
+}
+
+%while_cond.clone.clone.3 (param.48.0: (s32[], c128[160,337], c128[23,160])) -> pred[] {
+  %param.48.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.48.0"}
+  %get-tuple-element.164.0 = s32[] get-tuple-element(%param.48.0), index=0, metadata={scheduling_name="get-tuple-element.164.0"}
+  ROOT %loop_compare_fusion.4 = pred[] fusion(%get-tuple-element.164.0), kind=kLoop, calls=%fused_compare.4, metadata={deduplicated_name="loop_compare_fusion" scheduling_name="loop_compare_fusion.4"}
+}
+
+%fused_dynamic_slice.5 (param_0.46: c128[160,337], param_1.87: s32[23], param_2.111: s32[]) -> c128[160,1] {
+  %param_0.46 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.46"}
+  %constant_356_1 = s32[] constant(0)
+  %param_1.87 = s32[23]{0} parameter(1), metadata={scheduling_name="param_1.87"}
+  %param_2.111 = s32[] parameter(2), metadata={scheduling_name="param_2.111"}
+  %dynamic-slice.199.3 = s32[1]{0} dynamic-slice(%param_1.87, %param_2.111), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.199.3"}
+  %bitcast.2274.1 = s32[] bitcast(%dynamic-slice.199.3), metadata={scheduling_name="bitcast.2274.1"}
+  ROOT %dynamic-slice.201.1 = c128[160,1]{1,0} dynamic-slice(%param_0.46, %constant_356_1, %bitcast.2274.1), dynamic_slice_sizes={160,1}, metadata={scheduling_name="dynamic-slice.201.1"}
+}
+
+%fused_dynamic_update_slice.5 (param_0.47: c128[160,337], param_1.88: c128[160,1], param_2.112: c128[23,160], param_3.83: s32[], param_4.65: pred[], param_5.47: s32[23]) -> c128[160,337] {
+  %param_0.47 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.47"}
+  %param_4.65 = pred[] parameter(4), metadata={scheduling_name="param_4.65"}
+  %broadcast.397.1 = pred[160,1]{1,0} broadcast(%param_4.65), dimensions={}, metadata={scheduling_name="broadcast.397.1"}
+  %param_2.112 = c128[23,160]{1,0} parameter(2), metadata={scheduling_name="param_2.112"}
+  %param_3.83 = s32[] parameter(3), metadata={scheduling_name="param_3.83"}
+  %constant_356_3 = s32[] constant(0)
+  %dynamic-slice.200.1 = c128[1,160]{1,0} dynamic-slice(%param_2.112, %param_3.83, %constant_356_3), dynamic_slice_sizes={1,160}, metadata={scheduling_name="dynamic-slice.200.1"}
+  %bitcast.2265.3 = c128[160,1]{1,0} bitcast(%dynamic-slice.200.1), metadata={scheduling_name="bitcast.2265.3"}
+  %param_1.88 = c128[160,1]{1,0} parameter(1), metadata={scheduling_name="param_1.88"}
+  %select.70.3 = c128[160,1]{1,0} select(%broadcast.397.1, %bitcast.2265.3, %param_1.88), metadata={scheduling_name="select.70.3"}
+  %param_5.47 = s32[23]{0} parameter(5), metadata={scheduling_name="param_5.47"}
+  %dynamic-slice.199.1 = s32[1]{0} dynamic-slice(%param_5.47, %param_3.83), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.199.1"}
+  %bitcast.2274.2 = s32[] bitcast(%dynamic-slice.199.1), metadata={scheduling_name="bitcast.2274.2"}
+  ROOT %dynamic-update-slice.47.1 = c128[160,337]{1,0} dynamic-update-slice(%param_0.47, %select.70.3, %constant_356_3, %bitcast.2274.2), metadata={scheduling_name="dynamic-update-slice.47.1"}
+}
+
+%fused_reduce.5 (param_0.54: s32[23], param_1.90: s32[]) -> pred[] {
+  %constant_356_2 = s32[] constant(0)
+  %broadcast.395.1 = s32[2]{0} broadcast(%constant_356_2), dimensions={}, metadata={scheduling_name="broadcast.395.1"}
+  %constant_355_1 = s32[1]{0} constant({0})
+  %param_0.54 = s32[23]{0} parameter(0), metadata={scheduling_name="param_0.54"}
+  %param_1.90 = s32[] parameter(1), metadata={scheduling_name="param_1.90"}
+  %dynamic-slice.199.2 = s32[1]{0} dynamic-slice(%param_0.54, %param_1.90), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.199.2"}
+  %concatenate.49.1 = s32[2]{0} concatenate(%constant_355_1, %dynamic-slice.199.2), dimensions={0}, metadata={scheduling_name="concatenate.49.1"}
+  %compare.135.1 = pred[2]{0} compare(%broadcast.395.1, %concatenate.49.1), direction=LE, metadata={scheduling_name="compare.135.1"}
+  %iota.44.1 = s32[2]{0} iota(), iota_dimension=0, metadata={scheduling_name="iota.44.1"}
+  %constant_358_1 = s32[] constant(336)
+  %broadcast.396.1 = s32[2]{0} broadcast(%constant_358_1), dimensions={}, metadata={scheduling_name="broadcast.396.1"}
+  %multiply.272.1 = s32[2]{0} multiply(%iota.44.1, %broadcast.396.1), metadata={scheduling_name="multiply.272.1"}
+  %compare.136.1 = pred[2]{0} compare(%multiply.272.1, %concatenate.49.1), direction=GE, metadata={scheduling_name="compare.136.1"}
+  %and.50.1 = pred[2]{0} and(%compare.135.1, %compare.136.1), metadata={scheduling_name="and.50.1"}
+  %constant_357_1 = pred[] constant(true)
+  ROOT %reduce.29.1 = pred[] reduce(%and.50.1, %constant_357_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.29.1"}
+}
+
+%fused_add.5 (param_0.52: s32[]) -> s32[] {
+  %param_0.52 = s32[] parameter(0), metadata={scheduling_name="param_0.52"}
+  %constant_354_1 = s32[] constant(1)
+  ROOT %add.60.1 = s32[] add(%param_0.52, %constant_354_1), metadata={scheduling_name="add.60.1"}
+}
+
+%while_body.5.sunk.clone (param.42.0: (s32[], c128[160,337], c128[23,160])) -> (s32[], c128[160,337], c128[23,160]) {
+  %constant_286__sunk_1_0 = s32[23]{0} constant({...})
+  %param.42.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.42.0"}
+  %get-tuple-element.227 = s32[] get-tuple-element(%param.42.0), index=0, metadata={scheduling_name="get-tuple-element.227"}
+  %input_reduce_fusion.5 = pred[] fusion(%constant_286__sunk_1_0, %get-tuple-element.227), kind=kInput, calls=%fused_reduce.5, metadata={deduplicated_name="input_reduce_fusion" scheduling_name="input_reduce_fusion.5"}
+  %get-tuple-element.228 = c128[160,337]{1,0} get-tuple-element(%param.42.0), index=1, metadata={scheduling_name="get-tuple-element.228"}
+  %get-tuple-element.232 = c128[23,160]{1,0} get-tuple-element(%param.42.0), index=2, metadata={scheduling_name="get-tuple-element.232"}
+  %loop_dynamic_slice_fusion.5 = c128[160,1]{1,0} fusion(%get-tuple-element.228, %constant_286__sunk_1_0, %get-tuple-element.227), kind=kLoop, calls=%fused_dynamic_slice.5, metadata={deduplicated_name="loop_dynamic_slice_fusion" scheduling_name="loop_dynamic_slice_fusion.5"}
+  %loop_dynamic_update_slice_fusion.5 = c128[160,337]{1,0} fusion(%get-tuple-element.228, %loop_dynamic_slice_fusion.5, %get-tuple-element.232, %get-tuple-element.227, %input_reduce_fusion.5, /*index=5*/%constant_286__sunk_1_0), kind=kLoop, calls=%fused_dynamic_update_slice.5, control-predecessors={%loop_dynamic_slice_fusion.5}, metadata={deduplicated_name="loop_dynamic_update_slice_fusion" scheduling_name="loop_dynamic_update_slice_fusion.5"}
+  %loop_add_fusion.5 = s32[] fusion(%get-tuple-element.227), kind=kLoop, calls=%fused_add.5, control-predecessors={%loop_dynamic_update_slice_fusion.5, %loop_dynamic_slice_fusion.5, %input_reduce_fusion.5}, metadata={deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.5"}
+  ROOT %tuple.69 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%loop_add_fusion.5, %loop_dynamic_update_slice_fusion.5, %get-tuple-element.232), metadata={scheduling_name="tuple.69"}
+}
+
+%fused_compare.5 (param_0.68: s32[]) -> pred[] {
+  %param_0.68 = s32[] parameter(0), metadata={scheduling_name="param_0.68"}
+  %constant_370_1 = s32[] constant(23)
+  ROOT %compare.143.1 = pred[] compare(%param_0.68, %constant_370_1), direction=LT, metadata={scheduling_name="compare.143.1"}
+}
+
+%while_cond.clone.clone.4 (param.49.0: (s32[], c128[160,337], c128[23,160])) -> pred[] {
+  %param.49.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.49.0"}
+  %get-tuple-element.165.0 = s32[] get-tuple-element(%param.49.0), index=0, metadata={scheduling_name="get-tuple-element.165.0"}
+  ROOT %loop_compare_fusion.5 = pred[] fusion(%get-tuple-element.165.0), kind=kLoop, calls=%fused_compare.5, metadata={deduplicated_name="loop_compare_fusion" scheduling_name="loop_compare_fusion.5"}
+}
+
+%fused_dynamic_slice.6 (param_0.55: c128[160,337], param_1.102: s32[23], param_2.130: s32[]) -> c128[160,1] {
+  %param_0.55 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.55"}
+  %constant_362_1 = s32[] constant(0)
+  %param_1.102 = s32[23]{0} parameter(1), metadata={scheduling_name="param_1.102"}
+  %param_2.130 = s32[] parameter(2), metadata={scheduling_name="param_2.130"}
+  %dynamic-slice.202.3 = s32[1]{0} dynamic-slice(%param_1.102, %param_2.130), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.202.3"}
+  %bitcast.2321.1 = s32[] bitcast(%dynamic-slice.202.3), metadata={scheduling_name="bitcast.2321.1"}
+  ROOT %dynamic-slice.204.1 = c128[160,1]{1,0} dynamic-slice(%param_0.55, %constant_362_1, %bitcast.2321.1), dynamic_slice_sizes={160,1}, metadata={scheduling_name="dynamic-slice.204.1"}
+}
+
+%fused_dynamic_update_slice.6 (param_0.56: c128[160,337], param_1.103: c128[160,1], param_2.131: c128[23,160], param_3.97: s32[], param_4.76: pred[], param_5.55: s32[23]) -> c128[160,337] {
+  %param_0.56 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.56"}
+  %param_4.76 = pred[] parameter(4), metadata={scheduling_name="param_4.76"}
+  %broadcast.400.1 = pred[160,1]{1,0} broadcast(%param_4.76), dimensions={}, metadata={scheduling_name="broadcast.400.1"}
+  %param_2.131 = c128[23,160]{1,0} parameter(2), metadata={scheduling_name="param_2.131"}
+  %param_3.97 = s32[] parameter(3), metadata={scheduling_name="param_3.97"}
+  %constant_362_3 = s32[] constant(0)
+  %dynamic-slice.203.1 = c128[1,160]{1,0} dynamic-slice(%param_2.131, %param_3.97, %constant_362_3), dynamic_slice_sizes={1,160}, metadata={scheduling_name="dynamic-slice.203.1"}
+  %bitcast.2312.3 = c128[160,1]{1,0} bitcast(%dynamic-slice.203.1), metadata={scheduling_name="bitcast.2312.3"}
+  %param_1.103 = c128[160,1]{1,0} parameter(1), metadata={scheduling_name="param_1.103"}
+  %select.71.3 = c128[160,1]{1,0} select(%broadcast.400.1, %bitcast.2312.3, %param_1.103), metadata={scheduling_name="select.71.3"}
+  %param_5.55 = s32[23]{0} parameter(5), metadata={scheduling_name="param_5.55"}
+  %dynamic-slice.202.1 = s32[1]{0} dynamic-slice(%param_5.55, %param_3.97), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.202.1"}
+  %bitcast.2321.2 = s32[] bitcast(%dynamic-slice.202.1), metadata={scheduling_name="bitcast.2321.2"}
+  ROOT %dynamic-update-slice.48.1 = c128[160,337]{1,0} dynamic-update-slice(%param_0.56, %select.71.3, %constant_362_3, %bitcast.2321.2), metadata={scheduling_name="dynamic-update-slice.48.1"}
+}
+
+%fused_reduce.6 (param_0.63: s32[23], param_1.105: s32[]) -> pred[] {
+  %constant_362_2 = s32[] constant(0)
+  %broadcast.398.1 = s32[2]{0} broadcast(%constant_362_2), dimensions={}, metadata={scheduling_name="broadcast.398.1"}
+  %constant_361_1 = s32[1]{0} constant({0})
+  %param_0.63 = s32[23]{0} parameter(0), metadata={scheduling_name="param_0.63"}
+  %param_1.105 = s32[] parameter(1), metadata={scheduling_name="param_1.105"}
+  %dynamic-slice.202.2 = s32[1]{0} dynamic-slice(%param_0.63, %param_1.105), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.202.2"}
+  %concatenate.50.1 = s32[2]{0} concatenate(%constant_361_1, %dynamic-slice.202.2), dimensions={0}, metadata={scheduling_name="concatenate.50.1"}
+  %compare.137.1 = pred[2]{0} compare(%broadcast.398.1, %concatenate.50.1), direction=LE, metadata={scheduling_name="compare.137.1"}
+  %iota.45.1 = s32[2]{0} iota(), iota_dimension=0, metadata={scheduling_name="iota.45.1"}
+  %constant_364_1 = s32[] constant(336)
+  %broadcast.399.1 = s32[2]{0} broadcast(%constant_364_1), dimensions={}, metadata={scheduling_name="broadcast.399.1"}
+  %multiply.274.1 = s32[2]{0} multiply(%iota.45.1, %broadcast.399.1), metadata={scheduling_name="multiply.274.1"}
+  %compare.138.1 = pred[2]{0} compare(%multiply.274.1, %concatenate.50.1), direction=GE, metadata={scheduling_name="compare.138.1"}
+  %and.51.1 = pred[2]{0} and(%compare.137.1, %compare.138.1), metadata={scheduling_name="and.51.1"}
+  %constant_363_1 = pred[] constant(true)
+  ROOT %reduce.30.1 = pred[] reduce(%and.51.1, %constant_363_1), dimensions={0}, to_apply=%and.reduce_sub_computation, metadata={scheduling_name="reduce.30.1"}
+}
+
+%fused_add.6 (param_0.61: s32[]) -> s32[] {
+  %param_0.61 = s32[] parameter(0), metadata={scheduling_name="param_0.61"}
+  %constant_360_1 = s32[] constant(1)
+  ROOT %add.61.1 = s32[] add(%param_0.61, %constant_360_1), metadata={scheduling_name="add.61.1"}
+}
+
+%while_body.6.sunk.clone (param.44.0: (s32[], c128[160,337], c128[23,160])) -> (s32[], c128[160,337], c128[23,160]) {
+  %constant_287__sunk_1_0 = s32[23]{0} constant({...})
+  %param.44.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.44.0"}
+  %get-tuple-element.236 = s32[] get-tuple-element(%param.44.0), index=0, metadata={scheduling_name="get-tuple-element.236"}
+  %input_reduce_fusion.6 = pred[] fusion(%constant_287__sunk_1_0, %get-tuple-element.236), kind=kInput, calls=%fused_reduce.6, metadata={deduplicated_name="input_reduce_fusion" scheduling_name="input_reduce_fusion.6"}
+  %get-tuple-element.237 = c128[160,337]{1,0} get-tuple-element(%param.44.0), index=1, metadata={scheduling_name="get-tuple-element.237"}
+  %get-tuple-element.241 = c128[23,160]{1,0} get-tuple-element(%param.44.0), index=2, metadata={scheduling_name="get-tuple-element.241"}
+  %loop_dynamic_slice_fusion.6 = c128[160,1]{1,0} fusion(%get-tuple-element.237, %constant_287__sunk_1_0, %get-tuple-element.236), kind=kLoop, calls=%fused_dynamic_slice.6, metadata={deduplicated_name="loop_dynamic_slice_fusion" scheduling_name="loop_dynamic_slice_fusion.6"}
+  %loop_dynamic_update_slice_fusion.6 = c128[160,337]{1,0} fusion(%get-tuple-element.237, %loop_dynamic_slice_fusion.6, %get-tuple-element.241, %get-tuple-element.236, %input_reduce_fusion.6, /*index=5*/%constant_287__sunk_1_0), kind=kLoop, calls=%fused_dynamic_update_slice.6, control-predecessors={%loop_dynamic_slice_fusion.6}, metadata={deduplicated_name="loop_dynamic_update_slice_fusion" scheduling_name="loop_dynamic_update_slice_fusion.6"}
+  %loop_add_fusion.6 = s32[] fusion(%get-tuple-element.236), kind=kLoop, calls=%fused_add.6, control-predecessors={%loop_dynamic_update_slice_fusion.6, %loop_dynamic_slice_fusion.6, %input_reduce_fusion.6}, metadata={deduplicated_name="loop_add_fusion" scheduling_name="loop_add_fusion.6"}
+  ROOT %tuple.72 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%loop_add_fusion.6, %loop_dynamic_update_slice_fusion.6, %get-tuple-element.241), metadata={scheduling_name="tuple.72"}
+}
+
+%fused_compare.6 (param_0.69: s32[]) -> pred[] {
+  %param_0.69 = s32[] parameter(0), metadata={scheduling_name="param_0.69"}
+  %constant_371_1 = s32[] constant(23)
+  ROOT %compare.144.1 = pred[] compare(%param_0.69, %constant_371_1), direction=LT, metadata={scheduling_name="compare.144.1"}
+}
+
+%while_cond.clone.clone.5 (param.50.0: (s32[], c128[160,337], c128[23,160])) -> pred[] {
+  %param.50.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) parameter(0), metadata={scheduling_name="param.50.0"}
+  %get-tuple-element.166.0 = s32[] get-tuple-element(%param.50.0), index=0, metadata={scheduling_name="get-tuple-element.166.0"}
+  ROOT %loop_compare_fusion.6 = pred[] fusion(%get-tuple-element.166.0), kind=kLoop, calls=%fused_compare.6, metadata={deduplicated_name="loop_compare_fusion" scheduling_name="loop_compare_fusion.6"}
+}
+
+%fused_broadcast (param_0.184: c128[1,640], param_1.396: u32[16], param_2.350: u32[]) -> c128[23,160] {
+  %param_0.184 = c128[1,640]{1,0} parameter(0), metadata={scheduling_name="param_0.184"}
+  %constant_75_8 = s32[] constant(0)
+  %constant_279_5 = u32[1]{0} constant({0})
+  %param_1.396 = u32[16]{0} parameter(1), metadata={scheduling_name="param_1.396"}
+  %param_2.350 = u32[] parameter(2), metadata={scheduling_name="param_2.350"}
+  %dynamic-slice.205.5 = u32[1]{0} dynamic-slice(%param_1.396, %param_2.350), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.205.5"}
+  %constant_280_5 = u32[1]{0} constant({3})
+  %clamp.4.4 = u32[1]{0} clamp(%constant_279_5, %dynamic-slice.205.5, %constant_280_5), metadata={scheduling_name="clamp.4.4"}
+  %convert.27.3 = s32[1]{0} convert(%clamp.4.4), metadata={scheduling_name="convert.27.3"}
+  %constant_365_3 = s32[1]{0} constant({160})
+  %multiply.275.2 = s32[1]{0} multiply(%convert.27.3, %constant_365_3), metadata={scheduling_name="multiply.275.2"}
+  %bitcast.2663.16 = s32[] bitcast(%multiply.275.2), metadata={scheduling_name="bitcast.2663.16"}
+  %dynamic-slice.213.3 = c128[1,160]{1,0} dynamic-slice(%param_0.184, %constant_75_8, %bitcast.2663.16), dynamic_slice_sizes={1,160}, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="dynamic-slice.213.3"}
+  %bitcast.2665.1 = c128[160]{0} bitcast(%dynamic-slice.213.3), metadata={scheduling_name="bitcast.2665.1"}
+  ROOT %broadcast.421.1 = c128[23,160]{1,0} broadcast(%bitcast.2665.1), dimensions={1}, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="broadcast.421.1"}
+}
+
+%fused_multiply (param_0.119: c128[144,160,160], param_1.142: c128[144]) -> c128[144,160,160] {
+  %param_1.142 = c128[144]{0} parameter(1), metadata={scheduling_name="param_1.142"}
+  %broadcast.441.1 = c128[144,160,160]{2,1,0} broadcast(%param_1.142), dimensions={0}, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=876 scheduling_name="broadcast.441.1"}
+  %param_0.119 = c128[144,160,160]{2,1,0} parameter(0), metadata={scheduling_name="param_0.119"}
+  ROOT %multiply.333.1 = c128[144,160,160]{2,1,0} multiply(%broadcast.441.1, %param_0.119), metadata={scheduling_name="multiply.333.1"}
+}
+
+%fused_multiply.1 (param_0.122: c128[337], param_1.148: c128[160,337], param_2.317: f64[160,337]) -> c128[160,337] {
+  %param_2.317 = f64[160,337]{1,0} parameter(2), metadata={scheduling_name="param_2.317"}
+  %convert.28.7 = c128[160,337]{1,0} convert(%param_2.317), metadata={op_name="jit(eval_vq)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="convert.28.7"}
+  %constant_66_2 = c128[] constant((0, -6.2831853071795862))
+  %broadcast.402.7 = c128[160,337]{1,0} broadcast(%constant_66_2), dimensions={}, metadata={scheduling_name="broadcast.402.7"}
+  %multiply.276.7 = c128[160,337]{1,0} multiply(%convert.28.7, %broadcast.402.7), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="multiply.276.7"}
+  %real.9.3 = f64[160,337]{1,0} real(%multiply.276.7), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="real.9.3"}
+  %exponential.19.1 = f64[160,337]{1,0} exponential(%real.9.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="exponential.19.1"}
+  %constant_67_2 = f64[] constant(inf)
+  %broadcast.403.1 = f64[160,337]{1,0} broadcast(%constant_67_2), dimensions={}, metadata={scheduling_name="broadcast.403.1"}
+  %compare.145.1 = pred[160,337]{1,0} compare(%exponential.19.1, %broadcast.403.1), direction=EQ, metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="compare.145.1"}
+  %constant_68_2 = f64[] constant(0.5)
+  %broadcast.404.5 = f64[160,337]{1,0} broadcast(%constant_68_2), dimensions={}, metadata={scheduling_name="broadcast.404.5"}
+  %multiply.280.5 = f64[160,337]{1,0} multiply(%real.9.3, %broadcast.404.5), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="multiply.280.5"}
+  %exponential.20.3 = f64[160,337]{1,0} exponential(%multiply.280.5), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="exponential.20.3"}
+  %imag.9.5 = f64[160,337]{1,0} imag(%multiply.276.7), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="imag.9.5"}
+  %cosine.10.1 = f64[160,337]{1,0} cosine(%imag.9.5), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="cosine.10.1"}
+  %multiply.281.5 = f64[160,337]{1,0} multiply(%exponential.20.3, %cosine.10.1), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="multiply.281.5"}
+  %multiply.282.5 = f64[160,337]{1,0} multiply(%multiply.281.5, %exponential.20.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="multiply.282.5"}
+  %multiply.286.3 = f64[160,337]{1,0} multiply(%exponential.19.1, %cosine.10.1), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="multiply.286.3"}
+  %select.72.3 = f64[160,337]{1,0} select(%compare.145.1, %multiply.282.5, %multiply.286.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="select.72.3"}
+  %constant_65_2 = f64[] constant(0)
+  %broadcast.405.6 = f64[160,337]{1,0} broadcast(%constant_65_2), dimensions={}, metadata={scheduling_name="broadcast.405.6"}
+  %compare.146.3 = pred[160,337]{1,0} compare(%imag.9.5, %broadcast.405.6), direction=EQ, metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="compare.146.3"}
+  %sine.6.3 = f64[160,337]{1,0} sine(%imag.9.5), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="sine.6.3"}
+  %multiply.287.5 = f64[160,337]{1,0} multiply(%exponential.20.3, %sine.6.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="multiply.287.5"}
+  %multiply.288.5 = f64[160,337]{1,0} multiply(%multiply.287.5, %exponential.20.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="multiply.288.5"}
+  %multiply.290.3 = f64[160,337]{1,0} multiply(%exponential.19.1, %sine.6.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="multiply.290.3"}
+  %select.73.3 = f64[160,337]{1,0} select(%compare.145.1, %multiply.288.5, %multiply.290.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="select.73.3"}
+  %select.74.3 = f64[160,337]{1,0} select(%compare.146.3, %broadcast.405.6, %select.73.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="select.74.3"}
+  %complex.9.1 = c128[160,337]{1,0} complex(%select.72.3, %select.74.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="complex.9.1"}
+  %param_1.148 = c128[160,337]{1,0} parameter(1), metadata={scheduling_name="param_1.148"}
+  %multiply.311.1 = c128[160,337]{1,0} multiply(%complex.9.1, %param_1.148), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="multiply.311.1"}
+  %param_0.122 = c128[337]{0} parameter(0), metadata={scheduling_name="param_0.122"}
+  %broadcast.433.1 = c128[160,337]{1,0} broadcast(%param_0.122), dimensions={1}, metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=898 scheduling_name="broadcast.433.1"}
+  ROOT %multiply.322.1 = c128[160,337]{1,0} multiply(%multiply.311.1, %broadcast.433.1), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=898 scheduling_name="multiply.322.1"}
+}
+
+%fused_complex (param_0.152: c128[160,337]) -> c128[160,337] {
+  %param_0.152 = c128[160,337]{1,0} parameter(0), metadata={scheduling_name="param_0.152"}
+  %real.10.1 = f64[160,337]{1,0} real(%param_0.152), metadata={op_name="jit(eval_vq)/jit(main)/real" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=901 scheduling_name="real.10.1"}
+  %imag.10.1 = f64[160,337]{1,0} imag(%param_0.152), metadata={op_name="jit(eval_vq)/jit(main)/imag" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=901 scheduling_name="imag.10.1"}
+  %negate.7.1 = f64[160,337]{1,0} negate(%imag.10.1), metadata={op_name="jit(eval_vq)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=901 scheduling_name="negate.7.1"}
+  ROOT %complex.10.1 = c128[160,337]{1,0} complex(%real.10.1, %negate.7.1), metadata={op_name="jit(eval_vq)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=901 scheduling_name="complex.10.1"}
+}
+
+%region_7.208 (Arg_0.209: f64[], Arg_1.210: f64[]) -> f64[] {
+  %Arg_1.210 = f64[] parameter(1), metadata={op_name="jit(eval_vq)/jit(main)/reduce_sum" scheduling_name="Arg_1.210"}
+  %Arg_0.209 = f64[] parameter(0), metadata={op_name="jit(eval_vq)/jit(main)/reduce_sum" scheduling_name="Arg_0.209"}
+  ROOT %add.53 = f64[] add(%Arg_0.209, %Arg_1.210), metadata={op_name="jit(eval_vq)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=884 scheduling_name="add.53"}
+}
+
+%fused_convert (param_0.315: f64[3,337]) -> c128[337] {
+  %iota.46.1 = s64[337]{0} iota(), iota_dimension=0, metadata={op_name="jit(eval_vq)/jit(main)/iota" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=895 scheduling_name="iota.46.1"}
+  %constant_144_1 = s64[] constant(-1)
+  %broadcast.422.3 = s64[337]{0} broadcast(%constant_144_1), dimensions={}, metadata={scheduling_name="broadcast.422.3"}
+  %compare.147.3 = pred[337]{0} compare(%iota.46.1, %broadcast.422.3), direction=EQ, metadata={op_name="jit(eval_vq)/jit(main)/eq" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=895 scheduling_name="compare.147.3"}
+  %constant_65_3 = f64[] constant(0)
+  %broadcast.423.3 = f64[337]{0} broadcast(%constant_65_3), dimensions={}, metadata={op_name="jit(eval_vq)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=895 scheduling_name="broadcast.423.3"}
+  %param_0.315 = f64[3,337]{1,0} parameter(0), metadata={scheduling_name="param_0.315"}
+  %multiply.312.3 = f64[3,337]{1,0} multiply(%param_0.315, %param_0.315), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=884 scheduling_name="multiply.312.3"}
+  %reduce.9.3 = f64[337]{0} reduce(%multiply.312.3, %constant_65_3), dimensions={0}, to_apply=%region_7.208, metadata={op_name="jit(eval_vq)/jit(main)/reduce_sum" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=884 scheduling_name="reduce.9.3"}
+  %constant_147_1 = f64[] constant(1e-12)
+  %broadcast.424.4 = f64[337]{0} broadcast(%constant_147_1), dimensions={}, metadata={scheduling_name="broadcast.424.4"}
+  %compare.148.4 = pred[337]{0} compare(%reduce.9.3, %broadcast.424.4), direction=LT, metadata={op_name="jit(eval_vq)/jit(main)/lt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=885 scheduling_name="compare.148.4"}
+  %constant_149_1 = f64[] constant(25.132741228718345)
+  %broadcast.426.3 = f64[337]{0} broadcast(%constant_149_1), dimensions={}, metadata={scheduling_name="broadcast.426.3"}
+  %constant_98_1 = f64[] constant(1)
+  %broadcast.427.3 = f64[337]{0} broadcast(%constant_98_1), dimensions={}, metadata={op_name="jit(eval_vq)/jit(main)/jit(_where)/broadcast_in_dim" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=886 scheduling_name="broadcast.427.3"}
+  %select.75.7 = f64[337]{0} select(%compare.148.4, %broadcast.427.3, %reduce.9.3), metadata={op_name="jit(eval_vq)/jit(main)/jit(_where)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=886 scheduling_name="select.75.7"}
+  %divide.3.7 = f64[337]{0} divide(%broadcast.426.3, %select.75.7), metadata={op_name="jit(eval_vq)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=889 scheduling_name="divide.3.7"}
+  %broadcast.428.3 = f64[1,337]{1,0} broadcast(%constant_98_1), dimensions={}, metadata={scheduling_name="broadcast.428.3"}
+  %slice.95.7 = f64[1,337]{1,0} slice(%param_0.315), slice={[0:1], [0:337]}, metadata={op_name="jit(eval_vq)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=887 scheduling_name="slice.95.7"}
+  %multiply.313.9 = f64[1,337]{1,0} multiply(%slice.95.7, %slice.95.7), metadata={op_name="jit(eval_vq)/jit(main)/integer_pow" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=887 scheduling_name="multiply.313.9"}
+  %slice.96.7 = f64[1,337]{1,0} slice(%param_0.315), slice={[1:2], [0:337]}, metadata={op_name="jit(eval_vq)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=887 scheduling_name="slice.96.7"}
+  %multiply.314.9 = f64[1,337]{1,0} multiply(%slice.96.7, %slice.96.7), metadata={op_name="jit(eval_vq)/jit(main)/integer_pow" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=887 scheduling_name="multiply.314.9"}
+  %add.64.9 = f64[1,337]{1,0} add(%multiply.313.9, %multiply.314.9), metadata={op_name="jit(eval_vq)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=887 scheduling_name="add.64.9"}
+  %sqrt.7.7 = f64[1,337]{1,0} sqrt(%add.64.9), metadata={op_name="jit(eval_vq)/jit(main)/sqrt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=887 scheduling_name="sqrt.7.7"}
+  %constant_152_1 = f64[] constant(-11.33835674775462)
+  %broadcast.429.7 = f64[1,337]{1,0} broadcast(%constant_152_1), dimensions={}, metadata={scheduling_name="broadcast.429.7"}
+  %multiply.315.7 = f64[1,337]{1,0} multiply(%sqrt.7.7, %broadcast.429.7), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=887 scheduling_name="multiply.315.7"}
+  %exponential.21.5 = f64[1,337]{1,0} exponential(%multiply.315.7), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=887 scheduling_name="exponential.21.5"}
+  %slice.97.3 = f64[1,337]{1,0} slice(%param_0.315), slice={[2:3], [0:337]}, metadata={op_name="jit(eval_vq)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=888 scheduling_name="slice.97.3"}
+  %constant_153_1 = f64[] constant(11.33835674775462)
+  %broadcast.430.3 = f64[1,337]{1,0} broadcast(%constant_153_1), dimensions={}, metadata={scheduling_name="broadcast.430.3"}
+  %multiply.316.5 = f64[1,337]{1,0} multiply(%slice.97.3, %broadcast.430.3), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=888 scheduling_name="multiply.316.5"}
+  %cosine.11.5 = f64[1,337]{1,0} cosine(%multiply.316.5), metadata={op_name="jit(eval_vq)/jit(main)/cos" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=888 scheduling_name="cosine.11.5"}
+  %multiply.317.3 = f64[1,337]{1,0} multiply(%exponential.21.5, %cosine.11.5), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=887 scheduling_name="multiply.317.3"}
+  %subtract.4.3 = f64[1,337]{1,0} subtract(%broadcast.428.3, %multiply.317.3), metadata={op_name="jit(eval_vq)/jit(main)/sub" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=887 scheduling_name="subtract.4.3"}
+  %bitcast.2728.5 = f64[337]{0} bitcast(%subtract.4.3), metadata={scheduling_name="bitcast.2728.5"}
+  %multiply.318.5 = f64[337]{0} multiply(%divide.3.7, %bitcast.2728.5), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=889 scheduling_name="multiply.318.5"}
+  %constant_154_1 = f64[] constant(0.0014240933398978817)
+  %broadcast.431.3 = f64[337]{0} broadcast(%constant_154_1), dimensions={}, metadata={scheduling_name="broadcast.431.3"}
+  %multiply.319.3 = f64[337]{0} multiply(%multiply.318.5, %broadcast.431.3), metadata={op_name="jit(eval_vq)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=889 scheduling_name="multiply.319.3"}
+  %negate.6.1 = f64[337]{0} negate(%reduce.9.3), metadata={op_name="jit(eval_vq)/jit(main)/neg" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=890 scheduling_name="negate.6.1"}
+  %constant_155_1 = f64[] constant(2.7777777777777777)
+  %broadcast.432.3 = f64[337]{0} broadcast(%constant_155_1), dimensions={}, metadata={scheduling_name="broadcast.432.3"}
+  %multiply.320.5 = f64[337]{0} multiply(%negate.6.1, %broadcast.432.3), metadata={op_name="jit(eval_vq)/jit(main)/div" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=890 scheduling_name="multiply.320.5"}
+  %exponential.22.5 = f64[337]{0} exponential(%multiply.320.5), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=890 scheduling_name="exponential.22.5"}
+  %multiply.321.3 = f64[337]{0} multiply(%multiply.319.3, %exponential.22.5), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=889 scheduling_name="multiply.321.3"}
+  %select.77.5 = f64[337]{0} select(%compare.148.4, %broadcast.423.3, %multiply.321.3), metadata={op_name="jit(eval_vq)/jit(main)/jit(_where)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=886 scheduling_name="select.77.5"}
+  %select.78.5 = f64[337]{0} select(%compare.147.3, %broadcast.423.3, %select.77.5), metadata={op_name="jit(eval_vq)/jit(main)/jit(_where)/select_n" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=895 scheduling_name="select.78.5"}
+  %sqrt.8.3 = f64[337]{0} sqrt(%select.78.5), metadata={op_name="jit(eval_vq)/jit(main)/sqrt" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=898 scheduling_name="sqrt.8.3"}
+  ROOT %convert.32.1 = c128[337]{0} convert(%sqrt.8.3), metadata={op_name="jit(eval_vq)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=898 scheduling_name="convert.32.1"}
+}
+
+%fused_select (param_0.309: f64[3,7], param_1.380: f64[3]) -> f64[7] {
+  %param_1.380 = f64[3]{0} parameter(1), metadata={scheduling_name="param_1.380"}
+  %broadcast.434.7 = f64[3,7]{1,0} broadcast(%param_1.380), dimensions={0}, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="broadcast.434.7"}
+  %param_0.309 = f64[3,7]{1,0} parameter(0), metadata={scheduling_name="param_0.309"}
+  %multiply.323.7 = f64[3,7]{1,0} multiply(%broadcast.434.7, %param_0.309), metadata={scheduling_name="multiply.323.7"}
+  %constant_65_1 = f64[] constant(0)
+  %reduce.6.7 = f64[7]{0} reduce(%multiply.323.7, %constant_65_1), dimensions={0}, to_apply=%region_7.208, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="reduce.6.7"}
+  %convert.33.5 = c128[7]{0} convert(%reduce.6.7), metadata={op_name="jit(eval_vq)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="convert.33.5"}
+  %constant_66_1 = c128[] constant((0, -6.2831853071795862))
+  %broadcast.435.5 = c128[7]{0} broadcast(%constant_66_1), dimensions={}, metadata={scheduling_name="broadcast.435.5"}
+  %multiply.324.5 = c128[7]{0} multiply(%convert.33.5, %broadcast.435.5), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="multiply.324.5"}
+  %imag.11.1 = f64[7]{0} imag(%multiply.324.5), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="imag.11.1"}
+  %broadcast.438.1 = f64[7]{0} broadcast(%constant_65_1), dimensions={}, metadata={scheduling_name="broadcast.438.1"}
+  %compare.150.1 = pred[7]{0} compare(%imag.11.1, %broadcast.438.1), direction=EQ, metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="compare.150.1"}
+  %real.11.6 = f64[7]{0} real(%multiply.324.5), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="real.11.6"}
+  %exponential.23.5 = f64[7]{0} exponential(%real.11.6), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="exponential.23.5"}
+  %constant_67_3 = f64[] constant(inf)
+  %broadcast.436.3 = f64[7]{0} broadcast(%constant_67_3), dimensions={}, metadata={scheduling_name="broadcast.436.3"}
+  %compare.149.3 = pred[7]{0} compare(%exponential.23.5, %broadcast.436.3), direction=EQ, metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="compare.149.3"}
+  %constant_68_3 = f64[] constant(0.5)
+  %broadcast.437.5 = f64[7]{0} broadcast(%constant_68_3), dimensions={}, metadata={scheduling_name="broadcast.437.5"}
+  %multiply.325.5 = f64[7]{0} multiply(%real.11.6, %broadcast.437.5), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="multiply.325.5"}
+  %exponential.24.3 = f64[7]{0} exponential(%multiply.325.5), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="exponential.24.3"}
+  %sine.7.1 = f64[7]{0} sine(%imag.11.1), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="sine.7.1"}
+  %multiply.329.3 = f64[7]{0} multiply(%exponential.24.3, %sine.7.1), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="multiply.329.3"}
+  %multiply.330.3 = f64[7]{0} multiply(%multiply.329.3, %exponential.24.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="multiply.330.3"}
+  %multiply.331.1 = f64[7]{0} multiply(%exponential.23.5, %sine.7.1), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="multiply.331.1"}
+  %select.80.1 = f64[7]{0} select(%compare.149.3, %multiply.330.3, %multiply.331.1), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="select.80.1"}
+  ROOT %select.81.1 = f64[7]{0} select(%compare.150.1, %broadcast.438.1, %select.80.1), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="select.81.1"}
+}
+
+%scalar_add_computation.1 (scalar_lhs.1: c128[], scalar_rhs.1: c128[]) -> c128[] {
+  %scalar_rhs.1 = c128[] parameter(1), metadata={scheduling_name="scalar_rhs.1"}
+  %scalar_lhs.1 = c128[] parameter(0), metadata={scheduling_name="scalar_lhs.1"}
+  ROOT %add.54 = c128[] add(%scalar_lhs.1, %scalar_rhs.1), metadata={scheduling_name="add.54"}
+}
+
+%fused_reduce.7 (param_0.310: c128[7,144], param_1.381: f64[7], param_2.318: f64[3,7], param_3.246: f64[3]) -> c128[144] {
+  %param_3.246 = f64[3]{0} parameter(3), metadata={scheduling_name="param_3.246"}
+  %broadcast.434.9 = f64[3,7]{1,0} broadcast(%param_3.246), dimensions={0}, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="broadcast.434.9"}
+  %param_2.318 = f64[3,7]{1,0} parameter(2), metadata={scheduling_name="param_2.318"}
+  %multiply.323.9 = f64[3,7]{1,0} multiply(%broadcast.434.9, %param_2.318), metadata={scheduling_name="multiply.323.9"}
+  %constant_65_4 = f64[] constant(0)
+  %reduce.6.9 = f64[7]{0} reduce(%multiply.323.9, %constant_65_4), dimensions={0}, to_apply=%region_7.208, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="reduce.6.9"}
+  %convert.33.7 = c128[7]{0} convert(%reduce.6.9), metadata={op_name="jit(eval_vq)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="convert.33.7"}
+  %constant_66_3 = c128[] constant((0, -6.2831853071795862))
+  %broadcast.435.7 = c128[7]{0} broadcast(%constant_66_3), dimensions={}, metadata={scheduling_name="broadcast.435.7"}
+  %multiply.324.7 = c128[7]{0} multiply(%convert.33.7, %broadcast.435.7), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="multiply.324.7"}
+  %real.11.14 = f64[7]{0} real(%multiply.324.7), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="real.11.14"}
+  %exponential.23.7 = f64[7]{0} exponential(%real.11.14), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="exponential.23.7"}
+  %constant_67_1 = f64[] constant(inf)
+  %broadcast.436.7 = f64[7]{0} broadcast(%constant_67_1), dimensions={}, metadata={scheduling_name="broadcast.436.7"}
+  %compare.149.7 = pred[7]{0} compare(%exponential.23.7, %broadcast.436.7), direction=EQ, metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="compare.149.7"}
+  %constant_68_1 = f64[] constant(0.5)
+  %broadcast.437.9 = f64[7]{0} broadcast(%constant_68_1), dimensions={}, metadata={scheduling_name="broadcast.437.9"}
+  %multiply.325.9 = f64[7]{0} multiply(%real.11.14, %broadcast.437.9), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="multiply.325.9"}
+  %exponential.24.7 = f64[7]{0} exponential(%multiply.325.9), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="exponential.24.7"}
+  %imag.11.4 = f64[7]{0} imag(%multiply.324.7), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="imag.11.4"}
+  %cosine.12.3 = f64[7]{0} cosine(%imag.11.4), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="cosine.12.3"}
+  %multiply.326.5 = f64[7]{0} multiply(%exponential.24.7, %cosine.12.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="multiply.326.5"}
+  %multiply.327.5 = f64[7]{0} multiply(%multiply.326.5, %exponential.24.7), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="multiply.327.5"}
+  %multiply.328.3 = f64[7]{0} multiply(%exponential.23.7, %cosine.12.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="multiply.328.3"}
+  %select.79.3 = f64[7]{0} select(%compare.149.7, %multiply.327.5, %multiply.328.3), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="select.79.3"}
+  %param_1.381 = f64[7]{0} parameter(1), metadata={scheduling_name="param_1.381"}
+  %complex.11.3 = c128[7]{0} complex(%select.79.3, %param_1.381), metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="complex.11.3"}
+  %broadcast.440.3 = c128[7,144]{1,0} broadcast(%complex.11.3), dimensions={0}, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=875 scheduling_name="broadcast.440.3"}
+  %param_0.310 = c128[7,144]{1,0} parameter(0), metadata={scheduling_name="param_0.310"}
+  %multiply.332.3 = c128[7,144]{1,0} multiply(%broadcast.440.3, %param_0.310), metadata={scheduling_name="multiply.332.3"}
+  %constant_70_1 = c128[] constant((0, 0))
+  ROOT %reduce.7.1 = c128[144]{0} reduce(%multiply.332.3, %constant_70_1), dimensions={0}, to_apply=%scalar_add_computation.1, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=875 scheduling_name="reduce.7.1"}
+}
+
+%fused_reduce.8 (param_0.312: c128[144,160,160]) -> c128[160,160] {
+  %param_0.312 = c128[144,160,160]{2,1,0} parameter(0), metadata={scheduling_name="param_0.312"}
+  %constant_70_3 = c128[] constant((0, 0))
+  ROOT %reduce.8.1 = c128[160,160]{1,0} reduce(%param_0.312, %constant_70_3), dimensions={0}, to_apply=%scalar_add_computation.1, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=876 scheduling_name="reduce.8.1"}
+}
+
+%fused_dynamic_slice.7 (param_0.105: f64[640,3], param_1.397: u32[16], param_2.351: u32[]) -> f64[160,3] {
+  %param_0.105 = f64[640,3]{1,0} parameter(0), metadata={scheduling_name="param_0.105"}
+  %constant_279_6 = u32[1]{0} constant({0})
+  %param_1.397 = u32[16]{0} parameter(1), metadata={scheduling_name="param_1.397"}
+  %param_2.351 = u32[] parameter(2), metadata={scheduling_name="param_2.351"}
+  %dynamic-slice.205.6 = u32[1]{0} dynamic-slice(%param_1.397, %param_2.351), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.205.6"}
+  %constant_280_6 = u32[1]{0} constant({3})
+  %clamp.4.5 = u32[1]{0} clamp(%constant_279_6, %dynamic-slice.205.6, %constant_280_6), metadata={scheduling_name="clamp.4.5"}
+  %convert.27.4 = s32[1]{0} convert(%clamp.4.5), metadata={scheduling_name="convert.27.4"}
+  %constant_365_4 = s32[1]{0} constant({160})
+  %multiply.275.3 = s32[1]{0} multiply(%convert.27.4, %constant_365_4), metadata={scheduling_name="multiply.275.3"}
+  %bitcast.2663.2 = s32[] bitcast(%multiply.275.3), metadata={scheduling_name="bitcast.2663.2"}
+  %constant_75_1 = s32[] constant(0)
+  ROOT %dynamic-slice.206.1 = f64[160,3]{1,0} dynamic-slice(%param_0.105, %bitcast.2663.2, %constant_75_1), dynamic_slice_sizes={160,3}, metadata={scheduling_name="dynamic-slice.206.1"}
+}
+
+%fused_dynamic_slice.8 (param_0.108: c128[6,640], param_1.400: u32[16], param_2.354: u32[]) -> c128[6,160] {
+  %param_0.108 = c128[6,640]{1,0} parameter(0), metadata={scheduling_name="param_0.108"}
+  %constant_75_4 = s32[] constant(0)
+  %constant_279_1 = u32[1]{0} constant({0})
+  %param_1.400 = u32[16]{0} parameter(1), metadata={scheduling_name="param_1.400"}
+  %param_2.354 = u32[] parameter(2), metadata={scheduling_name="param_2.354"}
+  %dynamic-slice.205.1 = u32[1]{0} dynamic-slice(%param_1.400, %param_2.354), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.205.1"}
+  %constant_280_1 = u32[1]{0} constant({3})
+  %clamp.4.8 = u32[1]{0} clamp(%constant_279_1, %dynamic-slice.205.1, %constant_280_1), metadata={scheduling_name="clamp.4.8"}
+  %convert.27.7 = s32[1]{0} convert(%clamp.4.8), metadata={scheduling_name="convert.27.7"}
+  %constant_365_7 = s32[1]{0} constant({160})
+  %multiply.275.6 = s32[1]{0} multiply(%convert.27.7, %constant_365_7), metadata={scheduling_name="multiply.275.6"}
+  %bitcast.2663.5 = s32[] bitcast(%multiply.275.6), metadata={scheduling_name="bitcast.2663.5"}
+  ROOT %dynamic-slice.209.1 = c128[6,160]{1,0} dynamic-slice(%param_0.108, %constant_75_4, %bitcast.2663.5), dynamic_slice_sizes={6,160}, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="dynamic-slice.209.1"}
+}
+
+%fused_dynamic_slice.10 (param_0.110: c128[6,640], param_1.394: u32[16], param_2.348: u32[]) -> c128[6,160] {
+  %param_0.110 = c128[6,640]{1,0} parameter(0), metadata={scheduling_name="param_0.110"}
+  %constant_75_6 = s32[] constant(0)
+  %constant_279_3 = u32[1]{0} constant({0})
+  %param_1.394 = u32[16]{0} parameter(1), metadata={scheduling_name="param_1.394"}
+  %param_2.348 = u32[] parameter(2), metadata={scheduling_name="param_2.348"}
+  %dynamic-slice.205.3 = u32[1]{0} dynamic-slice(%param_1.394, %param_2.348), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.205.3"}
+  %constant_280_3 = u32[1]{0} constant({3})
+  %clamp.4.2 = u32[1]{0} clamp(%constant_279_3, %dynamic-slice.205.3, %constant_280_3), metadata={scheduling_name="clamp.4.2"}
+  %convert.27.1 = s32[1]{0} convert(%clamp.4.2), metadata={scheduling_name="convert.27.1"}
+  %constant_365_1 = s32[1]{0} constant({160})
+  %multiply.275.8 = s32[1]{0} multiply(%convert.27.1, %constant_365_1), metadata={scheduling_name="multiply.275.8"}
+  %bitcast.2663.7 = s32[] bitcast(%multiply.275.8), metadata={scheduling_name="bitcast.2663.7"}
+  ROOT %dynamic-slice.211.1 = c128[6,160]{1,0} dynamic-slice(%param_0.110, %constant_75_6, %bitcast.2663.7), dynamic_slice_sizes={6,160}, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="dynamic-slice.211.1"}
+}
+
+%fused_dynamic_slice.9 (param_0.109: c128[10,640], param_1.401: u32[16], param_2.355: u32[]) -> c128[10,160] {
+  %param_0.109 = c128[10,640]{1,0} parameter(0), metadata={scheduling_name="param_0.109"}
+  %constant_75_5 = s32[] constant(0)
+  %constant_279_2 = u32[1]{0} constant({0})
+  %param_1.401 = u32[16]{0} parameter(1), metadata={scheduling_name="param_1.401"}
+  %param_2.355 = u32[] parameter(2), metadata={scheduling_name="param_2.355"}
+  %dynamic-slice.205.2 = u32[1]{0} dynamic-slice(%param_1.401, %param_2.355), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.205.2"}
+  %constant_280_2 = u32[1]{0} constant({3})
+  %clamp.4.1 = u32[1]{0} clamp(%constant_279_2, %dynamic-slice.205.2, %constant_280_2), metadata={scheduling_name="clamp.4.1"}
+  %convert.27.8 = s32[1]{0} convert(%clamp.4.1), metadata={scheduling_name="convert.27.8"}
+  %constant_365_8 = s32[1]{0} constant({160})
+  %multiply.275.7 = s32[1]{0} multiply(%convert.27.8, %constant_365_8), metadata={scheduling_name="multiply.275.7"}
+  %bitcast.2663.6 = s32[] bitcast(%multiply.275.7), metadata={scheduling_name="bitcast.2663.6"}
+  ROOT %dynamic-slice.210.1 = c128[10,160]{1,0} dynamic-slice(%param_0.109, %constant_75_5, %bitcast.2663.6), dynamic_slice_sizes={10,160}, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="dynamic-slice.210.1"}
+}
+
+%fused_broadcast.2 (param_0.180: c128[1,640], param_1.399: u32[16], param_2.353: u32[]) -> c128[23,160] {
+  %param_0.180 = c128[1,640]{1,0} parameter(0), metadata={scheduling_name="param_0.180"}
+  %constant_75_3 = s32[] constant(0)
+  %constant_279_8 = u32[1]{0} constant({0})
+  %param_1.399 = u32[16]{0} parameter(1), metadata={scheduling_name="param_1.399"}
+  %param_2.353 = u32[] parameter(2), metadata={scheduling_name="param_2.353"}
+  %dynamic-slice.205.8 = u32[1]{0} dynamic-slice(%param_1.399, %param_2.353), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.205.8"}
+  %constant_280_8 = u32[1]{0} constant({3})
+  %clamp.4.7 = u32[1]{0} clamp(%constant_279_8, %dynamic-slice.205.8, %constant_280_8), metadata={scheduling_name="clamp.4.7"}
+  %convert.27.6 = s32[1]{0} convert(%clamp.4.7), metadata={scheduling_name="convert.27.6"}
+  %constant_365_6 = s32[1]{0} constant({160})
+  %multiply.275.5 = s32[1]{0} multiply(%convert.27.6, %constant_365_6), metadata={scheduling_name="multiply.275.5"}
+  %bitcast.2663.12 = s32[] bitcast(%multiply.275.5), metadata={scheduling_name="bitcast.2663.12"}
+  %dynamic-slice.208.3 = c128[1,160]{1,0} dynamic-slice(%param_0.180, %constant_75_3, %bitcast.2663.12), dynamic_slice_sizes={1,160}, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="dynamic-slice.208.3"}
+  %bitcast.2458.1 = c128[160]{0} bitcast(%dynamic-slice.208.3), metadata={scheduling_name="bitcast.2458.1"}
+  ROOT %broadcast.409.1 = c128[23,160]{1,0} broadcast(%bitcast.2458.1), dimensions={1}, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="broadcast.409.1"}
+}
+
+%fused_add.7 (param_0.188: f64[337,3], param_1.230: f64[3], param_2.360: f64[3,337]) -> (f64[337,3], f64[3,337]) {
+  %param_1.230 = f64[3]{0} parameter(1), metadata={scheduling_name="param_1.230"}
+  %broadcast.401.1 = f64[337,3]{1,0} broadcast(%param_1.230), dimensions={1}, metadata={op_name="jit(eval_vq)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=896 scheduling_name="broadcast.401.1"}
+  %param_0.188 = f64[337,3]{1,0} parameter(0), metadata={scheduling_name="param_0.188"}
+  %add.62.1 = f64[337,3]{1,0} add(%broadcast.401.1, %param_0.188), metadata={op_name="jit(eval_vq)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=896 scheduling_name="add.62.1"}
+  %broadcast.411.1.clone.1 = f64[3,337]{1,0} broadcast(%param_1.230), dimensions={0}, metadata={op_name="jit(eval_vq)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=879 scheduling_name="broadcast.411.1.clone.1"}
+  %param_2.360 = f64[3,337]{1,0} parameter(2), metadata={scheduling_name="param_2.360"}
+  %add.63.1.clone.1 = f64[3,337]{1,0} add(%broadcast.411.1.clone.1, %param_2.360), metadata={op_name="jit(eval_vq)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=879 scheduling_name="add.63.1.clone.1"}
+  ROOT %tuple.50 = (f64[337,3]{1,0}, f64[3,337]{1,0}) tuple(%add.62.1, %add.63.1.clone.1), metadata={scheduling_name="tuple.50"}
+}
+
+%fused_broadcast.1 (param_0.178: c128[1,640], param_1.395: u32[16], param_2.349: u32[]) -> c128[23,160] {
+  %param_0.178 = c128[1,640]{1,0} parameter(0), metadata={scheduling_name="param_0.178"}
+  %constant_75_7 = s32[] constant(0)
+  %constant_279_4 = u32[1]{0} constant({0})
+  %param_1.395 = u32[16]{0} parameter(1), metadata={scheduling_name="param_1.395"}
+  %param_2.349 = u32[] parameter(2), metadata={scheduling_name="param_2.349"}
+  %dynamic-slice.205.4 = u32[1]{0} dynamic-slice(%param_1.395, %param_2.349), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.205.4"}
+  %constant_280_4 = u32[1]{0} constant({3})
+  %clamp.4.3 = u32[1]{0} clamp(%constant_279_4, %dynamic-slice.205.4, %constant_280_4), metadata={scheduling_name="clamp.4.3"}
+  %convert.27.2 = s32[1]{0} convert(%clamp.4.3), metadata={scheduling_name="convert.27.2"}
+  %constant_365_2 = s32[1]{0} constant({160})
+  %multiply.275.1 = s32[1]{0} multiply(%convert.27.2, %constant_365_2), metadata={scheduling_name="multiply.275.1"}
+  %bitcast.2663.10 = s32[] bitcast(%multiply.275.1), metadata={scheduling_name="bitcast.2663.10"}
+  %dynamic-slice.212.3 = c128[1,160]{1,0} dynamic-slice(%param_0.178, %constant_75_7, %bitcast.2663.10), dynamic_slice_sizes={1,160}, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="dynamic-slice.212.3"}
+  %bitcast.2653.1 = c128[160]{0} bitcast(%dynamic-slice.212.3), metadata={scheduling_name="bitcast.2653.1"}
+  ROOT %broadcast.420.1 = c128[23,160]{1,0} broadcast(%bitcast.2653.1), dimensions={1}, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="broadcast.420.1"}
+}
+
+%fused_concatenate (param_0.314: s32[23,1], param_1.392: f64[3,337]) -> c128[23,10] {
+  %constant_98_4 = f64[] constant(1)
+  %broadcast.410.2 = f64[23,1]{1,0} broadcast(%constant_98_4), dimensions={}, metadata={scheduling_name="broadcast.410.2"}
+  %param_1.392 = f64[3,337]{1,0} parameter(1), metadata={scheduling_name="param_1.392"}
+  %slice.88.29 = f64[2,337]{1,0} slice(%param_1.392), slice={[0:2], [0:337]}, metadata={op_name="jit(eval_vq)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=882 scheduling_name="slice.88.29"}
+  %bitcast.2604.29 = f64[337,2]{0,1} bitcast(%slice.88.29), metadata={scheduling_name="bitcast.2604.29"}
+  %param_0.314 = s32[23,1]{1,0} parameter(0), metadata={scheduling_name="param_0.314"}
+  %gather.4.11 = f64[23,1,2]{2,0,1} gather(%bitcast.2604.29, %param_0.314), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,2}, metadata={op_name="jit(eval_vq)/jit(main)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=882 scheduling_name="gather.4.11"}
+  %bitcast.2524.8 = f64[23,2]{1,0} bitcast(%gather.4.11), metadata={scheduling_name="bitcast.2524.8"}
+  %slice.91.5 = f64[23,1]{1,0} slice(%bitcast.2524.8), slice={[0:23], [1:2]}, metadata={op_name="jit(eval_vq)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=868 scheduling_name="slice.91.5"}
+  %constant_102_1 = f64[] constant(1.6666666666666667)
+  %broadcast.412.6 = f64[23,1]{1,0} broadcast(%constant_102_1), dimensions={}, metadata={scheduling_name="broadcast.412.6"}
+  %multiply.297.3 = f64[23,1]{1,0} multiply(%slice.91.5, %broadcast.412.6), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=868 scheduling_name="multiply.297.3"}
+  %slice.92.5 = f64[23,1]{1,0} slice(%bitcast.2524.8), slice={[0:23], [0:1]}, metadata={op_name="jit(eval_vq)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=868 scheduling_name="slice.92.5"}
+  %multiply.298.3 = f64[23,1]{1,0} multiply(%slice.92.5, %broadcast.412.6), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=868 scheduling_name="multiply.298.3"}
+  %bitcast.2540.12 = f64[23]{0} bitcast(%multiply.297.3), metadata={scheduling_name="bitcast.2540.12"}
+  %multiply.299.3 = f64[23]{0} multiply(%bitcast.2540.12, %bitcast.2540.12), metadata={op_name="jit(eval_vq)/jit(main)/integer_pow" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.299.3"}
+  %bitcast.2543.3 = f64[23,1]{1,0} bitcast(%multiply.299.3), metadata={scheduling_name="bitcast.2543.3"}
+  %bitcast.2547.10 = f64[23]{0} bitcast(%multiply.298.3), metadata={scheduling_name="bitcast.2547.10"}
+  %multiply.300.3 = f64[23]{0} multiply(%bitcast.2547.10, %bitcast.2540.12), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.300.3"}
+  %bitcast.2552.3 = f64[23,1]{1,0} bitcast(%multiply.300.3), metadata={scheduling_name="bitcast.2552.3"}
+  %multiply.301.3 = f64[23]{0} multiply(%bitcast.2547.10, %bitcast.2547.10), metadata={op_name="jit(eval_vq)/jit(main)/integer_pow" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.301.3"}
+  %bitcast.2557.3 = f64[23,1]{1,0} bitcast(%multiply.301.3), metadata={scheduling_name="bitcast.2557.3"}
+  %multiply.302.3 = f64[23]{0} multiply(%multiply.299.3, %bitcast.2540.12), metadata={op_name="jit(eval_vq)/jit(main)/integer_pow" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.302.3"}
+  %bitcast.2564.3 = f64[23,1]{1,0} bitcast(%multiply.302.3), metadata={scheduling_name="bitcast.2564.3"}
+  %multiply.303.3 = f64[23]{0} multiply(%bitcast.2547.10, %multiply.299.3), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.303.3"}
+  %bitcast.2571.3 = f64[23,1]{1,0} bitcast(%multiply.303.3), metadata={scheduling_name="bitcast.2571.3"}
+  %multiply.304.3 = f64[23]{0} multiply(%multiply.301.3, %bitcast.2540.12), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.304.3"}
+  %bitcast.2578.3 = f64[23,1]{1,0} bitcast(%multiply.304.3), metadata={scheduling_name="bitcast.2578.3"}
+  %multiply.305.3 = f64[23]{0} multiply(%multiply.301.3, %bitcast.2547.10), metadata={op_name="jit(eval_vq)/jit(main)/integer_pow" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.305.3"}
+  %bitcast.2585.3 = f64[23,1]{1,0} bitcast(%multiply.305.3), metadata={scheduling_name="bitcast.2585.3"}
+  %concatenate.52.3 = f64[23,10]{1,0} concatenate(%broadcast.410.2, %multiply.297.3, %multiply.298.3, %bitcast.2543.3, %bitcast.2552.3, /*index=5*/%bitcast.2557.3, %bitcast.2564.3, %bitcast.2571.3, %bitcast.2578.3, %bitcast.2585.3), dimensions={1}, metadata={op_name="jit(eval_vq)/jit(main)/concatenate" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="concatenate.52.3"}
+  ROOT %convert.30.1 = c128[23,10]{1,0} convert(%concatenate.52.3), metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="convert.30.1"}
+}
+
+%fused_concatenate.1 (param_0.257: s32[23,1], param_1.319: f64[3,337], param_2.358: s32[23,1]) -> (c128[23,6], c128[23,6]) {
+  %constant_98_3 = f64[] constant(1)
+  %broadcast.410.1 = f64[23,1]{1,0} broadcast(%constant_98_3), dimensions={}, metadata={scheduling_name="broadcast.410.1"}
+  %param_1.319 = f64[3,337]{1,0} parameter(1), metadata={scheduling_name="param_1.319"}
+  %slice.88.21 = f64[2,337]{1,0} slice(%param_1.319), slice={[0:2], [0:337]}, metadata={op_name="jit(eval_vq)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=882 scheduling_name="slice.88.21"}
+  %bitcast.2604.21 = f64[337,2]{0,1} bitcast(%slice.88.21), metadata={scheduling_name="bitcast.2604.21"}
+  %param_0.257 = s32[23,1]{1,0} parameter(0), metadata={scheduling_name="param_0.257"}
+  %gather.3.9 = f64[23,1,2]{2,1,0} gather(%bitcast.2604.21, %param_0.257), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,2}, metadata={op_name="jit(eval_vq)/jit(main)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=882 scheduling_name="gather.3.9"}
+  %bitcast.2479.6 = f64[23,2]{1,0} bitcast(%gather.3.9), metadata={scheduling_name="bitcast.2479.6"}
+  %slice.89.3 = f64[23,1]{1,0} slice(%bitcast.2479.6), slice={[0:23], [1:2]}, metadata={op_name="jit(eval_vq)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=868 scheduling_name="slice.89.3"}
+  %constant_102_3 = f64[] constant(1.6666666666666667)
+  %broadcast.412.2 = f64[23,1]{1,0} broadcast(%constant_102_3), dimensions={}, metadata={scheduling_name="broadcast.412.2"}
+  %multiply.291.1 = f64[23,1]{1,0} multiply(%slice.89.3, %broadcast.412.2), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=868 scheduling_name="multiply.291.1"}
+  %slice.90.3 = f64[23,1]{1,0} slice(%bitcast.2479.6), slice={[0:23], [0:1]}, metadata={op_name="jit(eval_vq)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=868 scheduling_name="slice.90.3"}
+  %multiply.292.1 = f64[23,1]{1,0} multiply(%slice.90.3, %broadcast.412.2), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=868 scheduling_name="multiply.292.1"}
+  %multiply.293.1 = f64[23,1]{1,0} multiply(%multiply.291.1, %multiply.291.1), metadata={op_name="jit(eval_vq)/jit(main)/integer_pow" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.293.1"}
+  %multiply.294.1 = f64[23,1]{1,0} multiply(%multiply.292.1, %multiply.291.1), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.294.1"}
+  %multiply.295.1 = f64[23,1]{1,0} multiply(%multiply.292.1, %multiply.292.1), metadata={op_name="jit(eval_vq)/jit(main)/integer_pow" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.295.1"}
+  %concatenate.51.1 = f64[23,6]{1,0} concatenate(%broadcast.410.1, %multiply.291.1, %multiply.292.1, %multiply.293.1, %multiply.294.1, /*index=5*/%multiply.295.1), dimensions={1}, metadata={op_name="jit(eval_vq)/jit(main)/concatenate" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="concatenate.51.1"}
+  %convert.29.1 = c128[23,6]{1,0} convert(%concatenate.51.1), metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="convert.29.1"}
+  %param_2.358 = s32[23,1]{1,0} parameter(2), metadata={scheduling_name="param_2.358"}
+  %gather.5.9.clone.1 = f64[23,1,2]{2,0,1} gather(%bitcast.2604.21, %param_2.358), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,2}, metadata={op_name="jit(eval_vq)/jit(main)/gather" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=882 scheduling_name="gather.5.9.clone.1"}
+  %bitcast.2608.6.clone.1 = f64[23,2]{1,0} bitcast(%gather.5.9.clone.1), metadata={scheduling_name="bitcast.2608.6.clone.1"}
+  %slice.93.3.clone.1 = f64[23,1]{1,0} slice(%bitcast.2608.6.clone.1), slice={[0:23], [1:2]}, metadata={op_name="jit(eval_vq)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=868 scheduling_name="slice.93.3.clone.1"}
+  %multiply.306.1.clone.1 = f64[23,1]{1,0} multiply(%slice.93.3.clone.1, %broadcast.412.2), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=868 scheduling_name="multiply.306.1.clone.1"}
+  %slice.94.3.clone.1 = f64[23,1]{1,0} slice(%bitcast.2608.6.clone.1), slice={[0:23], [0:1]}, metadata={op_name="jit(eval_vq)/jit(main)/slice" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=868 scheduling_name="slice.94.3.clone.1"}
+  %multiply.307.1.clone.1 = f64[23,1]{1,0} multiply(%slice.94.3.clone.1, %broadcast.412.2), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=868 scheduling_name="multiply.307.1.clone.1"}
+  %multiply.308.1.clone.1 = f64[23,1]{1,0} multiply(%multiply.306.1.clone.1, %multiply.306.1.clone.1), metadata={op_name="jit(eval_vq)/jit(main)/integer_pow" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.308.1.clone.1"}
+  %multiply.309.1.clone.1 = f64[23,1]{1,0} multiply(%multiply.307.1.clone.1, %multiply.306.1.clone.1), metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.309.1.clone.1"}
+  %multiply.310.1.clone.1 = f64[23,1]{1,0} multiply(%multiply.307.1.clone.1, %multiply.307.1.clone.1), metadata={op_name="jit(eval_vq)/jit(main)/integer_pow" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="multiply.310.1.clone.1"}
+  %concatenate.53.1.clone.1 = f64[23,6]{1,0} concatenate(%broadcast.410.1, %multiply.306.1.clone.1, %multiply.307.1.clone.1, %multiply.308.1.clone.1, %multiply.309.1.clone.1, /*index=5*/%multiply.310.1.clone.1), dimensions={1}, metadata={op_name="jit(eval_vq)/jit(main)/concatenate" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=869 scheduling_name="concatenate.53.1.clone.1"}
+  %convert.31.1.clone.1 = c128[23,6]{1,0} convert(%concatenate.53.1.clone.1), metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="convert.31.1.clone.1"}
+  ROOT %tuple.49 = (c128[23,6]{1,0}, c128[23,6]{1,0}) tuple(%convert.29.1, %convert.31.1.clone.1), metadata={scheduling_name="tuple.49"}
+}
+
+%fused_slice (param_1_0: c128[1,640], param_1_1: u32[16], param_1_2: u32[]) -> (c128[53920], c128[3680]) {
+  %constant_70_4 = c128[] constant((0, 0))
+  %broadcast.407.2 = c128[160,337]{1,0} broadcast(%constant_70_4), dimensions={}, metadata={scheduling_name="broadcast.407.2"}
+  %reshape.397 = c128[53920]{0} reshape(%broadcast.407.2), metadata={scheduling_name="reshape.397"}
+  %param_1_0 = c128[1,640]{1,0} parameter(0), metadata={scheduling_name="param_1_0"}
+  %constant_75_9 = s32[] constant(0)
+  %constant_279_9 = u32[1]{0} constant({0})
+  %param_1_1 = u32[16]{0} parameter(1), metadata={scheduling_name="param_1_1"}
+  %param_1_2 = u32[] parameter(2), metadata={scheduling_name="param_1_2"}
+  %dynamic-slice.205.9 = u32[1]{0} dynamic-slice(%param_1_1, %param_1_2), dynamic_slice_sizes={1}, metadata={scheduling_name="dynamic-slice.205.9"}
+  %constant_280_9 = u32[1]{0} constant({3})
+  %clamp.4.9 = u32[1]{0} clamp(%constant_279_9, %dynamic-slice.205.9, %constant_280_9), metadata={scheduling_name="clamp.4.9"}
+  %convert.27.9 = s32[1]{0} convert(%clamp.4.9), metadata={scheduling_name="convert.27.9"}
+  %constant_365_9 = s32[1]{0} constant({160})
+  %multiply.275.9 = s32[1]{0} multiply(%convert.27.9, %constant_365_9), metadata={scheduling_name="multiply.275.9"}
+  %bitcast.2663.17 = s32[] bitcast(%multiply.275.9), metadata={scheduling_name="bitcast.2663.17"}
+  %dynamic-slice.207.4 = c128[1,160]{1,0} dynamic-slice(%param_1_0, %constant_75_9, %bitcast.2663.17), dynamic_slice_sizes={1,160}, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="dynamic-slice.207.4"}
+  %bitcast.2446.2 = c128[160]{0} bitcast(%dynamic-slice.207.4), metadata={scheduling_name="bitcast.2446.2"}
+  %broadcast.408.2 = c128[23,160]{1,0} broadcast(%bitcast.2446.2), dimensions={1}, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="broadcast.408.2"}
+  %reshape.398 = c128[3680]{0} reshape(%broadcast.408.2), metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="reshape.398"}
+  %concatenate.54 = c128[57600]{0} concatenate(%reshape.397, %reshape.398), dimensions={0}, metadata={scheduling_name="concatenate.54"}
+  %slice.98 = c128[53920]{0} slice(%concatenate.54), slice={[0:53920]}, metadata={scheduling_name="slice.98"}
+  %slice.99 = c128[3680]{0} slice(%concatenate.54), slice={[53920:57600]}, metadata={scheduling_name="slice.99"}
+  ROOT %tuple.51 = (c128[53920]{0}, c128[3680]{0}) tuple(%slice.98, %slice.99), metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="tuple.51"}
+}
+
+%command_buffer (p: f64[640,3], p.1: u32[16], p.2: c128[6,640], p.3: c128[6,640], p.4: c128[10,640], p.5: c128[1,640], p.6: f64[337,3], p.7: f64[3], p.8: f64[3,337], p.9: f64[3,3], p.10: c128[1,640], p.11: s32[23,1], p.12: s32[23,1], p.13: s32[23,1], p.14: s32[], p.15: c128[1,640]) -> (u32[], f64[160,3], c128[23,160], (f64[337,3], f64[3,337]), c128[23,160], /*index=5*/f64[3,337], (c128[23,160], s8[29280]), s32[], (c128[23,160], s8[17568]), (c128[23,160], s8[17568]), /*index=10*/(c128[53920], c128[3680]), s32[]) {
+  %p = f64[640,3]{1,0} parameter(0)
+  %p.1 = u32[16]{0} parameter(1)
+  %p.2 = c128[6,640]{1,0} parameter(2)
+  %p.3 = c128[6,640]{1,0} parameter(3)
+  %p.4 = c128[10,640]{1,0} parameter(4)
+  %p.5 = c128[1,640]{1,0} parameter(5)
+  %p.6 = f64[337,3]{1,0} parameter(6)
+  %p.7 = f64[3]{0} parameter(7)
+  %p.8 = f64[3,337]{1,0} parameter(8)
+  %p.9 = f64[3,3]{1,0} parameter(9)
+  %p.10 = c128[1,640]{1,0} parameter(10)
+  %p.11 = s32[23,1]{1,0} parameter(11)
+  %p.12 = s32[23,1]{1,0} parameter(12)
+  %p.13 = s32[23,1]{1,0} parameter(13)
+  %p.14 = s32[] parameter(14)
+  %p.15 = c128[1,640]{1,0} parameter(15)
+  %partition-id.1 = u32[] partition-id(), metadata={scheduling_name="partition-id.1"}
+  %loop_dynamic_slice_fusion.7 = f64[160,3]{1,0} fusion(%p, %p.1, %partition-id.1), kind=kLoop, calls=%fused_dynamic_slice.7, metadata={scheduling_name="loop_dynamic_slice_fusion.7"}
+  %loop_dynamic_slice_fusion.8 = c128[6,160]{1,0} fusion(%p.2, %p.1, %partition-id.1), kind=kLoop, calls=%fused_dynamic_slice.8, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 deduplicated_name="loop_dynamic_slice_fusion.8" scheduling_name="loop_dynamic_slice_fusion.8"}
+  %loop_dynamic_slice_fusion.10 = c128[6,160]{1,0} fusion(%p.3, %p.1, %partition-id.1), kind=kLoop, calls=%fused_dynamic_slice.10, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 deduplicated_name="loop_dynamic_slice_fusion.8" scheduling_name="loop_dynamic_slice_fusion.10"}
+  %loop_dynamic_slice_fusion.9 = c128[10,160]{1,0} fusion(%p.4, %p.1, %partition-id.1), kind=kLoop, calls=%fused_dynamic_slice.9, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="loop_dynamic_slice_fusion.9"}
+  %loop_broadcast_fusion.2 = c128[23,160]{1,0} fusion(%p.5, %p.1, %partition-id.1), kind=kLoop, calls=%fused_broadcast.2, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 deduplicated_name="loop_broadcast_fusion" scheduling_name="loop_broadcast_fusion.2"}
+  %loop_add_fusion.7 = (f64[337,3]{1,0}, f64[3,337]{1,0}) fusion(%p.6, %p.7, %p.8), kind=kLoop, calls=%fused_add.7, metadata={op_name="jit(eval_vq)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=896 scheduling_name="loop_add_fusion.7"}
+  %bitcast.2465.0 = f64[3,3]{0,1} bitcast(%p.9), metadata={scheduling_name="bitcast.2465.0"}
+  %get-tuple-element.176 = f64[3,337]{1,0} get-tuple-element(%loop_add_fusion.7), index=1, metadata={op_name="jit(eval_vq)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=896 scheduling_name="get-tuple-element.176"}
+  %custom-call.7.0 = (f64[3,337]{1,0}, s8[8160]{0}) custom-call(%bitcast.2465.0, %get-tuple-element.176), custom_call_target="__cublas$gemm", metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=879 scheduling_name="custom-call.7.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"9","rhs_stride":"1011","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %loop_broadcast_fusion.1 = c128[23,160]{1,0} fusion(%p.10, %p.1, %partition-id.1), kind=kLoop, calls=%fused_broadcast.1, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 deduplicated_name="loop_broadcast_fusion" scheduling_name="loop_broadcast_fusion.1"}
+  %get-tuple-element.168.0 = f64[3,337]{1,0} get-tuple-element(%custom-call.7.0), index=0, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=879 scheduling_name="get-tuple-element.168.0"}
+  %loop_concatenate_fusion = c128[23,10]{1,0} fusion(%p.11, %get-tuple-element.168.0), kind=kLoop, calls=%fused_concatenate, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="loop_concatenate_fusion"}
+  %loop_concatenate_fusion.1 = (c128[23,6]{1,0}, c128[23,6]{1,0}) fusion(%p.12, %get-tuple-element.168.0, %p.13), kind=kLoop, calls=%fused_concatenate.1, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="loop_concatenate_fusion.1"}
+  %custom-call.9.0 = (c128[23,160]{1,0}, s8[29280]{0}) custom-call(%loop_concatenate_fusion, %loop_dynamic_slice_fusion.9), custom_call_target="__cublas$gemm", metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="custom-call.9.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"230","rhs_stride":"1600","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %copy.60 = s32[] copy(%p.14)
+  %get-tuple-element.173 = c128[23,6]{1,0} get-tuple-element(%loop_concatenate_fusion.1), index=0, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="get-tuple-element.173"}
+  %custom-call.8.0 = (c128[23,160]{1,0}, s8[17568]{0}) custom-call(%get-tuple-element.173, %loop_dynamic_slice_fusion.8), custom_call_target="__cublas$gemm", metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="custom-call.8.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"138","rhs_stride":"960","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %get-tuple-element.174 = c128[23,6]{1,0} get-tuple-element(%loop_concatenate_fusion.1), index=1, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="get-tuple-element.174"}
+  %custom-call.10.0 = (c128[23,160]{1,0}, s8[17568]{0}) custom-call(%get-tuple-element.174, %loop_dynamic_slice_fusion.10), custom_call_target="__cublas$gemm", metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="custom-call.10.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["0"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"138","rhs_stride":"960","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %input_slice_fusion = (c128[53920]{0}, c128[3680]{0}) fusion(%p.15, %p.1, %partition-id.1), kind=kInput, calls=%fused_slice, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="input_slice_fusion"}
+  %copy.16 = s32[] copy(%copy.60), metadata={scheduling_name="copy.16"}
+  ROOT %tuple.73 = (u32[], f64[160,3]{1,0}, c128[23,160]{1,0}, (f64[337,3]{1,0}, f64[3,337]{1,0}), c128[23,160]{1,0}, /*index=5*/f64[3,337]{1,0}, (c128[23,160]{1,0}, s8[29280]{0}), s32[], (c128[23,160]{1,0}, s8[17568]{0}), (c128[23,160]{1,0}, s8[17568]{0}), /*index=10*/(c128[53920]{0}, c128[3680]{0}), s32[]) tuple(%partition-id.1, %loop_dynamic_slice_fusion.7, %loop_broadcast_fusion.2, %loop_add_fusion.7, %loop_broadcast_fusion.1, /*index=5*/%get-tuple-element.168.0, %custom-call.9.0, %copy.60, %custom-call.8.0, %custom-call.10.0, /*index=10*/%input_slice_fusion, %copy.16)
+}
+
+ENTRY %main.309_spmd (param.51: f64[3], param.2.0: c128[144,160,160], param.1.0: c128[7,144], param.3.0: c128[1,640], param.4.0: c128[1,640], param.5.0: c128[6,640], param.6.0: c128[10,640], param.7.0: c128[6,640], param.8.0: c128[1,640], param.9.0: c128[1,640]) -> c128[160,160] {
+  %constant_73_0 = u32[16]{0} constant({...})
+  %constant_72_0 = f64[640,3]{1,0} constant({...})
+  %param.5.0 = c128[6,640]{1,0} parameter(5), sharding={replicated}, metadata={op_name="coeffs_tuple[2]" scheduling_name="param.5.0"}
+  %param.7.0 = c128[6,640]{1,0} parameter(7), sharding={replicated}, metadata={op_name="coeffs_tuple[4]" scheduling_name="param.7.0"}
+  %param.6.0 = c128[10,640]{1,0} parameter(6), sharding={replicated}, metadata={op_name="coeffs_tuple[3]" scheduling_name="param.6.0"}
+  %param.4.0 = c128[1,640]{1,0} parameter(4), sharding={replicated}, metadata={op_name="coeffs_tuple[1]" scheduling_name="param.4.0"}
+  %param.51 = f64[3]{0} parameter(0), sharding={replicated}, metadata={op_name="Qfrac" scheduling_name="param.51"}
+  %constant_100_0 = f64[3,337]{1,0} constant({...})
+  %constant_76_0 = f64[337,3]{1,0} constant({...}), metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=896}
+  %constant_373_0 = f64[3,3]{1,0} constant({ { 1.0507622167739268, 0.60665637184174681, -0 }, { 0, 1.2133158112027018, 0 }, { 0, -0, 0.27707653970333357 } })
+  %param.8.0 = c128[1,640]{1,0} parameter(8), sharding={replicated}, metadata={op_name="coeffs_tuple[5]" scheduling_name="param.8.0"}
+  %constant_110_0 = s32[23,1]{1,0} constant({...})
+  %constant_120_0 = s32[23,1]{1,0} constant({...})
+  %constant_97_0 = s32[23,1]{1,0} constant({...})
+  %constant_75_0 = s32[] constant(0)
+  %param.3.0 = c128[1,640]{1,0} parameter(3), sharding={replicated}, metadata={op_name="coeffs_tuple[0]" scheduling_name="param.3.0"}
+  %param.9.0 = c128[1,640]{1,0} parameter(9), sharding={replicated}, metadata={op_name="coeffs_tuple[6]" scheduling_name="param.9.0"}
+  %constant_64_0 = f64[3,7]{1,0} constant({...}), metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874}
+  %param.1.0 = c128[7,144]{1,0} parameter(2), sharding={replicated}, metadata={op_name="pinvF" scheduling_name="param.1.0"}
+  %param.2.0 = c128[144,160,160]{2,1,0} parameter(1), sharding={devices=[1,4,4]<=[16]}, metadata={op_name="V_SRc_stack" scheduling_name="param.2.0"}
+  %call = (u32[], f64[160,3]{1,0}, c128[23,160]{1,0}, (f64[337,3]{1,0}, f64[3,337]{1,0}), c128[23,160]{1,0}, /*index=5*/f64[3,337]{1,0}, (c128[23,160]{1,0}, s8[29280]{0}), s32[], (c128[23,160]{1,0}, s8[17568]{0}), (c128[23,160]{1,0}, s8[17568]{0}), /*index=10*/(c128[53920]{0}, c128[3680]{0}), s32[]) call(%constant_72_0, %constant_73_0, %param.5.0, %param.7.0, %param.6.0, /*index=5*/%param.4.0, %constant_76_0, %param.51, %constant_100_0, %constant_373_0, /*index=10*/%param.8.0, %constant_110_0, %constant_97_0, %constant_120_0, %constant_75_0, /*index=15*/%param.3.0), to_apply=%command_buffer
+  %get-tuple-element.245 = u32[] get-tuple-element(%call), index=0
+  %get-tuple-element.246 = f64[160,3]{1,0} get-tuple-element(%call), index=1
+  %get-tuple-element.247 = c128[23,160]{1,0} get-tuple-element(%call), index=2
+  %get-tuple-element.248 = (f64[337,3]{1,0}, f64[3,337]{1,0}) get-tuple-element(%call), index=3
+  %get-tuple-element.249 = c128[23,160]{1,0} get-tuple-element(%call), index=4
+  %get-tuple-element.250 = f64[3,337]{1,0} get-tuple-element(%call), index=5
+  %get-tuple-element.251 = (c128[23,160]{1,0}, s8[29280]{0}) get-tuple-element(%call), index=6
+  %get-tuple-element.252 = s32[] get-tuple-element(%call), index=7
+  %get-tuple-element.253 = (c128[23,160]{1,0}, s8[17568]{0}) get-tuple-element(%call), index=8
+  %get-tuple-element.254 = (c128[23,160]{1,0}, s8[17568]{0}) get-tuple-element(%call), index=9
+  %get-tuple-element.255 = (c128[53920]{0}, c128[3680]{0}) get-tuple-element(%call), index=10
+  %get-tuple-element.256 = s32[] get-tuple-element(%call), index=11
+  %get-tuple-element.177 = c128[53920]{0} get-tuple-element(%get-tuple-element.255), index=0, metadata={scheduling_name="get-tuple-element.177"}
+  %bitcast.2912 = c128[160,337]{1,0} bitcast(%get-tuple-element.177), metadata={scheduling_name="bitcast.2912"}
+  %get-tuple-element.178 = c128[3680]{0} get-tuple-element(%get-tuple-element.255), index=1, metadata={scheduling_name="get-tuple-element.178"}
+  %bitcast.2913 = c128[23,160]{1,0} bitcast(%get-tuple-element.178), metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="bitcast.2913"}
+  %tuple.52 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%get-tuple-element.256, %bitcast.2912, %bitcast.2913), metadata={scheduling_name="tuple.52"}
+  %while.7.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) while(%tuple.52), condition=%while_cond.clone, body=%while_body.sunk.clone, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="while.7.0"}, backend_config={"known_trip_count":{"n":"23"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %copy.22 = s32[] copy(%get-tuple-element.252), metadata={scheduling_name="copy.22"}
+  %get-tuple-element.189 = c128[160,337]{1,0} get-tuple-element(%while.7.0), index=1, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="get-tuple-element.189"}
+  %tuple.55 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%copy.22, %get-tuple-element.189, %get-tuple-element.247), metadata={scheduling_name="tuple.55"}
+  %while.8.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) while(%tuple.55), condition=%while_cond.clone.clone, body=%while_body.1.sunk.clone, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="while.8.0"}, backend_config={"known_trip_count":{"n":"23"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %copy.28 = s32[] copy(%get-tuple-element.252), metadata={scheduling_name="copy.28"}
+  %get-tuple-element.199 = c128[23,160]{1,0} get-tuple-element(%get-tuple-element.253), index=0, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="get-tuple-element.199"}
+  %get-tuple-element.198 = c128[160,337]{1,0} get-tuple-element(%while.8.0), index=1, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="get-tuple-element.198"}
+  %tuple.58 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%copy.28, %get-tuple-element.198, %get-tuple-element.199), metadata={scheduling_name="tuple.58"}
+  %while.9.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) while(%tuple.58), condition=%while_cond.clone.clone.1, body=%while_body.2.sunk.clone, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="while.9.0"}, backend_config={"known_trip_count":{"n":"23"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %copy.34 = s32[] copy(%get-tuple-element.252), metadata={scheduling_name="copy.34"}
+  %get-tuple-element.208 = c128[23,160]{1,0} get-tuple-element(%get-tuple-element.251), index=0, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="get-tuple-element.208"}
+  %get-tuple-element.207 = c128[160,337]{1,0} get-tuple-element(%while.9.0), index=1, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="get-tuple-element.207"}
+  %tuple.61 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%copy.34, %get-tuple-element.207, %get-tuple-element.208), metadata={scheduling_name="tuple.61"}
+  %while.10.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) while(%tuple.61), condition=%while_cond.clone.clone.2, body=%while_body.3.sunk.clone, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="while.10.0"}, backend_config={"known_trip_count":{"n":"23"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %copy.40 = s32[] copy(%get-tuple-element.252), metadata={scheduling_name="copy.40"}
+  %get-tuple-element.217 = c128[23,160]{1,0} get-tuple-element(%get-tuple-element.254), index=0, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="get-tuple-element.217"}
+  %get-tuple-element.216 = c128[160,337]{1,0} get-tuple-element(%while.10.0), index=1, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="get-tuple-element.216"}
+  %tuple.64 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%copy.40, %get-tuple-element.216, %get-tuple-element.217), metadata={scheduling_name="tuple.64"}
+  %while.11.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) while(%tuple.64), condition=%while_cond.clone.clone.3, body=%while_body.4.sunk.clone, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="while.11.0"}, backend_config={"known_trip_count":{"n":"23"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %copy.46 = s32[] copy(%get-tuple-element.252), metadata={scheduling_name="copy.46"}
+  %get-tuple-element.225 = c128[160,337]{1,0} get-tuple-element(%while.11.0), index=1, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="get-tuple-element.225"}
+  %tuple.67 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%copy.46, %get-tuple-element.225, %get-tuple-element.249), metadata={scheduling_name="tuple.67"}
+  %while.12.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) while(%tuple.67), condition=%while_cond.clone.clone.4, body=%while_body.5.sunk.clone, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="while.12.0"}, backend_config={"known_trip_count":{"n":"23"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %loop_broadcast_fusion = c128[23,160]{1,0} fusion(%param.9.0, %constant_73_0, %get-tuple-element.245), kind=kLoop, calls=%fused_broadcast, metadata={op_name="jit(eval_vq)/jit(main)/transpose" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 deduplicated_name="loop_broadcast_fusion" scheduling_name="loop_broadcast_fusion"}
+  %get-tuple-element.234 = c128[160,337]{1,0} get-tuple-element(%while.12.0), index=1, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="get-tuple-element.234"}
+  %tuple.70 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) tuple(%get-tuple-element.252, %get-tuple-element.234, %loop_broadcast_fusion), metadata={scheduling_name="tuple.70"}
+  %while.13.0 = (s32[], c128[160,337]{1,0}, c128[23,160]{1,0}) while(%tuple.70), condition=%while_cond.clone.clone.5, body=%while_body.6.sunk.clone, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="while.13.0"}, backend_config={"known_trip_count":{"n":"23"},"known_init_step":{"init":"0","step":"1"},"known_induction_variable":{"tuple_index":"0"}}
+  %get-tuple-element.175 = f64[337,3]{1,0} get-tuple-element(%get-tuple-element.248), index=0, metadata={op_name="jit(eval_vq)/jit(main)/add" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=896 scheduling_name="get-tuple-element.175"}
+  %custom-call.6.0 = (f64[160,337]{1,0}, s8[11928]{0}) custom-call(%get-tuple-element.246, %get-tuple-element.175), custom_call_target="__cublas$gemm", metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="custom-call.6.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":0,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"480","rhs_stride":"1011","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  %loop_convert_fusion = c128[337]{0} fusion(%get-tuple-element.250), kind=kLoop, calls=%fused_convert, metadata={op_name="jit(eval_vq)/jit(main)/convert_element_type" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=898 scheduling_name="loop_convert_fusion"}
+  %get-tuple-element.167.0 = f64[160,337]{1,0} get-tuple-element(%custom-call.6.0), index=0, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=897 scheduling_name="get-tuple-element.167.0"}
+  %get-tuple-element.53.0 = c128[160,337]{1,0} get-tuple-element(%while.13.0), index=1, metadata={op_name="jit(eval_vq)/jit(main)/scatter" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=883 scheduling_name="get-tuple-element.53.0"}
+  %loop_multiply_fusion.1 = c128[160,337]{1,0} fusion(%loop_convert_fusion, %get-tuple-element.53.0, %get-tuple-element.167.0), kind=kLoop, calls=%fused_multiply.1, metadata={op_name="jit(eval_vq)/jit(main)/mul" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=898 scheduling_name="loop_multiply_fusion.1"}
+  %collective-permute-start = (c128[160,337]{1,0}, c128[160,337]{1,0}) collective-permute-start(%loop_multiply_fusion.1), channel_id=1, source_target_pairs={{0,0},{4,1},{8,2},{12,3},{1,4},{5,5},{9,6},{13,7},{2,8},{6,9},{10,10},{14,11},{3,12},{7,13},{11,14},{15,15}}, metadata={op_name="jit(eval_vq)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=899 scheduling_name="collective-permute-start"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":false,"no_parallel_custom_call":true,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %loop_select_fusion = f64[7]{0} fusion(%constant_64_0, %param.51), kind=kLoop, calls=%fused_select, metadata={op_name="jit(eval_vq)/jit(main)/exp" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=874 scheduling_name="loop_select_fusion"}
+  %loop_reduce_fusion = c128[144]{0} fusion(%param.1.0, %loop_select_fusion, %constant_64_0, %param.51), kind=kLoop, calls=%fused_reduce.7, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=875 scheduling_name="loop_reduce_fusion"}
+  %loop_multiply_fusion = c128[144,160,160]{2,1,0} fusion(%param.2.0, %loop_reduce_fusion), kind=kLoop, calls=%fused_multiply, metadata={scheduling_name="loop_multiply_fusion"}
+  %input_reduce_fusion.7 = c128[160,160]{1,0} fusion(%loop_multiply_fusion), kind=kInput, calls=%fused_reduce.8, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=876 scheduling_name="input_reduce_fusion.7"}
+  %collective-permute-done = c128[160,337]{1,0} collective-permute-done(%collective-permute-start), metadata={op_name="jit(eval_vq)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=899 scheduling_name="collective-permute-done"}
+  %loop_complex_fusion = c128[160,337]{1,0} fusion(%collective-permute-done), kind=kLoop, calls=%fused_complex, metadata={op_name="jit(eval_vq)/jit(main)/complex" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=901 scheduling_name="loop_complex_fusion"}
+  %cublas-gemm.2.0 = (c128[160,160]{1,0}, s8[2135040]{0}) custom-call(%loop_complex_fusion, %loop_multiply_fusion.1, %input_reduce_fusion.7), custom_call_target="__cublas$gemm", output_to_operand_aliasing={{0}: (2, {})}, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=901 scheduling_name="cublas-gemm.2.0"}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"gemm_backend_config":{"alpha_real":1,"alpha_imag":0,"beta":1,"dot_dimension_numbers":{"lhs_contracting_dimensions":["1"],"rhs_contracting_dimensions":["1"],"lhs_batch_dimensions":[],"rhs_batch_dimensions":[]},"precision_config":{"operand_precision":["DEFAULT","DEFAULT"],"algorithm":"ALG_UNSET"},"epilogue":"DEFAULT","damax_output":false,"lhs_stride":"53920","rhs_stride":"53920","grad_x":false,"grad_y":false},"force_earliest_schedule":false}
+  ROOT %get-tuple-element.172.0 = c128[160,160]{1,0} get-tuple-element(%cublas-gemm.2.0), index=0, metadata={op_name="jit(eval_vq)/jit(main)/dot_general" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bse_integration/src/bse/vq_interp.py" source_line=901 scheduling_name="get-tuple-element.172.0"}
+}
+

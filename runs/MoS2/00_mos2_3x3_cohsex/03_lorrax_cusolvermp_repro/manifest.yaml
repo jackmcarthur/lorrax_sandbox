@@ -1,0 +1,17 @@
+run_id: mos2_3x3_cohsex_cusolvermp_repro_2026-07-02
+system: MoS2
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: mos2_3x3_cohsex_noavg          # 02_lorrax_cohsex_noavg
+reuse_from_parent: [WFN.h5, eps0mat.h5, dipole.h5, kih.dat, kin_ion.h5, centroids_frac_640.txt]
+overrides:
+  cusolvermp_charge: on                     # parent forced 'off' as the deadlock workaround
+  ngpu: 4                                    # 2x2 mesh (parent ran LORRAX_NGPU=1)
+
+# Purpose: reproduce the reported cusolvermp_cholesky 2x2 deadlock.
+# Result: NO deadlock. cuSOLVERMp 0.7.2 distributed potrf completed on the
+# 2x2 mesh; full pipeline EXIT 0; eqp0.dat matches the native 'off' run to
+# max|Δ|=1.3e-5. See KNOWN_SANDBOX_ERRORS.md 2026-07-02 cusolvermp entry.
+steps:
+  03_lorrax: { state: complete, note: "cusolvermp_charge=on on 2x2 mesh; EXIT 0; matches off-path eqp0" }

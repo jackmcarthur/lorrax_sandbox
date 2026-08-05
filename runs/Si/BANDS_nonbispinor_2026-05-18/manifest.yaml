@@ -1,0 +1,49 @@
+run_id: si_bands_nonbispinor_planner_audit_2026-05-18
+system: Si
+pipeline: qe_lorrax
+platform: perlmutter
+
+variant_of: null
+reuse_from_parent: []
+overrides:
+  noncolin: true      # tried .false. first; loader-side ns=2 lift kicks in regardless
+  lspinorb: false
+  nspinor: 2
+  ecutwfc: 40.0       # bumped from 25 Ry; needed for nbnd=200 sphere on 3x3x3 (4 IBZ k-points)
+  bispinor: false     # LORRAX bispinor flag = false; charge channel only (no transverse mix)
+  pseudo: standard/Si.upf (FR-ONCVPSP PBE)
+  cusolvermp_charge_lu: off  # dodges BFC + cusolverMpPotrf=7 bug (KNOWN_SANDBOX_ERRORS.md:117)
+  memory_per_device_gb: 28.0 # A100-40GB default per AGENTS.md
+  purpose: "Agent C - planner band-count scaling audit at non-bispinor scalar"
+  fft_grid: [30, 30, 30]     # n_rtot = 27000 at 40 Ry for all 4 configs
+  ngkmax: 1150 (3x3x3) | 1174 (4x4x4)
+
+# 4 directories: 3x3x3 nb={100,200} and 4x4x4 nb={100,200}
+# mu per kgrid (snapped from PLAN spec by orbit-aware kmeans):
+#   384 (PLAN) -> 408 (snapped) for 3x3x3
+#   768 (PLAN) -> 816 (snapped) for 4x4x4
+steps:
+  3x3x3_nb100_qe:        { state: complete }
+  3x3x3_nb200_qe:        { state: complete }
+  4x4x4_nb100_qe:        { state: complete }
+  4x4x4_nb200_qe:        { state: complete }
+  3x3x3_nb100_kmeans:    { state: complete, note: "centroids_frac_408.txt (snapped from 384)" }
+  4x4x4_nb100_kmeans:    { state: complete, note: "centroids_frac_816.txt (snapped from 768)" }
+  3x3x3_nb100_lorrax:    { state: complete, note: "HWM_pred=15.63, mem_stats=15.71, -0.5%" }
+  3x3x3_nb200_lorrax:    { state: complete, note: "HWM_pred=15.70, mem_stats=18.24, -13.9% (out of Agent T window)" }
+  4x4x4_nb100_lorrax:    { state: complete, note: "HWM_pred=22.39, mem_stats=22.66, -1.2%" }
+  4x4x4_nb200_lorrax:    { state: complete, note: "HWM_pred=22.40, mem_stats=23.13, -3.2%" }
+
+notes: |
+  Sister to MU_nonbispinor (Agent A) and KGRID_nonbispinor (Agent B).
+  Goal: at fixed (kgrid, mu) test if nb=100 -> nb=200 stays within
+  agent_t's -0.5% to -10.8% planner-vs-mem_stats window.
+
+  Sanity questions:
+    1. centroids_persist scales linear in nb_total (4 * c128(nk, ns, mu, nb))
+    2. P_pair_concurrent_slots has NO nb dependence (only nk, ns2, mu, r_chunk)
+       so Peak C HWM_pred should be roughly nb-independent
+    3. cross-band-chunk residue: does live_arrays grow across the bc-loop?
+
+  Allocator variants per config: platform_false (sandbox default),
+    bfc_pre95 (preallocate=true + MEM_FRACTION=0.95 for peak_bytes_in_use).

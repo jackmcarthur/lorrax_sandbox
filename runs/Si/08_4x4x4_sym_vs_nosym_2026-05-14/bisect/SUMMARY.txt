@@ -1,0 +1,26 @@
+# Bisect summary — Si 4×4×4 sym-vs-nosym Σ_X
+# Pass gate: max |ΔΣ_X| <= 1 meV.  All commits tested produce identical FAIL
+# (max |ΔΣ_X| = 160077.7300 meV); the byte-diff of sigma_freq_debug.dat
+# between pre-Phase-2 and HEAD is empty.  This proves the bug is pre-existing
+# (predates all of Phase 2) and not a regression from PR1/PR2/PR3.
+#
+# Attempts 00 / 01 / 01_v2 hit the "srun: Requested nodes are busy" race
+# (an abandoned step .60 from an earlier session was holding 2 GPUs on the
+# 1-node alloc; killed via `scancel 52966174.60` before attempt 01_v3).
+# These attempts' compare.log values reflect the STALE sigma_freq_debug.dat
+# already present in run_sym/ (i.e. they accidentally re-compared HEAD to
+# HEAD).  Attempt 01_pre_phase2_v3 is the only valid bisect data point.
+#
+# label                  sha       max|ΔΣ_X|/meV  max|Δx_bare|/meV  verdict  valid?
+[bisect] 01_pre_phase2     9e644e9   160077.7300    80038.8650        FAIL     no  (srun busy → stale)
+[bisect] 00_pre_v_q_trs_fix c796420  160077.7300    80038.8650        FAIL     no  (srun busy → stale)
+[bisect] 01_pre_phase2_v2  9e644e9   160077.7300    80038.8650        FAIL     no  (srun busy → stale)
+[bisect] 01_pre_phase2_v3  9e644e9   160077.7300    80038.8650        FAIL     YES (valid pre-Phase-2 baseline)
+
+# Direct file diff vs HEAD output for the one valid attempt:
+#   diff bisect/01_pre_phase2_v3/sigma_freq_debug.dat run_sym/sigma_freq_debug.dat
+#   (no output — files are byte-identical, 732301 bytes each)
+#
+# Conclusion: pre-Phase-2 (`9e644e9`) and PR3 HEAD (`69ab42c`) produce
+# identical Si-sym Σ_X output.  No Phase 2 commit can be the offender.
+# Working tree reset to HEAD.

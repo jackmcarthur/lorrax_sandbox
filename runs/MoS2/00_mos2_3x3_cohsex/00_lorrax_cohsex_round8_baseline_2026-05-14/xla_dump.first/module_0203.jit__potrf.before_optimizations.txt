@@ -1,0 +1,17 @@
+HloModule jit__potrf, buffer_donor={ (0, {}) }, entry_computation_layout={(c128[9,640,640]{2,1,0})->c128[9,640,640]{2,1,0}}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4
+
+%shmap_body.4 (Arg_0.5: c128[9,320,320]) -> c128[9,320,320] {
+  %Arg_0.5 = c128[9,320,320]{2,1,0} parameter(0), metadata={op_name="[None, (\'x\',), (\'y\',)]"}
+  %transpose.6 = c128[9,320,320]{1,2,0} transpose(%Arg_0.5), dimensions={0,2,1}, metadata={op_name="jit(_potrf)/jit(main)/jit(shmap_body)/transpose" source_file="/global/homes/j/jackm/software/lorrax_B/src/ffi/cusolvermp/batched.py" source_line=154}
+  ROOT %custom-call.7 = c128[9,320,320]{2,1,0} custom-call(%transpose.6), custom_call_target="lorrax_cusolvermp_batched_potrf", operand_layout_constraints={c128[9,320,320]{2,1,0}}, output_to_operand_aliasing={{}: (0, {})}, api_version=API_VERSION_TYPED_FFI, metadata={op_name="jit(_potrf)/jit(main)/jit(shmap_body)/ffi_call" source_file="/global/homes/j/jackm/software/lorrax_B/src/ffi/cusolvermp/batched.py" source_line=157}, backend_config={ctx_handle = 250745616 : i64, mb = 320 : i64, n = 640 : i64, nb = 320 : i64, nq = 9 : i64}
+}
+
+ENTRY %main.11 (Arg_0.1: c128[9,640,640]) -> c128[9,640,640] {
+  %Arg_0.1 = c128[9,640,640]{2,1,0} parameter(0), sharding={devices=[1,2,2]<=[4]}, metadata={op_name="local_A"}
+  %custom-call.2 = c128[9,640,640]{2,1,0} custom-call(%Arg_0.1), custom_call_target="Sharding", sharding={devices=[1,2,2]<=[4]}, metadata={op_name="jit(_potrf)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/ffi/cusolvermp/batched.py" source_line=165}
+  %custom-call.3 = c128[9,320,320]{2,1,0} custom-call(%custom-call.2), custom_call_target="SPMDFullToShardShape", sharding={manual}, metadata={op_name="jit(_potrf)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/ffi/cusolvermp/batched.py" source_line=165}
+  %call.8 = c128[9,320,320]{2,1,0} call(%custom-call.3), to_apply=%shmap_body.4
+  %custom-call.9 = c128[9,320,320]{2,1,0} custom-call(%call.8), custom_call_target="Sharding", sharding={manual}, metadata={op_name="jit(_potrf)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/ffi/cusolvermp/batched.py" source_line=165}
+  ROOT %custom-call.10 = c128[9,640,640]{2,1,0} custom-call(%custom-call.9), custom_call_target="SPMDShardToFullShape", sharding={devices=[1,2,2]<=[2,2]T(1,0)}, metadata={op_name="jit(_potrf)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/ffi/cusolvermp/batched.py" source_line=165}
+}
+

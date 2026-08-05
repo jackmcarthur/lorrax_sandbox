@@ -1,0 +1,49 @@
+# LORRAX CrI3 6x6 80Ry GN-PPM — BISPINOR — max-bands-before-OOM study (2026-06-15)
+# Baseline at nband=150 (mu=1500=10*nband). The OOM sweep templates per-nband
+# copies of this file (overriding nband / ncond / centroids_file[_current]).
+# Bispinor: centroid set x2 (ns), pair-density x4 (ns^2); ~3x heavier fit jit
+# vs non-bispinor -> expect max-nband ~0.55-0.6x the non-bispinor ceiling.
+# IBZ cascade fires (orbit-closed centroids required -> do NOT pass --no-orbit).
+[cohsex]
+restart = false
+
+wfn_file = WFN.h5
+centroids_file = centroids_frac_1500.txt
+centroids_file_current = centroids_frac_1504_current.txt
+kin_ion_file = kin_ion.h5
+
+nval = 70
+ncond = 80
+nband = 150
+sys_dim = 2
+
+# self-energy ansatz: GN plasmon-pole dynamic Sigma_c(omega)
+compute_mode = gn_ppm
+bispinor = true
+self_consistent = false
+ppm_model = gn
+ppm_omega_p = 2.0
+ppm_fallback_omega = 2.0
+
+# screening
+screening_method = minimax
+minimax_target_error = 1.0e-6
+
+# sigma evaluation
+sigma_at_dft_energies = true
+sigma_freq_debug_output = true
+fermi_reference = midgap
+sigma_omega_min_ev = -10.0
+sigma_omega_max_ev = 10.0
+sigma_omega_step_ev = 0.5
+sigma_regularization_ev = 0.25
+
+# Coulomb: set bare cutoff explicitly (LORRAX default is 4*ecutwfc != BGW)
+bare_coulomb_cutoff = 80.0
+
+# memory budget: 70 GB leaves ~10 GB/dev for NCCL pool + CUDA context on 80 GB A100.
+# Omit band_chunk_size / r_chunk_size / gflat_chunk_size -> planner auto-sizes.
+memory_per_device_gb = 70.0
+
+# skip end-of-run WFN_qp.h5 write during the sweep (faster)
+write_wfn_h5 = false

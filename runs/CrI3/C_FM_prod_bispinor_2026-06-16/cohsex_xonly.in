@@ -1,0 +1,41 @@
+[cohsex]
+wfn_file = WFN.h5
+
+# FM (ferromagnetic) CrI3 monolayer, 6x6x1, nspinor=2 (bispinor), SOC.
+# starting_magnetization(Cr)=0.5 ‖ +z; total mag 6.01 muB/cell; gapped
+# (indirect gap 1.504 eV) so the minimax/screened-W is well-behaved.
+# nelec=70 (occupied bispinor bands).  PRODUCTION Sigma window around the gap.
+nval = 8
+ncond = 8
+nband = 180
+sys_dim = 2
+
+bispinor = true
+
+# PRODUCTION centroids: ~640 charge (gamma^0) + ~200 current (gamma^{1,2,3}),
+# orbit-aware (IBZ cascade active), seed 42.  Filenames patched to the exact
+# orbit-closed counts after kmeans_cli runs.
+centroids_file = centroids_frac_640.txt
+centroids_file_current = centroids_frac_200_current.txt
+
+memory_per_device_gb = 60.0
+
+restart = false
+max_r_chunks = -1
+
+# x_only Breit/transverse Sigma^B on REAL magnetism with the transverse-CCT
+# covariance fix (commit 9128728).  IBZ cascade active (NO LORRAX_FORCE_FULL_BZ);
+# run 2 sets LORRAX_FORCE_FULL_BZ=1 for the gauge-invariant gate.
+x_only = true
+do_screened = false
+screening = cohsex
+
+# Head bypass: explicit overrides so the run does not require dipole.h5 /
+# eps0mat.h5.  Heads = 0 (irrelevant to the transverse unfold machinery gate).
+vhead = 0.0
+whead_0freq = 0.0
+write_wfn_h5 = false
+
+# Force in-tree per-q JAX solve so the fixed relative-|lambda| truncated
+# pseudoinverse runs (transverse CCT is Hermitian-indefinite).
+cusolvermp_lu = off

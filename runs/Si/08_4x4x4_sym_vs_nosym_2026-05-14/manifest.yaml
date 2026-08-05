@@ -1,0 +1,85 @@
+run_id: si_4x4x4_sym_vs_nosym_pr3_2026-05-14
+system: Si
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: null
+reuse_from_parent:
+  - WFN.h5 (run_sym ← 05_si_4x4x4_sym/qe/nscf, run_nosym ← 02_si_4x4x4_nosym/qe/nscf)
+  - vxc.dat / kih.dat (linked from same nscf source)
+  - silicon.save (shared SCF from 02_si_4x4x4_nosym/qe/scf)
+
+overrides:
+  x_only: true                # Σ_X only, no screening
+  do_screened: false
+  bare_coulomb_cutoff: 25.0   # = ecutwfc, explicit
+  write_wfn_h5: false         # skip end-of-run WFN_qp.h5 write (separate bug, see Notes)
+
+purpose: |
+  Si 4×4×4 SOC mirror of the MoS₂ sym-vs-nosym PR3 validation
+  (reports/trs_sym_audit_2026-05-14/sym_vs_nosym_pr3_validation.md).
+  Two LORRAX cohsex runs on PR3 (commit 69ab42c on agent/trs-aware-sym-fix),
+  using the SAME 384-centroid orbit-closed set (generated on sym WFN),
+  on two WFNs that describe the same physics but differ in sym treatment:
+
+    run_sym/   ← sym WFN, ntran=48 spatial (Oh + inversion), nk_ibz=8
+                 36/48 sym ops are NON-SYMMORPHIC (diamond Fd-3m).
+                 unfold_psi τ-phase code path FIRES at every k.
+                 (Si has inversion → no TRS-fold rows; PR3 TRS-rotation code
+                  is a no-op here; the τ-phase code is what's exercised.)
+
+    run_nosym/ ← nosym WFN, ntran=1 (identity only), nk=64 (full BZ).
+                 No unfold; ground truth.
+
+  Pass gate: max |ΔΣ_X(k,n)| ≤ 1 meV across all 64 k-points × 56 bands.
+
+# Sym structure (sym WFN side):
+sym_structure:
+  ntran:           48          # Full Oh
+  ns_total:        36          # Non-symmorphic count (τ != 0 mod 1)
+  symmorphic:      12
+  has_inversion:   true        # op 24 = -I → no TRS-fold rows fire
+  n_trs_k:         0           # PR3 TRS-rotation code path is a no-op
+
+steps:
+  centroids/kmeans: { state: complete, note: "9.8s, 384 orbit-closed centroids on sym WFN, 11 orbits × ~35 ops, --orbit default" }
+  run_sym/dipole:   { state: complete }
+  run_sym/kin_ion:  { state: complete }
+  run_sym/cohsex:   { state: complete, note: "11.9s wall, 4 GPUs" }
+  run_nosym/dipole: { state: complete }
+  run_nosym/kin_ion: { state: complete }
+  run_nosym/cohsex: { state: complete, note: "12.9s wall, 4 GPUs, reuses sym centroids" }
+  compare:          { state: complete, note: "FAIL — max |ΔΣ_X| = 160,077 meV  (1.6×10^5 meV)  >> 1 meV gate" }
+  bisect:           { state: complete, note: "2026-05-14 16:08 — pre-Phase-2 commit 9e644e9 ALSO produces max |ΔΣ_X| = 160,077.7300 meV; sigma_freq_debug.dat byte-identical to HEAD. Bug is PRE-EXISTING, NOT Phase-2-introduced. See reports/trs_sym_audit_2026-05-14/si_sym_vs_nosym_pr3.md addendum." }
+
+# Source commit (lorrax_B agent/trs-aware-sym-fix):
+#   69ab42c  cleanup: 3 pre-existing regressions surfaced during CrI3 30Ry test bed setup
+#   a45f039  dft_operators: fix generate_gvectors_k after P5 SymMaps API migration
+#   8504994  symmetry_maps: PR3 — unfold_psi free function + bispinor U_spinor TRS fix
+#   796c043  symmetry_maps + tests: fix PR2 mechanical migration gaps
+
+# Bisect baseline (re-validated 2026-05-14 16:08):
+#   9e644e9  v_q + orbit_syms: TRS-aware IBZ→full-BZ unfold for scalar V_q
+#            (pre-Phase-2 — does NOT touch wfn_loader.py or unfold_psi)
+#   ↑ produces byte-identical Si-sym sigma_freq_debug.dat to HEAD 69ab42c.
+
+verdict: FAIL
+verdict_note: |
+  REVISED 2026-05-14 16:08 — bisect verdict supersedes the initial PR3
+  diagnosis. The 160 eV Si-sym vs Si-nosym disagreement is a PRE-EXISTING
+  LORRAX bug, not introduced by Phase 2 (PR1+PR2+PR3). Pre-Phase-2 commit
+  9e644e9 produces byte-identical broken Σ_X output (max |ΔΣ_X| = 160,077.73
+  meV, identical max|Δx_bare| = 80,038.87 meV at k=2, n∈{48,49}, files diff
+  empty). The PR3 τ-phase code on spatial (non-TRS) sym rows — which is the
+  only branch Si exercises — is bit-equivalent to the pre-PR3 spatial branch
+  (verified by source diff and by this bisect). Phase 2 cleared for merge
+  from the Si-gate perspective. The Si bug needs a separate ticket — likely
+  in the Σ_X kernel's G-vector / umklapp bookkeeping when consuming the
+  unfolded ψ. Original PR3 diagnosis preserved below for historical reference;
+  see reports/trs_sym_audit_2026-05-14/si_sym_vs_nosym_pr3.md addendum for
+  full details.
+verdict_note_original_superseded: |
+  PR3 τ-phase code path in unfold_psi is broken on non-symmorphic spatial ops.
+  MoS₂ test passed because MoS₂'s post-no_t_rev sym group (E + σ_h) is symmorphic
+  (all τ = 0) so the τ-phase branch was never exercised.  Si has 36/48
+  non-symmorphic operations and the bug fires immediately.

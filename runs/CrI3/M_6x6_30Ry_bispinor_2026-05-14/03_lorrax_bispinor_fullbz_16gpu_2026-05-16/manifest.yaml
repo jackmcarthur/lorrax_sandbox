@@ -1,0 +1,48 @@
+run_id: cri3_6x6_30Ry_bispinor_fullbz_16gpu_v2_2026-05-16
+system: CrI3
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: cri3_6x6_30Ry_bispinor_testbed_2026-05-14
+reuse_from_parent:
+  - qe/nscf/WFN.h5
+  - qe/nscf/vxc.dat
+  - qe/nscf/kih.dat
+  - 00_lorrax/centroids_frac_300.txt
+  - 00_lorrax/centroids_frac_298_current.txt
+overrides:
+  env.LORRAX_FORCE_FULL_BZ: 1   # forces cascade off — full-BZ reference
+  mesh: 4x4 (16 GPUs / 4 nodes / hbm80g)
+
+purpose: |
+  v2 16-GPU re-run of the bispinor IBZ end-to-end gate (Reference / full-BZ leg).
+  Pair partner: ../04_lorrax_bispinor_ibz_16gpu_2026-05-16.
+  The prior v1 attempt (manifest history: 82520a1) crashed at module init
+  with `band range (0, 96) out of [0, 86)` because world_size=16 rounds
+  nband=84 up to b_id_4=96 > WFN.mnband=86.  Fixed in 2129fad + 9956dff
+  on agent/bispinor-ibz: load_centroids_band_chunked and
+  psi_G_store._populate_from_loader now slice to (b_start, min(b_end, mnband))
+  and zero-pad the band axis afterward.  This v2 retest confirms the fix
+  unblocks the 16-GPU cascade.
+
+# LORRAX cohsex
+lorrax:
+  bispinor: true
+  x_only: true
+  do_screened: false
+  screening: cohsex
+  memory_per_device_gb: 45.0
+  band_chunk_size: 2
+  r_chunk_size: 8192
+  ngpu_per_node: 4
+  nodes: 4
+  total_gpus: 16
+  hbm_required: hbm80g
+  source_branch: agent/bispinor-ibz
+  source_commit: 9956dff   # band-pad fixes for over-file b_id_4
+  env:
+    LORRAX_FORCE_FULL_BZ: "1"
+
+steps:
+  lorrax_cohsex_sigma_x: { state: pending }
+  e2e_gate_vs_run04:     { state: pending }

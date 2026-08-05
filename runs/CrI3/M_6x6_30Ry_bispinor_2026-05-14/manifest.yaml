@@ -1,0 +1,109 @@
+run_id: cri3_6x6_30Ry_bispinor_testbed_2026-05-14
+system: CrI3
+pipeline: qe_bgw_lorrax
+platform: perlmutter
+purpose: |
+  Long-lived bispinor symmetry-validation test bed.
+  Phase 2 (unified sym-action refactor) and any future bispinor sym work
+  should compare LORRAX cohsex output here against the BGW reference.
+
+variant_of: null
+reuse_from_parent: []
+overrides: {}
+
+# System parameters
+system_params:
+  formula: CrI3
+  prefix: CrI3
+  dimensionality: 2
+  space_group: 147   # P-3 (has inversion)
+  n_atoms: 8
+  n_val: 70
+  n_cond: 14
+  n_band: 84
+  nbnd_nscf: 86   # n_band + 2 (BGW degeneracy buffer)
+  ecutwfc_ry: 30.0
+  kgrid: [6, 6, 1]
+  noncolin: true
+  lspinorb: true
+  pseudopotentials:
+    - Cr.upf  # FR-ONCVPSP PBE, standard, 14 valence
+    - I.upf   # FR-ONCVPSP PBE, standard, 7 valence
+  cell_angstrom:
+    a1: [6.867, 0.0, 0.0]
+    a2: [-3.4335, 5.946996, 0.0]
+    a3: [0.0, 0.0, 18.0]   # vacuum
+
+# Symmetry analysis (from qe/nscf/WFN.h5)
+symmetry:
+  nsym_in_wfn_h5: 6
+  has_spatial_inversion: true   # -I = mtrx op 4, det=-1, trace=-3
+  ibz_k_points: 8
+  full_bz_k_points: 36
+  notes: |
+    P-3 = {E, C3, C3², -I, S6, S6⁵} = 3 proper + 3 improper rotations.
+    Because -I is present, V_q TRS-only path will not fire on this
+    system. Use for: bispinor ψ rotation, ζ rotation, V_q charge sym
+    under improper ops. Not appropriate for: TRS-only V_q regression.
+
+# Centroids
+centroids:
+  requested: 300
+  actual_scalar: 300            # centroids_frac_300.txt (50 orbits × 6 unfold)
+  actual_current: 298           # centroids_frac_298_current.txt (51 orbits × ~6 unfold)
+  orbit_closed: true            # default when nsym>1 (P-3 → 6 ops)
+  seed: 42
+  notes: |
+    Two kmeans runs required for bispinor:
+      kmeans_cli 300 --seed 42                       → scalar charge ζ (γ̃^0)
+      kmeans_cli 300 --seed 42 --density-mode current → transverse ζ (μ_L=1,2,3)
+
+# BGW
+bgw:
+  frequency_dependence: 0   # static COHSEX
+  number_bands: 84
+  epsilon_cutoff_ry: 30.0
+  screened_coulomb_cutoff_ry: 30.0
+  bare_coulomb_cutoff_ry: 30.0   # explicit; LORRAX default = 4*ecutwfc
+  band_index_min: 65   # nval - 5
+  band_index_max: 78   # nval + 8
+  fermi_level_ev: -4.95   # explicit because of small global valence/cond overlap
+
+# LORRAX cohsex
+lorrax:
+  bispinor: true
+  x_only: true
+  do_screened: false
+  screening: cohsex
+  memory_per_device_gb: 45.0
+  band_chunk_size: 2          # lowered from 4 (OOM at 4 with 80GB A100, 2 GPUs)
+  r_chunk_size: 8192          # lowered from 70000 (HWM ~296 GB → 2.6 GB on 80GB)
+  hbm_required: hbm80g        # 40GB A100 is insufficient even with lowered chunks
+  ngpu_per_node: 2            # divides nval=70
+  source_branch: agent/trs-aware-sym-fix
+  source_commit: a00722d      # lorrax_B post-PR2 (V_q IBZ→full unfold lift)
+
+# Step status. States: pending | running | complete | failed
+steps:
+  qe_scf:        { state: complete }
+  qe_nscf:       { state: complete }
+  qe_pw2bgw:     { state: complete }
+  qe_nscfq:      { state: complete }
+  qe_pw2bgwq:    { state: complete }
+  bgw_epsilon:   { state: complete }
+  bgw_sigma:     { state: complete }
+  lorrax_kmeans_scalar:   { state: complete }
+  lorrax_kmeans_current:  { state: complete }
+  lorrax_cohsex_sigma_x:  { state: complete, note: "Σ_X printed; finite; reasonable magnitudes for deep-band window" }
+  lorrax_cohsex_qp:       { state: blocked, note: "kin_ion_io crash (SymMaps.get_gvecs_kfull missing) — see KNOWN_SANDBOX_ERRORS.md 2026-05-14" }
+
+# Cascade activation status (per design)
+cascade:
+  ibz_q_reduction_fired: false
+  reason: |
+    Bispinor mode disables write_ibz_only for the charge ζ
+    (gw_init.py:650 `_write_ibz_only_charge = not bool(cfg.bispinor)`).
+    All 7 V_q tiles report `n_q_ibz=36 ... unfold=full-BZ` in gw.out.
+    Separately, CrI3 has spatial inversion so even if the cascade did
+    fire, the TRS-only V_q path would not — see README.md.
+  trs_fold_count: 0  # consistent with -I ∈ mtrx

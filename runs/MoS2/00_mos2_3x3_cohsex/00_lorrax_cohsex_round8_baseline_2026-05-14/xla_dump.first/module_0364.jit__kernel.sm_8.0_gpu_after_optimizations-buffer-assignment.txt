@@ -1,0 +1,121 @@
+BufferAssignment:
+allocation 0: size 1061683200, parameter 0, shape |c128[9,160,46080]| at ShapeIndex {}:
+ value: <102 param.1.0 @0> (size=1061683200,offset=0): c128[9,160,46080]{2,1,0}
+allocation 1: size 45227520, parameter 1, shape |c128[9,160,1963]| at ShapeIndex {}, output shape is |c128[9,160,1963]|, maybe-live-out:
+ value: <101 param.3 @0> (size=45227520,offset=0): c128[9,160,1963]{2,1,0}
+ value: <110 loop_add_fusion @0> (size=45227520,offset=0): c128[1440,1963]{1,0}
+allocation 2: size 70668, constant:
+ value: <109 constant_144_0 @0> (size=70668,offset=0): s32[9,1963]{1,0}
+allocation 3: size 3456, constant:
+ value: <104 constant_128_0 @0> (size=3456,offset=0): c128[9,24]{1,0}
+allocation 4: size 3456, constant:
+ value: <105 constant_111_0 @0> (size=3456,offset=0): c128[9,24]{1,0}
+allocation 5: size 4, parameter 2, shape |s32[]| at ShapeIndex {}:
+ value: <106 param.2.0 @0> (size=4,offset=0): s32[]
+allocation 6: size 2123372160, preallocated-temp:
+ value: <103 loop_convert_fusion @0> (size=5760,offset=2123366400): s32[1440]{0}
+ value: <107 loop_multiply_fusion @0> (size=1061683200,offset=1061683200): c128[1440,46080]{1,0}
+ value: <108 fft.4.0 @0> (size=1061683200,offset=0): c128[1440,24,24,80]{3,2,1,0}
+
+Total bytes used: 3230360464 (3.01GiB)
+
+Used values:
+<101 param.3 @0>
+ positions:
+  param.3
+ uses:
+  loop_add_fusion, operand 0
+ from instruction: %param.3 = c128[9,160,1963]{2,1,0} parameter(1), sharding={devices=[1,4,1]<=[4]}, metadata={op_name="acc_"}
+<102 param.1.0 @0>
+ positions:
+  param.1.0
+ uses:
+  loop_multiply_fusion, operand 0
+ from instruction: %param.1.0 = c128[9,160,46080]{2,1,0} parameter(0), sharding={devices=[1,4,1]<=[4]}, metadata={op_name="rch_"}
+<103 loop_convert_fusion @0>
+ positions:
+  loop_convert_fusion
+ uses:
+  loop_add_fusion, operand 3
+  loop_multiply_fusion, operand 1
+ from instruction: %loop_convert_fusion = s32[1440]{0} fusion(), kind=kLoop, calls=%fused_convert, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1060}
+<104 constant_128_0 @0>
+ positions:
+  constant_128_0
+ uses:
+  loop_multiply_fusion, operand 2
+ from instruction: %constant_128_0 = c128[9,24]{1,0} constant({...}), metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1084}
+<105 constant_111_0 @0>
+ positions:
+  constant_111_0
+ uses:
+  loop_multiply_fusion, operand 3
+ from instruction: %constant_111_0 = c128[9,24]{1,0} constant({...}), metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1084}
+<106 param.2.0 @0>
+ positions:
+  param.2.0
+ uses:
+  loop_multiply_fusion, operand 4
+ from instruction: %param.2.0 = s32[] parameter(2), sharding={replicated}, metadata={op_name="r0_"}
+<107 loop_multiply_fusion @0>
+ positions:
+  loop_multiply_fusion
+  bitcast.784.0
+ uses:
+  bitcast.784.0, operand 0
+  fft.4.0, operand 0
+ from instruction: %loop_multiply_fusion = c128[1440,46080]{1,0} fusion(%param.1.0, %loop_convert_fusion, %constant_128_0, %constant_111_0, %param.2.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1063}
+<108 fft.4.0 @0>
+ positions:
+  fft.4.0
+ uses:
+  loop_add_fusion, operand 1
+ from instruction: %fft.4.0 = c128[1440,24,24,80]{3,2,1,0} fft(%bitcast.784.0), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1067}
+<109 constant_144_0 @0>
+ positions:
+  constant_144_0
+ uses:
+  loop_add_fusion, operand 2
+ from instruction: %constant_144_0 = s32[9,1963]{1,0} constant({...}), metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1084}
+<110 loop_add_fusion @0>
+ positions:
+  loop_add_fusion
+  bitcast.17.0
+ uses:
+  bitcast.17.0, operand 0
+ from instruction: %loop_add_fusion = c128[1440,1963]{1,0} fusion(%param.3, %fft.4.0, %constant_144_0, %loop_convert_fusion), kind=kLoop, calls=%fused_add, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1072}
+
+
+HloLiveRange (max 12):
+  InstructionSequence:
+    0:param.2.0
+    1:constant_144_0
+    2:constant_128_0
+    3:constant_111_0
+    4:param.1.0
+    5:param.3
+    6:loop_convert_fusion
+    7:loop_multiply_fusion
+    8:bitcast.784.0
+    9:fft.4.0
+    10:loop_add_fusion
+    11:bitcast.17.0
+  BufferLiveRange:
+    param.3{}:0-10
+    param.1.0{}:0-12
+    loop_convert_fusion{}:6-10
+    constant_128_0{}:2-7
+    constant_111_0{}:3-7
+    param.2.0{}:0-12
+    loop_multiply_fusion{}:7-9
+    fft.4.0{}:9-10
+    constant_144_0{}:1-10
+    loop_add_fusion{}:10-12
+  Live ranges at 10 (peak):
+    param.3: 45227520 bytes
+    param.1.0: 1061683200 bytes
+    loop_convert_fusion: 5760 bytes
+    param.2.0: 4 bytes
+    fft.4.0: 1061683200 bytes
+    constant_144_0: 70668 bytes
+    loop_add_fusion: 45227520 bytes

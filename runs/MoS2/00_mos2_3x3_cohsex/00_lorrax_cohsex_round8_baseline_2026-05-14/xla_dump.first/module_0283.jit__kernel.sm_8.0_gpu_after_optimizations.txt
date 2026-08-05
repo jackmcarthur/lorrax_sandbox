@@ -1,0 +1,144 @@
+HloModule jit__kernel, is_scheduled=true, input_output_alias={ {}: (1, {}, may-alias) }, entry_computation_layout={(c128[9,160,46080]{2,1,0}, c128[9,160,1963]{2,1,0}, s32[])->c128[9,160,1963]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,true}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="956aab1263fe24f6d76e63b70e2a5e27"}
+
+%fused_add (param_0.35: c128[9,160,1963], param_1.55: c128[1440,24,24,80], param_2.27: s32[9,1963], param_3.19: s32[1440]) -> c128[1440,1963] {
+  %param_0.35 = c128[9,160,1963]{2,1,0} parameter(0)
+  %bitcast.572.1 = c128[1440,1963]{1,0} bitcast(%param_0.35)
+  %param_1.55 = c128[1440,24,24,80]{3,2,1,0} parameter(1)
+  %bitcast.788.3 = c128[1440,46080]{1,0} bitcast(%param_1.55)
+  %iota.15.1 = s32[1440,1963,1]{2,1,0} iota(), iota_dimension=0
+  %param_2.27 = s32[9,1963]{1,0} parameter(2)
+  %param_3.19 = s32[1440]{0} parameter(3)
+  %bitcast.792.12 = s32[1440,1]{1,0} bitcast(%param_3.19)
+  %gather.40.3 = s32[1440,1,1963]{2,0,1} gather(%param_2.27, %bitcast.792.12), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,1963}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1069}
+  %bitcast.795.5 = s32[1440,1963,1]{2,1,0} bitcast(%gather.40.3)
+  %concatenate.3.5 = s32[1440,1963,2]{2,1,0} concatenate(%iota.15.1, %bitcast.795.5), dimensions={2}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(take_along_axis)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1068}
+  %bitcast.799.3 = s32[2826720,2]{1,0} bitcast(%concatenate.3.5)
+  %gather.41.3 = c128[2826720,1,1]{0,2,1} gather(%bitcast.788.3, %bitcast.799.3), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0,1}, index_vector_dim=1, slice_sizes={1,1}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(take_along_axis)/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1068}
+  %bitcast.802.1 = c128[1440,1963]{1,0} bitcast(%gather.41.3)
+  ROOT %add.88.1 = c128[1440,1963]{1,0} add(%bitcast.572.1, %bitcast.802.1), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1072}
+}
+
+%fused_multiply (param_0.70: c128[9,160,46080], param_1.184: s32[1440], param_2.135: c128[9,24], param_3.90: c128[9,24], param_4.81: s32[]) -> c128[1440,46080] {
+  %param_0.70 = c128[9,160,46080]{2,1,0} parameter(0)
+  %bitcast.576.5 = c128[1440,46080]{1,0} bitcast(%param_0.70)
+  %param_3.90 = c128[9,24]{1,0} parameter(3)
+  %param_1.184 = s32[1440]{0} parameter(1)
+  %bitcast.792.10 = s32[1440,1]{1,0} bitcast(%param_1.184)
+  %gather.34.3 = c128[1440,1,24]{2,1,0} gather(%param_3.90, %bitcast.792.10), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,24}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1060}
+  %bitcast.625.7 = c128[24,1440]{0,1} bitcast(%gather.34.3)
+  %param_4.81 = s32[] parameter(4)
+  %broadcast.224.47 = s32[46080]{0} broadcast(%param_4.81), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1044}
+  %iota.14.47 = s32[46080]{0} iota(), iota_dimension=0, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1044}
+  %add.80.47 = s32[46080]{0} add(%broadcast.224.47, %iota.14.47), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1044}
+  %sign.23.7 = s32[46080]{0} sign(%add.80.47), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/sign" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %constant_121_1 = s32[] constant(1), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/sign" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %broadcast.225.7 = s32[46080]{0} broadcast(%constant_121_1), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %compare.120.7 = pred[46080]{0} compare(%sign.23.7, %broadcast.225.7), direction=NE, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %constant_122_1 = s32[] constant(1920)
+  %broadcast.226.14 = s32[46080]{0} broadcast(%constant_122_1), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %remainder.26.5 = s32[46080]{0} remainder(%add.80.47, %broadcast.226.14), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %constant_123_1 = s32[] constant(0)
+  %broadcast.227.16 = s32[46080]{0} broadcast(%constant_123_1), dimensions={}
+  %compare.121.3 = pred[46080]{0} compare(%remainder.26.5, %broadcast.227.16), direction=NE, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %and.28.3 = pred[46080]{0} and(%compare.120.7, %compare.121.3), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %divide.18.9 = s32[46080]{0} divide(%add.80.47, %broadcast.226.14), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %constant_125_1 = s32[] constant(-1)
+  %broadcast.229.22 = s32[46080]{0} broadcast(%constant_125_1), dimensions={}
+  %add.81.7 = s32[46080]{0} add(%divide.18.9, %broadcast.229.22), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %select.81.7 = s32[46080]{0} select(%and.28.3, %add.81.7, %divide.18.9), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1190}
+  %compare.122.3 = pred[46080]{0} compare(%select.81.7, %broadcast.227.16), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1060}
+  %constant_127_1 = s32[] constant(24)
+  %broadcast.231.12 = s32[46080]{0} broadcast(%constant_127_1), dimensions={}
+  %add.82.5 = s32[46080]{0} add(%select.81.7, %broadcast.231.12), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1060}
+  %select.82.3 = s32[46080]{0} select(%compare.122.3, %add.82.5, %select.81.7), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1060}
+  %bitcast.665.7 = s32[46080,1]{1,0} bitcast(%select.82.3)
+  %gather.35.7 = c128[46080,1,1440]{0,2,1} gather(%bitcast.625.7, %bitcast.665.7), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,1440}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1060}
+  %bitcast.668.5 = c128[1440,46080]{1,0} bitcast(%gather.35.7)
+  %multiply.20.5 = c128[1440,46080]{1,0} multiply(%bitcast.576.5, %bitcast.668.5), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1063}
+  %param_2.135 = c128[9,24]{1,0} parameter(2)
+  %gather.36.3 = c128[1440,1,24]{2,1,0} gather(%param_2.135, %bitcast.792.10), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,24}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1061}
+  %bitcast.677.5 = c128[24,1440]{0,1} bitcast(%gather.36.3)
+  %constant_132_1 = s32[] constant(80)
+  %broadcast.232.58 = s32[46080]{0} broadcast(%constant_132_1), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %remainder.27.23 = s32[46080]{0} remainder(%add.80.47, %broadcast.232.58), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %compare.123.7 = pred[46080]{0} compare(%remainder.27.23, %broadcast.227.16), direction=NE, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %and.29.3 = pred[46080]{0} and(%compare.120.7, %compare.123.7), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %divide.19.21 = s32[46080]{0} divide(%add.80.47, %broadcast.232.58), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %add.83.21 = s32[46080]{0} add(%divide.19.21, %broadcast.229.22), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1046}
+  %select.83.21 = s32[46080]{0} select(%and.29.3, %add.83.21, %divide.19.21), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(floor_divide)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1190}
+  %remainder.28.19 = s32[46080]{0} remainder(%select.83.21, %broadcast.231.12), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(remainder)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1047}
+  %compare.124.3 = pred[46080]{0} compare(%remainder.28.19, %broadcast.227.16), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(remainder)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1047}
+  %compare.125.5 = pred[46080]{0} compare(%remainder.28.19, %broadcast.227.16), direction=NE, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(remainder)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1047}
+  %and.30.3 = pred[46080]{0} and(%compare.124.3, %compare.125.5), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(remainder)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1047}
+  %add.84.9 = s32[46080]{0} add(%remainder.28.19, %broadcast.231.12), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(remainder)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1047}
+  %select.84.7 = s32[46080]{0} select(%and.30.3, %add.84.9, %remainder.28.19), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(remainder)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1047}
+  %compare.126.3 = pred[46080]{0} compare(%select.84.7, %broadcast.227.16), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1061}
+  %add.85.5 = s32[46080]{0} add(%select.84.7, %broadcast.231.12), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1061}
+  %select.85.3 = s32[46080]{0} select(%compare.126.3, %add.85.5, %select.84.7), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1061}
+  %bitcast.735.5 = s32[46080,1]{1,0} bitcast(%select.85.3)
+  %gather.37.5 = c128[46080,1,1440]{0,2,1} gather(%bitcast.677.5, %bitcast.735.5), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,1440}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1061}
+  %bitcast.738.3 = c128[1440,46080]{1,0} bitcast(%gather.37.5)
+  %multiply.21.3 = c128[1440,46080]{1,0} multiply(%multiply.20.5, %bitcast.738.3), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1063}
+  %constant_139_1 = c128[] constant((1, 0))
+  %broadcast.242.1 = c128[9,80]{1,0} broadcast(%constant_139_1), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1084}
+  %gather.38.3 = c128[1440,1,80]{2,1,0} gather(%broadcast.242.1, %bitcast.792.10), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,80}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1062}
+  %bitcast.748.3 = c128[80,1440]{0,1} bitcast(%gather.38.3)
+  %compare.127.5 = pred[46080]{0} compare(%remainder.27.23, %broadcast.227.16), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(remainder)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1047}
+  %and.31.3 = pred[46080]{0} and(%compare.127.5, %compare.123.7), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(remainder)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1047}
+  %add.86.9 = s32[46080]{0} add(%remainder.27.23, %broadcast.232.58), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(remainder)/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1047}
+  %select.86.7 = s32[46080]{0} select(%and.31.3, %add.86.9, %remainder.27.23), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/jit(remainder)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1047}
+  %compare.128.3 = pred[46080]{0} compare(%select.86.7, %broadcast.227.16), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1062}
+  %add.87.5 = s32[46080]{0} add(%select.86.7, %broadcast.232.58), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1062}
+  %select.87.3 = s32[46080]{0} select(%compare.128.3, %add.87.5, %select.86.7), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1062}
+  %bitcast.777.3 = s32[46080,1]{1,0} bitcast(%select.87.3)
+  %gather.39.3 = c128[46080,1,1440]{0,2,1} gather(%bitcast.748.3, %bitcast.777.3), offset_dims={1,2}, collapsed_slice_dims={}, start_index_map={0}, index_vector_dim=1, slice_sizes={1,1440}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/gather" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1062}
+  %bitcast.780.1 = c128[1440,46080]{1,0} bitcast(%gather.39.3)
+  ROOT %multiply.22.1 = c128[1440,46080]{1,0} multiply(%multiply.21.3, %bitcast.780.1), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1063}
+}
+
+%fused_convert () -> s32[1440] {
+  %constant_112_1 = s64[] constant(0)
+  %broadcast.215.13 = s64[1440]{0} broadcast(%constant_112_1), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(clip)/max" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1053}
+  %iota.13.21 = s64[1440]{0} iota(), iota_dimension=0, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %sign.22.5 = s64[1440]{0} sign(%iota.13.21), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(floor_divide)/sign" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %constant_113_1 = s64[] constant(1), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(floor_divide)/sign" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %broadcast.216.3 = s64[1440]{0} broadcast(%constant_113_1), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %compare.117.3 = pred[1440]{0} compare(%sign.22.5, %broadcast.216.3), direction=NE, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %iota.13.19 = s64[1440]{0} iota(), iota_dimension=0, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %constant_114_1 = s64[] constant(160)
+  %broadcast.217.10 = s64[1440]{0} broadcast(%constant_114_1), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %remainder.25.9 = s64[1440]{0} remainder(%iota.13.19, %broadcast.217.10), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(floor_divide)/rem" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %compare.118.7 = pred[1440]{0} compare(%remainder.25.9, %broadcast.215.13), direction=NE, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(floor_divide)/ne" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %and.27.5 = pred[1440]{0} and(%compare.117.3, %compare.118.7), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(floor_divide)/and" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %iota.13.18 = s64[1440]{0} iota(), iota_dimension=0, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/iota" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %divide.17.7 = s64[1440]{0} divide(%iota.13.18, %broadcast.217.10), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(floor_divide)/div" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %constant_117_1 = s64[] constant(-1)
+  %broadcast.220.3 = s64[1440]{0} broadcast(%constant_117_1), dimensions={}
+  %add.78.5 = s64[1440]{0} add(%divide.17.7, %broadcast.220.3), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(floor_divide)/sub" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %select.79.5 = s64[1440]{0} select(%and.27.5, %add.78.5, %divide.17.7), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(floor_divide)/jit(_where)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1054}
+  %constant_118_1 = s64[] constant(8)
+  %broadcast.221.3 = s64[1440]{0} broadcast(%constant_118_1), dimensions={}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(clip)/min" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1053}
+  %clamp.6.3 = s64[1440]{0} clamp(%broadcast.215.13, %select.79.5, %broadcast.221.3), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(clip)/min" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1053}
+  %compare.119.3 = pred[1440]{0} compare(%clamp.6.3, %broadcast.215.13), direction=LT, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1060}
+  %constant_120_1 = s64[] constant(9)
+  %broadcast.223.1 = s64[1440]{0} broadcast(%constant_120_1), dimensions={}
+  %add.79.3 = s64[1440]{0} add(%clamp.6.3, %broadcast.223.1), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1060}
+  %select.80.3 = s64[1440]{0} select(%compare.119.3, %add.79.3, %clamp.6.3), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1060}
+  ROOT %convert.20.1 = s32[1440]{0} convert(%select.80.3), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1060}
+}
+
+ENTRY %main.326_spmd (param.1.0: c128[9,160,46080], param.3: c128[9,160,1963], param.2.0: s32[]) -> c128[9,160,1963] {
+  %param.2.0 = s32[] parameter(2), sharding={replicated}, metadata={op_name="r0_"}
+  %constant_144_0 = s32[9,1963]{1,0} constant({...}), metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1084}
+  %constant_128_0 = c128[9,24]{1,0} constant({...}), metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1084}
+  %constant_111_0 = c128[9,24]{1,0} constant({...}), metadata={op_name="jit(_kernel)/jit(main)/shard_map" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1084}
+  %param.1.0 = c128[9,160,46080]{2,1,0} parameter(0), sharding={devices=[1,4,1]<=[4]}, metadata={op_name="rch_"}
+  %param.3 = c128[9,160,1963]{2,1,0} parameter(1), sharding={devices=[1,4,1]<=[4]}, metadata={op_name="acc_"}
+  %loop_convert_fusion = s32[1440]{0} fusion(), kind=kLoop, calls=%fused_convert, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/convert_element_type" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1060}
+  %loop_multiply_fusion = c128[1440,46080]{1,0} fusion(%param.1.0, %loop_convert_fusion, %constant_128_0, %constant_111_0, %param.2.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1063}
+  %bitcast.784.0 = c128[1440,24,24,80]{3,2,1,0} bitcast(%loop_multiply_fusion)
+  %fft.4.0 = c128[1440,24,24,80]{3,2,1,0} fft(%bitcast.784.0), fft_type=FFT, fft_length={24,24,80}, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/jit(fft)/fft" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1067}
+  %loop_add_fusion = c128[1440,1963]{1,0} fusion(%param.3, %fft.4.0, %constant_144_0, %loop_convert_fusion), kind=kLoop, calls=%fused_add, metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1072}
+  ROOT %bitcast.17.0 = c128[9,160,1963]{2,1,0} bitcast(%loop_add_fusion), metadata={op_name="jit(_kernel)/jit(main)/jit(shmap_body)/while/body/add" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=1072}
+}
+

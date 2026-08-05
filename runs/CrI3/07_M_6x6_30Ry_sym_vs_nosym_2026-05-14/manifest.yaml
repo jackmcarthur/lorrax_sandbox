@@ -1,0 +1,65 @@
+run_id: cri3_6x6_30Ry_sym_vs_nosym_pr3_2026-05-14
+system: CrI3
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: M_6x6_30Ry_bispinor_2026-05-14
+reuse_from_parent:
+  - WFN.h5 (run_sym ← M_6x6_30Ry_bispinor_2026-05-14/qe/nscf/WFN.h5)
+  - centroids_frac_300.txt (orbit-closed 300 reps, built on sym WFN)
+  - vxc.dat / kih.dat (same source)
+
+overrides:
+  bispinor: false             # was true in M_6x6_30Ry_bispinor_2026-05-14
+  x_only: true                # Σ_X only
+  do_screened: false
+  bare_coulomb_cutoff_ry: 30.0
+  write_wfn_h5: false         # work around qp_wfn writer bug for nrk=48 sym WFN
+
+purpose: |
+  Task #30 mirror for CrI3 — belt-and-suspenders gate for the PR3 ψ-side
+  sym refactor on a SECOND system distinct from MoS₂ (test #30 passed at
+  0.090 meV on MoS₂).  CrI3 monolayer has space group P-3 (#147) with
+  spatial inversion in mtrx ⇒ TRS rows do NOT fire in any V_q/ψ unfold ⇒
+  PR3 is provably a no-op for this system.  This run experimentally
+  validates that expectation (and as a side effect, exposes the IBZ
+  cascade unfold path for C3 + improper-rotation ops).
+
+  Two LORRAX cohsex runs on the SAME Phase-2 code (commits 8504994 +
+  a45f039 + 69ab42c), using the SAME orbit-closed 300-centroid file,
+  on two WFNs that describe the same physics but differ only in
+  whether symmetry was used to fold k-points:
+
+    run_sym/   ← WFN with ntran=6 (P-3 spatial, no_t_rev), nrk=48
+                 IBZ cascade fires: n_q_disk=8 → 36 full-BZ unfold.
+    run_nosym/ ← WFN with ntran=1 (identity only), nrk=36
+                 No unfold; IBZ cascade trivially identity.
+
+  Pass gate: max |ΔΣ_X(k,n)| ≤ 1 meV across all 36 k-points × 84 bands.
+
+# Sym structure (sym WFN side):
+sym_structure:
+  ntran:         6              # P-3 spatial group: E, 2C3, -I, 2S6
+  len_sym_mats_k: 12            # 2*ntran with TRS augmentation
+  n_trs_k:       0              # CrI3 has -I in mtrx ⇒ all k unfold spatially
+  has_inversion: true
+  tau_nonsymmorphic: false      # All 6 ops have τ=0 (P-3 is symmorphic)
+
+steps:
+  qe_nosym_nscf:        { state: complete, note: "17s, 4 GPUs, 36 k-pts" }
+  qe_nosym_pw2bgw:      { state: complete, note: "wfng + vxc + kih, CPU mode" }
+  qe_nosym_wfn2hdf:     { state: complete }
+  kmeans:               { state: reused, note: "reused centroids_frac_300.txt from M_6x6_30Ry_bispinor_2026-05-14/00_lorrax" }
+  run_sym/kin_ion:      { state: complete, note: "~7s, 1 GPU" }
+  run_sym/cohsex:       { state: complete_with_postcrash, note: "sigma_freq_debug.dat written; crashes in write_qp_wfn_h5 and write_results post-Σ_X — both downstream of the comparison data" }
+  run_nosym/kin_ion:    { state: complete }
+  run_nosym/cohsex:     { state: complete, note: "clean exit, sigma_freq_debug.dat written" }
+  compare:              { state: complete, note: "FAIL — max |ΔΣ_X| = 6022 meV (6000× the 1 meV gate); root cause is NOT PR3 (no TRS rows fire); separate bug in IBZ cascade unfold for C3+improper sym ops" }
+
+# Source commit (lorrax_B agent/trs-aware-sym-fix):
+#   69ab42c  cleanup (3 fixes to pre-existing regressions surfaced by CrI3 testbed)
+#   a45f039  dft_operators: fix generate_gvectors_k after P5 SymMaps API migration
+#   8504994  symmetry_maps: PR3 — unfold_psi free function + bispinor U_spinor TRS fix
+#   796c043  symmetry_maps + tests: fix PR2 mechanical migration gaps
+#   a00722d  symmetry_maps: PR2 — V_q IBZ→full unfold to free function
+#   5da9ec7  symmetry_maps: PR1 — consolidate index tables

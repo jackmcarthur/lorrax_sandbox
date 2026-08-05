@@ -1,0 +1,22 @@
+run_id: B_orbmag_FM_6x6_30Ry_2026-06-16
+system: CrI3
+pipeline: qe_only        # QE SCF+NSCF -> WFN.h5, then psp.orbital_magnetization
+platform: perlmutter
+
+variant_of: M_6x6_30Ry_bispinor_2026-05-14
+reuse_from_parent: []    # NEW SCF: magnetization differs, cannot reuse density
+overrides:
+  starting_magnetization: "Cr=0.5 along +z (c-axis); I=0  (FERROMAGNETIC)"
+  note: >
+    The existing CrI3 SOC calculations omit starting_magnetization and
+    converge to the NON-MAGNETIC (time-reversal-symmetric) state, for which
+    spin and orbital magnetization are identically zero.  This variant adds
+    starting_magnetization to obtain the ferromagnetic ground state (net
+    spin ~6 mu_B per cell) so the orbital magnetic moment can be computed
+    with psp/orbital_magnetization.py.
+  nscf_nbnd: 180          # large band set for sum-over-states orbital-mag convergence
+
+steps:
+  qe_scf:  { state: complete, note: "3x3 magnetic SCF, SOC, 30 Ry -> total mag (0,0,6.01) mu_B" }
+  qe_nscf: { state: complete, note: "6x6 NSCF nosym + starting_magnetization, 180 bands -> WFN.h5; gap +1.50 eV" }
+  orbital_magnetization: { state: complete, note: "m_z=+0.026 mu_B parallel to spin (p+vNL, under-converged); see reports/B_orbital_magnetization_cri3_2026-06-16/report.md" }

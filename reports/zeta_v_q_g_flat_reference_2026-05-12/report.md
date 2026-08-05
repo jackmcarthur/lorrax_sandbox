@@ -229,106 +229,271 @@ multiply — not a 4×4 matmul.  The scalar
 
 ---
 
-## 5. Memory model (`gw/gflat_memory_model.py`)
+## 5. Memory model — fill the budget with one big r-chunk
 
-A static per-peak model decomposes per-rank HBM into **four named
-peaks** that span the pipeline:
+### 5.1. The problem in one paragraph
 
-- **Peak A** — band-chunked centroid load (pre-loop):
-  ψ(G) → IFFT → sample at r_μ.  Dominant term: the ψ(r) FFT box
-  transient `nk · band_chunk · ns · n_rtot · fft_factor`, sharded
-  on `('x','y')`.  Runs once per channel.
-- **Peak B** — CCT + Cholesky (pre-loop):
-  pair density on (μ, ν) full grid + `C_q` + `L_q`.  Persistent
-  centroids dominate.
-- **Peak C** — `fit_one_rchunk` fused jit (inside the r-chunk loop):
-  this is the runtime bottleneck on every system we've measured.
-  Dominant term is `pair_density_slots × n_q · ns² · (μ/p) · (r_chunk/p) · 16`
-  — the count of concurrent rank-5 pair-density buffers XLA keeps
-  live during the IFFT/contract/FFT sub-pipeline.
-- **Peak D** — `accumulate_rchunk_to_gflat`:
-  gflat_acc persistent + per-iter FFT box
-  `gflat_chunk_size · n_rtot · fft_factor`.
+An un-chunked `C_q · ζ = Z_q` fit needs TB-class HBM per rank
+(`n_q · n_rmu · n_rtot · 16 B` ≈ 80 GB at MoS2 3×3, ≈ 3 TB at CrI3
+6×6 80 Ry).  GPUs have tens of GB.  We chunk over the r-axis so
+the working set fits.  The goal is **the smallest possible chunk
+count**: each r-chunk pays a fixed FFT overhead (ψ-fetch +
+ζ-accumulate) that's identical regardless of how many r-points the
+chunk covers, so doubling r_chunk halves that overhead.  Bigger
+r-chunks are always better for wall time; memory is the only
+constraint.
 
-`plan_gflat_chunks(...)` picks `(band_chunk, r_chunk, gflat_chunk_size)`
-deterministically: maximise band_chunk subject to Peak A/C
-FFT-box headroom, then maximise r_chunk subject to Peak C with
-lower bound `r_chunk ≥ μ` (any chunk smaller than that wastes
-iteration overhead since the Σ_μν output is itself `μ²` work),
-then set gflat_chunk_size to one-shot if Peak D fits, else binary
-search down.  The HWM is `max(A, B, C, D)` and the bottleneck name
-is surfaced in the run log.
+### 5.2. Three workspaces, two memory pools, one performance goal
 
-The model is **already wired in as the chooser** for
-`band_chunk` / `r_chunk` / `gflat_chunk_size` under
-`LORRAX_WRITE_G_FLAT_ZETA=1` (default-on); cohsex.in overrides
-short-circuit the corresponding stage.  q-chunk and k-chunk
-choices still flow through the legacy `compute_optimal_chunks`.
+**Persistent pool** (alive every r-chunk iter):
 
-**The magic constant** is `pair_density_slots`.  XLA's
-BufferAssignment keeps 5 concurrent rank-5 pair-density buffers
-live during the fused kernel — verified by counting distinct
-lifetime offsets in `module_*.jit__kernel.memory-usage-report.txt`
-on MoS2 3×3 bispinor (`runs/MoS2/00_mos2_3x3_cohsex/D_perf_after_2026-05-12`).
-This is the constant that makes the model match runtime to within
-~10% on systems we've measured.
+```
+B_persist = 2 · nk · ns · n_rmu · n_band · 16 / P    ψ at centroids (L+R)
+          + n_q · n_rmu² · 16 / P                    L_q factor
+          + n_q_disk · n_rmu · ngkmax · 16 / P       gflat_acc (G-flat ζ)
+```
 
-### 5.1. Where the model is still blind
+Fixed at problem-setup time, can't be reduced.  MoS2 3×3:
+~0.5 GB.  CrI3 6×6 80 Ry: ~3 GB (gflat_acc dominates).
 
-- **`psi_G_store.fetch_psi_rchunk` K-FFT box.**  The unsharded
-  transient there is the CrI3-scale OOM root cause; the model
-  has no term for it.  Patched out-of-band by
-  `LORRAX_PSIG_KCHUNK=6` — but the chooser doesn't know to set it.
-- **cuSolverMp internal buffers.**  `potrs` / `getrs` carry their
-  own scratch (~`n_rmu²`-class).  Not enormous but unmodelled.
-- **V_q kernel.**  No Peak E for the per-q matmul.  `g_chunk`
-  comes from cohsex.in or `_pick_g_chunk(ngkmax)`.  At CrI3 scale
-  this stays a manual knob.
-- **XLA pipelining inflation.**  The model uses a single
-  `fft_box_factor = 4.0` to account for cuFFT scratch + pipeline
-  overhead.  Empirically XLA can balloon by 2–4× over the
-  analytic figure; the 4× is conservative on systems we've
-  measured, but for very large `n_rtot` it's worth re-verifying.
+**Workspace pool** `W_pool = B − B_persist`.  Three transient
+blocks contest this pool **sequentially** inside each r-chunk iter
+— they do not co-exist in time, so XLA aliases them to share
+physical memory:
 
-### 5.2. Ways to extend it
+```
+  Step           Block            Size                                 Knob
+  ─────────────  ───────────────  ───────────────────────────────────  ────────────────────
+  ψ(G)→ψ(r)      W_wfn            k_chunk · band_chunk · ns · n_rtot   band_chunk_size,
+                 (FFT box)        · 16 · fft_factor / P                psig_k_chunk_size
+  ─────────────  ───────────────  ───────────────────────────────────  ────────────────────
+  C_q / Z_q      W_zeta           3 · n_q · ns² · n_rmu · r_chunk      r_chunk_size
+                 (3 pair-density  · 16 / P                              (the dominant lever)
+                  slots)
+  ─────────────  ───────────────  ───────────────────────────────────  ────────────────────
+  ζ → G-flat     W_accum          gflat_chunk_size · n_rtot            gflat_chunk_size
+                 (FFT box)        · 16 · fft_factor / P
+```
 
-In rough priority order:
+`W_wfn` and `W_accum` are **independent of r_chunk** — they are
+per-FFT working sets sized only by their own knobs.  Only `W_zeta`
+scales with `r_chunk` (linearly).
 
-- **Add a Peak A' / Peak C' term for the `psi_G_store` K-FFT box.**
-  This is the most-impactful gap: the model currently passes runs
-  that actually OOM on CrI3.  The term is
-  `_k_chunk · band_chunk · ns · n_rtot · fft_factor`, sharded
-  only on `('x','y')` if the with-sharding-constraint path works
-  (it does not today — see §6), otherwise unsharded.  Wiring
-  this in lets the chooser pick `_k_chunk` (currently `LORRAX_PSIG_KCHUNK`)
-  alongside the other knobs.
-- **Auto-recalibrate `pair_density_slots` from a profiling pass.**
-  Today it is a hard-coded 5 extracted by hand from an XLA dump.
-  After any non-trivial change to the fused kernel (donation pattern,
-  einsum spec, gamma-contract structure) the slot count can shift —
-  the karmb-spec experiment did not change it, but the prior
-  `'kabmr'`-spec did.  A short profiling helper that re-runs one
-  r-chunk in dump mode and counts P-shaped lifetime slots from
-  the `memory-usage-report.txt` would keep the constant honest
-  across XLA/JAX upgrades.
-- **Add a Peak E for V_q.**  Inputs: ζ slabs at `[1, μ_XY, G]`,
-  reshards to `[μ_X, G]` / `[ν_Y, G]`, GEMM output `[μ_X, ν_Y]`,
-  scratch for the G-chunked `lax.scan` body.  Lets the chooser
-  pick `g_chunk` from the same budget, and surfaces the V_q
-  reshard buffers in the HWM breakdown.
-- **Split `fft_box_factor` per peak.**  Peak A's pre-loop FFT and
-  Peak D's accumulate FFT have different fusion neighbourhoods —
-  Peak D's box is followed by a gather + accumulate that XLA may
-  fuse, dropping the live multiplier.  Peak C's k-FFT happens
-  inside the fused kernel and is the only one that pipelines
-  with the pair-density buffers.  A per-peak factor would let
-  the chooser stop being globally conservative.
-- **Report headroom and bottleneck dependency.**  Today the log
-  prints HWM and the bottleneck name.  The natural next step is
-  "Peak C at 81%, the slack comes from band_chunk = 16; halving
-  it would free 1.4 GB at the cost of 2× pre-loop FFT time" —
-  letting the user trade compile/runtime cost against memory
-  without re-running.
+Aliasing means the binding peak per iter is
+`max(W_wfn, W_zeta, W_accum)` rather than the sum.  In practice
+`W_zeta` is the binding peak at any reasonable `r_chunk`; `W_wfn`
+and `W_accum` are smaller terms that just need to fit under the
+same ceiling.
+
+### 5.3. The performance objective — explicit tradeoffs
+
+Total runtime of the ζ-fit loop (suppressing the once-per-channel
+CCT preamble):
+
+```
+T_total  ≈  n_rchunks · ( T_zeta(r_chunk) + n_band_chunks · T_wfn_fft
+                          + T_accum_fft )
+
+with
+  n_rchunks       = ⌈n_rtot / r_chunk⌉
+  n_band_chunks   = ⌈n_band / band_chunk⌉
+  T_zeta(r_chunk) = r_chunk · τ_zeta_per_r_unit       (linear in r_chunk)
+  T_wfn_fft       = const(band_chunk, n_rtot)         (independent of r_chunk)
+  T_accum_fft     = const(gflat_chunk_size, n_rtot)   (independent of r_chunk)
+```
+
+Substituting and simplifying:
+
+```
+T_total  ≈  n_rtot · τ_zeta_per_r_unit                        ← fixed ζ work
+          + (n_rtot / r_chunk) · n_band_chunks · T_wfn_fft    ← wfn FFT tax
+          + (n_rtot / r_chunk) · T_accum_fft                  ← accum FFT tax
+```
+
+The first term is the actual physics work; you pay it no matter
+how you chunk.  The second and third are the chunk-count tax:
+**every extra r-chunk doubles the FFT count on both the
+wavefunction-fetch side and the accumulator side**.
+
+Implications:
+
+- **`r_chunk` is the dominant performance lever** because it
+  divides BOTH overhead terms.  Halving `r_chunk` doubles the
+  wall time spent in FFTs.
+- `band_chunk` is a secondary lever (only divides the wfn term).
+  `band_chunk = n_band` (single fetch per r-chunk) gives one wfn
+  FFT per r-chunk.
+- `gflat_chunk_size` similarly: one-shot eliminates the
+  scan-over-rows inside the accumulator.
+
+So the algorithmic rule is:
+
+> Pick each chunk size as **large as memory allows**.
+> `r_chunk` first (biggest win), then `band_chunk`, then
+> `gflat_chunk_size`.
+
+There is no tradeoff *between* them within memory — `W_wfn`,
+`W_zeta`, `W_accum` are independent of each other and all draw
+from the same `W_pool`.  The tradeoff is purely against `W_pool`
+itself.
+
+### 5.4. The actual algorithm — five logical steps
+
+```
+W_pool   ← B − B_persist                                # all transients share this
+α_zeta   ← 3 · n_q · ns² · n_rmu · 16 / P               # W_zeta = α_zeta · r_chunk
+
+# Step 1.  Maximise r_chunk — biggest performance lever.
+r_chunk  ← min(W_pool / α_zeta,  n_rtot)
+r_chunk  ← max(r_chunk,          n_rmu)                  # iter-overhead floor
+
+# Step 2.  Maximise band_chunk subject to W_wfn ≤ W_pool.  XLA
+#         aliases the wfn FFT box into a pair-density slot, so the
+#         practical ceiling is slightly under one slot:
+#           W_wfn ≤ W_pool / pair_density_slots  (≈ W_pool / 3)
+#         — gives a fighting chance of clean aliasing.
+band_chunk ← largest pow2 ≤ n_band with
+             W_wfn(band_chunk) ≤ W_pool / pair_density_slots
+
+# Step 3.  Maximise gflat_chunk_size subject to W_accum ≤ W_pool.
+#         Accumulate is a separate XLA module, so it gets the full
+#         pool again.  Default to one-shot (full row count); bisect
+#         down only if it doesn't fit.
+gflat_chunk_size ← N_rows if W_accum(N_rows) ≤ W_pool
+                   else largest int with W_accum(...) ≤ W_pool
+
+# Step 4.  If psig_k_chunk_size = 0 and band_chunk · n_rtot would
+#         force an unsharded FFT box bigger than W_pool, drop
+#         psig_k_chunk_size by halves until W_wfn (unsharded form)
+#         fits.  See §5.8.
+
+# Step 5.  Same monotone "largest such that W ≤ ceiling" for
+#         vq_g_chunk_size in the V_q pass — but V_q runs after the
+#         r-chunk loop, so it's a separate budget problem (no
+#         W_zeta competition; just W_pool with V_q replacing
+#         W_zeta).
+```
+
+Five logical steps; the rest is arithmetic.  The current
+`plan_gflat_chunks(...)` follows steps 1–3 with a more
+conservative 50/50 W_wfn-vs-W_zeta split; the §5.5 analysis says
+`1/pair_density_slots` is the principled choice.
+
+### 5.5. Why the tradeoff is monotone (one knob each)
+
+`W_zeta`, `W_wfn`, `W_accum` each depend on exactly one chunk
+knob.  No chunk size appears in two budgets.  Each knob's value is
+"largest integer s.t. its W ≤ ceiling," which is a single
+inequality, no joint optimisation needed.
+
+The only non-trivial design choice is the band_chunk ceiling
+fraction in step 2 — `1/pair_density_slots` is the principled
+choice (band_chunk's FFT box has to fit inside one pair-density
+slot for XLA's aliasing to actually hold).  Calibrate against an
+HLO dump if a different XLA version aliases differently.
+
+### 5.6. The magic constant — `pair_density_slots = 3`
+
+Count of distinct lifetime offsets in XLA's BufferAssignment
+holding a pair-density-shaped buffer.  Hand-extracted from
+`module_*.jit__kernel.memory-usage-report.txt`.
+
+Was 5 under the legacy decomposed chain (P_l, P_r, P_l_R, P_r_R,
+γ̃-contract scratch).  The monolithic-shard_map bake (2026-05-13)
+collapsed it to 3 (P_l_R_conj, P_r_R, one XLA scratch).  The
+karmb einsum-spec change did not move it.
+
+This is the model's biggest fragility.  Any non-trivial change to
+the fused kernel — donation pattern, einsum spec, γ̃-contract
+structure — can shift the count.  Re-extract from a fresh dump
+after any kernel-structure edit; the planner over-allocates by
+the wrong factor otherwise.
+
+### 5.7. Cohsex.in surface
+
+All chunk knobs are cohsex.in fields, all named `*_chunk_size`,
+all default `0` → planner decides:
+
+```ini
+memory_per_device_gb = 0      # 0 = auto-detect GPU HBM; sets B
+band_chunk_size      = 0      # 0 = planner picks band_chunk
+r_chunk_size         = 0      # 0 = planner picks r_chunk (the big lever)
+psig_k_chunk_size    = 0      # 0 = no inner k-chunking inside WFN fetch
+gflat_chunk_size     = 0      # 0 = one-shot, or planner picks
+vq_g_chunk_size      = 0      # 0 = V_q kernel picks via _pick_g_chunk
+```
+
+A non-zero cohsex value wins over the planner's pick.
+
+### 5.8. Where the model is still off
+
+- **`W_wfn` when XLA refuses to shard the FFT box.**  At CrI3 6×6
+  80 Ry the loader's FFT box gets materialised unsharded on every
+  rank — `W_wfn` jumps by a factor of `P` and blows the budget.
+  `psig_k_chunk_size = 6` is the manual cap; the planner doesn't
+  apply it automatically because its `W_wfn` formula assumes
+  sharding holds.  **Fix priority #1**: model the unsharded case
+  (or locate the unsharded intermediate via HLO grep and shard
+  it at the creation site — see §6, the boundary
+  `with_sharding_constraint` didn't work).
+- **cuSolverMp internal scratch** (~`n_rmu²`-class).  Not
+  modelled; small now, flag at CrI3.
+- **No `W_vq` term.**  V_q runs after the r-chunk loop with only
+  `gflat_acc` persistent — separate budget problem.  The cohsex
+  knob `vq_g_chunk_size` exists but the planner doesn't pick it
+  from `B`; default falls back to `_pick_g_chunk(ngkmax)` capped
+  at 4096.
+- **`fft_factor = 4.0` is a single scalar.**  cuFFT scratch +
+  pipelining overhead varies by call site.  Empirical within 10%
+  at current scales; worth re-verifying at large `n_rtot`.
+
+### 5.9. Suggested implementation plan (for a future agent)
+
+The current `plan_gflat_chunks` already follows §5.4 steps 1–3,
+but with a 50/50 split between `W_wfn` and `W_zeta` that's more
+conservative than the §5.5 aliasing analysis suggests.  A cleaner
+rewrite:
+
+1. Compute `B_persist` from problem geometry; check `B_persist ≤ B`
+   or raise an informative error before any kernel compiles.
+2. Compute `W_pool = B − B_persist`.
+3. Pick `r_chunk` per step 1 of §5.4.  Log
+   `"r_chunk = N (W_zeta = X.X GB / W_pool = Y.Y GB, n_rchunks = K)"`.
+4. Pick `band_chunk` per step 2 using
+   `W_pool / pair_density_slots` (not 50%) as the ceiling.  Log
+   `"band_chunk = N (W_wfn = X.X GB / slot-budget Y.Y GB,
+   n_band_chunks = M)"`.
+5. Pick `gflat_chunk_size` per step 3.  Log
+   `"gflat_chunk_size = N (W_accum = X.X GB / W_pool = Y.Y GB,
+   one-shot fits / bisected down to ...)"`.
+6. If `W_wfn(band_chunk = 1, k_chunk = nk)` already exceeds the
+   slot ceiling, raise: the WFN fetch is structurally too big for
+   the budget; suggest `psig_k_chunk_size`.
+
+Tests worth having:
+
+- **Calibration test**: after the next non-trivial change to the
+  fused kernel, re-extract `pair_density_slots` from an HLO dump;
+  fail loudly if the constant in source doesn't match.
+- **Budget-edge test**: at a known `(B, geometry)`, verify the
+  chosen chunks land at the budget edge (not 2× under).
+- **Regression test**: MoS2 3×3 and one CrI3 size; verify the
+  picked `(r_chunk, band_chunk, gflat_chunk_size)` triple still
+  matches recorded golden values within a tolerance.
+
+### 5.10. Follow-ups (priority order)
+
+1. **Model the unsharded `W_wfn` case** (§5.8 fix priority #1) so
+   the planner can pick `psig_k_chunk_size` automatically.
+2. **Auto-recalibrate `pair_density_slots`** from an HLO dump
+   pass — one r-chunk in dump mode, count pair-density-shaped
+   lifetime slots, fail-loud if it differs from source.
+3. **Add a `W_vq` term** and matching constraint so
+   `vq_g_chunk_size` lands in the same chunker pass.
+4. **Per-call-site `fft_factor`** (separate constants for
+   Peak A's pre-loop FFT, Peak C's k-FFT inside the fused kernel,
+   Peak D's accumulate FFT — they have different fusion
+   neighbourhoods).
 
 ---
 
@@ -375,21 +540,18 @@ The fused kernel's irreducible XLA floor at default chunks is
 
 ```ini
 # cohsex.in
-memory_per_device_gb = 60.0
-band_chunk_size      = 16
-r_chunk_size         = 0          # chooser picks ~12500
+memory_per_device_gb  = 60.0
+band_chunk_size       = 16
+r_chunk_size          = 0    # planner picks ~12500
+gflat_chunk_size      = 64   # bound accumulate FFT box ≤ ~1 GB/rank
+psig_k_chunk_size     = 6    # bound the unsharded band-load FFT box
 ```
 
-```bash
-LORRAX_GFLAT_CHUNK_SIZE=64   # bound accumulate FFT box ≤ ~1 GB/rank
-LORRAX_PSIG_KCHUNK=6         # bound the unsharded band-load FFT box
-```
-
-The structural problem: the band-chunk FFT box inside
-`psi_G_store.fetch_psi_rchunk` is materialised unsharded on every
-rank (~41 GB at default `band_chunk = 16`).  The model has no term
-for it (§5.1) and `LORRAX_PSIG_KCHUNK=6` is the manual workaround.
-Locating that intermediate via HLO grep and sharding it at the
-creation site (a constraint at the call boundary does not work)
-is the open follow-up; landing it would relax the 80 GB hardware
+No env vars.  The structural problem: the band-chunk FFT box
+inside `psi_G_store.fetch_psi_rchunk` is materialised unsharded on
+every rank (~41 GB at default `band_chunk = 16`).  The model has no
+cost term for it (§5.1) — `psig_k_chunk_size = 6` is the manual
+mitigation.  Open follow-up: locate that intermediate via HLO grep
+and shard it at the creation site (a constraint at the call boundary
+does not work — see §6).  Landing it would relax the 80 GB hardware
 requirement.

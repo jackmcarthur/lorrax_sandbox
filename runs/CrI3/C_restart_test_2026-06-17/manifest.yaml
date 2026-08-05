@@ -1,0 +1,21 @@
+run_id: cri3_restart_test_2026-06-17
+system: CrI3
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: cri3_ibz_active_2026-06-16
+reuse_from_parent:
+  - qe/nscf/WFN.h5
+  - vxc.dat
+  - kih.dat
+  - centroids_frac_300.txt
+  - centroids_frac_102_current.txt
+overrides:
+  purpose: "bispinor transverse-restart round-trip test (psi_full_y_transverse)"
+  cusolvermp_lu: off
+  LORRAX_FORCE_FULL_BZ: 1
+  LORRAX_RCOND_INDEF: 1e-5
+
+steps:
+  00_lorrax_nonrestart: { state: complete, note: "built zeta (4 channels) + wrote restart H5 incl psi_full_y_transverse (36,80,4,104); 9 sigma^B tiles printed" }
+  01_lorrax_restart:     { state: complete, note: "restart=true: loaded tensors, rebuilt sigma^B Wfns from psi_full_y_transverse, SKIPPED zeta-fit; 9 sigma^B tiles BIT-IDENTICAL (max|diff|=0)" }

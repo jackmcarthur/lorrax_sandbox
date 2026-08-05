@@ -1,0 +1,18 @@
+HloModule jit__where, is_scheduled=true, entry_computation_layout={(pred[9,1,1963]{2,1,0}, c128[9,160,1963]{2,1,0}, c128[9,160,1963]{2,1,0})->c128[9,160,1963]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={false,false,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="28b485bb64ba101f1d838c5f3a15d9b8"}
+
+%fused_select (param_0.4: c128[9,160,1963], param_1.1: c128[9,160,1963], param_2.2: pred[9,1,1963]) -> c128[9,160,1963] {
+  %param_2.2 = pred[9,1,1963]{2,1,0} parameter(2)
+  %bitcast.25.3 = pred[9,1963]{1,0} bitcast(%param_2.2)
+  %broadcast.3.3 = pred[9,160,1963]{2,1,0} broadcast(%bitcast.25.3), dimensions={0,2}, metadata={op_name="jit(_where)/jit(main)/broadcast_in_dim" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=2501}
+  %param_0.4 = c128[9,160,1963]{2,1,0} parameter(0)
+  %param_1.1 = c128[9,160,1963]{2,1,0} parameter(1)
+  ROOT %select.3.1 = c128[9,160,1963]{2,1,0} select(%broadcast.3.3, %param_0.4, %param_1.1), metadata={op_name="jit(_where)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=2501}
+}
+
+ENTRY %main.8_spmd (param.3: pred[9,1,1963], param.1.0: c128[9,160,1963], param.2.0: c128[9,160,1963]) -> c128[9,160,1963] {
+  %param.2.0 = c128[9,160,1963]{2,1,0} parameter(2), sharding={devices=[1,4,1]<=[4]}, metadata={op_name="y"}
+  %param.1.0 = c128[9,160,1963]{2,1,0} parameter(1), sharding={devices=[1,4,1]<=[4]}, metadata={op_name="x"}
+  %param.3 = pred[9,1,1963]{2,1,0} parameter(0), sharding={replicated}, metadata={op_name="condition"}
+  ROOT %loop_select_fusion = c128[9,160,1963]{2,1,0} fusion(%param.1.0, %param.2.0, %param.3), kind=kLoop, calls=%fused_select, metadata={op_name="jit(_where)/jit(main)/select_n" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=2501}
+}
+

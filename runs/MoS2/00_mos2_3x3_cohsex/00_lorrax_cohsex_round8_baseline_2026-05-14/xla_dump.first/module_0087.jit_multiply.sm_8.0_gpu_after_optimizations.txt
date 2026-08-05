@@ -1,0 +1,19 @@
+HloModule jit_multiply, is_scheduled=true, entry_computation_layout={(c128[9,1]{1,0}, f64[1,80]{1,0})->c128[9,80]{1,0}}, allow_spmd_sharding_propagation_to_parameters={true,true}, allow_spmd_sharding_propagation_to_output={true}, frontend_attributes={fingerprint_before_lhs="f7725ef58220c84bfb004b8341d279fc"}
+
+%fused_multiply (param_0.7: c128[9,1], param_1.5: f64[1,80]) -> c128[9,80] {
+  %param_0.7 = c128[9,1]{1,0} parameter(0)
+  %bitcast.32.3 = c128[9]{0} bitcast(%param_0.7)
+  %broadcast.5.3 = c128[9,80]{1,0} broadcast(%bitcast.32.3), dimensions={0}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=766}
+  %param_1.5 = f64[1,80]{1,0} parameter(1)
+  %bitcast.37.3 = f64[80]{0} bitcast(%param_1.5)
+  %convert.6.3 = c128[80]{0} convert(%bitcast.37.3), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=766}
+  %broadcast.8.1 = c128[9,80]{1,0} broadcast(%convert.6.3), dimensions={1}, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=766}
+  ROOT %multiply.2.1 = c128[9,80]{1,0} multiply(%broadcast.5.3, %broadcast.8.1), metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=766}
+}
+
+ENTRY %main.11 (Arg_0.1.0: c128[9,1], Arg_1.2.0: f64[1,80]) -> c128[9,80] {
+  %Arg_1.2.0 = f64[1,80]{1,0} parameter(1), metadata={op_name="y"}
+  %Arg_0.1.0 = c128[9,1]{1,0} parameter(0), metadata={op_name="x"}
+  ROOT %loop_multiply_fusion = c128[9,80]{1,0} fusion(%Arg_0.1.0, %Arg_1.2.0), kind=kLoop, calls=%fused_multiply, metadata={op_name="jit(multiply)/jit(main)/mul" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/wfn_transforms.py" source_line=766}
+}
+

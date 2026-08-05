@@ -1,0 +1,55 @@
+run_id: cri3_6x6_80Ry_bispinor_fullbz_16gpu_2026-05-16
+system: CrI3
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: cri3_6x6_80Ry_2026-05-07
+reuse_from_parent:
+  - qe/nscf/WFN.h5
+  - qe/nscf/vxc.dat
+  - qe/nscf/kih.dat
+  - lorrax_B_ibz_cascade_postfix_2026-05-14/centroids_frac_1508.txt
+overrides:
+  env.LORRAX_FORCE_FULL_BZ: "1"   # forces cascade off — full-BZ reference
+  mesh: 4x4 (16 GPUs / 4 nodes)
+  bispinor: true (vs scalar reference)
+
+purpose: |
+  80 Ry production-scale bispinor IBZ end-to-end gate, full-BZ leg.
+  Pair partner: ../0Y_lorrax_bispinor_ibz_16gpu_2026-05-16.
+  Cleared the 30 Ry gate at 51 µeV; this validates the same fixes
+  (band-pad / band_chunk floor / μ-pad / scope drop) hold at 80 Ry
+  scale (n_rmu=1508, nband=150) and exposes any remaining scale-only
+  cascade bugs.  Uses transverse centroids generated 2026-05-16 via
+  centroid.kmeans_cli --density-mode current --seed 42 (orbit-aware
+  default for ntran=6).
+
+# LORRAX cohsex
+lorrax:
+  bispinor: true
+  x_only: true
+  do_screened: false
+  screening: cohsex
+  memory_per_device_gb: 70.0
+  band_chunk_size: 16
+  r_chunk_size: 8192
+  bare_coulomb_cutoff: 80.0
+  ngpu_per_node: 4
+  nodes: 4
+  total_gpus: 16
+  source_branch: agent/bispinor-ibz
+  source_commit: d96aa46
+  env:
+    LORRAX_FORCE_FULL_BZ: "1"
+
+steps:
+  lorrax_cohsex_sigma_x: { state: failed, note: "killed mid-ζ-fit; alloc wall-clock budget insufficient for 4-channel bispinor ζ at 80Ry/16gpu (~128 min ζ alone)" }
+  e2e_gate_vs_runY:      { state: pending }
+
+handoff:
+  next_session:
+    - "Reuse this run dir (centroids, kin_ion, cohsex.in, manifest intact)."
+    - "Use fresh alloc: salloc -J lx-alloc-$USER --nodes=4 --qos=interactive --time=04:00:00 --constraint=gpu --gpus=16 --account=m2651 --no-shell"
+    - "Run /pscratch/sd/j/jackm/lorrax_sandbox/runs/CrI3/M_6x6_80Ry_2026-05-07/run_80Ry_16gpu.sh"
+    - "Then /pscratch/sd/j/jackm/lorrax_sandbox/runs/CrI3/M_6x6_80Ry_2026-05-07/run_recon_80Ry.sh"
+    - "Then python3 /pscratch/sd/j/jackm/lorrax_sandbox/runs/CrI3/M_6x6_80Ry_2026-05-07/analyze_gate_80Ry.py"

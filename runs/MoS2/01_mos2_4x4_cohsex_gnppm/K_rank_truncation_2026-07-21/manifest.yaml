@@ -1,0 +1,36 @@
+run_id: mos2_4x4_gnppm_rank_truncation_2026-07-21
+system: MoS2
+pipeline: lorrax_only     # reuses qe/ + centroids/dipole/kin_ion from 01_lorrax_gnppm
+platform: perlmutter
+
+variant_of: 01_lorrax_gnppm
+reuse_from_parent: [qe/nscf/WFN.h5, 00_lorrax_cohsex/centroids_frac_640.txt,
+                    00_lorrax_cohsex/dipole.h5, 00_lorrax_cohsex/kin_ion.h5]
+overrides:
+  branch: agent/gw-rank-truncation (LORRAX) @ 23af6b9
+  purpose: >
+    Validate the rank-revealing charge ζ-solve (rank-truncation) that cures the
+    GN-PPM conduction-Σc catastrophe. Compares rank_truncate vs cholesky across
+    device meshes and centroid counts vs BGW 01_bgw_gnppm/sigma_hp.log.
+
+# 640c = BGW anchor centroid count (not over-complete → rank_truncate ≡ cholesky).
+# 1204c = over-complete stress config (the catastrophe; rank_truncate cures it).
+steps:
+  00_rt_2x2:            { state: complete, note: "640c rank_truncate, 2x2/4GPU" }
+  01_rt_1x1:            { state: complete, note: "640c rank_truncate, 1x1/1GPU (mesh-inv: 0.0 eV vs 2x2)" }
+  02_chol_2x2:          { state: complete, note: "640c cholesky alt (≡ rank_truncate here, 0.0 eV)" }
+  10_rt1200_2x2:        { state: complete, note: "1204c rank_truncate rcond=1e-10, 2x2" }
+  11_rt1200_1x1:        { state: complete, note: "1204c rank_truncate, 1x1 (mesh-inv: 0.0 eV)" }
+  12_chol1200_2x2:      { state: complete, note: "1204c cholesky = CATASTROPHE (MAE 3.0 eV, max 12.96 eV)" }
+  20_rt1200_rcond_1e-8: { state: complete, note: "rcond sweep: MAE 0.074 eV" }
+  20_rt1200_rcond_1e-6: { state: complete, note: "rcond sweep: MAE 0.038 eV (BEST — the cure)" }
+  20_rt1200_rcond_1e-4: { state: complete, note: "rcond sweep: MAE 0.052 eV (over-truncates)" }
+  21_rt640_rcond_1e-6:  { state: complete, note: "640c rcond=1e-6: MAE 0.025 eV (no regression)" }
+
+results:
+  mesh_invariance: "rank_truncate 1x1 ≡ 2x2 EXACT (0.0000 eV) at 640c and 1204c"
+  bgw_recovery: "640c MAE 0.030 eV; 1204c cholesky MAE 3.0/max 12.96 eV → rank_truncate rcond=1e-6 MAE 0.038/max 0.077 eV"
+  gamma_edges: "BGW VBM +0.551 / CBM -1.513 ; rank_truncate +0.533 / -1.437"
+  figure: rank_truncation_recovery.png
+  report: reports/gw_rank_truncation_2026-07-20/report.md
+  caveat: "absolute QP gap still carries the orthogonal V_H defect-A offset (fixed on agent/gw-vh-symmetry); Σc recovery is clean"

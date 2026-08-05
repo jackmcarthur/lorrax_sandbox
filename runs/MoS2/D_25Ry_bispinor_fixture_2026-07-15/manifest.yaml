@@ -1,0 +1,25 @@
+run_id: mos2_3x3_bispinor_25Ry_fixture_2026-07-15
+system: MoS2
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: null   # SCF change (ecutwfc 60->25 Ry) => new top-level run per invalidation rules
+reuse_from_parent: []
+overrides:
+  purpose: >
+    Shrunk QE reference for the bispinor regression fixture
+    (tests/regression/bispinor_debug/). ecutwfc 60->25 Ry cuts the FFT grid
+    ~3.4x (30x30x120 -> ~20x20x80) to attack the r-chunk streaming floor that
+    dominates the test-suite wall (suite-speedup initiative, 2026-07-15).
+    Fixture-only physics: NOT converged, self-consistency freeze gate only.
+  ecutwfc: 25.0     # was 60.0
+  nscf_nbnd: 40     # was 82; fixture truncates to 34 as before
+  note_chunking: >
+    memory_per_device_gb in the gate input must be tuned so the zeta-fit
+    r-chunk streaming uses >=2 chunks (user requirement: chunking coverage
+    must not silently collapse to 1 chunk on the smaller grid); the gate
+    log-asserts this.
+
+steps:
+  qe:        { state: complete }
+  00_lorrax: { state: complete, note: "in-place: kmeans 256/208, kin_ion.h5, gw_jax x3 bit-identical + PAD=4 twin bit-identical; 3 r-chunks all channels; fixture frozen into tests/regression/bispinor_debug (branch agent/suite-speedup)" }

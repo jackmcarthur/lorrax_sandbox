@@ -58,13 +58,16 @@ archived history under `archive/`._
    See reports/driver_transparency_2026-07-09/. **NEW OPEN ITEM:** GN-PPM amplifies 1-ulp
    WFN-energy noise to 1.28 eV in Σ_c (measured, deterministic) — conditioning decision
    needed (Fix-3 family).
-2. **On-pole PPM census robustness — needs a physics decision from the user** (called
-   "Fix-3" in ROOT_CAUSE.md): bands sitting on a PPM pole are still device-count-sensitive,
-   because a handful of PPM modes sit near the validity threshold (Ω² ≈ 0) and flip
-   valid↔invalid with floating-point noise, which then changes the adaptive quadrature's
-   node counts. Candidate fixes: hysteresis on the validity threshold, a fixed reference
-   for the census, or documenting on-pole Σ(E_dft) as ill-posed. See
-   reports/device_invariance_2026-07-08/ROOT_CAUSE.md, "AS-FIXED" section.
+2. ✅ DONE (2026-07-15, `agent/ppm-fit-conditioning` 218aeb8) — **On-pole PPM census
+   robustness (Fix-3)**: root cause was thresholding a CANCELLATION (the absolute
+   |Wc0−Wc_probe| > 1e-14 cut puts every dispersion-free element at the noise floor).
+   Fixed with magnitude-based relative gates (dead: |Wc0| ≤ 1e-12·per-q max; stiff:
+   |denom| ≤ 1e-8·|Wc0| — static_limit is the exact Ω→∞ limit for these, so routing
+   stiff to the invalid class is exact). Contract + ±1-ulp stability pinned by
+   tests/test_ppm_fit_classification.py; golden gates unchanged (no fixture mode
+   reclassifies). See reports/ppm_fit_conditioning_2026-07-15/. **Still open (physics,
+   documented not fixed):** on-pole Σ(E_dft) evaluation is inherently ill-conditioned
+   (measured 1.28 eV per ulp of WFN energy, item 1) — document in the manual.
 3. **zeta_loader/zeta_reader merge** — long-deferred, NOW UNBLOCKED (the padded-μ gate exists:
    tests/test_mu_pad_invariance.py). ~−350 L.
 4. Small hygiene: derive the Σ τ-kernel's projection code from the quadrature-node kind

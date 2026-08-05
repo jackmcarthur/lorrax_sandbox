@@ -1,0 +1,54 @@
+run_id: cri3_6x6_80Ry_gnppm_maxbands_2026-06-15
+system:
+  formula: CrI3
+  prefix: CrI3
+  dimensionality: 2
+  n_val: 70
+  ecutwfc: 80.0
+  kgrid: [6, 6, 1]
+  ibz_k_points: 8
+  full_bz_k_points: 36
+  space_group: 147          # P-3, 6 spatial sym ops, has inversion
+  metal: false              # 2D ferromagnetic insulator
+
+pipeline: qe+gwjax          # no BGW
+platform: perlmutter
+
+variant_of: M_6x6_80Ry_2026-05-07
+reuse_from_parent:
+  - qe/scf/CrI3.save        # 80Ry SCF charge density (copied into qe/nscf/)
+overrides:
+  nscf_nbnd: 800            # was 160; supports band sweep + mu=10*nband centroids
+  compute_mode: gn_ppm      # existing CrI3 runs were all x_only / static COHSEX
+
+goal: >
+  Find the max nband a CrI3 6x6 80Ry GN-PPM GW completes before OOM on
+  16x A100-80GB (4x4 GPU mesh), with n_centroids = 10*nband, for BOTH
+  non-bispinor and bispinor. Preliminary goal: identify the binding memory
+  peak (planner predicts Peak E V_q = 2*16*nq*mu*ngkmax/p_xy, not mu^2).
+
+steps:
+  qe/scf:                { state: reused,   note: "M_6x6_80Ry_2026-05-07; 80Ry SCF converged" }
+  qe/nscf:               { state: complete, note: "nbnd=800; 8 IBZ k; ngkmax=59990; JOB DONE 28s; WFN.h5 12.3GB" }
+  00_lorrax_nonbispinor: { state: partial,  note: "nb150 ran zeta-fit+V_q, no OOM (HWM=56, r_chunk=73824/16ch); stopped at q=0 head (needs dipole.h5/overrides). Ceiling ~600-640 (planner)." }
+  01_lorrax_bispinor:    { state: partial,  note: "nb150 ran charge zeta-fit, no OOM (HWM=56, r_chunk=19536/58ch); ~3.8x steeper Peak C slope -> ceiling ~200-260, ~3x below non-bisp." }
+
+gwjax:
+  compute_mode: gn_ppm
+  ppm_model: gn
+  n_centroids_rule: "10 * nband"
+  memory_per_device_gb: 70.0
+  bare_coulomb_cutoff: 80.0
+  mesh: [4, 4]
+  sweep_status: empirical
+  bottleneck: C_fit_one_rchunk            # ISDF pair-density transient, both modes
+  ceiling_nonbispinor_nband: "700-798"    # nb700 FITS, nb798 OOMs at zeta-fit
+  ceiling_bispinor_nband: "200-300"       # nb200 fully fits, nb300 OOMs at zeta-fit; ~3x lower
+  source_fix_commit: 3685c39              # lorrax_A agent/cri3-ppm-maxbands: --prune-mem-gb
+  centroids_via: "--oversample 1.0 (skip prune; count-only valid for OOM test)"
+  blockers:
+    - "q=0 Coulomb head: dipole.h5 generation OOMs (181GiB box, no k-chunk); blocks full QP completion (downstream of zeta-fit, does NOT affect ceiling)"
+
+pseudopotentials:
+  - assets/pseudopotentials/standard/Cr.upf   # z_valence 14
+  - assets/pseudopotentials/standard/I.upf    # z_valence 7

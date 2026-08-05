@@ -1,0 +1,41 @@
+run_id: mos2_charge_padtest_2026-07-08
+system: MoS2
+pipeline: lorrax_only
+platform: perlmutter
+variant_of: Z_memplanner_validation_2026-07-06/A_charge/head_4g
+reuse_from_parent: [WFN.h5, cohsex.in, centroids_frac_1204.txt, dipole.h5, kin_ion.h5, qp_wfn_rotations.h5, WFN_qp.h5]
+overrides:
+  padtest_4g_pad12: P=4 with LORRAX_EXTRA_MU_PAD=12 -> charge mu 1204->1216 (same padded extent as 16g).
+    Closes ROOT_CAUSE.md section 6 (charge confirmation experiment). Code = agent/memplanner-cleanup
+    bb95bc3 + the LORRAX_EXTRA_MU_PAD knob commit ONLY (pre-fix).
+steps:
+  postfix_4g:
+    state: complete
+    note: >
+      Post-fix rerun of head config at P=4 (fix commits 083d209/b0b0626/62b0365). BIT-IDENTICAL to
+      pre-fix head_4g modulo the timestamp header (no mu pad at P=4 -> fixes are exact no-ops on the
+      logical path).
+  postfix_16g:
+    state: complete
+    note: >
+      Post-fix rerun at P=16. Census now LOGICAL and equal to 4g total (255,982/23,193,856 vs
+      pre-fix 720,622/23,658,496) — Fix 2 confirmed. Residual +2 invalid modes vs 4g = cross-P
+      noise-threshold flips (not pad). Node counts still 13/14 vs 4g 15/15 (noise-driven discrete
+      window change, NOT pad — see padtest_4g_pad12). vs pre-fix head_16g: max|dEqp| 4.8e-5 eV.
+      Post-fix 4g-vs-16g eqp spread unchanged (max 5.64 eV on-pole; 26-band |Im|<100 eV subset
+      max 0.27 eV) — carried by on-pole GN-PPM ill-posedness + the node-count flip, both Fix-3-class
+      robustness items, not pad defects.
+  padtest_4g_pad12:
+    state: complete
+    note: >
+      SPLIT VERDICT. (a) PPM mode census reproduces 16g EXACTLY minus the 2 flipped real modes:
+      n_total 23,658,496 = 16*1216^2 (= 16g), invalid 720,620 = 4g's 255,980 + 464,640 pad modes + 0
+      (16g had +2 real flips) -> census inflation is pad-extent-deterministic, CONFIRMED.
+      (b) Minimax node counts stay 15/15 (b_slab, single) = 4g base, NOT the 16g 13/14 -> the node-count
+      change is NOT pad-driven; it is cross-P reduction-order noise flipping near-threshold (divergent-
+      Omega) modes in/out of the valid mask whose max feeds the window intervals.
+      (c) Sigma_C moves eV-scale under pad alone at fixed P: vs 4g base max|Re dSigma_C| = 5.14 eV
+      (vs the 5.67 eV 4g<->16g signature), Sigma_X identical to 1e-6 eV; vs 16g residual 1.12 eV.
+      -> the charge chain has real pad-extent carriers (W-solve per-q LU at padded extent; ζ Cholesky
+      factor extent) amplified by on-pole GN-PPM evaluation. Fixed by the logical-extent solves +
+      census mask commits on agent/memplanner-cleanup.

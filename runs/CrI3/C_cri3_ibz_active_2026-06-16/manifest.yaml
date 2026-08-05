@@ -1,0 +1,26 @@
+run_id: cri3_c3_ibz_active_2026-06-16
+system: CrI3
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: cri3_6x6_30Ry_bispinor_testbed_2026-05-14
+reuse_from_parent: [qe/, qe/nscf/WFN.h5, qe/nscf/kih.dat, qe/nscf/vxc.dat]
+overrides:
+  purpose: "CrI3 C3 IBZ-vs-full-BZ symmetry gate for bispinor screened-W Lorentz unfold"
+  centroids: "regenerated orbit-closed: 300 charge (50 orbits), 102 transverse (17 orbits)"
+  nband: "small Sigma window nval=6/ncond=4/nband=80 (fast sym-correctness gate)"
+  ibz: "IBZ-active (NO LORRAX_FORCE_FULL_BZ) - cascade activates: 8 IBZ q / 36 full-BZ"
+
+# Branch: lorrax_C agent/bispinor-ibz-lorentz-unfold (c546c74)
+# System: 6x6x1 hex, nspinor=2, ntran=6 (op1,op2 = order-3 C3, op3 = inversion)
+
+steps:
+  centroids:  { state: complete, note: "300 charge + 102 transverse, both orbit-closed" }
+  kin_ion:    { state: complete, note: "kin_ion.h5 nband=80" }
+  screened_W: { state: failed,   note: "NaN: negative INDIRECT gap (-0.19 eV) collapses minimax x_min->1e-12; intrinsic to gapless WFN, NOT a C3-unfold bug" }
+  x_only:     { state: complete, note: "sigma_diag.dat written (Sigma_X CC charge block); QP-writer + eqp crash downstream (skipped via write_wfn_h5=false; eqp IndexError 36/36)" }
+
+# VERDICT (x_only IBZ-vs-full-BZ, see ../C_cri3_full_bz_ref_2026-06-16):
+#   CC charge-block unfold: CORRECT  (sigma_diag agrees 1e-6 eV / 1.9e-8 rel)
+#   TT transverse C3 R(x)R unfold: WRONG (Sigma^B 3x3 block differs 2-4 eV;
+#     z-z channel exact, in-plane x/y channels wrong, Lorentz trace + eigenvalues differ)

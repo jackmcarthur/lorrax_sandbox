@@ -1,0 +1,44 @@
+run_id: mos2_3x3_soc_2026-05-14
+system: MoS2
+pipeline: qe_bgw_lorrax
+platform: perlmutter
+
+variant_of: 00_mos2_3x3_cohsex
+reuse_from_parent: []
+overrides:
+  nbnd: 58           # was 82 (NSCF)
+  number_bands: 56   # was 80 (BGW epsilon + sigma; LORRAX nband)
+  bare_coulomb_cutoff: 30.0   # added explicitly (was unset, default ≠ BGW)
+  centroids: 400              # was 640
+
+purpose: |
+  Load-bearing validation target for PR3 (ψ-side TRS-fix in LORRAX bispinor
+  k-unfold path). Agent 1 scope sites #5/#6/#7 in the TRS sym audit fix
+  iσ_y·conj() rotation on the TRS-augmented half of U_spinor and the
+  τ-phase on _get_umklapp_vector for TRS rows. MoS2 monolayer D3h has no
+  inversion → some k-points reach via TRS only; this run baselines Σ_X
+  pre-fix (post-PR2 + audit commit 796c043).
+
+# Directory-level status.
+# States: pending | running | complete | failed | reused | skipped
+sym_structure:
+  ntran:         2          # spatial sym ops (E + σ_h)
+  len_sym_mats_k: 4         # 2*ntran with TRS
+  n_trs_k:       4          # full-BZ k requiring TRS for unfold: {1, 3, 4, 5}
+  n_trs_q:       4          # full-BZ q requiring TRS for fold:   {2, 6, 7, 8}
+  has_inversion: false      # MoS2 D3h, confirmed via wfn.sym_matrices
+
+steps:
+  qe:        { state: complete }
+  00_bgw:    { state: complete, note: "epsilon+sigma Job Done; bare_coulomb_cutoff = 30.0 explicit" }
+  00_lorrax: { state: complete, note: "BOTH pre-PR3 (796c043) and post-PR3 (8504994) Σ_X captured; see *.pre_pr3 / *.post_pr3" }
+  sym_probe: { state: complete, note: "sym_analysis.log: non-inversion confirmed, 4 TRS-k" }
+  baseline_summary: { state: complete, note: "baseline_sigma_x_summary.log + pr3_diff_summary.log written" }
+
+# Source-code commits (on agent/trs-aware-sym-fix):
+#   a45f039  dft_operators: fix generate_gvectors_k after P5 SymMaps API migration
+#            (unblocked psp.get_dipole_mtxels + gw.kin_ion_io)
+#
+# The pre-PR3 Σ_X file was captured by checking out 796c043 for src/, applying
+# the same dft_operators fix, rerunning gw.gw_jax on the same QE WFN.h5.  Both
+# pre/post Σ_X snapshots use the same 399 orbit-closed centroids.

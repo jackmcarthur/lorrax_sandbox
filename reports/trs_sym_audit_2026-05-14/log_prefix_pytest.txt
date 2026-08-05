@@ -1,0 +1,135 @@
+[lxrun] JID 52953227 · 4 nodes · 2:15:27 left · 4/4 free · incoming: lx-B
+  1  nid008461  free   —              —      —  ← starting lx-B  python3 -m pytest /pscra
+  2  nid008464  free   —              —      —
+  3  nid008465  free   —              —      —
+  4  nid008468  free   —              —      —
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.3, pluggy-1.6.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_B
+configfile: pyproject.toml
+plugins: jaxtyping-0.3.9
+collecting ... collected 2 items
+
+sources/lorrax_B/tests/test_v_q_trs_roundtrip.py::test_geometry_has_trs_required_qpoints PASSED [ 50%]
+sources/lorrax_B/tests/test_v_q_trs_roundtrip.py::test_v_q_trs_roundtrip FAILED [100%]
+
+=================================== FAILURES ===================================
+____________________________ test_v_q_trs_roundtrip ____________________________
+
+    def test_v_q_trs_roundtrip():
+        """V_q IBZ→full-BZ unfold must agree element-wise at every q.
+    
+        PRE-FIX: this test FAILS at the TRS-required q's by O(1) absolute
+                 magnitude (corresponds to O(eV) on a real V_q matrix
+                 element), while passing at the spatial-only q's.
+        POST-FIX: passes at every q with max|ΔV| < 1e-12.
+        """
+        geom = _build_geometry()
+        qs_full, q_irr_int, full_to_irr_idx, full_to_irr_sym = _reduce_q_to_ibz(geom)
+        G_set, G_perm = _build_g_sphere(geom["sym_mats_k"])
+    
+        n_qpt_irr = q_irr_int.shape[0]
+        n_q_full = qs_full.shape[0]
+        n_rmu = geom["n_rmu"]
+        n_g = G_set.shape[0]
+        kgrid = geom["kgrid"]
+        ntran = geom["ntran"]
+    
+        # v(q+G) at IBZ q's (the ONLY v table the production V_q kernel
+        # builds — it never directly references v(q_full)).
+        q_irr_frac = _q_to_wrapped_frac(q_irr_int, kgrid)
+        v_per_G_ibz = _build_v_per_G(q_irr_frac, G_set)
+    
+        # At each full q, the contracted G runs over the full-BZ ζ's G axis;
+        # the per-G weight should come from v(q_irr + G_back) where
+        # G_back = S^{-1} G.  Reorder using G_perm_inv to align with the
+        # full-q ζ.
+        v_per_G_full = np.zeros((n_q_full, n_g), dtype=np.float64)
+        G_perm_inv = np.argsort(G_perm, axis=-1)
+        for iq in range(n_q_full):
+            v_per_G_full[iq] = v_per_G_ibz[
+                int(full_to_irr_idx[iq]), G_perm_inv[int(full_to_irr_sym[iq])]]
+    
+        # Random complex ζ at IBZ q's.
+        rng = np.random.default_rng(seed=7)
+        zeta_irr = (rng.standard_normal((n_qpt_irr, n_rmu, n_g))
+                    + 1j * rng.standard_normal((n_qpt_irr, n_rmu, n_g)))
+    
+        V_q_ibz = _compute_V(zeta_irr, v_per_G_ibz)
+    
+        # Reference: unfold ζ properly, then contract.
+        zeta_full = _unfold_zeta_proper(
+            zeta_irr,
+            full_to_irr_idx=full_to_irr_idx, full_to_irr_sym=full_to_irr_sym,
+            sym_perm=geom["sym_perm"], ntran=ntran, G_perm=G_perm)
+        V_ref = _compute_V(zeta_full, v_per_G_full)
+    
+        # Codebase path.
+        mesh_xy = _make_mesh()
+        V_sh = NamedSharding(mesh_xy, P(None, 'x', 'y'))
+        V_q_ibz_j = jax.device_put(V_q_ibz.astype(np.complex128), V_sh)
+        V_codebase = np.asarray(jax.device_get(
+            _unfold_v_q_ibz_to_full(
+                V_q_ibz_j,
+                full_to_irr_idx=full_to_irr_idx,
+                full_to_irr_sym=full_to_irr_sym,
+                sym_perm=geom["sym_perm"],
+                mesh_xy=mesh_xy)))
+    
+        # Per-q assertion.
+        max_diff_per_q = np.max(np.abs(V_codebase - V_ref).reshape(n_q_full, -1),
+                                axis=-1)
+        ref_norm_per_q = np.linalg.norm(V_ref.reshape(n_q_full, -1), axis=-1)
+        rel_per_q = max_diff_per_q / np.maximum(ref_norm_per_q, 1e-30)
+    
+        # Build a small report.
+        rows = []
+        for iq in range(n_q_full):
+            s = int(full_to_irr_sym[iq])
+            rows.append({
+                "q_full": qs_full[iq].tolist(),
+                "irr": int(full_to_irr_idx[iq]),
+                "sym_idx": s,
+                "is_trs": s >= ntran,
+                "max_abs": float(max_diff_per_q[iq]),
+                "rel": float(rel_per_q[iq]),
+            })
+    
+        msg = "\nPer-q V_q IBZ-unfold error:\n"
+        msg += f"{'q_full':>12} {'irr':>3} {'sym':>3} {'TRS':>4} "
+        msg += f"{'max|ΔV|':>12} {'rel':>10}\n"
+        for r in rows:
+            msg += (f"  ({r['q_full'][0]},{r['q_full'][1]},{r['q_full'][2]:>1})"
+                    f"   {r['irr']:>2}   {r['sym_idx']:>2}   "
+                    f"{'T' if r['is_trs'] else 'F':>2}   "
+                    f"{r['max_abs']:>12.3e} {r['rel']:>10.2e}\n")
+    
+        # Tolerance: 1e-12 relative.
+        bad = rel_per_q > 1e-12
+>       assert not bad.any(), (
+            f"V_q IBZ→full-BZ unfold disagrees with reference at "
+            f"{int(bad.sum())}/{n_q_full} q-points.{msg}")
+E       AssertionError: V_q IBZ→full-BZ unfold disagrees with reference at 3/9 q-points.
+E         Per-q V_q IBZ-unfold error:
+E               q_full irr sym  TRS      max|ΔV|        rel
+E           (0,0,0)    0    0    F      0.000e+00   0.00e+00
+E           (0,1,0)    1    0    F      0.000e+00   0.00e+00
+E           (0,2,0)    1    1    F      7.944e-15   5.25e-17
+E           (1,0,0)    2    0    F      0.000e+00   0.00e+00
+E           (1,1,0)    3    0    F      0.000e+00   0.00e+00
+E           (1,2,0)    3    1    F      3.553e-15   4.17e-17
+E           (2,0,0)    2    2    T      3.845e+01   3.15e-01
+E           (2,1,0)    3    3    T      4.221e+01   4.96e-01
+E           (2,2,0)    3    2    T      2.737e+01   3.21e-01
+E         
+E       assert not np.True_
+E        +  where np.True_ = <built-in method any of numpy.ndarray object at 0x7f9990034ff0>()
+E        +    where <built-in method any of numpy.ndarray object at 0x7f9990034ff0> = array([False, False, False, False, False, False,  True,  True,  True]).any
+
+sources/lorrax_B/tests/test_v_q_trs_roundtrip.py:296: AssertionError
+=========================== short test summary info ============================
+FAILED sources/lorrax_B/tests/test_v_q_trs_roundtrip.py::test_v_q_trs_roundtrip
+========================= 1 failed, 1 passed in 4.38s ==========================
+srun: error: nid008461: task 0: Exited with exit code 1
+srun: Terminating StepId=52953227.24

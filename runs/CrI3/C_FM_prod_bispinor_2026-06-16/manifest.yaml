@@ -1,0 +1,48 @@
+run_id: C_FM_prod_bispinor_2026-06-16
+system: CrI3
+pipeline: lorrax_only       # bispinor GW on a precomputed FM WFN.h5
+platform: perlmutter
+
+variant_of: B_orbmag_FM_6x6_30Ry_2026-06-16
+reuse_from_parent:
+  - qe                      # whole static QE reference (symlinked)
+  - qe/nscf/WFN.h5
+  - qe/nscf/vxc.dat
+  - qe/nscf/kih.dat
+overrides:
+  purpose: >
+    PRODUCTION-scale magnetic bispinor GW.  FM CrI3 monolayer (gapped, indirect
+    gap 1.504 eV, total mag 6.01 muB/cell ‖ z) so the screened-W minimax is
+    well-behaved (unlike the non-magnetic testbed).  Exercises the transverse-CCT
+    covariance fix (lorrax_C commit 9128728) on REAL magnetism at prod centroid
+    counts: ~640 charge + ~200 current, orbit-aware (IBZ cascade active).
+  centroids: "640 charge (scalar) + 200 current, --orbit --seed 42"
+  sigma_window: "nval=8 ncond=8 nband=180 (around the gap)"
+  cusolvermp_lu: "off (routes transverse indefinite solve to |lambda|-truncated pseudoinverse)"
+  env: "LORRAX_RCOND_INDEF=1e-5"
+  scale: "16 GPUs / 4x4 mesh / 80 GB HBM"
+
+key_finding: >
+  This FM WFN was NSCF'd with nosym=.true. (for the orbital-mag sum-over-states),
+  so ntran=1 / nrk=36 — NO spatial symmetry.  The IBZ cascade is therefore a no-op
+  (q-IBZ reduction = 36/36, disk shrink 1.0x); IBZ and full-BZ-direct compute the
+  identical 36-q V_q.  The C3-orbit covariance gate is DEGENERATE on this WFN (orbits
+  are singletons): gauge S(q) orbit-spread = 0 trivially, IBZ-vs-fullBZ = bit-identical.
+  The covariance fix is still EXERCISED (per-q indefinite-CCT |lambda|-truncated solve
+  runs and yields the substantial, isotropic, sign-flip-free Sigma^B), but the symmetry
+  *unfold* cannot be tested here.  Transverse Sigma^B on real magnetism: xx=-6.80,
+  yy=-6.67, zz=-6.44 eV; in-plane anisotropy 1.88%; xy=yx=-0.143 (no sign flip).
+  Milestone-B screened-W: minimax well-behaved (R=71.4, fit_err 2.9e-6, NO NaN);
+  sigCOH nonzero (~-9.7..-10.4 eV).  The screened IBZ path (run3) hit a JAX
+  sharding-spec bug in unfold_bispinor_tiles (NOT a physics failure); FORCE_FULL_BZ
+  (run4) bypasses it and is the complete physics for this nosym WFN.
+
+# States: pending | running | complete | failed | reused | skipped
+steps:
+  qe:                 { state: reused, note: "symlinked from FM base run; ntran=1 nosym WFN" }
+  centroids:          { state: complete, note: "640 charge (orbit, n_sym=6) + 200 current (orbit, n_sym=1); seed 42" }
+  kin_ion:            { state: complete, note: "kin_ion.h5 (36,180,180)" }
+  x_only_ibz:         { state: complete, note: "run1_ibz: Sigma^B substantial+isotropic(1.88%)+sym; IBZ=36/36" }
+  x_only_fullbz:      { state: complete, note: "run2_fullbz: tiles bit-identical to run1 (ntran=1); gauge gate 0% (degenerate)" }
+  screened_ibz:       { state: failed, note: "run3_screened: JAX sharding bug in unfold_bispinor_tiles [3,3,36,208,208] PartitionSpec mismatch; minimax OK, NOT NaN" }
+  screened_fullbz:    { state: complete, note: "run4_screened_fullbz: Milestone-B; FORCE_FULL_BZ bypasses the unfold bug; NO NaN, sigCOH nonzero" }

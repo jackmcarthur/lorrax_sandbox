@@ -1,0 +1,18 @@
+HloModule jit_less, is_scheduled=true, entry_computation_layout={(s32[1,1,1963]{2,1,0}, s32[9,1,1]{2,1,0})->pred[9,1,1963]{2,1,0}}, allow_spmd_sharding_propagation_to_parameters={true,false}, allow_spmd_sharding_propagation_to_output={true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="ffb93f403fbe25e4b35da5f9ed1dd120"}
+
+%fused_compare (param_0.8: s32[1,1,1963], param_1.4: s32[9,1,1]) -> pred[9,1,1963] {
+  %param_0.8 = s32[1,1,1963]{2,1,0} parameter(0)
+  %bitcast.30.3 = s32[1963]{0} bitcast(%param_0.8)
+  %broadcast.12.3 = s32[9,1,1963]{2,1,0} broadcast(%bitcast.30.3), dimensions={2}, metadata={op_name="jit(less)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=2500}
+  %param_1.4 = s32[9,1,1]{2,1,0} parameter(1)
+  %bitcast.35.3 = s32[9]{0} bitcast(%param_1.4)
+  %broadcast.13.3 = s32[9,1,1963]{2,1,0} broadcast(%bitcast.35.3), dimensions={0}, metadata={op_name="jit(less)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=2500}
+  ROOT %compare.3.1 = pred[9,1,1963]{2,1,0} compare(%broadcast.12.3, %broadcast.13.3), direction=LT, metadata={op_name="jit(less)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=2500}
+}
+
+ENTRY %main.10_spmd (param.2: s32[1,1,1963], param.1.0: s32[9,1,1]) -> pred[9,1,1963] {
+  %param.1.0 = s32[9,1,1]{2,1,0} parameter(1), sharding={replicated}, metadata={op_name="y"}
+  %param.2 = s32[1,1,1963]{2,1,0} parameter(0), sharding={replicated}, metadata={op_name="x"}
+  ROOT %loop_compare_fusion = pred[9,1,1963]{2,1,0} fusion(%param.2, %param.1.0), kind=kLoop, calls=%fused_compare, metadata={op_name="jit(less)/jit(main)/lt" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/isdf_fitting.py" source_line=2500}
+}
+

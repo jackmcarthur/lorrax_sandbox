@@ -1,0 +1,79 @@
+run_id: mos2_bispinor_backend_timing_2026-07-11
+system: MoS2
+pipeline: lorrax_only
+platform: perlmutter
+
+variant_of: tests/regression/bispinor_debug (MoS2 3x3 nspinor=2 bispinor GN-PPM fixture)
+reuse_from_parent: [WFN.h5, kin_ion.h5, centroids_frac_256.txt]
+overrides:
+  centroids_file_current: centroids_frac_208_current.txt   # regenerated 208 --no-orbit
+                                                            # (fixture's 209 is odd -> distributed
+                                                            # LU would silently fall back on any
+                                                            # multi-rank mesh); transverse tiles
+                                                            # therefore run full-BZ-direct
+  distributed_cholesky / distributed_lu: per-variant (backend timing matrix)
+  mesh: 2x2 (4 GPUs / 4 CPU ranks) for all variants
+
+# Purpose: e2e timing + equivalence matrix for every distributed-linalg
+# backend (branch agent/ffi-host-platform): GPU {off,cusolvermp,slate} x
+# {off,cusolvermp}; CPU {off,slate} x {off,scalapack}.  Correctness gate:
+# sigma_diag.dat identical across backends within a platform (<=1e-5 eV).
+# NOTE: results are NOT comparable to the frozen fixture reference (208
+# vs 209 transverse centroids) — comparisons are within-experiment only.
+
+# 2026-07-11 execution notes (4 GPUs, JID 55791797, LORRAX_NGPU=4 lxrun):
+# - ALL GPU variants require LORRAX_FORCE_FULL_BZ=1: the --no-orbit 208
+#   transverse set loud-fails the transverse zeta_T IBZ orbit-closure check
+#   (isdf_fitting.py:345) — transverse cannot auto-fall-back to full-BZ;
+#   the env var is the documented bypass. Charge channel also runs full-BZ
+#   under the var, so timings are uniform across variants.
+# - 00 FAILED (env incompat, both BZ modes): lax.pcast (cholesky_2d.py:186,
+#   commit c7e6695 "fix(jax-0.9)") does not exist in container JAX 0.7.2.
+#   See KNOWN_SANDBOX_ERRORS.md 2026-07-11 entry.
+# - Correctness: 00 vs 01, 00 vs 02, 01 vs 02 sigma_diag max|delta| all = 0.000e+00
+#   (00 re-run after the pcast version-guard landed on the branch, 1421db1).
+
+# 2026-07-11 CPU execution notes (Milan node nid004174, JID 55793024, 4 MPI
+# ranks x 32 cpus, 2x2 mesh, JAX_PLATFORMS=cpu):
+# - The documented native CPU path (lxrun LORRAX_PARTITION=cpu -> venv python,
+#   ENVIRONMENT_COMPREHENSIVE.md §3.5) is BROKEN for multi-rank GN-PPM: venv
+#   jax 0.9.1 rejects process_allgather(tiled=False) on committed arrays at
+#   gw/minimax_screening.py:44 (_scalar_to_host_float) -> ValueError
+#   "Gathering global non-fully-addressable arrays only supports tiled=True".
+#   03 died there at WALL 265 s (after all zeta fits).  See
+#   KNOWN_SANDBOX_ERRORS.md 2026-07-11 CPU-recipe entry.
+# - All CPU variants therefore ran via the shifter container (jax
+#   0.5.3.dev20260711) on the CPU node: raw srun -n4 -c32 --cpu-bind=cores
+#   --mpi=cray_shasta + shifter --module=mpich (no gpu module, no gtl
+#   LD_PRELOAD, MPICH_GPU_SUPPORT_ENABLED=0, JAX_PLATFORMS=cpu,
+#   LORRAX_FORCE_FULL_BZ=1).  Host FFI liblorrax_ffi_host.so resolves in-
+#   container (CUDA-free slate_builds/cpu via RUNPATH, libsci from
+#   /lorrax_slate, MPICH from /lorrax_phdf5).
+# - mpi4py is absent from every reachable python env, so use_ffi_io=true
+#   falls back to H5PY_ALLGATHER on all CPU variants (uniform; io-only).
+# - Correctness vs 03 baseline: 05 = 0.000e+00 (scalapack_lu == per-q lu),
+#   07 = 0.000e+00 (slate potrf clean run), but 04 = 9.484e-01 and
+#   06 = 6.523e-01 (04 vs 06 = 1.598e+00).  FINDING: the HOST slate
+#   cholesky (Target::HostTask) intermittently corrupts exactly one q tile
+#   (q index 5): GN invalid-mode counts at q=5 are 1372 (healthy: 03/05/07)
+#   vs 11554 (04) vs 64486 (06).  sigX identical everywhere — only the
+#   screened W/sigC path is hit.  GPU slate (02) was bit-identical, so this
+#   is host-handler-specific flakiness, 2 of 3 slate runs affected.
+
+steps:
+  00_lorrax_gpu_intree:          { state: complete, note: "chol=off(sharded) lu=off(per-q); WALL 73 s, recorded 52.5 s; needed the 1421db1 pcast version-guard (lax.pcast jax-0.9-only); FORCE_FULL_BZ=1" }
+  01_lorrax_gpu_cusolvermp:      { state: complete, note: "chol=cusolvermp lu=cusolvermp; WALL 80 s, recorded 58.6 s; FORCE_FULL_BZ=1" }
+  02_lorrax_gpu_slate:           { state: complete, note: "chol=slate lu=off (no slate getrf); WALL 74 s, recorded 54.4 s; FORCE_FULL_BZ=1" }
+  03_lorrax_cpu_intree:          { state: complete, note: "chol=off(sharded) lu=off(per-q); WALL 273 s (container), recorded 261.5 s; native-venv attempt died in fit_ppm (jax 0.9.1 tiled=False)" }
+  04_lorrax_cpu_slate:           { state: complete, note: "chol=slate lu=off; WALL 274 s, recorded 262.6 s; SIGMA CORRUPTED at q=5 (max|d|=0.948 vs 03) — host slate potrf flake" }
+  05_lorrax_cpu_scalapack:       { state: complete, note: "chol=off lu=scalapack; WALL 274 s, recorded 260.1 s; max|d| vs 03 = 0.000e+00" }
+  06_lorrax_cpu_slate_scalapack: { state: complete, note: "chol=slate lu=scalapack; WALL 271 s, recorded 258.4 s; SIGMA CORRUPTED at q=5 (max|d|=0.652 vs 03, 1.598 vs 04) — host slate potrf flake" }
+  07_lorrax_cpu_slate_repeat:    { state: complete, note: "chol=slate lu=off repeat of 04 (determinism probe); WALL 272 s; max|d| vs 03 = 0.000e+00 — clean run proves 04/06 corruption is intermittent" }
+
+# 2026-07-11 (later): host-slate corruption ROOT-CAUSED + FIXED (4085672):
+# XLA CPU runs independent ffi_calls concurrently -> per-q slate potrf MPI
+# collectives raced on the shared comm (one corrupted q tile, intermittent).
+# Shared host-handler mutex added.  Determinism campaign: repro_slate_r1..r4
+# + repro_slate_scalapack_r1..r2 (fresh copies of 04/06 configs) ALL
+# max|delta| = 0.000e+00 vs 03 baseline.  04/06's original gw.out+sigma_diag
+# retained as the pre-fix corruption evidence.

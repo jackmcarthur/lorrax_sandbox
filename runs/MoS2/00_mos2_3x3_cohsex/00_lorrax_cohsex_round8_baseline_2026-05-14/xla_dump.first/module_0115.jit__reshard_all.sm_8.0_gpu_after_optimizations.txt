@@ -1,0 +1,56 @@
+HloModule jit__reshard_all, is_scheduled=true, entry_computation_layout={(c128[9,20,2,640]{3,2,1,0})->(c128[9,80,2,320]{3,2,1,0}, c128[9,320,80,2]{3,2,1,0})}, allow_spmd_sharding_propagation_to_output={true,true}, num_partitions=4, frontend_attributes={fingerprint_before_lhs="4f591c82bd0a5019c150b3b4222d35e4"}
+
+%fused_transpose (param_0.7: c128[9,40,2,2,320]) -> (c128[9,2,25600], c128[9,320,160]) {
+  %param_0.7 = c128[9,40,2,2,320]{4,2,1,0,3} parameter(0)
+  %bitcast.125.1 = c128[2,9,25600]{2,1,0} bitcast(%param_0.7)
+  %transpose.30.1 = c128[9,2,25600]{2,1,0} transpose(%bitcast.125.1), dimensions={1,0,2}, metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=752}
+  %bitcast.134.8.clone.1 = c128[9,80,2,320]{3,2,1,0} bitcast(%transpose.30.1)
+  %real.6.3.clone.1 = f64[9,80,2,320]{3,2,1,0} real(%bitcast.134.8.clone.1), metadata={op_name="jit(_reshard_all)/jit(main)/real" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=753}
+  %imag.5.5.clone.1 = f64[9,80,2,320]{3,2,1,0} imag(%bitcast.134.8.clone.1), metadata={op_name="jit(_reshard_all)/jit(main)/imag" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=753}
+  %negate.5.3.clone.1 = f64[9,80,2,320]{3,2,1,0} negate(%imag.5.5.clone.1), metadata={op_name="jit(_reshard_all)/jit(main)/neg" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=753}
+  %complex.5.1.clone.1 = c128[9,80,2,320]{3,2,1,0} complex(%real.6.3.clone.1, %negate.5.3.clone.1), metadata={op_name="jit(_reshard_all)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=753}
+  %bitcast.138.1.clone.1 = c128[9,160,320]{2,1,0} bitcast(%complex.5.1.clone.1)
+  %transpose.31.1.clone.1 = c128[9,320,160]{2,1,0} transpose(%bitcast.138.1.clone.1), dimensions={0,2,1}, metadata={op_name="jit(_reshard_all)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=753}
+  ROOT %tuple.2 = (c128[9,2,25600]{2,1,0}, c128[9,320,160]{2,1,0}) tuple(%transpose.30.1, %transpose.31.1.clone.1)
+}
+
+%fused_transpose.1 (param_0.9: c128[9,40,2,640]) -> c128[2,9,40,2,320] {
+  %param_0.9 = c128[9,40,2,640]{3,2,0,1} parameter(0)
+  %bitcast.118.1 = c128[40,9,2,2,320]{4,3,2,1,0} bitcast(%param_0.9)
+  ROOT %transpose.29.1 = c128[2,9,40,2,320]{4,3,2,1,0} transpose(%bitcast.118.1), dimensions={3,1,0,2,4}, metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=752}
+}
+
+%fused_transpose.2 (param_0.11: c128[9,20,2,640]) -> c128[20,9,1280] {
+  %param_0.11 = c128[9,20,2,640]{3,2,1,0} parameter(0)
+  %bitcast.109.1 = c128[9,20,1280]{2,1,0} bitcast(%param_0.11)
+  ROOT %transpose.28.1 = c128[20,9,1280]{2,1,0} transpose(%bitcast.109.1), dimensions={1,0,2}, metadata={op_name="psi_rmu_band"}
+}
+
+%async_computation (param_0.28: c128[9,40,2,2,320]) -> c128[9,40,2,2,320] {
+  %param_0.28 = c128[9,40,2,2,320]{4,2,1,0,3} parameter(0)
+  ROOT %all-to-all.2 = c128[9,40,2,2,320]{4,2,1,0,3} all-to-all(%param_0.28), channel_id=3, replica_groups={{0,1},{2,3}}, dimensions={3}, metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=752}
+}
+
+ENTRY %main.11_spmd (param.1: c128[9,20,2,640]) -> (c128[9,80,2,320], c128[9,320,80,2]) {
+  %param.1 = c128[9,20,2,640]{3,2,1,0} parameter(0), sharding={devices=[1,4,1,1]<=[4]}, metadata={op_name="psi_rmu_band"}
+  %loop_transpose_fusion.1 = c128[20,9,1280]{2,1,0} fusion(%param.1), kind=kLoop, calls=%fused_transpose.2, metadata={op_name="psi_rmu_band"}
+  %bitcast.113.0 = c128[9,20,2,640]{3,2,0,1} bitcast(%loop_transpose_fusion.1)
+  %collective-permute-start = (c128[9,20,2,640]{3,2,0,1}, c128[9,20,2,640]{3,2,0,1}) collective-permute-start(%bitcast.113.0), channel_id=1, source_target_pairs={{0,0},{1,2},{2,1},{3,3}}, metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=751}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %collective-permute-done = c128[9,20,2,640]{3,2,0,1} collective-permute-done(%collective-permute-start), metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=751}
+  %all-gather-start = (c128[9,20,2,640]{3,2,0,1}, c128[9,40,2,640]{3,2,0,1}) all-gather-start(%collective-permute-done), channel_id=2, replica_groups={{0,2},{1,3}}, dimensions={1}, use_global_device_ids=true, metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=751}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-gather-done = c128[9,40,2,640]{3,2,0,1} all-gather-done(%all-gather-start), metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=751}
+  %loop_transpose_fusion = c128[2,9,40,2,320]{4,3,2,1,0} fusion(%all-gather-done), kind=kLoop, calls=%fused_transpose.1, metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=752}
+  %bitcast.122.0 = c128[9,40,2,2,320]{4,2,1,0,3} bitcast(%loop_transpose_fusion)
+  %all-to-all-start = ((c128[9,40,2,2,320]{4,2,1,0,3}), c128[9,40,2,2,320]{4,2,1,0,3}) async-start(%bitcast.122.0), calls=%async_computation, metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=752}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %all-to-all-done = c128[9,40,2,2,320]{4,2,1,0,3} async-done(%all-to-all-start), metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=752}
+  %input_transpose_fusion = (c128[9,2,25600]{2,1,0}, c128[9,320,160]{2,1,0}) fusion(%all-to-all-done), kind=kInput, calls=%fused_transpose, metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=752}
+  %get-tuple-element.1 = c128[9,320,160]{2,1,0} get-tuple-element(%input_transpose_fusion), index=1, metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=752}
+  %get-tuple-element = c128[9,2,25600]{2,1,0} get-tuple-element(%input_transpose_fusion), index=0, metadata={op_name="jit(_reshard_all)/jit(main)/sharding_constraint" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=752}
+  %bitcast.134.0 = c128[9,80,2,320]{3,2,1,0} bitcast(%get-tuple-element)
+  %bitcast.142.0 = c128[9,80,2,320]{2,1,3,0} bitcast(%get-tuple-element.1)
+  %collective-permute-start.1 = (c128[9,80,2,320]{2,1,3,0}, c128[9,80,2,320]{2,1,3,0}) collective-permute-start(%bitcast.142.0), channel_id=4, source_target_pairs={{0,0},{2,1},{1,2},{3,3}}, metadata={op_name="jit(_reshard_all)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=753}, backend_config={"operation_queue_id":"0","wait_on_operation_queues":[],"collective_backend_config":{"is_sync":true,"no_parallel_custom_call":false,"is_pipelined":false,"reification_cost":[]},"force_earliest_schedule":false}
+  %collective-permute-done.1 = c128[9,80,2,320]{2,1,3,0} collective-permute-done(%collective-permute-start.1), metadata={op_name="jit(_reshard_all)/jit(main)/complex" source_file="/global/homes/j/jackm/software/lorrax_B/src/common/load_wfns.py" source_line=753}
+  %bitcast.146.0 = c128[9,320,80,2]{3,2,1,0} bitcast(%collective-permute-done.1)
+  ROOT %tuple.1 = (c128[9,80,2,320]{3,2,1,0}, c128[9,320,80,2]{3,2,1,0}) tuple(%bitcast.134.0, %bitcast.146.0)
+}
+

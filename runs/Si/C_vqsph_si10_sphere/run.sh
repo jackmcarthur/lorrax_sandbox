@@ -10,8 +10,8 @@ if command -v lfs >/dev/null 2>&1; then
 fi
 
 SHIFTER_ARGS="--module=gpu --image=nvcr.io/nvidia/jax:25.04-py3 \
-  --volume=/pscratch/sd/j/jackm/lorrax_nvhpc:/lorrax_nvhpc \
-  --volume=/pscratch/sd/j/jackm/lorrax_phdf5_openmpi/stage:/lorrax_phdf5 \
+  --volume=/global/homes/j/jackm/software/lorrax_nvhpc:/lorrax_nvhpc \
+  --volume=/global/homes/j/jackm/software/lorrax_phdf5_openmpi/stage:/lorrax_phdf5 \
   --env=PYTHONPATH=/global/homes/j/jackm/software/lorrax_C/src:/global/homes/j/jackm/scratchperl/.isdf/isdf_venvs/isdf_site:/pscratch/sd/j/jackm/lorrax_sandbox/sources \
   --env=HDF5_USE_FILE_LOCKING=FALSE \
   --env=XLA_PYTHON_CLIENT_MEM_FRACTION=0.95 \
