@@ -1,26 +1,26 @@
 # Harness re-architecture investigation — index
 
-Session artifacts, 2026-08-04/05. LIVING documents (read these):
-TARGET_ARCHITECTURE.md (what), PRIORITIES.md (what actually gets built,
-in what order -- supersedes every other adoption-order list),
-CONSOLIDATION.md (the immediate runbook), RULES_v2.md + DESIGN_draft.md
-(the rule content). Everything else is the RESEARCH RECORD -- read only
-when questioning why a decision was made. Full index:
+Session artifacts, 2026-08-04/05.
+
+**Read PLAN.md first — it is the whole plan on one page, as a tree.**
+Then CONSOLIDATION.md (the step-by-step checklist for the GitHub push),
+and RULES_v2.md + DESIGN_draft.md for the actual rule content. Everything
+else is the research record behind those decisions; read it only when
+questioning why a decision was made.
 
 | File | What | Status |
 |---|---|---|
-| `TARGET_ARCHITECTURE.md` | Capstone: the intended end-state in five functions (orientation, enforcement, verification, evidence, execution) with per-piece contents, spec pointers, and the five compounding loops | capstone summary |
-| `PRIORITIES.md` | Ruthless triage of every piece against the measured-cost bar: tiers 0-3 plus explicit cuts with reinstatement conditions; the owner's design-against-objections rule; SUPERSEDES all other adoption-order lists | authoritative priority list |
-| `report.md` | The harness proposal grounded in Weng's "Harness Engineering for Self-Improvement" (2026-07-04): scorecard of what the sandbox already implements, 7 prioritized proposals, anti-goals | proposal |
-| `CONSOLIDATION.md` | Ordered runbook for the Frontera push + truth repair — the owner's stated next step; phases 2-5 reference the other docs | runbook |
-| `RULES_v2.md` | Curated design-rule set with owner verdicts and a placement map (DESIGN.md / scoped AGENTS.md / gates / runtime refusals / TASTE.md) | owner-reviewed |
-| `DESIGN_draft.md` | Draft of the proposed lorrax docs/architecture/DESIGN.md — the three-layer spec, the O(N³) identity, JAX discipline ("the traced graph is the bill"), mesh/process rules | draft, needs owner edit |
-| `EVIDENCE_DESIGN.md` | Synthesis of three research sweeps (ML tracking, scientific provenance, HPC benchmarking) on evidence-record design; validates the CLAIMS pattern, prescribes the harness-written JSONL layer | synthesis |
-| `RULES_seed.md` | Raw mined rules from lorrax origin @ 2026-07-22 (~140 rules with file:line + enforcement status) — evidence base for RULES_v2; re-sweep after consolidation | raw evidence |
-| `ANTIPATTERN_ENFORCEMENT.md` | Idiom-propagation diagnosis (3 failure classes, from an 18-idiom parity audit of gw/psp vs lagging modules) + the 8-rung enforcement stack: scaffolds, routed context, edit-time hooks, ast-grep corpus, import contracts, extractions, jaxtyping, behavioral gates | synthesis |
-| `rules_gate.py` + `rules_gate_allowlist.json` | Working banned-pattern gate (raw jnp.fft, device_put) with ratcheting allowlist; python 3.7 stdlib; tested against origin (203 sites frozen) | draft tool, tested |
+| `PLAN.md` | The plan in plain language: one tree, the order of work, what was cut and why. Replaces the earlier TARGET_ARCHITECTURE.md and PRIORITIES.md | current |
+| `CONSOLIDATION.md` | Step-by-step checklist for pushing the Frontera work to GitHub and fixing the stale docs afterward | runbook |
+| `RULES_v2.md` | The design rules with Jack's rule-by-rule verdicts applied, and where each rule should live (design doc / per-directory notes / lint / startup check) | owner-reviewed |
+| `DESIGN_draft.md` | Draft of the proposed 2-page lorrax design doc: the three code layers, the O(N^3) rule, the JAX rules, mesh/process rules | draft, needs Jack's edit |
+| `rules_gate.py` + allowlist | Working lint for banned patterns (raw jnp.fft, device_put); existing violations frozen, count can only decrease; runs on login-node python 3.7 | working, 2 rules |
+| `report.md` | Original proposal based on Lilian Weng's harness-engineering post | research record |
+| `RULES_seed.md` | Raw rule mining from the repo (~140 rules with file:line) — the evidence behind RULES_v2 | research record |
+| `EVIDENCE_DESIGN.md` | How other fields (ML tracking, materials-science provenance, HPC benchmarking) keep experiment records; why we keep the ledger but add machine-written job logs | research record |
+| `ANTIPATTERN_ENFORCEMENT.md` | The audit of why good patterns in gw/psp don't spread to other directories, and the enforcement options considered | research record |
 
-Caveat on scope: everything code-facing here was derived from the GitHub
-origin of lorrax (2026-07-22), which is ~150 commits behind the certified
-Frontera tree. CONSOLIDATION.md phase 1 closes that gap; RULES_seed and
-the gate allowlist must be regenerated afterward.
+Caveat: everything code-facing was derived from the GitHub copy of
+lorrax (2026-07-22), which is ~150 commits behind the real Frontera
+tree. After the push, re-run the rule mining and regenerate the lint
+allowlist.
