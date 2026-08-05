@@ -4,6 +4,7 @@ Session artifacts, 2026-08-04/05. Read order for a newcomer:
 
 | File | What | Status |
 |---|---|---|
+| `TARGET_ARCHITECTURE.md` | Capstone: the intended end-state in five functions (orientation, enforcement, verification, evidence, execution) with per-piece contents, spec pointers, and the five compounding loops | capstone summary |
 | `report.md` | The harness proposal grounded in Weng's "Harness Engineering for Self-Improvement" (2026-07-04): scorecard of what the sandbox already implements, 7 prioritized proposals, anti-goals | proposal |
 | `CONSOLIDATION.md` | Ordered runbook for the Frontera push + truth repair — the owner's stated next step; phases 2-5 reference the other docs | runbook |
 | `RULES_v2.md` | Curated design-rule set with owner verdicts and a placement map (DESIGN.md / scoped AGENTS.md / gates / runtime refusals / TASTE.md) | owner-reviewed |
