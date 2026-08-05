@@ -124,10 +124,16 @@ from the bill.
   geometries are constructed non-divisible so the padded path is always
   the exercised path.
 
-## 5. When a rule fights the task
+## 5. Design changes: two standing questions
 
-If honoring a rule in this document would substantially grow the current
-task's diff: STOP and surface the conflict. Do not silently violate the
-rule; do not silently balloon the task. The conflict is signal — either
-the rule needs an owner exception (record it), or the task was
-mis-scoped.
+**Before implementing any major design change, answer in writing: "what
+design criteria would Jack be most likely to object to?"** Resolve or
+surface those points BEFORE building, not at review. The adjudicated-
+objection registry (TASTE.md) is the training set for this question;
+every new adjudication — including "no, that's fine" — appends to it.
+
+**When a rule fights the task:** if honoring a rule in this document
+would substantially grow the current task's diff, STOP and surface the
+conflict. Do not silently violate the rule; do not silently balloon the
+task. The conflict is signal — either the rule needs an owner exception
+(record it), or the task was mis-scoped.

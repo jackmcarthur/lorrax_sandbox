@@ -1,10 +1,16 @@
 # Harness re-architecture investigation — index
 
-Session artifacts, 2026-08-04/05. Read order for a newcomer:
+Session artifacts, 2026-08-04/05. LIVING documents (read these):
+TARGET_ARCHITECTURE.md (what), PRIORITIES.md (what actually gets built,
+in what order -- supersedes every other adoption-order list),
+CONSOLIDATION.md (the immediate runbook), RULES_v2.md + DESIGN_draft.md
+(the rule content). Everything else is the RESEARCH RECORD -- read only
+when questioning why a decision was made. Full index:
 
 | File | What | Status |
 |---|---|---|
 | `TARGET_ARCHITECTURE.md` | Capstone: the intended end-state in five functions (orientation, enforcement, verification, evidence, execution) with per-piece contents, spec pointers, and the five compounding loops | capstone summary |
+| `PRIORITIES.md` | Ruthless triage of every piece against the measured-cost bar: tiers 0-3 plus explicit cuts with reinstatement conditions; the owner's design-against-objections rule; SUPERSEDES all other adoption-order lists | authoritative priority list |
 | `report.md` | The harness proposal grounded in Weng's "Harness Engineering for Self-Improvement" (2026-07-04): scorecard of what the sandbox already implements, 7 prioritized proposals, anti-goals | proposal |
 | `CONSOLIDATION.md` | Ordered runbook for the Frontera push + truth repair — the owner's stated next step; phases 2-5 reference the other docs | runbook |
 | `RULES_v2.md` | Curated design-rule set with owner verdicts and a placement map (DESIGN.md / scoped AGENTS.md / gates / runtime refusals / TASTE.md) | owner-reviewed |
