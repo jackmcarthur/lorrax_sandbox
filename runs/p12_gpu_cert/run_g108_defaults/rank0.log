@@ -1,0 +1,732 @@
+[fft_ffi] flat-k 3-D FFTs -> cuFFT strided CUDA FFI handler (lorrax_mklfft_flat_k): cufftPlanMany64 advanced layout (istride=T, idist=1 — the stride-descriptor analog) reading the dot-layout tile in place; jnp.fft norm scales applied by a fused device kernel.
+  [compile-cache] cache dir (default): /scratch2/08271/jackmc/lorrax_jax_cache ($SCRATCH default; override with ISDF_JAX_CACHE_DIR, "" opts out).
+  [compile-cache] ARMED at 4 processes, shared dir /scratch2/08271/jackmc/lorrax_jax_cache/np4 (1670 entries advertised, 1670 agreed by all ranks; agree+prefetch 1.77s of which prefetch 1.25s).
+==============================================================================
+  LORRAX runtime — resolved startup configuration
+==============================================================================
+  This is rank 0 of 4, and it addresses 1 of the 4 devices in the job.
+  jax.distributed.initialize() took its auto-detected form with local_device_ids=[0].
+  The JAX platform resolved to 'gpu' on devices of kind 'Quadro RTX 5000', from JAX_PLATFORMS='cuda,cpu', under jax 0.9.1 with 64-bit values enabled.
+  The run's device mesh is 2x2 over axes ('x', 'y'), and its communicator cliques were warmed before the first physics jit.
+  Bringing this stack up took 75.3 s in total: 56.5 s for the environment, jax.distributed and backend init, 17.1 s to build the mesh and warm its communicators, 1.8 s to arm the compile cache and 0.0 s to measure everything in this block.
+  Demotions listed above are this rank's; a demotion that happened only on another rank is announced in that rank's own output and does not appear here.
+  Cross-process collectives run on NCCL because this is a GPU platform, so JAX_CPU_COLLECTIVES_IMPLEMENTATION does not apply.
+  The XLA memory pool, read from jax.local_devices()[0].memory_stats() and not from os.environ, reports a limit of 0.00 GB with 0.00 GB in use and a peak of 0.00 GB so far.
+  XLA_PYTHON_CLIENT_PREALLOCATE resolved to false (raw 'false') and XLA_PYTHON_CLIENT_ALLOCATOR resolved to 'cuda_async' (raw 'cuda_async') — NOT LORRAX's canonical pair, which is preallocate=false with the allocator left unset (BFC); a caller overrode it.
+  The CUDA FFI library loaded from /work2/08271/jackmc/frontera/lorrax_ffi_p12_cuda/build_phdf5/liblorrax_ffi.so, selected by LORRAX_FFI_SO.
+  The LORRAX_BANDS_GEMM_FFI dial is unset and resolved to on, so the contract_bands right-GEMM contraction is routed through the FFI handler (the required layer).
+  The LORRAX_FFT_FFI dial is unset and resolved to on, so the flat-k 3-D FFT helper path is routed through the FFI handler (the required layer).
+  The LORRAX_FFT_FFI_FUSED dial is unset and resolved to on, so the fused IFFT-multiply-FFT tau kernel is routed through the FFI handler (the required layer).
+  The distributed backends available for eigh on this mesh are cusolvermp, distributed, native; which one runs is the input-file key, not an environment variable.
+  The distributed backends available for cholesky on this mesh are cusolvermp, native; which one runs is the input-file key, not an environment variable.
+  The distributed backends available for solve_lu on this mesh are cusolvermp, distributed, native; which one runs is the input-file key, not an environment variable.
+  This process is pinned to 32 schedulable CPUs, with OMP_NUM_THREADS='1', MKL_NUM_THREADS=None and OPENBLAS_NUM_THREADS=None.
+  Inside the FFI handlers the BLAS team size is LORRAX_MKLBLAS_THREADS=None for the batched GEMM, where unset means the ambient thread count, and LORRAX_SCALAPACK_MKL_THREADS=None for the ScaLAPACK handlers, where unset means a cap of 4 because pzheevd measured 11.28 s per q at 14 MKL threads against 0.463 s at 4.
+  The JAX persistent compile cache is enabled at /scratch2/08271/jackmc/lorrax_jax_cache/np4, shared by all 4 ranks through the hit/miss agreement layer.
+  The cache key includes every array shape, so a system size this machine has not run before misses every entry no matter how warm the cache looks.
+  The fail-fast excepthook is installed, so an uncaught exception on any rank exits the step non-zero instead of leaving its peers blocked in a collective that rank will never join.
+  glibc malloc tuning is in force with M_MMAP_THRESHOLD=1 MB and M_TRIM_THRESHOLD=128 MB, which is the mitigation for the per-r-chunk RSS ramp on long XLA:CPU runs.
+==============================================================================
+read_lorrax_input: 2 unrecognized deck key(s) in gw.in:
+    x_only (line 9): ignored — not a recognized deck key
+    use_chunked_isdf (line 22): ignored — not a recognized deck key
+W0801 07:06:09.723306   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  [config] slab_io=auto on GPU backend: CUDA FFI exports the collective phdf5 write handler (single-node).  Routing SlabIO through PHDF5_FFI.
+MPI startup(): Could not import some environment variables. Intel MPI process pinning will not be used.
+               Possible reason: Using the Slurm srun command. In this case, Slurm pinning will be used.
+[0] MPI startup(): Intel(R) MPI Library, Version 2019 Update 9  Build 20200923 (id: abd58e492)
+[0] MPI startup(): Copyright (C) 2003-2020 Intel Corporation.  All rights reserved.
+[0] MPI startup(): library kind: release
+[0] MPI startup(): libfabric version: 1.10.1-impi
+[0] MPI startup(): libfabric provider: tcp;ofi_rxm
+[0] MPI startup(): Rank    Pid      Node name                          Pin cpu
+[0] MPI startup(): 0       31343    c196-011.frontera.tacc.utexas.edu  0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+[0] MPI startup(): 1       31307    c196-011.frontera.tacc.utexas.edu  0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+[0] MPI startup(): 2       31289    c196-011.frontera.tacc.utexas.edu  0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+[0] MPI startup(): 3       31308    c196-011.frontera.tacc.utexas.edu  0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+
+========================================================================
+  COHSEX-JAX: Self-Energy Calculation
+========================================================================
+  Backend: GPU       Devices: 4  Mesh: 2×2  Processes: 4
+  Device type: Quadro RTX 5000
+  XLA allocator: cuda_async  preallocate: off  mem_fraction: unset
+  [note] cudaMallocAsync; peak_bytes_in_use measured IDENTICAL to BFC for steady allocations (job 7882447).  Transient-heavy kernels were not tested — treat a peak from this allocator as unverified there, not as wrong.
+  XLA pool: in_use=0.00 GB, peak=0.00 GB  (this allocator reports no bytes_limit, so there is no 'available' figure)
+========================================================================
+
+  [WfnLoader] read backend = phdf5 (auto, 4 processes) — collective MPI-IO read through the phdf5 FFI .so
+[density-symmetry] WFN.h5: TRS=HOLDS (measured, ‖m‖/‖ρ‖=4.29e-14, coverage=25%, mesh-implies-TRS=True) | spatial 2/2 ops tested, max resid 5.36e-13 | ∫ρ=26.000000 (exp 26.000000, rel 8.2e-16) | 5.59s (io 0.25 + fft 4.66) (10 k)
+  ISDF basis: 108 centroids
+  FFT grid: 24×24×80   Cell volume: 702.20 a.u.³
+
+[stage 07:06:16] -> ISDF basis + wavefunctions
+
+  ISDF memory model — chunk plan + HWM estimate
+    band_chunk    = 16
+    r_chunk       = 46080  (1 chunks)
+    q_chunk       = 16
+    gflat_cs      = 100
+    P_min (floor) = 1
+    budget        = 12.00 GB/dev  (util 0.85)
+    persistent    = 0.05 GB/dev
+    HWM estimate  = 4.66 GB/dev (39% of budget) [binder: C_fit_one_rchunk]
+    per-stage peaks (persistent + transient, GB/dev):
+      C_fit_one_rchunk....    4.66 <=
+      D_accumulate........    0.52
+      A_centroid_load.....    0.24
+      B_cct_chol..........    0.06
+      E_v_q...............    0.04
+      F_tensor_write......    0.03
+W0801 07:06:16.783349   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:16.801701   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:16.819880   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:16.862496   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:16.948483   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:16.961550   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:16.971944   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:16.980895   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:16.991035   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.001236   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.011233   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.020883   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.032101   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.041745   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.054735   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.064692   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.074872   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.084601   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.094358   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.104879   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.114598   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.124775   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.134600   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.144011   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.154713   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.164681   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.174467   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.183493   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.197820   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.287626   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.390586   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.408517   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.912837   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.922198   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.933283   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.944281   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.970893   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.978970   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.987679   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:17.997084   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.007433   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.016598   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.025712   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.033220   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.041883   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.050335   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.059431   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.067302   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.077531   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.089428   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.108257   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.126943   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.138039   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.147417   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.156549   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.165879   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.174908   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.184548   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.194261   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.204316   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.213335   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.247529   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.258011   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.267765   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.277748   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+
+  Chunked ISDF fitting:
+    Band chunks: 16
+    R chunks:    46080 (contiguous r-space)
+    Q chunks:    16
+    GFlat cs:    100
+    Zeta output: /scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/run_g108_defaults/tmp/zeta_q.h5
+    cutoffs: zeta = 30.0 Ry, bare-Coulomb = 30.0 Ry  (ecutwfc=30.0, ecutrho=120.0)
+
+  Zeta fitting: 1 r-chunks x 46080 r-points, 128 bands (128 left + 128 right)
+  Output: /scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/run_g108_defaults/tmp/zeta_q.h5
+  Left wfns:  (16, 128, 2, 108)
+  Right wfns: (16, 128, 2, 108)
+W0801 07:06:18.323402   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.332412   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.342790   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.352804   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.362512   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.373831   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  Computing C_q via shard_map pipeline (open-spin, charge γ̃^0=I)
+W0801 07:06:18.402990   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.411729   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.421897   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.462259   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.951857   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.963814   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.975361   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.985698   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:18.995082   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:19.005094   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:19.015717   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:19.025749   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:19.034286   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  Computing L_q = rank-truncated pinv  [PSD, charge channel, path=replicated_rank_truncate]
+  Zeta back-solve tier: replicated (distributed_zeta_solve=auto)  replicated (nq,μ,μ) gather would be 0.00 GB/rank; per-q tile 0.000 GB (×nq executions/r-chunk); distributed tier gathers NO (μ,μ) object
+[zeta rank_truncate] n_log=108 rcond=1.0e-08 n_keep/q=[108 108 108 108 108 108 108 108 108 108] lam_max/q=[0.00299289 0.00298726 0.00298395 0.00298726 0.00298362 0.00298362
+ 0.00298726 0.00298395 0.00298362 0.00298395] lam_min_kept/q=[3.78923135e-06 4.68613197e-06 5.85847214e-06 4.68613580e-06
+ 5.75120133e-06 5.75120080e-06 4.68613326e-06 5.85847929e-06
+ 5.75120589e-06 5.85847379e-06] kappa/q=[789.83986535 637.46763874 509.3400362  637.46712448 518.78212807
+ 518.7821708  637.46746352 509.33941217 518.78172152 509.33987436] ldrop_hi/q=[-inf -inf -inf -inf -inf -inf -inf -inf -inf -inf] lam_min/q=[3.78923135e-06 4.68613197e-06 5.85847214e-06 4.68613580e-06
+ 5.75120133e-06 5.75120080e-06 4.68613326e-06 5.85847929e-06
+ 5.75120589e-06 5.85847379e-06] margin/q=[0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+  L_q: (10, 108, 108)
+  q-IBZ reduction: 10 IBZ q-points / 16 full-BZ (disk shrink 1.6×)
+  G-flat ζ sphere: ngkmax=1964, min ngk=1933, max ngk=1964 (4.262% of n_rtot)
+W0801 07:06:22.464057   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+/scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/srcsnap_73a9013/src/file_io/_slab_io_ffi.py:564: UserWarning: FFI backend: chunks/attrs on create_dataset currently no-op; pre-create with h5py if you need explicit chunking or attrs.
+  warnings.warn(
+W0801 07:06:22.580873   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.598831   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.616438   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.653897   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.664388   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  ψ(G-flat) host cache: 0.03 GB/process resident
+W0801 07:06:22.805055   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  G-flat ζ accumulator: N=270 rows/rank (n_q=10 × n_mu_local=27); chunk_size=100 → per-iter FFT box 0.07 GB/rank
+W0801 07:06:22.813850   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.822068   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.832932   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.841409   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.850186   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.857929   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.865557   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.874206   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.884027   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.893985   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:22.902418   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:26.863804   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:26.874689   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:26.884268   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:26.892634   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:26.901197   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:26.911371   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:26.921702   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.029745   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.084610   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.095385   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.218335   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.312939   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.322024   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.330651   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.339705   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.348628   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.358032   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.366931   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.375780   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.384719   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.397616   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.407271   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.416555   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.425813   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.434895   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.540785   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+Started zeta fitting at 07:06:27.
+[ 07:06:27 | ██████████ | 100% ] r-chunk 1 / 1 · ETA 0 s
+Finished zeta fitting at 07:06:27.  Elapsed: 0 s.
+W0801 07:06:27.588445   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.597517   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.606809   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.615764   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.624898   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:27.635315   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  [SlabIO.close] draining 1 pending writes for zeta_q.h5 …
+  [SlabIO.close] Python dispatch drained in 0.1 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.0 s
+  Zeta output: /scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/run_g108_defaults/tmp/zeta_q.h5  shape: (n_q_disk=10 of 4·4·1=16 full-BZ, n_rtot=46080, n_rmu=108)
+  Timing (1 r-chunks, 4.8s total):
+    fit      4.48s  93.6%
+    H5       0.27s   5.7%
+    GPU high-water mark: 4.18 GB / 12.00 GB budget (35%)  [source: XLA arena]
+W0801 07:06:28.326156   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:28.335497   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+    V_q bare cutoff: 30.0 Ry
+    V_q budget:    11.95 GB
+  V_q g-flat [CC]: n_q_ibz=10, ngkmax=1964, g_chunk=1964 (1/q), n_rmu_L=108→108, n_rmu_R=108→108, unfold=IBZ→full
+W0801 07:06:28.478358   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:28.488313   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:28.498046   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:28.507243   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+    [CC] pre-read all 10 IBZ ζ̃ slabs (1 batched call): 0.10s
+W0801 07:06:28.595301   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:28.605732   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:28.613688   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:28.622142   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:28.631685   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:28.639841   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:28.683832   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+    [CC] q=0/10: kernel=0.36s
+    [CC] q=1/10: kernel=0.00s
+    [CC] q=2/10: kernel=0.00s
+    [CC] q=3/10: kernel=0.00s
+    [CC] q=4/10: kernel=0.00s
+    [CC] q=5/10: kernel=0.00s
+    [CC] q=6/10: kernel=0.00s
+    [CC] q=7/10: kernel=0.00s
+    [CC] q=8/10: kernel=0.00s
+    [CC] q=9/10: kernel=0.00s
+W0801 07:06:29.044394   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.079072   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.091702   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.099487   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  [SlabIO.close] draining 0 pending writes for zeta_q.h5 …
+  [SlabIO.close] Python dispatch drained in 0.0 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.0 s
+W0801 07:06:29.114568   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+
+  V_q computed:
+    Shape: (16, 108, 108)
+W0801 07:06:29.131147   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.141328   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.150341   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.167929   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.179660   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+    V_q=0 trace: 16586735.3803
+W0801 07:06:29.771570   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  [restart_write] V_qmunu (16, 108, 108) 0.00 GB in 0.0 s (2258 MB/s)
+  [restart_write] G0_mu_nu (108,) 0.00 GB in 0.0 s (0 MB/s)
+  [restart_write] enk_full (16, 128) 0.00 GB in 0.0 s (0 MB/s)
+  [restart_write] W0_qmunu placeholder ALLOCATED (16, 108, 108) 0.00 GB in 0.0 s (no data written)
+  [SlabIO.close] draining 0 pending writes for isdf_tensors_108.h5 …
+  [SlabIO.close] Python dispatch drained in 0.0 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.0 s
+W0801 07:06:29.923517   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.933493   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.942681   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.953670   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.964365   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.972985   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.981488   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.989226   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:29.997255   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  Wavefunctions built (b0:b4=128 bands, 4 sharded copies: xn/xr/yr/yn)
+  [restart_write] psi_full_y (16, 128, 2, 108) 0.01 GB in 0.0 s (3897 MB/s)
+  [SlabIO.close] draining 1 pending writes for isdf_tensors_108.h5 …
+  [SlabIO.close] Python dispatch drained in 0.0 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.0 s
+  Chunked ISDF path complete
+[stage 07:06:30] <- ISDF basis + wavefunctions  13.9 s
+[stage 07:06:30] -> minimax tau-axis
+W0801 07:06:30.077642   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.086690   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.096791   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.105173   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.116517   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.125135   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  Minimax static window: x=[1.625857e-01, 7.252859e+00] Ry, R=44.61, nodes=9, fit_err~1.608e-06
+[stage 07:06:30] <- minimax tau-axis  0.1 s
+[stage 07:06:30] -> screening (chi0 -> W)
+Started screening (chi0 -> W) at 07:06:30.
+[stage 07:06:30]     -> W[static] chi0 compile
+W0801 07:06:30.179957   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.194331   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.203396   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.212360   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.221188   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.229123   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.238048   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.247552   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:30.305194   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+[stage 07:06:30]     <- W[static] chi0 compile  0.1 s
+[stage 07:06:30]     -> W[static] chi0 build (9 tau nodes, 16 q, mu=108)
+[stage 07:06:33]     <- W[static] chi0 build (9 tau nodes, 16 q, mu=108)  3.3 s
+[stage 07:06:33]     -> W[static] IBZ slice (16 q -> 10 q)
+W0801 07:06:33.628393   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:33.639099   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:33.649870   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:33.658832   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:33.668195   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:33.678842   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:33.688858   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:33.698846   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+[stage 07:06:33]     <- W[static] IBZ slice (16 q -> 10 q)  0.1 s
+[stage 07:06:33]     -> W[static] Dyson compile
+W0801 07:06:33.710560   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:33.777195   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+[stage 07:06:33]     <- W[static] Dyson compile  0.1 s
+[stage 07:06:33]     -> W[static] Dyson solve (10 q, mu=108, IBZ wedge)
+[stage 07:06:34]     <- W[static] Dyson solve (10 q, mu=108, IBZ wedge)  0.7 s
+[stage 07:06:34]     -> W[static] IBZ -> full-BZ unfold (10 q -> 16 q)
+W0801 07:06:34.526998   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+[stage 07:06:34]     <- W[static] IBZ -> full-BZ unfold (10 q -> 16 q)  0.1 s
+[stage 07:06:34]   -> W[static] finiteness + hermiticity gate
+W0801 07:06:34.895201   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:34.903111   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:34.921880   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+[stage 07:06:34]   <- W[static] finiteness + hermiticity gate  0.4 s
+[ 07:06:34 | █████░░░░░ |  50% ] W role 1 / 2 · ETA 5 s
+  PPM imag-freq quadrature (ωp=2.0000 Ry): R=44.6, nodes=6, err~4.3e-06
+[stage 07:06:34]     -> W[probe] chi0 compile
+W0801 07:06:34.945048   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:34.988710   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+[stage 07:06:34]     <- W[probe] chi0 compile  0.1 s
+[stage 07:06:34]     -> W[probe] chi0 build (6 tau nodes, 16 q, mu=108)
+[stage 07:06:35]     <- W[probe] chi0 build (6 tau nodes, 16 q, mu=108)  0.0 s
+[stage 07:06:35]     -> W[probe] Dyson compile
+W0801 07:06:35.058355   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+[stage 07:06:35]     <- W[probe] Dyson compile  0.1 s
+[stage 07:06:35]     -> W[probe] Dyson solve (16 q, mu=108, full BZ)
+[stage 07:06:35]     <- W[probe] Dyson solve (16 q, mu=108, full BZ)  0.0 s
+[stage 07:06:35]   -> W[probe] finiteness + hermiticity gate
+[stage 07:06:35]   <- W[probe] finiteness + hermiticity gate  0.0 s
+[ 07:06:35 | ██████████ | 100% ] W role 2 / 2 · ETA 0 s
+Finished screening (chi0 -> W) at 07:06:35.  Elapsed: 5 s.
+[stage 07:06:35] <- screening (chi0 -> W)  4.9 s
+  [restart_write] W0_qmunu (16, 108, 108) 0.00 GB in 0.0 s (1784 MB/s)
+  [SlabIO.close] draining 1 pending writes for isdf_tensors_108.h5 …
+  [SlabIO.close] Python dispatch drained in 0.0 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.0 s
+W0801 07:06:35.146097   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  dipole.h5 coverage: 128 bands on disk (26 occ + 102 cond), run Σ window = 128 bands
+  [dipole provenance] /scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/run_g108_defaults/dipole.h5 carries no provenance stamp (written before the guard existed).  Regenerate with `python -m psp.get_dipole_mtxels` to make it checkable.
+W0801 07:06:35.246385   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.256052   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.266396   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.276053   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.286836   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.298721   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.369413   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.395470   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.451978   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.461714   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.470367   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.480203   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.487706   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.496170   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.512448   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.560786   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:35.774438   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.161888   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.171453   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.183554   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.223737   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.290204   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.299515   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.307613   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.314991   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.323862   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.435928   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.446071   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.455963   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.468877   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.477098   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.485698   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.494556   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.503841   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.513845   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.522886   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.532072   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.541437   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.551540   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.562962   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.597342   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.610018   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.622440   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.635099   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.647744   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.659650   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.670784   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.680998   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.692719   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.739727   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.753741   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.766151   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:37.776091   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  dipole.h5 coverage: 128 bands on disk (26 occ + 102 cond), run Σ window = 128 bands
+  [dipole provenance] /scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/run_g108_defaults/dipole.h5 carries no provenance stamp (written before the guard existed).  Regenerate with `python -m psp.get_dipole_mtxels` to make it checkable.
+  Persisted W0_qmunu + q=0 head scalars: vhead=2443.340 a.u.,  whead[ω=0]=659.803 a.u.,  whead[iωp]=2076.441 a.u.
+
+------------------------------------------------------------------------
+  FINITE-SIZE CORRECTIONS
+------------------------------------------------------------------------
+  Head source: s_tensor
+  v(q→0)  =     2443.340 a.u.  (bare Coulomb head)
+  W(q→0)  =      659.803 a.u.  (screened Coulomb head)
+  ΔW      =    -1783.537 a.u.  (screening correction)
+W0801 07:06:38.064945   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.075320   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.085193   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.093902   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.102665   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.111722   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.121212   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+
+------------------------------------------------------------------------
+  STATIC HEAD TERMS (exact COHSEX / BGW-style)
+------------------------------------------------------------------------
+  Head source: s_tensor
+  v_h(q→0)           =  2443.339832 a.u.
+  W_h(q→0, ω=0)      =   659.803148 a.u.
+  W_h^c              = -1783.536684 a.u.
+  Σ^X head (occ)     = -2.174715e-01 Ry
+  Σ^SX head (occ)    = -5.872633e-02 Ry
+  Σ^(SX-X) head(occ) = 1.587452e-01 Ry
+  Σ^COH head (all)   = -7.937258e-02 Ry
+W0801 07:06:38.281615   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.292410   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.321625   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.360803   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.374034   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.392944   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.411092   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.435969   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.446137   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:38.458013   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  [SlabIO.close] draining 0 pending writes for kin_ion.h5 …
+  [SlabIO.close] Python dispatch drained in 0.0 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.0 s
+  V_H: exact FFT-grid matrix read from kin_ion.h5's 'v_hartree' dataset; the ISDF quadrature is not used.
+
+------------------------------------------------------------------------
+  GN-PPM + FREQUENCY-INTEGRATED SIGMA
+------------------------------------------------------------------------
+W0801 07:06:38.556965   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.441644   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.449270   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.457232   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.465237   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.474148   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  GN-PPM fit: 0.93s, iωp=2.0000 Ry, unfulfilled=2.64%
+[fft_ffi] flat-k 3-D FFTs -> cuFFT strided CUDA FFI handler (lorrax_mklfft_gw_conv): cufftPlanMany64 advanced layout (istride=T, idist=1 — the stride-descriptor analog) reading the dot-layout tile in place; jnp.fft norm scales applied by a fused device kernel.
+W0801 07:06:39.487772   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.496753   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.505420   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.513981   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.523693   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.533714   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.543899   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.613300   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.656210   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  [pf] profiling hooks unavailable: No module named 'pf'
+  Σc crossing conditioning: ξ raised 0.250 → 0.952 eV (A_core capped at 24; the requested ξ would make the HGL crossing quadrature ill-conditioned)
+W0801 07:06:39.695236   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  Σc(ω) grid: -10.000..10.000 eV, Nω=41, Δω=0.500 eV, ξ=0.952 eV
+  GN invalid modes: 4932/186624 (2.64%)
+W0801 07:06:39.712359   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  GN invalid modes per q: min=0 max=1412 counts=[ 384    0 1412    0    0   52   52    0 1412   52 1412   52    0    0   52   52]
+W0801 07:06:39.730215   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.743985   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.774823   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.798449   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  GN invalid modes → static COHSEX: max|Σ_static| = 0.0064 eV (diag max 0.0063 eV)
+W0801 07:06:39.818760   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.828597   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.839732   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.849949   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.861078   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.872575   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.883521   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.893839   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.908880   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.919674   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.934411   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.951893   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.963326   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.977952   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:39.989309   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:40.002073   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:40.013002   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+    ω≥E_F cond window "core" (crossing): 48 nodes, err<1e-06, E_A=[0.0813, 0.7891] Ry, project=imag
+    ω≥E_F cond window "a_stripe" (Laplace): 8 nodes, err<1e-06, E_A=[0.8451, 2.7028] Ry, project=full
+    ω≥E_F cond window "b_slab" (Laplace): 12 nodes, err<1e-06, E_A=[0.0813, 2.7028] Ry, project=full
+W0801 07:06:40.026135   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+Started sigma[ω≥E_F cond] at 07:06:40.
+[ 07:06:40 | ░░░░░░░░░░ |   1% ] tau node  1 / 68 · ETA 0 s
+[ 07:06:40 | █░░░░░░░░░ |  12% ] tau node  8 / 68 · ETA 1 s
+[ 07:06:40 | ██░░░░░░░░ |  24% ] tau node 16 / 68 · ETA 1 s
+[ 07:06:40 | ███░░░░░░░ |  34% ] tau node 23 / 68 · ETA 1 s
+[ 07:06:40 | █████░░░░░ |  46% ] tau node 31 / 68 · ETA 1 s
+[ 07:06:41 | ██████░░░░ |  56% ] tau node 38 / 68 · ETA 1 s
+[ 07:06:41 | ███████░░░ |  68% ] tau node 46 / 68 · ETA 1 s
+[ 07:06:41 | ████████░░ |  78% ] tau node 53 / 68 · ETA 0 s
+W0801 07:06:41.818115   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+[ 07:06:41 | █████████░ |  90% ] tau node 61 / 68 · ETA 0 s
+[ 07:06:42 | ██████████ | 100% ] tau node 68 / 68 · ETA 0 s
+Finished sigma[ω≥E_F cond] at 07:06:42.  Elapsed: 2 s.
+    ω≥E_F val window "single" (Laplace): 12 nodes, err<1e-06, E_A=[0.0813, 4.5501] Ry, project=full
+Started sigma[ω≥E_F val] at 07:06:42.
+[ 07:06:42 | █░░░░░░░░░ |   8% ] tau node  1 / 12 · ETA 0 s
+[ 07:06:42 | ██░░░░░░░░ |  17% ] tau node  2 / 12 · ETA 0 s
+[ 07:06:42 | ██░░░░░░░░ |  25% ] tau node  3 / 12 · ETA 0 s
+[ 07:06:42 | ████░░░░░░ |  42% ] tau node  5 / 12 · ETA 0 s
+[ 07:06:42 | █████░░░░░ |  50% ] tau node  6 / 12 · ETA 0 s
+[ 07:06:42 | ██████░░░░ |  58% ] tau node  7 / 12 · ETA 0 s
+[ 07:06:42 | ███████░░░ |  67% ] tau node  8 / 12 · ETA 0 s
+[ 07:06:42 | ████████░░ |  83% ] tau node 10 / 12 · ETA 0 s
+[ 07:06:42 | █████████░ |  92% ] tau node 11 / 12 · ETA 0 s
+[ 07:06:42 | ██████████ | 100% ] tau node 12 / 12 · ETA 0 s
+Finished sigma[ω≥E_F val] at 07:06:42.  Elapsed: 0 s.
+    ω<E_F cond window "single" (Laplace): 12 nodes, err<1e-06, E_A=[0.0813, 2.7028] Ry, project=full
+Started sigma[ω<E_F cond] at 07:06:42.
+[ 07:06:42 | █░░░░░░░░░ |   8% ] tau node  1 / 12 · ETA 0 s
+[ 07:06:42 | ██░░░░░░░░ |  17% ] tau node  2 / 12 · ETA 0 s
+[ 07:06:42 | ██░░░░░░░░ |  25% ] tau node  3 / 12 · ETA 0 s
+[ 07:06:42 | ████░░░░░░ |  42% ] tau node  5 / 12 · ETA 0 s
+[ 07:06:42 | █████░░░░░ |  50% ] tau node  6 / 12 · ETA 0 s
+[ 07:06:42 | ██████░░░░ |  58% ] tau node  7 / 12 · ETA 0 s
+[ 07:06:42 | ███████░░░ |  67% ] tau node  8 / 12 · ETA 0 s
+[ 07:06:42 | ████████░░ |  83% ] tau node 10 / 12 · ETA 0 s
+[ 07:06:42 | █████████░ |  92% ] tau node 11 / 12 · ETA 0 s
+[ 07:06:42 | ██████████ | 100% ] tau node 12 / 12 · ETA 0 s
+Finished sigma[ω<E_F cond] at 07:06:42.  Elapsed: 0 s.
+    ω<E_F val window "core" (crossing): 48 nodes, err<1e-06, E_A=[0.0813, 0.5049] Ry, project=imag
+    ω<E_F val window "a_stripe" (Laplace): 8 nodes, err<1e-06, E_A=[0.9630, 4.5501] Ry, project=full
+    ω<E_F val window "b_slab" (Laplace): 12 nodes, err<1e-06, E_A=[0.0813, 4.5501] Ry, project=full
+Started sigma[ω<E_F val] at 07:06:42.
+[ 07:06:42 | ░░░░░░░░░░ |   1% ] tau node  1 / 68 · ETA 0 s
+[ 07:06:42 | █░░░░░░░░░ |  12% ] tau node  8 / 68 · ETA 1 s
+[ 07:06:43 | ██░░░░░░░░ |  24% ] tau node 16 / 68 · ETA 1 s
+[ 07:06:43 | ███░░░░░░░ |  34% ] tau node 23 / 68 · ETA 1 s
+[ 07:06:43 | █████░░░░░ |  46% ] tau node 31 / 68 · ETA 1 s
+[ 07:06:43 | ██████░░░░ |  56% ] tau node 38 / 68 · ETA 1 s
+[ 07:06:43 | ███████░░░ |  68% ] tau node 46 / 68 · ETA 1 s
+[ 07:06:44 | ████████░░ |  78% ] tau node 53 / 68 · ETA 0 s
+[ 07:06:44 | █████████░ |  90% ] tau node 61 / 68 · ETA 0 s
+[ 07:06:44 | ██████████ | 100% ] tau node 68 / 68 · ETA 0 s
+Finished sigma[ω<E_F val] at 07:06:44.  Elapsed: 2 s.
+W0801 07:06:44.546645   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+
+------------------------------------------------------------------------
+  HEAD CORRECTION (scalar GN, separate from ISDF body)
+------------------------------------------------------------------------
+  v(q→0)             =     2443.340 a.u.
+  W^c(q→0, ω=0)      =    -1783.537 a.u.
+  W^c(q→0, ω=iωp)    =     -366.899 a.u.  [ωp=2.0000 Ry]
+  Ω_h²               =     1.035970 Ry²
+  Ω_h                =     1.017826 Ry  (13.848238 eV)
+  B_h                =  1847.691361 Ry² · a.u.
+  R_h                =   907.665319 Ry · a.u.
+  R_h / (Ω_h · vol)  = 1.269961e+00 (Ry)
+  Σ_c head shift: max|Σ^head_diag| = 3.0186 eV (on-shell occ band → -1.0799 eV)
+W0801 07:06:44.943649   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  E_F(midgap) = -4.254195 eV  (VBM=-5.360241, CBM=-3.148149)
+W0801 07:06:44.996069   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:45.018165   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:45.032289   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:45.043661   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:45.053288   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:45.064211   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+/scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/srcsnap_73a9013/src/file_io/_slab_io_ffi.py:564: UserWarning: FFI backend: chunks/attrs on create_dataset currently no-op; pre-create with h5py if you need explicit chunking or attrs.
+  warnings.warn(
+  [SlabIO.close] draining 1 pending writes for sigma_mnk.h5 …
+  [SlabIO.close] Python dispatch drained in 0.0 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.1 s
+W0801 07:06:46.040874   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  QSGW: 1538 clipped (75.1%)
+  Bare Σ_X diagonal (eV), k=0: -22.2818  -22.2818  -22.6002  -22.6002  -18.9701  -18.9701  -26.7957  -26.7957
+  kin_ion: pristine T+V_loc+V_NL, plus a stored exact V_H array (16, 128, 128) (truncation_2d=True).
+  hartree_source: requested=auto → resolved=stored
+  [SlabIO.close] draining 0 pending writes for kin_ion.h5 …
+  [SlabIO.close] Python dispatch drained in 0.0 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.0 s
+  QP solver: one_shot_dft — QSGW build evaluated at E_DFT (standard G0W0)
+W0801 07:06:47.826019   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:47.837219   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+W0801 07:06:47.858131   31343 pjrt_executable.cc:638] Assume version compatibility. PjRt-IFRT does not track XLA executable versions.
+  QP WFN (one-shot): skipped — Σ on 16 k-points but WFN carries 10 (IBZ); the one-shot dump only supports IBZ-Σ. Set debug.write_wfn_h5=false to silence.
+  H0 check: implied Vxc = E_DFT - (kin_ion + V_H[exact, stored]) in [-24.255, -3.439] eV over 1280 (k,n)
+  G0W0 diag (E_DFT):     /scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/run_g108_defaults/eqp_g0w0.dat
+
+  Sigma diag:   /scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/run_g108_defaults/sigma_diag.dat
+  BGW eqp0:     /scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/run_g108_defaults/eqp0.dat
+  BGW eqp1:     /scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/run_g108_defaults/eqp1.dat
+  Sigma(ω):     /scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/run_g108_defaults/sigma_mnk.h5
+  Restart:      /scratch2/08271/jackmc/lorrax_sandbox/runs/p12_gpu_cert/run_g108_defaults/tmp/isdf_tensors_108.h5
+
+--- Timing ---
+Total recorded: 116.807 s
+Section                                            Count    Total[s]     Self[s]      %
+gw_jax.startup                                         1       6.487       6.487    5.6
+gw_jax.isdf                                            1      13.879       2.217   11.9
+  gw_jax.load_centroid_wfns                            1       1.444       0.102    1.2
+    load_centroids.loader_load                         1       0.483       0.483    0.4
+    load_centroids.gflat_to_rmu                        1       0.430       0.430    0.4
+    load_centroids.pre_reshard_sync                    1       0.011       0.011    0.0
+    load_centroids.reshard                             1       0.417       0.417    0.4
+  gw_jax.zeta_fit_chunked                              1       9.447       0.100    8.1
+    zeta_fit.slice_halves                              1       0.061       0.061    0.1
+    zeta_fit.CCT                                       1       0.640       0.640    0.5
+    zeta_fit.cholesky                                  1       3.183       3.183    2.7
+    zeta_fit.gc_pre_chunk_loop                         1       0.181       0.181    0.2
+    zeta_fit.write_headers                             1       0.051       0.051    0.0
+    zeta_fit.open_file                                 1       0.011       0.011    0.0
+    psi_G_store.populate.loader_load                   8       0.223       0.223    0.2
+    psi_G_store.populate.shard_to_host                 8       0.047       0.047    0.0
+    zeta_fit.chunk_loop                                1       4.771       0.016    4.1
+      zeta_fit.chunk.fit_one_rchunk                    1       4.481       0.059    3.8
+        zeta_fit.chunk.z_q_build                       1       3.985       3.985    3.4
+        zeta_fit.chunk.solve                           1       0.437       0.437    0.4
+      zeta_fit.chunk.h5_write                          1       0.273       0.273    0.2
+    zeta_fit.write_g_flat                              1       0.064       0.064    0.1
+    zeta_fit.close_io                                  1       0.109       0.109    0.1
+    zeta_fit.sync_global                               1       0.005       0.005    0.0
+  gw_jax.V_q_compute                                   1       0.688       0.688    0.6
+  gw_jax.wavefunction_setup                            1       0.083       0.083    0.1
+gw_jax.minimax_quadrature                              1       0.088       0.088    0.1
+gw_jax.screening                                       1       4.918       0.018    4.2
+  gw_jax.chi0_W                                        1       4.369       0.001    3.7
+    chi.compile                                        1       0.141       0.141    0.1
+    chi.exec                                           1       3.305       3.305    2.8
+    W.slice_to_ibz                                     1       0.086       0.086    0.1
+    W.compile                                          1       0.083       0.083    0.1
+    W.exec                                             1       0.680       0.680    0.6
+    W.unfold_to_full_bz                                1       0.073       0.073    0.1
+  W.gate                                               2       0.393       0.393    0.3
+  gw_jax.chi0_W_probe                                  1       0.138       0.001    0.1
+    chi.compile                                        1       0.062       0.062    0.1
+    chi.exec                                           1       0.017       0.017    0.0
+    W.compile                                          1       0.052       0.052    0.0
+    W.exec                                             1       0.007       0.007    0.0
+gw_jax.persist_w0                                      1       2.980       2.980    2.6
+gw_jax.static_head                                     1       0.066       0.066    0.1
+gw_jax.sigma                                           1       7.845       0.399    6.7
+  gw_jax.ppm_sigma                                     1       7.446       2.068    6.4
+    sigma.compile                                      1       0.186       0.186    0.2
+    sigma.exec                                         1       5.193       0.703    4.4
+      sigma.tau.dispatch                             160       0.284       0.284    0.2
+      sigma.tau.host_accum                           160       3.835       0.142    3.3
+        sigma.tau.d2h_wait                           152       0.220       0.220    0.2
+        sigma.tau.omega_project                      152       3.473       3.473    3.0
+      sigma.finalize                                   4       0.136       0.035    0.1
+        sigma.tau.d2h_wait                             8       0.013       0.013    0.0
+        sigma.tau.omega_project                        8       0.088       0.088    0.1
+      sigma.host_gather                                1       0.235       0.235    0.2
+gw_jax.kin_ion_load                                    1       0.079       0.079    0.1
+gw_jax.solve_qp                                        1       0.001       0.001    0.0
+gw_jax.qp_eigh                                         1       0.066       0.066    0.1
+gw_jax.output                                          1       0.135       0.135    0.1
+gw_jax.runtime_stack.compile_cache                     1       1.781       1.781    1.5
+gw_jax.runtime_stack.env_and_distributed               1      56.460      56.460   48.3
+gw_jax.runtime_stack.measurement                       1       0.005       0.005    0.0
+gw_jax.runtime_stack.mesh_and_warmup                   1      17.052      17.052   14.6
+gw_jax.imports                                         1       4.962       4.962    4.2
+(untimed)                                                      2.224       2.224    1.9
+TOTAL (wall)                                                 119.031              100.0
+W0801 07:06:48.480237   31921 pjrt_client.cc:1604] WatchJobStateAsync failed for task 0: UNAVAILABLE: failed to connect to all addresses; last error: UNKNOWN: ipv4:129.114.44.101:61791: Failed to connect to remote host: Connection refused
+Additional GRPC error information from remote target coordination_service while calling /tensorflow.CoordinationService/WatchJobState:
+:UNKNOWN:Error received from peer  {grpc_status:14, grpc_message:"failed to connect to all addresses; last error: UNKNOWN: ipv4:129.114.44.101:61791: Failed to connect to remote host: Connection refused"}
+  [compile-cache] rank 0/4 summary: xla_compiles=28 (10.47s)  cache_probes=351 hits=323 (0.80s) vetoed=28  agreed=1670/1670 prefetch=1.25s  enabled=True
+[runtime] process finalized explicitly (effects barrier, distributed shutdown, atexit hooks) and ending with os._exit: the interpreter-teardown destruction of the XLA:CPU client is skipped deliberately — it deadlocks in pool shutdown after cold-compile storms (jobs 7884928/7884989).

@@ -34,8 +34,9 @@ formula if obvious (e.g. `MoS2`, `GaSb`), or something short and descriptive oth
 
 ### Number of valence electrons
 
-Read the pseudopotential `.upf` files for each atom type from `assets/pseudos_standard`
-(or `pseudos_stringent` if semicore states are requested). Grep for the line containing
+Read the pseudopotential `.upf` files for each atom type from
+`assets/pseudopotentials/standard` (or `assets/pseudopotentials/stringent`
+if semicore states are requested). Grep for the line containing
 `z_valence=` and sum over all atoms:
 
 ```
@@ -111,8 +112,8 @@ Parameters that must always be set (already in template, verify they are present
   time reversal; both BGW and GWJAX read WFN.h5, so this is always required
 - `pseudo_dir = './'` — pseudopotentials are symlinked or copied into the working directory
 
-Pseudopotential files live in `assets/pseudos_standard/` and should be copied or
-symlinked to the working directory.
+Pseudopotential files live in `assets/pseudopotentials/{standard,stringent}/`
+and should be copied or symlinked to the working directory.
 
 ## Step 2: NSCF inputs
 
@@ -306,63 +307,32 @@ reconstruct all input files from scratch. Instead:
 
 ## The handoff manifest (`manifest.yaml`)
 
-After constructing all input files, write a `manifest.yaml` in the run directory root.
-This is the handoff document read by the runner agent to know what to execute and in
-what order. It also records the scientific parameters so that variant runs can be
-constructed by modifying only the changed fields.
+After constructing all input files, write a `manifest.yaml` in the run
+directory root. **The schema is `templates/manifest.yaml`** — the runner
+(`skills/execute_workflow`) reads that shape and nothing else. *(SUPERSEDED
+2026-07-31: a richer schema that stood here — nested `system:` dict,
+`pipeline: qe+bgw+gwjax` spellings, `files:`/`pseudopotentials:`/`gwjax:`/
+`bgw:` blocks and a per-step flat `status:` map — was never what the runner
+consumed; it is gone. Do not write it.)*
 
 ```yaml
-system:
-  formula: MoS2
-  prefix: MoS2
-  dimensionality: 2
-  n_val: 26
-  n_cond: 44
-  n_band: 80
-  ecutwfc: 30.0
-  kgrid: [3, 3, 1]
-  metal: false
+run_id: SYSTEM_KGRID_METHOD_YYYY-MM-DD
+system: SYSTEM_NAME
+pipeline: qe_bgw_lorrax   # qe_only | qe_bgw | lorrax_only | qe_bgw_lorrax
+platform: frontera         # frontera | other (Perlmutter era is archived)
 
-pipeline: qe+bgw+gwjax    # one of: qe, qe+bgw, qe+gwjax, qe+bgw+gwjax
+variant_of: null           # parent run_id, or null for base runs
+reuse_from_parent: []      # e.g. [qe/WFN.h5, 00_bgw/eps0mat.h5]
+overrides: {}              # what changed vs parent
 
-platform: perlmutter       # or: laptop
-
-files:
-  scf: scf.in
-  nscf: nscf.in
-  nscfq: nscfq.in          # absent if pipeline lacks BGW, or if 0D
-  pw2bgw: pw2bgw.in
-  pw2bgwq: pw2bgwq.in      # absent if pipeline lacks BGW, or if 0D
-  epsilon: epsilon.inp      # absent if pipeline lacks BGW
-  sigma: sigma.inp          # absent if pipeline lacks BGW
-  cohsex: cohsex.in         # absent if pipeline lacks GWJAX
-  compare: compare_bgw_gwjax.py  # present only for qe+bgw+gwjax
-
-pseudopotentials:
-  - Mo.upf
-  - S.upf
-
-gwjax:
-  n_centroids: 640          # 8 × nband
-  centroids_file: centroids_frac_640.txt
-  use_ppm_sigma: true
-
-bgw:
-  frequency_dependence: 3
-  band_index_min: 19
-  band_index_max: 30
-  epsilon_cutoff: 30.0
-
-status:
-  scf: pending
-  nscf: pending
-  pw2bgw: pending
-  nscfq: pending
-  epsilon: pending
-  sigma: pending
-  gwjax_centroids: pending
-  gwjax_dipole: pending
-  gwjax_kin_ion: pending
-  gwjax_gw: pending
-  compare: pending
+# Directory-level status.
+# States: pending | running | complete | failed | reused | skipped
+steps:
+  qe:          { state: pending }
+  00_bgw:      { state: pending }
+  00_lorrax:   { state: pending }
 ```
+
+Scientific parameters (nval/ncond/nband, cutoffs, k-grid) live in the
+input files themselves; a variant records what changed in `overrides:`
+and inherits the rest per the variant rules above.
