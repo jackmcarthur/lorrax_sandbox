@@ -1,0 +1,625 @@
+  [config] use_ffi_io=true on CPU backend but venv lacks mpi4py / h5py-parallel; falling back to H5PY_ALLGATHER (rank-0 serial write — slow at scale).  Build h5py with HDF5_MPI=ON against the system's parallel HDF5 to get PHDF5_HOST.
+
+========================================================================
+  COHSEX-JAX: Self-Energy Calculation
+========================================================================
+  Backend: CPU       Devices: 4  Mesh: 2×2  Processes: 4
+  Device type: cpu
+  XLA preallocate: unset  mem_fraction: unset
+========================================================================
+
+  ISDF basis: 256 centroids
+  FFT grid: 30×30×120   Cell volume: 702.20 a.u.³
+
+
+  ISDF memory model — chunk plan + HWM estimate
+    band_chunk    = 16
+    r_chunk       = 38936  (3 chunks)
+    q_chunk       = 9
+    gflat_cs      = 100
+    P_min (floor) = 1
+    budget        = 30.00 GB/dev  (util 0.78)
+    persistent    = 0.07 GB/dev
+    HWM estimate  = 23.40 GB/dev (78% of budget) [binder: C_fit_one_rchunk]
+    per-stage peaks (persistent + transient, GB/dev):
+      C_fit_one_rchunk....   23.40 <=
+      A_centroid_load.....    0.82
+      D_accumulate........    0.78
+      E_v_q...............    0.15
+      B_cct_chol..........    0.15
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q.h5
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q.h5
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q.h5
+
+  Chunked ISDF fitting:
+    Band chunks: 16
+    R chunks:    38936 (contiguous r-space)
+    Q chunks:    9
+    GFlat cs:    100
+    Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q.h5
+    cutoffs: zeta = 60.0 Ry, bare-Coulomb = 60.0 Ry  (ecutwfc=60.0, ecutrho=240.0)
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q.h5
+  Left wfns:  (9, 30, 4, 256)
+  Right wfns: (9, 10, 4, 256)
+  Left wfns:  (9, 30, 4, 256)
+  Right wfns: (9, 10, 4, 256)
+  Left wfns:  (9, 30, 4, 256)
+  Right wfns: (9, 10, 4, 256)
+  Left wfns:  (9, 30, 4, 256)
+  Right wfns: (9, 10, 4, 256)
+  Computing C_q via shard_map pipeline (open-spin, charge γ̃^0=I)
+  Computing C_q via shard_map pipeline (open-spin, charge γ̃^0=I)
+  Computing C_q via shard_map pipeline (open-spin, charge γ̃^0=I)
+  Computing C_q via shard_map pipeline (open-spin, charge γ̃^0=I)
+  Computing L_q = chol(C_q)  [PSD, charge channel, path=sharded_cholesky]
+  Computing L_q = chol(C_q)  [PSD, charge channel, path=sharded_cholesky]
+  Computing L_q = chol(C_q)  [PSD, charge channel, path=sharded_cholesky]
+  Computing L_q = chol(C_q)  [PSD, charge channel, path=sharded_cholesky]
+  L_q: (9, 256, 256)
+  L_q: (9, 256, 256)
+  L_q: (9, 256, 256)
+  L_q: (9, 256, 256)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  G-flat ζ sphere: ngkmax=5545, min ngk=5502, max ngk=5545 (5.134% of n_rtot)
+  ψ(G-flat) host cache: 0.03 GB/process resident
+  G-flat ζ accumulator: N=576 rows/rank (n_q=9 × n_mu_local=64); chunk_size=100 → per-iter FFT box 0.17 GB/rank
+Started zeta fitting at 02:07:01.
+[ 02:07:01 | ███░░░░░░░ |  33% ] r-chunk 1 / 3 · ETA 0 s
+[ 02:07:24 | ███████░░░ |  67% ] r-chunk 2 / 3 · ETA 11 s
+[ 02:07:41 | ██████████ | 100% ] r-chunk 3 / 3 · ETA 0 s
+Finished zeta fitting at 02:07:41.  Elapsed: 40 s.
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=256)
+  Timing (3 r-chunks, 62.5s total):
+    fit     59.70s  95.6%
+    H5       2.73s   4.4%
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=256)
+  Timing (3 r-chunks, 62.5s total):
+    fit     59.73s  95.6%
+    H5       2.74s   4.4%
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=256)
+  Timing (3 r-chunks, 62.5s total):
+    fit     59.74s  95.6%
+    H5       2.75s   4.4%
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=256)
+  Timing (3 r-chunks, 62.5s total):
+    fit     59.80s  95.7%
+    H5       2.65s   4.2%
+
+  [bispinor] fitting ζ^{μ_L=1,2,3} on current-density centroids: centroids_frac_208_current.txt
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu1.h5
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu1.h5
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu1.h5
+  [bispinor] μ_L=1 → /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu1.h5
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu1.h5
+  Left wfns:  (9, 30, 4, 208)
+  Right wfns: (9, 10, 4, 208)
+  Left wfns:  (9, 30, 4, 208)
+  Right wfns: (9, 10, 4, 208)
+  Left wfns:  (9, 30, 4, 208)
+  Right wfns: (9, 10, 4, 208)
+  Left wfns:  (9, 30, 4, 208)
+  Right wfns: (9, 10, 4, 208)
+  Computing C_q via shard_map pipeline (open-spin, transverse γ̃^1)
+  Computing C_q via shard_map pipeline (open-spin, transverse γ̃^1)
+  Computing C_q via shard_map pipeline (open-spin, transverse γ̃^1)
+  Computing C_q via shard_map pipeline (open-spin, transverse γ̃^1)
+  Pass through C_q  [γ̃^1 indefinite — path=lu]
+  L_q: (9, 208, 208)
+  Pass through C_q  [γ̃^1 indefinite — path=lu]
+  L_q: (9, 208, 208)
+  Pass through C_q  [γ̃^1 indefinite — path=lu]
+  L_q: (9, 208, 208)
+  Pass through C_q  [γ̃^1 indefinite — path=lu]
+  L_q: (9, 208, 208)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  G-flat ζ sphere: ngkmax=5545, min ngk=5502, max ngk=5545 (5.134% of n_rtot)
+  ψ(G-flat) host cache: 0.03 GB/process resident
+  G-flat ζ accumulator: N=468 rows/rank (n_q=9 × n_mu_local=52); chunk_size=100 → per-iter FFT box 0.17 GB/rank
+Started zeta fitting at 02:08:06.
+[ 02:08:06 | ███░░░░░░░ |  33% ] r-chunk 1 / 3 · ETA 0 s
+[ 02:08:23 | ███████░░░ |  67% ] r-chunk 2 / 3 · ETA 9 s
+[ 02:08:37 | ██████████ | 100% ] r-chunk 3 / 3 · ETA 0 s
+Finished zeta fitting at 02:08:37.  Elapsed: 32 s.
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu1.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=208)
+  Timing (3 r-chunks, 50.2s total):
+    fit     47.74s  95.2%
+    H5       2.39s   4.8%
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu1.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=208)
+  Timing (3 r-chunks, 50.2s total):
+    fit     47.76s  95.2%
+    H5       2.38s   4.7%
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu1.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=208)
+  Timing (3 r-chunks, 50.1s total):
+    fit     47.77s  95.2%
+    H5       2.36s   4.7%
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu1.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=208)
+  Timing (3 r-chunks, 50.1s total):
+    fit     47.84s  95.4%
+    H5       2.29s   4.6%
+  [bispinor] μ_L=2 → /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu2.h5
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu2.h5
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu2.h5
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu2.h5
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu2.h5
+  Left wfns:  (9, 30, 4, 208)
+  Right wfns: (9, 10, 4, 208)
+  Computing C_q via shard_map pipeline (open-spin, transverse γ̃^2)
+  Left wfns:  (9, 30, 4, 208)
+  Right wfns: (9, 10, 4, 208)
+  Left wfns:  (9, 30, 4, 208)
+  Right wfns: (9, 10, 4, 208)
+  Left wfns:  (9, 30, 4, 208)
+  Right wfns: (9, 10, 4, 208)
+  Pass through C_q  [γ̃^2 indefinite — path=lu]
+  L_q: (9, 208, 208)
+  Computing C_q via shard_map pipeline (open-spin, transverse γ̃^2)
+  Computing C_q via shard_map pipeline (open-spin, transverse γ̃^2)
+  Computing C_q via shard_map pipeline (open-spin, transverse γ̃^2)
+  Pass through C_q  [γ̃^2 indefinite — path=lu]
+  L_q: (9, 208, 208)
+  Pass through C_q  [γ̃^2 indefinite — path=lu]
+  L_q: (9, 208, 208)
+  Pass through C_q  [γ̃^2 indefinite — path=lu]
+  L_q: (9, 208, 208)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  G-flat ζ sphere: ngkmax=5545, min ngk=5502, max ngk=5545 (5.134% of n_rtot)
+  ψ(G-flat) host cache: 0.03 GB/process resident
+  G-flat ζ accumulator: N=468 rows/rank (n_q=9 × n_mu_local=52); chunk_size=100 → per-iter FFT box 0.17 GB/rank
+Started zeta fitting at 02:08:58.
+[ 02:08:58 | ███░░░░░░░ |  33% ] r-chunk 1 / 3 · ETA 0 s
+[ 02:09:15 | ███████░░░ |  67% ] r-chunk 2 / 3 · ETA 9 s
+[ 02:09:29 | ██████████ | 100% ] r-chunk 3 / 3 · ETA 0 s
+Finished zeta fitting at 02:09:29.  Elapsed: 32 s.
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu2.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=208)
+  Timing (3 r-chunks, 50.1s total):
+    fit     47.90s  95.6%
+    H5       2.17s   4.3%
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu2.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=208)
+  Timing (3 r-chunks, 50.1s total):
+    fit     47.88s  95.6%
+    H5       2.17s   4.3%
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu2.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=208)
+  Timing (3 r-chunks, 50.1s total):
+    fit     47.89s  95.6%
+    H5       2.18s   4.3%
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu2.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=208)
+  Timing (3 r-chunks, 50.0s total):
+    fit     47.93s  95.8%
+    H5       2.07s   4.1%
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu3.h5
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu3.h5
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu3.h5
+  [bispinor] μ_L=3 → /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu3.h5
+
+  Zeta fitting: 3 r-chunks x 38936 r-points, 32 bands (30 left + 10 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu3.h5
+  Left wfns:  (9, 30, 4, 208)
+  Right wfns: (9, 10, 4, 208)
+  Computing C_q via shard_map pipeline (open-spin, transverse γ̃^3)
+  Left wfns:  (9, 30, 4, 208)
+  Right wfns: (9, 10, 4, 208)
+  Left wfns:  (9, 30, 4, 208)
+  Right wfns: (9, 10, 4, 208)
+  Left wfns:  (9, 30, 4, 208)
+  Right wfns: (9, 10, 4, 208)
+  Computing C_q via shard_map pipeline (open-spin, transverse γ̃^3)
+  Computing C_q via shard_map pipeline (open-spin, transverse γ̃^3)
+  Computing C_q via shard_map pipeline (open-spin, transverse γ̃^3)
+  Pass through C_q  [γ̃^3 indefinite — path=lu]
+  L_q: (9, 208, 208)
+  Pass through C_q  [γ̃^3 indefinite — path=lu]
+  L_q: (9, 208, 208)
+  Pass through C_q  [γ̃^3 indefinite — path=lu]
+  L_q: (9, 208, 208)
+  Pass through C_q  [γ̃^3 indefinite — path=lu]
+  L_q: (9, 208, 208)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  q axis on disk: full BZ (9 q-points) (write_ibz_only=False or closure check failed)
+  G-flat ζ sphere: ngkmax=5545, min ngk=5502, max ngk=5545 (5.134% of n_rtot)
+  ψ(G-flat) host cache: 0.03 GB/process resident
+  G-flat ζ accumulator: N=468 rows/rank (n_q=9 × n_mu_local=52); chunk_size=100 → per-iter FFT box 0.17 GB/rank
+Started zeta fitting at 02:09:49.
+[ 02:09:49 | ███░░░░░░░ |  33% ] r-chunk 1 / 3 · ETA 0 s
+[ 02:10:07 | ███████░░░ |  67% ] r-chunk 2 / 3 · ETA 9 s
+[ 02:10:21 | ██████████ | 100% ] r-chunk 3 / 3 · ETA 0 s
+Finished zeta fitting at 02:10:21.  Elapsed: 32 s.
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu3.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=208)
+  Timing (3 r-chunks, 49.9s total):
+    fit     47.70s  95.6%
+    H5       2.16s   4.3%
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu3.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=208)
+  Timing (3 r-chunks, 49.9s total):
+    fit     47.67s  95.6%
+    H5       2.17s   4.4%
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu3.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=208)
+  Timing (3 r-chunks, 49.9s total):
+    fit     47.69s  95.6%
+    H5       2.18s   4.4%
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/zeta_q_mu3.h5  shape: (n_q_disk=9 of 3·3·1=9 full-BZ, n_rtot=108000, n_rmu=208)
+  Timing (3 r-chunks, 49.8s total):
+    fit     47.74s  95.8%
+    H5       2.07s   4.1%
+    V_q bare cutoff: 60.0 Ry
+    V_q budget:    29.93 GB
+
+  [bispinor] V_q^{μ_L,ν_L} → /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/v_q_bispinor.h5
+  [bispinor g-flat] tile 1/7 (μ_L=0, ν_L=0)  n_rmu_L=256 n_rmu_R=256  same_zeta=True  use_ibz=False
+  V_q g-flat [V_qmunu_CC]: n_q_ibz=9, ngkmax=5545, g_chunk=1109 (5/q), n_rmu_L=256→256, n_rmu_R=256→256, unfold=full-BZ
+    [V_qmunu_CC] pre-read all 9 IBZ ζ̃ slabs (1 batched call): 0.37s
+2026-07-11 02:10:22.601971: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[4] last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.7 = c128[1,256,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:22.602077: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.7 = c128[1,256,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:22.604052: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[4] last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.7 = c128[1,256,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:22.604170: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.7 = c128[1,256,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:22.604691: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[4] last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.7 = c128[1,256,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:22.604791: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.7 = c128[1,256,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:22.605068: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[4] last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.7 = c128[1,256,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:22.605166: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.7 = c128[1,256,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+    [V_qmunu_CC] q=0/9: kernel=0.20s
+    [V_qmunu_CC] q=1/9: kernel=0.04s
+    [V_qmunu_CC] q=2/9: kernel=0.04s
+    [V_qmunu_CC] q=3/9: kernel=0.04s
+    [V_qmunu_CC] q=4/9: kernel=0.04s
+    [V_qmunu_CC] q=5/9: kernel=0.04s
+    [V_qmunu_CC] q=6/9: kernel=0.04s
+    [V_qmunu_CC] q=7/9: kernel=0.05s
+    [V_qmunu_CC] q=8/9: kernel=0.04s
+  [bispinor g-flat] tile 2/7 (μ_L=1, ν_L=1)  n_rmu_L=208 n_rmu_R=208  same_zeta=True  use_ibz=False
+  V_q g-flat [V_qmunu_TT_11]: n_q_ibz=9, ngkmax=5545, g_chunk=1109 (5/q), n_rmu_L=208→208, n_rmu_R=208→208, unfold=full-BZ
+    [V_qmunu_TT_11] pre-read all 9 IBZ ζ̃ slabs (1 batched call): 0.26s
+2026-07-11 02:10:23.437785: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[4] last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.5 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:23.437876: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.5 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:23.438765: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[4] last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.5 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:23.438859: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.5 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:23.440286: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[4] last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.5 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:23.440379: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.5 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:23.441560: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[4] last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.5 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:23.441656: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.5 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+    [V_qmunu_TT_11] q=0/9: kernel=0.34s
+    [V_qmunu_TT_11] q=1/9: kernel=0.03s
+    [V_qmunu_TT_11] q=2/9: kernel=0.03s
+    [V_qmunu_TT_11] q=3/9: kernel=0.03s
+    [V_qmunu_TT_11] q=4/9: kernel=0.03s
+    [V_qmunu_TT_11] q=5/9: kernel=0.03s
+    [V_qmunu_TT_11] q=6/9: kernel=0.03s
+    [V_qmunu_TT_11] q=7/9: kernel=0.03s
+    [V_qmunu_TT_11] q=8/9: kernel=0.03s
+  [bispinor g-flat] tile 3/7 (μ_L=2, ν_L=2)  n_rmu_L=208 n_rmu_R=208  same_zeta=True  use_ibz=False
+  V_q g-flat [V_qmunu_TT_22]: n_q_ibz=9, ngkmax=5545, g_chunk=1109 (5/q), n_rmu_L=208→208, n_rmu_R=208→208, unfold=full-BZ
+    [V_qmunu_TT_22] pre-read all 9 IBZ ζ̃ slabs (1 batched call): 0.27s
+    [V_qmunu_TT_22] q=0/9: kernel=0.03s
+    [V_qmunu_TT_22] q=1/9: kernel=0.03s
+    [V_qmunu_TT_22] q=2/9: kernel=0.03s
+    [V_qmunu_TT_22] q=3/9: kernel=0.03s
+    [V_qmunu_TT_22] q=4/9: kernel=0.03s
+    [V_qmunu_TT_22] q=5/9: kernel=0.03s
+    [V_qmunu_TT_22] q=6/9: kernel=0.03s
+    [V_qmunu_TT_22] q=7/9: kernel=0.03s
+    [V_qmunu_TT_22] q=8/9: kernel=0.03s
+  [bispinor g-flat] tile 4/7 (μ_L=3, ν_L=3)  n_rmu_L=208 n_rmu_R=208  same_zeta=True  use_ibz=False
+  V_q g-flat [V_qmunu_TT_33]: n_q_ibz=9, ngkmax=5545, g_chunk=1109 (5/q), n_rmu_L=208→208, n_rmu_R=208→208, unfold=full-BZ
+    [V_qmunu_TT_33] pre-read all 9 IBZ ζ̃ slabs (1 batched call): 0.26s
+    [V_qmunu_TT_33] q=0/9: kernel=0.03s
+    [V_qmunu_TT_33] q=1/9: kernel=0.03s
+    [V_qmunu_TT_33] q=2/9: kernel=0.03s
+    [V_qmunu_TT_33] q=3/9: kernel=0.03s
+    [V_qmunu_TT_33] q=4/9: kernel=0.03s
+    [V_qmunu_TT_33] q=5/9: kernel=0.03s
+    [V_qmunu_TT_33] q=6/9: kernel=0.03s
+    [V_qmunu_TT_33] q=7/9: kernel=0.03s
+    [V_qmunu_TT_33] q=8/9: kernel=0.03s
+  [bispinor g-flat] tile 5/7 (μ_L=1, ν_L=2)  n_rmu_L=208 n_rmu_R=208  same_zeta=False  use_ibz=False
+  V_q g-flat [V_qmunu_TT_12]: n_q_ibz=9, ngkmax=5545, g_chunk=1109 (5/q), n_rmu_L=208→208, n_rmu_R=208→208, unfold=full-BZ
+    [V_qmunu_TT_12] pre-read all 9 IBZ ζ̃ slabs (1 batched call): 0.49s
+2026-07-11 02:10:25.777977: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[4] last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.6 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:25.777986: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[4] last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.6 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:25.778108: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.4 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=97}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:25.778117: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.4 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=97}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:25.778352: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[4] last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.6 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:25.778478: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.4 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=97}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:25.779161: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[4] last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.6 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=93}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-07-11 02:10:25.779292: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[4,1,1]<=[4]} to {devices=[1,2,1,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %copy.4 = c128[1,208,5545]{2,1,0} copy(%reshape), sharding={devices=[4,1,1]<=[4]}, metadata={op_name="jit(fn)/jit(main)/sharding_constraint" source_file="/pscratch/sd/j/jackm/lorrax_sandbox/sources/lorrax_C/src/gw/v_q_g_flat.py" source_line=97}. You probably want to enrich the sharding annotations to prevent this from happening.
+    [V_qmunu_TT_12] q=0/9: kernel=0.14s
+    [V_qmunu_TT_12] q=1/9: kernel=0.06s
+    [V_qmunu_TT_12] q=2/9: kernel=0.05s
+    [V_qmunu_TT_12] q=3/9: kernel=0.06s
+    [V_qmunu_TT_12] q=4/9: kernel=0.05s
+    [V_qmunu_TT_12] q=5/9: kernel=0.05s
+    [V_qmunu_TT_12] q=6/9: kernel=0.05s
+    [V_qmunu_TT_12] q=7/9: kernel=0.06s
+    [V_qmunu_TT_12] q=8/9: kernel=0.05s
+  [bispinor g-flat] tile 6/7 (μ_L=1, ν_L=3)  n_rmu_L=208 n_rmu_R=208  same_zeta=False  use_ibz=False
+  V_q g-flat [V_qmunu_TT_13]: n_q_ibz=9, ngkmax=5545, g_chunk=1109 (5/q), n_rmu_L=208→208, n_rmu_R=208→208, unfold=full-BZ
+    [V_qmunu_TT_13] pre-read all 9 IBZ ζ̃ slabs (1 batched call): 0.50s
+    [V_qmunu_TT_13] q=0/9: kernel=0.06s
+    [V_qmunu_TT_13] q=1/9: kernel=0.06s
+    [V_qmunu_TT_13] q=2/9: kernel=0.05s
+    [V_qmunu_TT_13] q=3/9: kernel=0.05s
+    [V_qmunu_TT_13] q=4/9: kernel=0.05s
+    [V_qmunu_TT_13] q=5/9: kernel=0.05s
+    [V_qmunu_TT_13] q=6/9: kernel=0.05s
+    [V_qmunu_TT_13] q=7/9: kernel=0.05s
+    [V_qmunu_TT_13] q=8/9: kernel=0.05s
+  [bispinor g-flat] tile 7/7 (μ_L=2, ν_L=3)  n_rmu_L=208 n_rmu_R=208  same_zeta=False  use_ibz=False
+  V_q g-flat [V_qmunu_TT_23]: n_q_ibz=9, ngkmax=5545, g_chunk=1109 (5/q), n_rmu_L=208→208, n_rmu_R=208→208, unfold=full-BZ
+    [V_qmunu_TT_23] pre-read all 9 IBZ ζ̃ slabs (1 batched call): 0.50s
+    [V_qmunu_TT_23] q=0/9: kernel=0.05s
+    [V_qmunu_TT_23] q=1/9: kernel=0.06s
+    [V_qmunu_TT_23] q=2/9: kernel=0.05s
+    [V_qmunu_TT_23] q=3/9: kernel=0.05s
+    [V_qmunu_TT_23] q=4/9: kernel=0.05s
+    [V_qmunu_TT_23] q=5/9: kernel=0.05s
+    [V_qmunu_TT_23] q=6/9: kernel=0.06s
+    [V_qmunu_TT_23] q=7/9: kernel=0.05s
+    [V_qmunu_TT_23] q=8/9: kernel=0.06s
+
+  V_q computed:
+    Shape: (9, 256, 256)
+    V_q=0 trace: 271535845.1804
+  Wavefunctions built (b0:b4=32 bands, 4 sharded copies: xn/xr/yr/yn)
+  Wavefunctions built (b0:b4=32 bands, 4 sharded copies: xn/xr/yr/yn)
+  [bispinor] σ^B-side Wfns built on n_rmu_T=208 transverse centroids
+  Chunked ISDF path complete
+  Minimax static window: x=[1.221609e-01, 4.736784e+00] Ry, R=38.77, nodes=9, fit_err~2.139e-06
+  PPM imag-freq quadrature (ωp=2.0000 Ry): R=38.8, nodes=6, err~7.6e-06
+  Persisted W0_qmunu + q=0 head scalars: vhead=0.000 a.u.,  whead[ω=0]=0.000 a.u.,  whead[iωp]=0.000 a.u.
+
+------------------------------------------------------------------------
+  FINITE-SIZE CORRECTIONS
+------------------------------------------------------------------------
+  Head source: override
+  v(q→0)  =        0.000 a.u.  (bare Coulomb head)
+  W(q→0)  =        0.000 a.u.  (screened Coulomb head)
+  ΔW      =        0.000 a.u.  (screening correction)
+
+------------------------------------------------------------------------
+  STATIC HEAD TERMS (exact COHSEX / BGW-style)
+------------------------------------------------------------------------
+  Head source: override
+  v_h(q→0)           =     0.000000 a.u.
+  W_h(q→0, ω=0)      =     0.000000 a.u.
+  W_h^c              =     0.000000 a.u.
+  Σ^X head (occ)     = 0.000000e+00 Ry
+  Σ^SX head (occ)    = 0.000000e+00 Ry
+  Σ^(SX-X) head(occ) = 0.000000e+00 Ry
+  Σ^COH head (all)   = 0.000000e+00 Ry
+  Σ^B tile (μ_L=1, ν_L=1): tr Σ = -0.151830 eV
+  Σ^B tile (μ_L=1, ν_L=2): tr Σ = -0.012118 eV
+  Σ^B tile (μ_L=1, ν_L=3): tr Σ = -0.012270 eV
+  Σ^B tile (μ_L=2, ν_L=1): tr Σ = -0.012118 eV
+  Σ^B tile (μ_L=2, ν_L=2): tr Σ = -0.152133 eV
+  Σ^B tile (μ_L=2, ν_L=3): tr Σ = -0.012213 eV
+  Σ^B tile (μ_L=3, ν_L=1): tr Σ = -0.012270 eV
+  Σ^B tile (μ_L=3, ν_L=2): tr Σ = -0.012213 eV
+  Σ^B tile (μ_L=3, ν_L=3): tr Σ = -0.143007 eV
+
+------------------------------------------------------------------------
+  GN-PPM + FREQUENCY-INTEGRATED SIGMA
+------------------------------------------------------------------------
+  GN-PPM fit: 0.62s, iωp=2.0000 Ry, unfulfilled=3.14%
+[pf] ▶ sigma_ppm
+[pf] ▶ sigma_ppm
+[pf] ▶ sigma_ppm
+[pf] ▶ sigma_ppm
+  Σc(ω) grid: -4.000..4.000 eV, Nω=9, Δω=1.000 eV, ξ=0.250 eV
+  GN invalid modes: 18494/589824 (3.14%)
+  GN invalid modes per q: min=1200 max=4440 counts=[1778 1346 1346 1200 4440 1372 1200 1372 4440]
+  GN invalid modes → static COHSEX: max|Σ_static| = 0.1860 eV (diag max 0.1860 eV)
+    ω≥E_F cond window "core" (crossing): 48 nodes, err<1e-06, E_A=[0.0611, 0.1999] Ry, project=imag
+    ω≥E_F cond window "b_slab" (Laplace): 14 nodes, err<1e-06, E_A=[0.0611, 0.1999] Ry, project=full
+Started sigma[ω≥E_F cond] at 02:10:34.
+[ 02:10:34 | ░░░░░░░░░░ |   2% ] tau node  1 / 62 · ETA 0 s
+[ 02:10:35 | █░░░░░░░░░ |  13% ] tau node  8 / 62 · ETA 4 s
+[ 02:10:36 | ██░░░░░░░░ |  24% ] tau node 15 / 62 · ETA 5 s
+[ 02:10:37 | ███░░░░░░░ |  34% ] tau node 21 / 62 · ETA 4 s
+[ 02:10:37 | █████░░░░░ |  45% ] tau node 28 / 62 · ETA 4 s
+[ 02:10:38 | ██████░░░░ |  56% ] tau node 35 / 62 · ETA 3 s
+[ 02:10:39 | ███████░░░ |  68% ] tau node 42 / 62 · ETA 2 s
+[ 02:10:40 | ████████░░ |  77% ] tau node 48 / 62 · ETA 2 s
+[ 02:10:41 | █████████░ |  89% ] tau node 55 / 62 · ETA 1 s
+[ 02:10:42 | ██████████ | 100% ] tau node 62 / 62 · ETA 0 s
+Finished sigma[ω≥E_F cond] at 02:10:42.  Elapsed: 8 s.
+    ω≥E_F val window "single" (Laplace): 14 nodes, err<1e-06, E_A=[0.0611, 4.5369] Ry, project=full
+Started sigma[ω≥E_F val] at 02:10:42.
+[ 02:10:42 | █░░░░░░░░░ |   7% ] tau node  1 / 14 · ETA 0 s
+[ 02:10:42 | █░░░░░░░░░ |  14% ] tau node  2 / 14 · ETA 0 s
+[ 02:10:42 | ███░░░░░░░ |  29% ] tau node  4 / 14 · ETA 0 s
+[ 02:10:42 | ████░░░░░░ |  36% ] tau node  5 / 14 · ETA 0 s
+[ 02:10:43 | █████░░░░░ |  50% ] tau node  7 / 14 · ETA 0 s
+[ 02:10:43 | ██████░░░░ |  57% ] tau node  8 / 14 · ETA 0 s
+[ 02:10:43 | ███████░░░ |  71% ] tau node 10 / 14 · ETA 0 s
+[ 02:10:43 | ████████░░ |  79% ] tau node 11 / 14 · ETA 0 s
+[ 02:10:43 | █████████░ |  93% ] tau node 13 / 14 · ETA 0 s
+[ 02:10:43 | ██████████ | 100% ] tau node 14 / 14 · ETA 0 s
+Finished sigma[ω≥E_F val] at 02:10:44.  Elapsed: 2 s.
+    ω<E_F cond window "single" (Laplace): 14 nodes, err<1e-06, E_A=[0.0611, 0.1999] Ry, project=full
+Started sigma[ω<E_F cond] at 02:10:44.
+[ 02:10:44 | █░░░░░░░░░ |   7% ] tau node  1 / 14 · ETA 0 s
+[ 02:10:44 | █░░░░░░░░░ |  14% ] tau node  2 / 14 · ETA 0 s
+[ 02:10:44 | ███░░░░░░░ |  29% ] tau node  4 / 14 · ETA 0 s
+[ 02:10:44 | ████░░░░░░ |  36% ] tau node  5 / 14 · ETA 0 s
+[ 02:10:44 | █████░░░░░ |  50% ] tau node  7 / 14 · ETA 0 s
+[ 02:10:44 | ██████░░░░ |  57% ] tau node  8 / 14 · ETA 0 s
+[ 02:10:45 | ███████░░░ |  71% ] tau node 10 / 14 · ETA 0 s
+[ 02:10:45 | ████████░░ |  79% ] tau node 11 / 14 · ETA 0 s
+[ 02:10:45 | █████████░ |  93% ] tau node 13 / 14 · ETA 0 s
+[ 02:10:45 | ██████████ | 100% ] tau node 14 / 14 · ETA 0 s
+Finished sigma[ω<E_F cond] at 02:10:46.  Elapsed: 2 s.
+    ω<E_F val window "core" (crossing): 48 nodes, err<1e-06, E_A=[0.0611, 0.2923] Ry, project=imag
+    ω<E_F val window "a_stripe" (Laplace): 11 nodes, err<1e-06, E_A=[0.3304, 4.5369] Ry, project=full
+    ω<E_F val window "b_slab" (Laplace): 14 nodes, err<1e-06, E_A=[0.0611, 4.5369] Ry, project=full
+Started sigma[ω<E_F val] at 02:10:46.
+[ 02:10:46 | ░░░░░░░░░░ |   1% ] tau node  1 / 73 · ETA 0 s
+[ 02:10:47 | █░░░░░░░░░ |  12% ] tau node  9 / 73 · ETA 5 s
+[ 02:10:47 | ██░░░░░░░░ |  23% ] tau node 17 / 73 · ETA 6 s
+[ 02:10:48 | ███░░░░░░░ |  34% ] tau node 25 / 73 · ETA 5 s
+[ 02:10:49 | █████░░░░░ |  45% ] tau node 33 / 73 · ETA 4 s
+[ 02:10:51 | ██████░░░░ |  56% ] tau node 41 / 73 · ETA 4 s
+[ 02:10:52 | ███████░░░ |  67% ] tau node 49 / 73 · ETA 3 s
+[ 02:10:52 | ████████░░ |  78% ] tau node 57 / 73 · ETA 2 s
+[ 02:10:53 | █████████░ |  89% ] tau node 65 / 73 · ETA 1 s
+[ 02:10:54 | ██████████ | 100% ] tau node 73 / 73 · ETA 0 s
+Finished sigma[ω<E_F val] at 02:10:55.  Elapsed: 9 s.
+[pf] ■ sigma_ppm  21.215s
+[pf] ■ sigma_ppm  21.214s
+[pf] ■ sigma_ppm  21.221s
+[pf] ■ sigma_ppm  21.221s
+
+------------------------------------------------------------------------
+  HEAD CORRECTION (scalar GN, separate from ISDF body)
+------------------------------------------------------------------------
+  v(q→0)             =        0.000 a.u.
+  W^c(q→0, ω=0)      =        0.000 a.u.
+  W^c(q→0, ω=iωp)    =        0.000 a.u.  [ωp=2.0000 Ry]
+  Ω_h²               =     1.000000 Ry²
+  Ω_h                =     1.000000 Ry  (13.605698 eV)
+  B_h                =     0.000000 Ry² · a.u.
+  R_h                =     0.000000 Ry · a.u.
+  R_h / (Ω_h · vol)  = 0.000000e+00 (Ry)
+  Σ_c head shift: max|Σ^head_diag| = 0.0000 eV (on-shell occ band → -0.0000 eV)
+  E_F(midgap) = -4.332080 eV  (VBM=-5.163123, CBM=-3.501038)
+  QSGW: 162 clipped (60.0%)
+  Bare Σ_X diagonal (eV), k=0: -37.0902  -37.0902  -30.5776  -30.5776  -29.9693  -29.9693  -30.0474  -30.0474
+  QP solver: one_shot_dft — QSGW build evaluated at E_DFT (standard G0W0)
+  QP WFN (one-shot): /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/WFN_qp.h5
+  G0W0 diag (E_DFT):     /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/eqp_g0w0.dat
+
+  Sigma diag:   /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/sigma_diag.dat
+  BGW eqp0:     /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/eqp0.dat
+  BGW eqp1:     /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/eqp1.dat
+  Sigma(ω):     /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/sigma_mnk.h5
+  Restart:      /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/C_bispinor_backend_timing_2026-07-11/03_lorrax_cpu_intree/tmp/isdf_tensors_256.h5
+
+--- Timing ---
+Total recorded: 261.510 s
+Section                                            Count    Total[s]     Self[s]      %
+gw_jax.load_centroid_wfns                              1       4.278       0.099    1.6
+  load_centroids.loader_load                           1       0.648       0.648    0.2
+  load_centroids.gflat_to_rmu                          1       3.442       3.442    1.3
+  load_centroids.reshard                               1       0.089       0.089    0.0
+gw_jax.zeta_fit_chunked                                1      65.290       0.108   25.0
+  zeta_fit.slice_halves                                1       0.351       0.351    0.1
+  zeta_fit.CCT                                         1       0.231       0.231    0.1
+  zeta_fit.cholesky                                    1       0.734       0.734    0.3
+  zeta_fit.gc_pre_chunk_loop                           1       0.125       0.125    0.0
+  zeta_fit.write_headers                               1       0.094       0.094    0.0
+  zeta_fit.open_file                                   1       0.003       0.003    0.0
+  psi_G_store.populate.loader_load                     2       0.660       0.660    0.3
+  psi_G_store.populate.shard_to_host                   2       0.004       0.004    0.0
+  zeta_fit.chunk_loop                                  1      62.453       0.000   23.9
+    zeta_fit.chunk.fit_one_rchunk                      3      59.804       0.065   22.9
+      zeta_fit.chunk.z_q_build                         3      55.362      55.362   21.2
+      zeta_fit.chunk.solve                             3       4.377       4.377    1.7
+    zeta_fit.chunk.h5_write                            3       2.649       2.649    1.0
+  zeta_fit.write_g_flat                                1       0.526       0.526    0.2
+  zeta_fit.close_io                                    1       0.001       0.001    0.0
+  zeta_fit.sync_global                                 1       0.001       0.001    0.0
+gw_jax.load_centroid_wfns_current                      1       4.023       0.052    1.5
+  load_centroids.loader_load                           1       0.584       0.584    0.2
+  load_centroids.gflat_to_rmu                          1       3.194       3.194    1.2
+  load_centroids.reshard                               1       0.193       0.193    0.1
+gw_jax.zeta_fit_chunked_mu1                            1      52.060       0.078   19.9
+  zeta_fit.slice_halves                                1       0.283       0.283    0.1
+  zeta_fit.CCT                                         1       0.182       0.182    0.1
+  zeta_fit.cholesky                                    1       0.000       0.000    0.0
+  zeta_fit.trace_L_q                                   1       0.088       0.088    0.0
+  zeta_fit.gc_pre_chunk_loop                           1       0.103       0.103    0.0
+  zeta_fit.write_headers                               1       0.082       0.082    0.0
+  zeta_fit.open_file                                   1       0.003       0.003    0.0
+  psi_G_store.populate.loader_load                     2       0.685       0.685    0.3
+  psi_G_store.populate.shard_to_host                   2       0.002       0.002    0.0
+  zeta_fit.chunk_loop                                  1      50.125       0.000   19.2
+    zeta_fit.chunk.fit_one_rchunk                      3      47.840       0.024   18.3
+      zeta_fit.chunk.z_q_build                         3      43.405      43.405   16.6
+      zeta_fit.chunk.solve                             3       4.411       4.411    1.7
+    zeta_fit.chunk.h5_write                            3       2.285       2.285    0.9
+  zeta_fit.write_g_flat                                1       0.427       0.427    0.2
+  zeta_fit.close_io                                    1       0.002       0.002    0.0
+  zeta_fit.sync_global                                 1       0.001       0.001    0.0
+gw_jax.zeta_fit_chunked_mu2                            1      51.886       0.094   19.8
+  zeta_fit.slice_halves                                1       0.071       0.071    0.0
+  zeta_fit.CCT                                         1       0.113       0.113    0.0
+  zeta_fit.cholesky                                    1       0.000       0.000    0.0
+  zeta_fit.trace_L_q                                   1       0.286       0.286    0.1
+  zeta_fit.gc_pre_chunk_loop                           1       0.090       0.090    0.0
+  zeta_fit.write_headers                               1       0.077       0.077    0.0
+  zeta_fit.open_file                                   1       0.003       0.003    0.0
+  psi_G_store.populate.loader_load                     2       0.649       0.649    0.2
+  psi_G_store.populate.shard_to_host                   2       0.006       0.006    0.0
+  zeta_fit.chunk_loop                                  1      50.007       0.001   19.1
+    zeta_fit.chunk.fit_one_rchunk                      3      47.934       0.024   18.3
+      zeta_fit.chunk.z_q_build                         3      43.459      43.459   16.6
+      zeta_fit.chunk.solve                             3       4.451       4.451    1.7
+    zeta_fit.chunk.h5_write                            3       2.073       2.073    0.8
+  zeta_fit.write_g_flat                                1       0.488       0.488    0.2
+  zeta_fit.close_io                                    1       0.001       0.001    0.0
+  zeta_fit.sync_global                                 1       0.001       0.001    0.0
+gw_jax.zeta_fit_chunked_mu3                            1      51.582       0.095   19.7
+  zeta_fit.slice_halves                                1       0.077       0.077    0.0
+  zeta_fit.CCT                                         1       0.125       0.125    0.0
+  zeta_fit.cholesky                                    1       0.000       0.000    0.0
+  zeta_fit.trace_L_q                                   1       0.239       0.239    0.1
+  zeta_fit.gc_pre_chunk_loop                           1       0.082       0.082    0.0
+  zeta_fit.write_headers                               1       0.079       0.079    0.0
+  zeta_fit.open_file                                   1       0.003       0.003    0.0
+  psi_G_store.populate.loader_load                     2       0.599       0.599    0.2
+  psi_G_store.populate.shard_to_host                   2       0.006       0.006    0.0
+  zeta_fit.chunk_loop                                  1      49.806       0.000   19.0
+    zeta_fit.chunk.fit_one_rchunk                      3      47.740       0.024   18.3
+      zeta_fit.chunk.z_q_build                         3      43.378      43.378   16.6
+      zeta_fit.chunk.solve                             3       4.338       4.338    1.7
+    zeta_fit.chunk.h5_write                            3       2.065       2.065    0.8
+  zeta_fit.write_g_flat                                1       0.472       0.472    0.2
+  zeta_fit.close_io                                    1       0.001       0.001    0.0
+  zeta_fit.sync_global                                 1       0.001       0.001    0.0
+gw_jax.V_q_compute                                     1       6.443       6.443    2.5
+gw_jax.wavefunction_setup                              1       0.282       0.282    0.1
+gw_jax.chi0_W                                          1       1.365       0.000    0.5
+  chi.compile                                          1       0.285       0.285    0.1
+  chi.exec                                             1       0.635       0.635    0.2
+  W.compile                                            1       0.158       0.158    0.1
+  W.exec                                               1       0.287       0.287    0.1
+gw_jax.sigma                                           1      24.300       2.023    9.3
+  gw_jax.ppm_sigma                                     1      22.278       0.802    8.5
+    sigma.compile                                      1       0.257       0.257    0.1
+    sigma.exec                                         1      21.219      21.219    8.1

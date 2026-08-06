@@ -1,0 +1,273 @@
+
+========================================================================
+  COHSEX-JAX: Self-Energy Calculation
+========================================================================
+  Backend: GPU       Devices: 1  Mesh: 1×1  Processes: 1
+  Device type: NVIDIA A100-SXM4-40GB
+  XLA preallocate: false  mem_fraction: 0.9
+========================================================================
+
+  ISDF basis: 640 centroids
+  FFT grid: 24×24×80   Cell volume: 702.20 a.u.³
+
+
+  ISDF memory model — chunk plan + HWM estimate
+    band_chunk    = 16
+    r_chunk       = 10813  (5 chunks)
+    q_chunk       = 16
+    gflat_cs      = 100
+    P_min (floor) = 1
+    budget        = 28.00 GB/dev  (util 0.85)
+    persistent    = 0.77 GB/dev
+    HWM estimate  = 23.80 GB/dev (85% of budget) [binder: C_fit_one_rchunk]
+    per-stage peaks (persistent + transient, GB/dev):
+      C_fit_one_rchunk....   23.80 <=
+      D_accumulate........    2.69
+      A_centroid_load.....    2.28
+      B_cct_chol..........    1.71
+      E_v_q...............    0.72
+
+  Chunked ISDF fitting:
+    Band chunks: 16
+    R chunks:    10813 (contiguous r-space)
+    Q chunks:    16
+    GFlat cs:    100
+    Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/01_mos2_4x4_cohsex_gnppm/K_rank_truncation_2026-07-21/01_rt_1x1/tmp/zeta_q.h5
+    cutoffs: zeta = 30.0 Ry, bare-Coulomb = 30.0 Ry  (ecutwfc=30.0, ecutrho=120.0)
+
+  Zeta fitting: 5 r-chunks x 10813 r-points, 80 bands (80 left + 80 right)
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/01_mos2_4x4_cohsex_gnppm/K_rank_truncation_2026-07-21/01_rt_1x1/tmp/zeta_q.h5
+  Left wfns:  (16, 80, 2, 640)
+  Right wfns: (16, 80, 2, 640)
+  q-IBZ reduction: centroid orbit closure failed — falling back to full-BZ on disk.  Reason: compute_centroid_sym_perm: centroid orbit closure failed.  sym 1 maps centroid μ=0 (at fft_idx [0, 1, 78]) to fft_idx [0, 1, 2], which is NOT in the centroid table.  Total failures: 558 / 1280.  Regenerate centroids with orbit-aware kmeans or fall back to identity-only sym.
+  Computing C_q via shard_map pipeline (open-spin, charge γ̃^0=I)
+  Computing L_q = rank-truncated pinv  [PSD, charge channel, path=replicated_rank_truncate]
+  L_q: (16, 640, 640)
+  q axis on disk: full BZ (16 q-points) (write_ibz_only=False or closure check failed)
+  G-flat ζ sphere: ngkmax=1964, min ngk=1933, max ngk=1964 (4.262% of n_rtot)
+/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_gw_rank_trunc/src/file_io/_slab_io_ffi.py:457: UserWarning: FFI backend: chunks/attrs on create_dataset currently no-op; pre-create with h5py if you need explicit chunking or attrs.
+  warnings.warn(
+  ψ(G-flat) host cache: 0.08 GB/process resident
+  G-flat ζ accumulator: N=10240 rows/rank (n_q=16 × n_mu_local=640); chunk_size=100 → per-iter FFT box 0.07 GB/rank
+Started zeta fitting at 00:30:43.
+[ 00:30:43 | ██░░░░░░░░ |  20% ] r-chunk 1 / 5 · ETA 0 s
+[ 00:30:44 | ████░░░░░░ |  40% ] r-chunk 2 / 5 · ETA 2 s
+[ 00:30:46 | ██████░░░░ |  60% ] r-chunk 3 / 5 · ETA 2 s
+[ 00:30:47 | ████████░░ |  80% ] r-chunk 4 / 5 · ETA 1 s
+[ 00:30:49 | ██████████ | 100% ] r-chunk 5 / 5 · ETA 0 s
+Finished zeta fitting at 00:30:49.  Elapsed: 6 s.
+  [SlabIO.close] draining 1 pending writes for zeta_q.h5 …
+  [SlabIO.close] Python dispatch drained in 0.5 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.1 s
+  Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/01_mos2_4x4_cohsex_gnppm/K_rank_truncation_2026-07-21/01_rt_1x1/tmp/zeta_q.h5  shape: (n_q_disk=16 of 4·4·1=16 full-BZ, n_rtot=46080, n_rmu=640)
+  Timing (5 r-chunks, 8.8s total):
+    fit      7.07s  80.1%
+    H5       1.68s  19.0%
+    GPU high-water mark: 15.92 GB / 28.00 GB budget (57%)  [cuda_async under-reports — rerun with XLA_PYTHON_CLIENT_ALLOCATOR=default for the true peak]
+    V_q bare cutoff: 30.0 Ry
+    V_q budget:    22.65 GB
+  V_q g-flat: centroid orbit closure failed — full-BZ iteration.  Reason: compute_centroid_sym_perm: centroid orbit closure failed.  sym 1 maps centroid μ=0 (at fft_idx [0, 1, 78]) to fft_idx [0, 1, 2], which is NOT in the centroid table.  Total failures: 558 / 1280.  Regenerate centroids with orbit-aware kmeans or fall back to identity-only sym.
+  V_q g-flat [CC]: n_q_ibz=16, ngkmax=1964, g_chunk=1964 (1/q), n_rmu_L=640→640, n_rmu_R=640→640, unfold=full-BZ
+    [CC] pre-read all 16 IBZ ζ̃ slabs (1 batched call): 0.38s
+    [CC] q=0/16: kernel=0.27s
+    [CC] q=1/16: kernel=0.02s
+    [CC] q=2/16: kernel=0.02s
+    [CC] q=3/16: kernel=0.02s
+    [CC] q=4/16: kernel=0.02s
+    [CC] q=5/16: kernel=0.02s
+    [CC] q=6/16: kernel=0.02s
+    [CC] q=7/16: kernel=0.02s
+    [CC] q=8/16: kernel=0.02s
+    [CC] q=9/16: kernel=0.02s
+    [CC] q=10/16: kernel=0.02s
+    [CC] q=11/16: kernel=0.02s
+    [CC] q=12/16: kernel=0.02s
+    [CC] q=13/16: kernel=0.02s
+    [CC] q=14/16: kernel=0.02s
+    [CC] q=15/16: kernel=0.02s
+  [SlabIO.close] draining 0 pending writes for zeta_q.h5 …
+  [SlabIO.close] Python dispatch drained in 0.0 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.1 s
+
+  V_q computed:
+    Shape: (16, 640, 640)
+    V_q=0 trace: 767969884.5933
+  [SlabIO.close] draining 0 pending writes for isdf_tensors_640.h5 …
+  [SlabIO.close] Python dispatch drained in 0.0 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.0 s
+  Wavefunctions built (b0:b4=80 bands, 4 sharded copies: xn/xr/yr/yn)
+  [SlabIO.close] draining 1 pending writes for isdf_tensors_640.h5 …
+  [SlabIO.close] Python dispatch drained in 0.1 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.0 s
+  Chunked ISDF path complete
+  Minimax static window: x=[1.633053e-01, 6.343519e+00] Ry, R=38.84, nodes=9, fit_err~1.600e-06
+  PPM imag-freq quadrature (ωp=2.0000 Ry): R=38.8, nodes=7, err~2.5e-07
+  [SlabIO.close] draining 1 pending writes for isdf_tensors_640.h5 …
+  [SlabIO.close] Python dispatch drained in 0.2 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.0 s
+  Persisted W0_qmunu + q=0 head scalars: vhead=2443.340 a.u.,  whead[ω=0]=704.147 a.u.,  whead[iωp]=2124.092 a.u.
+
+------------------------------------------------------------------------
+  FINITE-SIZE CORRECTIONS
+------------------------------------------------------------------------
+  Head source: s_tensor
+  v(q→0)  =     2443.340 a.u.  (bare Coulomb head)
+  W(q→0)  =      704.147 a.u.  (screened Coulomb head)
+  ΔW      =    -1739.193 a.u.  (screening correction)
+
+------------------------------------------------------------------------
+  STATIC HEAD TERMS (exact COHSEX / BGW-style)
+------------------------------------------------------------------------
+  Head source: s_tensor
+  v_h(q→0)           =  2443.339832 a.u.
+  W_h(q→0, ω=0)      =   704.146543 a.u.
+  W_h^c              = -1739.193289 a.u.
+  Σ^X head (occ)     = -2.174715e-01 Ry
+  Σ^SX head (occ)    = -6.267315e-02 Ry
+  Σ^(SX-X) head(occ) = 1.547983e-01 Ry
+  Σ^COH head (all)   = -7.739917e-02 Ry
+
+------------------------------------------------------------------------
+  GN-PPM + FREQUENCY-INTEGRATED SIGMA
+------------------------------------------------------------------------
+  GN-PPM fit: 1.85s, iωp=2.0000 Ry, unfulfilled=3.54%
+[pf] ▶ sigma_ppm
+  Σc crossing conditioning: ξ raised 0.250 → 0.952 eV (A_core capped at 24; the requested ξ would make the HGL crossing quadrature ill-conditioned)
+  Σc(ω) grid: -10.000..10.000 eV, Nω=41, Δω=0.500 eV, ξ=0.952 eV
+  GN invalid modes: 232184/6553600 (3.54%)
+  GN invalid modes per q: min=2652 max=46346 counts=[14356  3154 44546  3154  2652 10124  9900  3596 45224 11430 46346 11430  2652  3596  9900 10124]
+  GN invalid modes → static COHSEX: max|Σ_static| = 0.0788 eV (diag max 0.0788 eV)
+    ω≥E_F cond window "core" (crossing): 48 nodes, err<1e-06, E_A=[0.0817, 0.8338] Ry, project=imag
+    ω≥E_F cond window "a_stripe" (Laplace): 9 nodes, err<1e-06, E_A=[0.8515, 1.8449] Ry, project=full
+    ω≥E_F cond window "b_slab" (Laplace): 14 nodes, err<1e-06, E_A=[0.0817, 1.8449] Ry, project=full
+Started sigma[ω≥E_F cond] at 00:31:02.
+[ 00:31:02 | ░░░░░░░░░░ |   1% ] tau node  1 / 71 · ETA 0 s
+[ 00:31:02 | █░░░░░░░░░ |  13% ] tau node  9 / 71 · ETA 2 s
+[ 00:31:03 | ██░░░░░░░░ |  24% ] tau node 17 / 71 · ETA 2 s
+[ 00:31:03 | ███░░░░░░░ |  34% ] tau node 24 / 71 · ETA 2 s
+[ 00:31:03 | █████░░░░░ |  45% ] tau node 32 / 71 · ETA 2 s
+[ 00:31:04 | ██████░░░░ |  56% ] tau node 40 / 71 · ETA 1 s
+[ 00:31:04 | ███████░░░ |  68% ] tau node 48 / 71 · ETA 1 s
+[ 00:31:04 | ████████░░ |  77% ] tau node 55 / 71 · ETA 1 s
+[ 00:31:05 | █████████░ |  89% ] tau node 63 / 71 · ETA 0 s
+[ 00:31:05 | ██████████ | 100% ] tau node 71 / 71 · ETA 0 s
+Finished sigma[ω≥E_F cond] at 00:31:05.  Elapsed: 3 s.
+    ω≥E_F val window "single" (Laplace): 14 nodes, err<1e-06, E_A=[0.0817, 4.4986] Ry, project=full
+Started sigma[ω≥E_F val] at 00:31:05.
+[ 00:31:05 | █░░░░░░░░░ |   7% ] tau node  1 / 14 · ETA 0 s
+[ 00:31:05 | █░░░░░░░░░ |  14% ] tau node  2 / 14 · ETA 0 s
+[ 00:31:05 | ███░░░░░░░ |  29% ] tau node  4 / 14 · ETA 0 s
+[ 00:31:05 | ████░░░░░░ |  36% ] tau node  5 / 14 · ETA 0 s
+[ 00:31:06 | █████░░░░░ |  50% ] tau node  7 / 14 · ETA 0 s
+[ 00:31:06 | ██████░░░░ |  57% ] tau node  8 / 14 · ETA 0 s
+[ 00:31:06 | ███████░░░ |  71% ] tau node 10 / 14 · ETA 0 s
+[ 00:31:06 | ████████░░ |  79% ] tau node 11 / 14 · ETA 0 s
+[ 00:31:06 | █████████░ |  93% ] tau node 13 / 14 · ETA 0 s
+[ 00:31:06 | ██████████ | 100% ] tau node 14 / 14 · ETA 0 s
+Finished sigma[ω≥E_F val] at 00:31:06.  Elapsed: 1 s.
+    ω<E_F cond window "single" (Laplace): 14 nodes, err<1e-06, E_A=[0.0817, 1.8449] Ry, project=full
+Started sigma[ω<E_F cond] at 00:31:06.
+[ 00:31:06 | █░░░░░░░░░ |   7% ] tau node  1 / 14 · ETA 0 s
+[ 00:31:06 | █░░░░░░░░░ |  14% ] tau node  2 / 14 · ETA 0 s
+[ 00:31:06 | ███░░░░░░░ |  29% ] tau node  4 / 14 · ETA 0 s
+[ 00:31:06 | ████░░░░░░ |  36% ] tau node  5 / 14 · ETA 0 s
+[ 00:31:06 | █████░░░░░ |  50% ] tau node  7 / 14 · ETA 0 s
+[ 00:31:06 | ██████░░░░ |  57% ] tau node  8 / 14 · ETA 0 s
+[ 00:31:06 | ███████░░░ |  71% ] tau node 10 / 14 · ETA 0 s
+[ 00:31:06 | ████████░░ |  79% ] tau node 11 / 14 · ETA 0 s
+[ 00:31:07 | █████████░ |  93% ] tau node 13 / 14 · ETA 0 s
+[ 00:31:07 | ██████████ | 100% ] tau node 14 / 14 · ETA 0 s
+Finished sigma[ω<E_F cond] at 00:31:07.  Elapsed: 1 s.
+    ω<E_F val window "core" (crossing): 48 nodes, err<1e-06, E_A=[0.0817, 0.4999] Ry, project=imag
+    ω<E_F val window "a_stripe" (Laplace): 9 nodes, err<1e-06, E_A=[0.9611, 4.4986] Ry, project=full
+    ω<E_F val window "b_slab" (Laplace): 14 nodes, err<1e-06, E_A=[0.0817, 4.4986] Ry, project=full
+Started sigma[ω<E_F val] at 00:31:07.
+[ 00:31:07 | ░░░░░░░░░░ |   1% ] tau node  1 / 71 · ETA 0 s
+[ 00:31:07 | █░░░░░░░░░ |  13% ] tau node  9 / 71 · ETA 3 s
+[ 00:31:08 | ██░░░░░░░░ |  24% ] tau node 17 / 71 · ETA 3 s
+[ 00:31:08 | ███░░░░░░░ |  34% ] tau node 24 / 71 · ETA 2 s
+[ 00:31:08 | █████░░░░░ |  45% ] tau node 32 / 71 · ETA 2 s
+[ 00:31:09 | ██████░░░░ |  56% ] tau node 40 / 71 · ETA 2 s
+[ 00:31:09 | ███████░░░ |  68% ] tau node 48 / 71 · ETA 1 s
+[ 00:31:10 | ████████░░ |  77% ] tau node 55 / 71 · ETA 1 s
+[ 00:31:10 | █████████░ |  89% ] tau node 63 / 71 · ETA 0 s
+[ 00:31:10 | ██████████ | 100% ] tau node 71 / 71 · ETA 0 s
+Finished sigma[ω<E_F val] at 00:31:10.  Elapsed: 4 s.
+[pf] ■ sigma_ppm  10.660s
+
+------------------------------------------------------------------------
+  HEAD CORRECTION (scalar GN, separate from ISDF body)
+------------------------------------------------------------------------
+  v(q→0)             =     2443.340 a.u.
+  W^c(q→0, ω=0)      =    -1739.193 a.u.
+  W^c(q→0, ω=iωp)    =     -319.248 a.u.  [ωp=2.0000 Ry]
+  Ω_h²               =     0.899324 Ry²
+  Ω_h                =     0.948327 Ry  (12.902647 eV)
+  B_h                =  1564.097510 Ry² · a.u.
+  R_h                =   824.661733 Ry · a.u.
+  R_h / (Ω_h · vol)  = 1.238387e+00 (Ry)
+  Σ_c head shift: max|Σ^head_diag| = 3.3853 eV (on-shell occ band → -1.0531 eV)
+  E_F(midgap) = -4.270480 eV  (VBM=-5.381421, CBM=-3.159539)
+/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_gw_rank_trunc/src/file_io/_slab_io_ffi.py:457: UserWarning: FFI backend: chunks/attrs on create_dataset currently no-op; pre-create with h5py if you need explicit chunking or attrs.
+  warnings.warn(
+  [SlabIO.close] draining 1 pending writes for sigma_mnk.h5 …
+  [SlabIO.close] Python dispatch drained in 0.0 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.0 s
+  QSGW: 766 clipped (59.8%)
+  Bare Σ_X diagonal (eV), k=0: -39.5830  -39.5830  -33.4637  -33.4637  -32.8161  -32.8161  -32.7955  -32.7955
+  [SlabIO.close] draining 0 pending writes for kin_ion.h5 …
+  [SlabIO.close] Python dispatch drained in 0.0 s; joining writer thread
+  [SlabIO.close] writer thread joined in 0.0 s; calling H5Fclose collectively
+  [SlabIO.close] H5Fclose returned in 0.0 s
+  QP solver: one_shot_dft — QSGW build evaluated at E_DFT (standard G0W0)
+  QP WFN (one-shot): /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/01_mos2_4x4_cohsex_gnppm/K_rank_truncation_2026-07-21/01_rt_1x1/WFN_qp.h5
+  Sigma freq debug: sigma_freq_debug.dat
+  G0W0 diag (E_DFT):     /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/01_mos2_4x4_cohsex_gnppm/K_rank_truncation_2026-07-21/01_rt_1x1/eqp_g0w0.dat
+
+  Sigma diag:   /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/01_mos2_4x4_cohsex_gnppm/K_rank_truncation_2026-07-21/01_rt_1x1/sigma_diag.dat
+  BGW eqp0:     /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/01_mos2_4x4_cohsex_gnppm/K_rank_truncation_2026-07-21/01_rt_1x1/eqp0.dat
+  BGW eqp1:     /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/01_mos2_4x4_cohsex_gnppm/K_rank_truncation_2026-07-21/01_rt_1x1/eqp1.dat
+  Sigma(ω):     /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/01_mos2_4x4_cohsex_gnppm/K_rank_truncation_2026-07-21/01_rt_1x1/sigma_mnk.h5
+  Restart:      /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/01_mos2_4x4_cohsex_gnppm/K_rank_truncation_2026-07-21/01_rt_1x1/tmp/isdf_tensors_640.h5
+
+--- Timing ---
+Total recorded: 31.104 s
+Section                                            Count    Total[s]     Self[s]      %
+gw_jax.load_centroid_wfns                              1       1.846       0.043    5.9
+  load_centroids.loader_load                           1       0.117       0.117    0.4
+  load_centroids.gflat_to_rmu                          1       1.599       1.599    5.1
+  load_centroids.reshard                               1       0.088       0.088    0.3
+gw_jax.zeta_fit_chunked                                1      11.274       0.155   36.2
+  zeta_fit.slice_halves                                1       0.323       0.323    1.0
+  zeta_fit.CCT                                         1       0.326       0.326    1.0
+  zeta_fit.cholesky                                    1       0.622       0.622    2.0
+  zeta_fit.gc_pre_chunk_loop                           1       0.076       0.076    0.2
+  zeta_fit.write_headers                               1       0.008       0.008    0.0
+  zeta_fit.open_file                                   1       0.013       0.013    0.0
+  psi_G_store.populate.loader_load                     5       0.095       0.095    0.3
+  psi_G_store.populate.shard_to_host                   5       0.025       0.025    0.1
+  zeta_fit.chunk_loop                                  1       8.751       0.001   28.1
+    zeta_fit.chunk.fit_one_rchunk                      5       7.072       0.192   22.7
+      zeta_fit.chunk.z_q_build                         5       5.366       5.366   17.3
+      zeta_fit.chunk.solve                             5       1.514       1.514    4.9
+    zeta_fit.chunk.h5_write                            5       1.678       1.678    5.4
+  zeta_fit.write_g_flat                                1       0.297       0.297    1.0
+  zeta_fit.close_io                                    1       0.582       0.582    1.9
+  zeta_fit.sync_global                                 1       0.000       0.000    0.0
+gw_jax.V_q_compute                                     1       1.181       1.181    3.8
+gw_jax.wavefunction_setup                              1       0.297       0.297    1.0
+gw_jax.chi0_W                                          1       1.403       0.000    4.5
+  chi.compile                                          1       0.762       0.762    2.4
+  chi.exec                                             1       0.242       0.242    0.8
+  W.compile                                            1       0.243       0.243    0.8
+  W.exec                                               1       0.156       0.156    0.5
+gw_jax.sigma                                           1      15.103       1.081   48.6
+  gw_jax.ppm_sigma                                     1      14.022       2.698   45.1
+    sigma.compile                                      1       0.657       0.657    2.1
+    sigma.exec                                         1      10.667      10.667   34.3

@@ -1,0 +1,43 @@
+/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bands80/src/bse/exciton_bands.py:299: DeprecationWarning: Input key 'output_file' is no longer supported and will be ignored.  ``output_file`` (LORRAX-native eqp0) is now ``sigma_diag_file`` (defaults to ``sigma_diag.dat``); BGW-format ``eqp0.dat`` and ``eqp1.dat`` (with Z-linearization) are written automatically.  Remove 'output_file' from your input file.
+  params = read_lorrax_input(args.input)
+/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bands80/src/bse/exciton_bands.py:299: DeprecationWarning: Input key 'self_consistent' is deprecated; it is honored via ``qp_solver = auto`` resolution.  Set 'qp_solver = self_consistent' instead.
+  params = read_lorrax_input(args.input)
+/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bands80/src/bse/exciton_bands.py:299: DeprecationWarning: Input key 'sigma_at_dft_energies' is deprecated; it is honored via ``qp_solver = auto`` resolution.  Set 'qp_solver = one_shot_dft (the default)' instead.
+  params = read_lorrax_input(args.input)
+BSE-sharded: q=0 head injected (rank-1, dual-sharded G0, V_cell=702.20): vhead=9315.306, whead[0]=3499.067
+  Streaming Galerkin: nk=144, nb=80, nr=46080, n_mu=640, mesh=(2x2)
+  load_centroids_band_chunked: 3.83s
+  SVD of (11520, 1280): rank=1280, σ_max=4.422e+00, σ_min/1e-08=1.028e-05 (1.29s)
+2026-07-20 01:22:51.493784: W external/xla/xla/hlo/transforms/simplifiers/hlo_rematerialization.cc:3021] Can't reduce memory use below 17.45GiB (18742120273 bytes) by rematerialization; only reduced to 37.97GiB (40768634816 bytes), down from 37.97GiB (40769620992 bytes) originally
+/opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[144,64,2,23040]).
+See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+  warnings.warn("Some donated buffers were not usable:"
+/opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[144,16,2,23040]).
+See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+  warnings.warn("Some donated buffers were not usable:"
+  G accumulation: 2 chunk(s), 3.57s
+  Cholesky of G: 0.29s
+  ctilde[0] orthogonality error: 7.817e-01
+  Total Galerkin: 9.94s
+Loaded wavefunctions: nk=144, nb=80, rank=1280
+Q path: 3 points, nodes at [0, 1, 2] labels ['Gamma  (on-grid, min-sval gate)', 'Q=(0,0.3,0)  off-grid (iQ 9 dip region check)', 'M  (on-grid)']
+  [warn] htransform fH spans 80 bands with 46 conduction guards above the BSE window — a LARGE interp window does NOT improve (and past a system-dependent cliff WRECKS) the returned conduction ENERGIES.  fH=Σf(ε)ccᴴ needs orthonormal Galerkin coeffs; 640-scale centroids cannot orthonormalize high oscillatory bands (Gram error →40%% for the top bands), so they pollute eps_c(k+Q).  MoS2/640c on-grid |Δε_c|: ~1 meV at nband≤48, 7 meV at 64, ~955 meV at 80.  min-sval does not see this; the on-grid gate does.  Keep nband just above the BSE window unless the on-grid gate stays <~20 meV.
+  full-band htransform: fH over 80 bands (26v + 54c); BSE conduction [26,34) = 8 band(s) + 46 guard(s)
+  bse_setup: (12, 12, 1) → explicit q-list (432 q-pts), bands [26, 34) of 1280, batch=32
+  f-transform: a=0.596190 Ry, n=3.00, shift=1.529886 Ry (a from band 33)
+  bundle: psi_rmu_Y=(432, 8, 2, 640), psi_rmuT_X=(432, 640, 8, 2)
+  [gate] htransform@Γ vs stored: max|Δε_c| = 963.112 meV, conduction-subspace overlap min-sval = 0.8621
+  [warn] on-grid conduction ENERGY error 963.1 meV ≫ the ~1-2 meV htransform floor — the interp basis is over-packed: 640-scale centroids cannot orthonormalize high oscillatory bands, so their non-orthonormal Galerkin coeffs pollute fH=Σf(ε)ccᴴ.  Reduce nband toward the BSE window (a few guard bands).
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bands80/src/bse/exciton_bands.py", line 579, in <module>
+    main()
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bands80/src/bse/exciton_bands.py", line 404, in main
+    gate_htransform_vs_stored(
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_bands80/src/bse/exciton_bands.py", line 231, in gate_htransform_vs_stored
+    assert d_eps < 0.05 and smin > 0.5, (
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: htransform conduction cache grossly inconsistent with the stored grid (max|Δε_c|=963.1 meV, min-sval=0.862) — interp basis broken. The htransform fH energy recovery needs orthonormal Galerkin coeffs; 640-scale centroids cannot carry a full 80-band window (per-band capacity finding: runs/MoS2/04_mos2_12x12_bands_2026-07-18/10_lorrax_exciton_bands_80interp_8v8c).
+srun: error: nid001085: task 0: Exited with exit code 1
+srun: Terminating StepId=56178638.8

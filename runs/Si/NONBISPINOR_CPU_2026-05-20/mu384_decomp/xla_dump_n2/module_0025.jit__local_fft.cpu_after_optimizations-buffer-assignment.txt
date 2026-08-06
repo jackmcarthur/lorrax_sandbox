@@ -1,0 +1,83 @@
+BufferAssignment:
+allocation 0: size 849346560, output shape is |c128[64,30,2,24,24,24]|, maybe-live-out:
+ value: <10 transpose_copy_fusion.2 @0> (size=849346560,offset=0): c128[64,30,2,24,24,24]{5,4,3,2,1,0}
+ value: <12 transpose_copy_fusion.1 @0> (size=849346560,offset=0): c128[64,30,2,24,24,24]{5,4,3,2,1,0}
+ value: <15 fft.2 @0> (size=849346560,offset=0): c128[64,30,2,24,24,24]{5,4,3,2,1,0}
+allocation 1: size 849346560, parameter 0, shape |c128[64,30,2,24,24,24]| at ShapeIndex {}:
+ value: <9 param @0> (size=849346560,offset=0): c128[64,30,2,24,24,24]{5,4,3,2,1,0}
+allocation 2: size 1698693120, preallocated-temp:
+ value: <11 fft.0 @0> (size=849346560,offset=0): c128[64,30,2,24,24,24]{5,4,3,2,1,0}
+ value: <13 fft.1 @0> (size=849346560,offset=0): c128[64,30,2,24,24,24]{5,4,3,2,1,0}
+ value: <14 transpose_copy_fusion @0> (size=849346560,offset=849346560): c128[64,30,2,24,24,24]{5,4,3,2,1,0}
+
+Total bytes used: 3397386240 (3.16GiB)
+
+Used values:
+<9 param @0>
+ positions:
+  param
+ uses:
+  transpose_copy_fusion.2, operand 0
+ from instruction: %param = c128[64,30,2,24,24,24]{5,4,3,2,1,0} parameter(0), sharding={devices=[1,2,1,1,1,1]<=[2]}, metadata={op_name="x"}
+<10 transpose_copy_fusion.2 @0>
+ positions:
+  transpose_copy_fusion.2
+ uses:
+  fft.0, operand 0
+ from instruction: %transpose_copy_fusion.2 = c128[64,30,2,24,24,24]{5,4,3,2,1,0} fusion(%param), kind=kLoop, calls=%fused_computation.2, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}, backend_config={"outer_dimension_partitions":["3"]}
+<11 fft.0 @0>
+ positions:
+  fft.0
+ uses:
+  transpose_copy_fusion.1, operand 0
+ from instruction: %fft.0 = c128[64,30,2,24,24,24]{5,4,3,2,1,0} fft(%transpose_copy_fusion.2), fft_type=FFT, fft_length={24}, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}
+<12 transpose_copy_fusion.1 @0>
+ positions:
+  transpose_copy_fusion.1
+ uses:
+  fft.1, operand 0
+ from instruction: %transpose_copy_fusion.1 = c128[64,30,2,24,24,24]{5,4,3,2,1,0} fusion(%fft.0), kind=kLoop, calls=%fused_computation.1, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}, backend_config={"outer_dimension_partitions":["3"]}
+<13 fft.1 @0>
+ positions:
+  fft.1
+ uses:
+  transpose_copy_fusion, operand 0
+ from instruction: %fft.1 = c128[64,30,2,24,24,24]{5,4,3,2,1,0} fft(%transpose_copy_fusion.1), fft_type=FFT, fft_length={24}, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}
+<14 transpose_copy_fusion @0>
+ positions:
+  transpose_copy_fusion
+ uses:
+  fft.2, operand 0
+ from instruction: %transpose_copy_fusion = c128[64,30,2,24,24,24]{5,4,3,2,1,0} fusion(%fft.1), kind=kLoop, calls=%fused_computation, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}, backend_config={"outer_dimension_partitions":["3"]}
+<15 fft.2 @0>
+ positions:
+  fft.2
+ uses:
+ from instruction: %fft.2 = c128[64,30,2,24,24,24]{5,4,3,2,1,0} fft(%transpose_copy_fusion), fft_type=FFT, fft_length={24}, metadata={op_name="jit(_local_fft)/custom_partitioning" stack_frame_id=10}
+
+
+HloLiveRange (max 7):
+  InstructionSequence:
+    0:param
+    1:transpose_copy_fusion.2
+    2:fft.0
+    3:transpose_copy_fusion.1
+    4:fft.1
+    5:transpose_copy_fusion
+    6:fft.2
+  BufferLiveRange:
+    param{}:0-7
+    transpose_copy_fusion.2{}:1-2
+    fft.0{}:2-3
+    transpose_copy_fusion.1{}:3-4
+    fft.1{}:4-5
+    transpose_copy_fusion{}:5-6
+    fft.2{}:6-7
+  Live ranges at 3 (peak):
+    fft.0{}: 849346560 bytes (cumulative: 849346560 bytes)
+    param{}: 849346560 bytes (cumulative: 1698693120 bytes)
+    transpose_copy_fusion.1{}: 849346560 bytes (cumulative: 2548039680 bytes)
+  Stack trace breakdown for peak usage: 2 548 039 680 bytes
+    main.0_spmd (100.0%, total: 2 548 039 680 bytes, current: 0 bytes, remaining: 2 548 039 680 bytes)
+      ├── jit(_local_fft)/custom_partitioning (66.7%, total: 1 698 693 120 bytes, current: 1 698 693 120 bytes, remaining: 849 346 560 bytes)
+      └── x (33.3%, total: 849 346 560 bytes, current: 849 346 560 bytes, remaining: 0 bytes)

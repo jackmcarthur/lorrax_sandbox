@@ -1,0 +1,222 @@
+
+========================================================================
+  COHSEX-JAX: Self-Energy Calculation
+========================================================================
+  Backend: GPU       Devices: 4  Mesh: 2×2  Processes: 1
+  Device type: NVIDIA A100-SXM4-40GB
+  XLA preallocate: false  mem_fraction: 0.95
+  XLA pool: limit=40.29 GB, in_use=0.00 GB, avail=40.29 GB
+========================================================================
+
+  ISDF basis: 480 centroids
+  FFT grid: 24×24×24   Cell volume: 270.11 a.u.³
+
+  Chunk target utilization: 0.97
+  ISDF pair mode: spin_traced
+  Band chunk size: disabled
+  Using CHUNKED ISDF fitting (memory-efficient)
+    Memory estimate: peak 17.59 GB (budget 28.00 GB), bottleneck=gather
+    Chunk limit estimates (r-points):
+      limit_pair: 86453.1
+      limit_zct: 54033.2
+      limit_reshard: 54033.2
+      limit_solve: 106355.8
+      limit_gather: 189486.2
+
+  Chunked ISDF fitting:
+    Band chunks: 60
+    R chunks:    13824 (contiguous r-space)
+    Q chunks:    64
+    Pair mode:   spin_traced
+    G-space cache: enabled
+    Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/01_si_4x4x4_nosymmorphic/12_lorrax_gnppm_refactor_test/tmp/zeta_q.h5
+
+============================================================
+Zeta fitting: 1 r-chunks, 13824 points each
+  Left bands:  (0, 60) (60 bands)
+  Right bands: (0, 60) (60 bands)
+  Full range:  (0, 60) (60 bands)
+  Pair mode:   spin_traced
+Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/01_si_4x4x4_nosymmorphic/12_lorrax_gnppm_refactor_test/tmp/zeta_q.h5
+============================================================
+2026-04-06 12:31:55.958893: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[1,4,1,1]<=[4]} to {devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %gather = c128[64,15,2,480]{3,2,1,0} gather(%fake_parameter.0, %all-gather), offset_dims={0,1,2}, collapsed_slice_dims={3}, start_index_map={3}, index_vector_dim=1, slice_sizes={64,15,2,1}, sharding={devices=[1,4,1,1]<=[4]}. You probably want to enrich the sharding annotations to prevent this from happening.
+2026-04-06 12:31:55.959158: E external/xla/xla/service/spmd/spmd_partitioner.cc:620] [spmd] Involuntary full rematerialization. The compiler was not able to go from sharding {devices=[1,4,1,1]<=[4]} to {devices=[1,1,1,2,2]<=[2,2]T(1,0) last_tile_dim_replicate} without doing a full rematerialization of the tensor for HLO operation: %gather = c128[64,15,2,480]{3,2,1,0} gather(%copy.2, %constant.21), offset_dims={0,1,2}, collapsed_slice_dims={3}, start_index_map={3}, index_vector_dim=1, slice_sizes={64,15,2,1}, sharding={devices=[1,4,1,1]<=[4]}, metadata={op_name="jit(_extract_centroids)/jit(main)/jit(_take)/gather" source_file="/global/u2/j/jackm/software/lorrax/src/common/load_wfns.py" source_line=548}. You probably want to enrich the sharding annotations to prevent this from happening.
+  Left wfns:  (64, 60, 2, 480)
+  Right wfns: (64, 60, 2, 480)
+
+Computing spin-traced pair densities P_l and P_r...
+Computing C_q from left/right cross-product...
+
+Computing L_q = chol(C_q) using 2D blocked algorithm...
+  L_q shape: (64, 480, 480)
+
+Caching G-space wavefunctions for r-chunk loop...
+  Cached 1 band chunks (sharded across devices)
+Chunk 1/1: r=[0:13824]
+
+
+Written to /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/01_si_4x4x4_nosymmorphic/12_lorrax_gnppm_refactor_test/tmp/zeta_q.h5
+============================================================
+Zeta fitting complete!
+  Shape: (4, 4, 4, 480, 13824)
+============================================================
+
+Timing Summary (1 r-chunks):
+  Phase                     Total    Per-chunk      %
+  --------------------------------------------------
+  Load chunk                 0.65s      646.4ms   21.6%
+  Pair density               0.02s       19.6ms    0.7%
+  ZCT (FFT pipeline)         0.39s      388.6ms   13.0%
+  Solve (L^-1 Z)             0.27s      267.1ms    8.9%
+  H5 write                   1.56s     1559.5ms   52.2%
+  --------------------------------------------------
+  Chunk loop total           2.99s     2987.1ms
+  Per r-point                          216.1us
+    V_q budget:    27.04 GB
+    V_q mu chunks: 480
+    V_q q batches: 4
+  q-points 1-4 / 64: (0,0,0), (0,0,1), (0,0,2), (0,0,3)
+    batch FFT+contract: 0.099s (4 q's)
+  q-points 5-8 / 64: (0,1,0), (0,1,1), (0,1,2), (0,1,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 9-12 / 64: (0,2,0), (0,2,1), (0,2,2), (0,2,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 13-16 / 64: (0,3,0), (0,3,1), (0,3,2), (0,3,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 17-20 / 64: (1,0,0), (1,0,1), (1,0,2), (1,0,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 21-24 / 64: (1,1,0), (1,1,1), (1,1,2), (1,1,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 25-28 / 64: (1,2,0), (1,2,1), (1,2,2), (1,2,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 29-32 / 64: (1,3,0), (1,3,1), (1,3,2), (1,3,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 33-36 / 64: (2,0,0), (2,0,1), (2,0,2), (2,0,3)
+    batch FFT+contract: 0.014s (4 q's)
+  q-points 37-40 / 64: (2,1,0), (2,1,1), (2,1,2), (2,1,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 41-44 / 64: (2,2,0), (2,2,1), (2,2,2), (2,2,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 45-48 / 64: (2,3,0), (2,3,1), (2,3,2), (2,3,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 49-52 / 64: (3,0,0), (3,0,1), (3,0,2), (3,0,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 53-56 / 64: (3,1,0), (3,1,1), (3,1,2), (3,1,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 57-60 / 64: (3,2,0), (3,2,1), (3,2,2), (3,2,3)
+    batch FFT+contract: 0.013s (4 q's)
+  q-points 61-64 / 64: (3,3,0), (3,3,1), (3,3,2), (3,3,3)
+    batch FFT+contract: 0.011s (4 q's)
+    V_q timing breakdown (overlapped I/O):
+      H5 read (waited): 1.249s
+      GPU transfer:     1.003s
+      FFT+contract:     0.291s
+    G0 written to /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/01_si_4x4x4_nosymmorphic/12_lorrax_gnppm_refactor_test/tmp/zeta_q.h5 (shape: (4, 4, 4, 480))
+
+  V_q computed:
+    Shape: (1, 1, 1, 4, 4, 4, 480, 480)
+    V_q=0 trace: 5744862.3548
+  Wavefunction bundle built (b0:b4=60 bands, canonical X/Y storage)
+  Chunked ISDF path complete
+
+  Minimax screening path enabled at ω = 0.0000 eV (0.000000 Ry)
+  Minimax static window: x=[4.973381e-02, 3.704181e+00] Ry, R=74.48, nodes=10, fit_err~6.434e-06
+  |χ(0)|_max = 5.776709e-05   (minimax, 10 nodes)
+  minimax χ→W time:     1.699 s
+  Minimax imag-freq window (ωp=2.0000 Ry): x=[4.973381e-02, 3.704181e+00] Ry, R=74.48, ω̂=40.21, nodes=6, fit_err~8.861e-06
+  GN-PPM extracted from minimax W^c: ω_p=2.000000 Ry, unfulfilled=1.20%
+
+------------------------------------------------------------------------
+  FINITE-SIZE CORRECTIONS
+------------------------------------------------------------------------
+  Head source: s_tensor
+  v(q→0)  =     3267.787 a.u.  (bare Coulomb head)
+  W(q→0)  =      117.235 a.u.  (screened Coulomb head)
+  ΔW      =    -3150.551 a.u.  (screening correction)
+
+------------------------------------------------------------------------
+  GN-PPM + FREQUENCY-INTEGRATED SIGMA
+------------------------------------------------------------------------
+  NOTE: using midgap reference for Σ^c windowing
+  epsinv head (ω=0):       0.035876-1.688074e-19i  [source=s_tensor]
+  epsinv head (ω=iωp):     0.671307-1.215978e-18i  [ωp=2.000000 Ry, source=s_tensor(omega=2j Ry)]
+  Minimax static window: x=[4.973381e-02, 3.704181e+00] Ry, R=74.48, nodes=10, fit_err~6.434e-06
+  Minimax imag-freq window (ωp=2.0000 Ry): x=[4.973381e-02, 3.704181e+00] Ry, R=74.48, ω̂=40.21, nodes=6, fit_err~8.861e-06
+  PPM finite-size heads:
+    v(q→0)          =     3267.787 a.u.
+    W(q→0, ω=0)     =      117.235 a.u.
+    W(q→0, ω=iωp)   =     2193.689 a.u.  [ωp=2.0000 Ry]
+    W^c(q→0, ω=0)   =    -3150.551 a.u.
+    W^c(q→0, ω=iωp) =    -1074.097 a.u.
+  [W(0)] hermitian residual=2.264e-10 max|Im diag|=1.890e-11 diag range=[1.1772e+03, 6.2432e+04]
+  [W(iωp=2.000 Ry)] hermitian residual=8.082e-07 max|Im diag|=4.041e-07 diag range=[1.2212e+03, 2.8428e+05]
+  GN-PPM from W^c(0), W^c(iωp): ωp=2.000000 Ry, unfulfilled=1.12%
+  PPM W^c(0) check (+2B/Ω): max|Δ|=6.992e+05, rel=2.000e+00 (ref max|W^c(0)|=3.496e+05)
+  PPM W^c(0) check (-2B/Ω): max|Δ|=2.910e-11, rel=8.325e-17
+  [TIMING] PPM build: 3.0s
+  W-copy debug h5:        /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/01_si_4x4x4_nosymmorphic/12_lorrax_gnppm_refactor_test/w_copies_debug.h5
+    ||W0(screen,q=0)||_F = 9.1345408949e+05
+    ||W0(ppm,q=0)||_F    = 9.1345408949e+05
+    ||W(iωp,ppm,q=0)||_F = 7.9551874862e+06
+    max|W0(screen)-W0(ppm)| = 0.000000e+00 (rel=0.000000e+00)
+  [TIMING] W-debug write: 0.1s
+  Σc(ω) grid: -10.000 .. 10.000 eV, Nω=41, Δω=0.500 eV, ξ=0.250 eV
+  Σc(ω) axes (vacuum): Ev=[-4.187563e-01,4.628193e-01] Ry, Ec=[5.125531e-01,3.285425e+00] Ry, Omega=[4.318511e-03,2.726242e+01] Ry
+  GN invalid modes: 165596/14745600 (1.12%), policy=static_limit
+  Σc(ω) accumulation: kij (single-pass), est=144.1 MiB
+  ω>=E_F Σ^- windows: core=1, exterior=2
+  ω>=E_F Σ^+ windows: count=1, total nodes=12
+  ω<E_F Σ^+ windows: count=1, total nodes=13
+  ω<E_F Σ^- windows: core=1, exterior=2
+  GN invalid-mode static correction: max|Σ|=1.229908e-04 Ry
+  [TIMING] compute_sigma_c_ppm_omega_grid: 18.6s
+  Sigma(E_DFT) reference: E_F(midgap)=6.635312 eV from VBM=6.296980 eV, CBM=6.973643 eV
+  Replacing static COH with PPM-integrated Σ^c(ω=0.000000 Ry)
+  Σ^c difference vs static COH: abs=1.183376e+03, rel=1.773943e+03
+  Bare Σ^X vs screened Σ^SX: abs=9.513967e-01, rel=2.908605e+00
+  [Σ^X + Σ^c(0)] vs [Σ^SX + Σ^COH]: abs=1.183376e+03 Ry (1.610066e+04 eV), rel=1.195554e+03
+  Sigma(E_DFT) in-grid states: 1144/3840 within [-10.000, 10.000] eV
+  Gap@k=0 (E9-E8): static=0.005122 eV, omega0=0.002978 eV, diag-SC=-0.843401 eV
+  Gap shifts: omega0-static=-0.002144 eV, diagSC-static=-0.848523 eV
+  Diagonal Sigma(E) fixed point: in-grid=944/3840, converged=100.0% in-grid states in 20 iterations
+  QSGW Σ_xc interpolation: clipped=2926/3840 (76.20%) outside [-10.000, 10.000] eV
+  QP energy plot:         /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/01_si_4x4x4_nosymmorphic/12_lorrax_gnppm_refactor_test/qp_energy_compare.png
+  Sigma frequency debug:  /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/01_si_4x4x4_nosymmorphic/12_lorrax_gnppm_refactor_test/sigma_freq_debug.dat
+  G0W0 diag (E_DFT):     /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/01_si_4x4x4_nosymmorphic/12_lorrax_gnppm_refactor_test/eqp_g0w0.dat
+
+------------------------------------------------------------------------
+  OUTPUT FILES
+------------------------------------------------------------------------
+  Sigma matrix elements:  /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/01_si_4x4x4_nosymmorphic/12_lorrax_gnppm_refactor_test/eqp0.dat
+  Sigma_mnk(ω) h5:        /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/01_si_4x4x4_nosymmorphic/12_lorrax_gnppm_refactor_test/sigma_mnk.h5
+  QP rotations (h5):      /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/01_si_4x4x4_nosymmorphic/12_lorrax_gnppm_refactor_test/qp_wfn_rotations.h5
+  Restart arrays:         /pscratch/sd/j/jackm/lorrax_sandbox/runs/Si/01_si_4x4x4_nosymmorphic/12_lorrax_gnppm_refactor_test/tmp/isdf_tensors_480.h5
+
+--- Timing ---
+Total recorded: 49.077 s
+Section                                            Count    Total[s]     Self[s]      %
+gw_jax.zeta_fit_chunked                                1      16.924       7.974   34.5
+  zeta_fit.load_wfns                                   1       3.646       3.297    7.4
+    load_wfns.precompute_owned                         1       0.000       0.000    0.0
+    load_wfns.k_loop                                   1       0.055       0.055    0.1
+    load_wfns.scatter                                  1       0.148       0.148    0.3
+    load_wfns.make_global_array                        1       0.146       0.146    0.3
+  zeta_fit.CCT                                         1       0.361       0.361    0.7
+  zeta_fit.cholesky                                    1       1.621       1.621    3.3
+  zeta_fit.cache_gspace                                1       0.335       0.005    0.7
+    load_wfns.precompute_owned                         1       0.000       0.000    0.0
+    load_wfns.k_loop                                   1       0.057       0.057    0.1
+    load_wfns.scatter                                  1       0.151       0.151    0.3
+    load_wfns.make_global_array                        1       0.123       0.123    0.3
+  zeta_fit.chunk_loop                                  1       2.987       0.106    6.1
+    zeta_fit.chunk.load                                1       0.646       0.646    1.3
+    zeta_fit.chunk.pair_density                        1       0.020       0.020    0.0
+    zeta_fit.chunk.ZCT                                 1       0.389       0.389    0.8
+    zeta_fit.chunk.solve                               1       0.267       0.267    0.5
+    zeta_fit.chunk.h5_write                            1       1.559       1.559    3.2
+gw_jax.V_q_compute                                     1       3.919       1.370    8.0
+  compute_all_V_q                                      1       2.548       2.548    5.2
+gw_jax.wavefunction_setup                              1       0.971       0.971    2.0
+gw_jax.chi0_W                                          1       4.172       4.172    8.5
+gw_jax.pipeline                                        1       0.900       0.900    1.8
+gw_jax.ppm_sigma                                       1      22.192      22.192   45.2

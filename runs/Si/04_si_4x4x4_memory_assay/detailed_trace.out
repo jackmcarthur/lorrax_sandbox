@@ -1,0 +1,34 @@
+System: nk=64, nb=35, ns=2, fft=(24,24,24), n_rtot=13824, n_rmu=240
+Devices: 4, mesh: 2×2, p_x=2, p_y=2
+nb_pad=36, bands_per_shard=9
+
+=== PREDICTED ARRAY INVENTORY (per device) ===
+    psi_G shard (FFT input): 0.255 GB (15,925,248 elements)
+    psi_r shard (FFT output): 0.255 GB (15,925,248 elements)
+    FFT staging buffer ×2: 0.510 GB (31,850,496 elements)
+    phase (replicated): 0.014 GB (884,736 elements)
+    psi_rmu output (Y-sharded): 0.009 GB (537,600 elements)
+    psi_rmuT output (X-sharded): 0.009 GB (537,600 elements)
+    reshard intermediate {-,Y,-,-}: 0.009 GB (552,960 elements)
+    G-cache (1 band chunk): 0.255 GB (15,925,248 elements)
+    r-chunk psi (band-sharded): 0.255 GB (15,925,248 elements)
+    r-chunk reshard intermediate: 0.510 GB (31,850,496 elements)
+
+=== MEASURED MEMORY TRACE ===
+  [clean start] GPU0: used=0.000 peak=0.000 GB
+  [after psi_G on device (make_array_from_callback)] GPU0: used=0.268 peak=0.268 GB
+  [after FFT (psi_G + psi_r + staging)] GPU0: used=0.523 peak=1.329 GB
+  [after phase multiply (psi_G + psi_r + psi_phased + phase)] GPU0: used=0.819 peak=1.329 GB
+  [after freeing psi_G, psi_r (only psi_phased + phase)] GPU0: used=0.296 peak=1.329 GB
+  [after centroid gather (psi_phased + psi_flat + psi_rmu)] GPU0: used=0.555 peak=1.329 GB
+  [after freeing FFT arrays (only psi_rmu)] GPU0: used=0.019 peak=1.329 GB
+  [after reshard step 1 {-,XY,-,-} → {-,Y,-,-} (psi_rmu + psi_rmu_Y)] GPU0: used=0.036 peak=1.329 GB
+  [after reshard step 2 {-,Y,-,-} → {-,-,-,Y} (3 copies of psi_rmu)] GPU0: used=0.045 peak=1.329 GB
+  [after freeing intermediates (only psi_rmu_final)] GPU0: used=0.023 peak=1.329 GB
+  [after transpose + X-shard (psi_rmu_final + psi_rmuT)] GPU0: used=0.032 peak=1.329 GB
+  [cleaned up centroids] GPU0: used=0.000 peak=1.329 GB
+  [after G-cache load] GPU0: used=0.268 peak=1.329 GB
+  [after r-chunk slice from G-cache (gcache + psi_rchunk)] GPU0: used=0.792 peak=1.329 GB
+  [after r-chunk reshard step 1 {-,XY,-,-} → {-,Y,-,-}] GPU0: used=1.329 peak=2.147 GB
+  [after r-chunk reshard step 2 {-,Y,-,-} → {-,-,-,Y}] GPU0: used=1.838 peak=2.348 GB
+  [after r-chunk cleanup (gcache + psi_rchunk_Y2 only)] GPU0: used=1.046 peak=2.348 GB

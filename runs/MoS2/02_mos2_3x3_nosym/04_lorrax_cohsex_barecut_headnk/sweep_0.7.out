@@ -1,0 +1,157 @@
+
+========================================================================
+  COHSEX-JAX: Self-Energy Calculation
+========================================================================
+  Backend: GPU       Devices: 4  Mesh: 2×2  Processes: 4
+  Device type: NVIDIA A100-SXM4-40GB
+  XLA preallocate: false  mem_fraction: 0.95
+  XLA pool: limit=40.29 GB, in_use=0.00 GB, avail=40.29 GB
+========================================================================
+
+  [TIMING-BOOT] input parsed: 0.000s
+  [TIMING-BOOT] WFNReader: 0.016s
+  [TIMING-BOOT] SymMaps: 0.001s
+  [TIMING-BOOT] load_centroids: 0.001s
+  ISDF basis: 640 centroids
+  FFT grid: 24×24×80   Cell volume: 702.20 a.u.³
+
+    K-point chunking: 2 k-pts per FFT batch (total 9)
+    Memory estimate: peak 0.68 GB (budget 0.70 GB), bottleneck=zct
+      limit_fft: 25853.0
+      limit_pair: 6412.2
+      limit_zct: 4007.6
+      limit_reshard: 4007.6
+      limit_solve: 6797.7
+      limit_gather: 8015.2
+
+  Chunked ISDF fitting:
+    Band chunks: 64
+    R chunks:    4004 (contiguous r-space)
+    Q chunks:    4
+    Pair mode:   spin_traced
+    Zeta output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/04_lorrax_cohsex_barecut_headnk/tmp/zeta_q.h5
+
+============================================================
+Zeta fitting: 12 r-chunks, 4004 points each
+  Left bands:  (0, 80) (80 bands)
+  Right bands: (0, 80) (80 bands)
+  Full range:  (0, 80) (80 bands)
+  Pair mode:   spin_traced
+Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/04_lorrax_cohsex_barecut_headnk/tmp/zeta_q.h5
+============================================================
+  Left wfns:  (9, 80, 2, 640)
+  Right wfns: (9, 80, 2, 640)
+
+Computing spin-traced pair densities P_l and P_r...
+Computing C_q from left/right cross-product...
+
+Computing L_q = chol(C_q) using 2D blocked algorithm...
+  L_q shape: (9, 640, 640)
+
+Caching G-space wavefunctions for r-chunk loop...
+  Cached 2 band chunks (sharded across devices)
+Chunk 1/12: r=[0:4004]
+Chunk 2/12: r=[4004:8008]
+Chunk 3/12: r=[8008:12012]
+Chunk 4/12: r=[12012:16016]
+Chunk 5/12: r=[16016:20020]
+Chunk 6/12: r=[20020:24024]
+Chunk 7/12: r=[24024:28028]
+Chunk 8/12: r=[28028:32032]
+Chunk 9/12: r=[32032:36036]
+Chunk 10/12: r=[36036:40040]
+Chunk 11/12: r=[40040:44044]
+Chunk 12/12: r=[44044:46080]
+
+
+Written to /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/04_lorrax_cohsex_barecut_headnk/tmp/zeta_q.h5
+============================================================
+Zeta fitting complete!
+  Shape: (3, 3, 1, 640, 46080)
+============================================================
+
+Timing Summary (12 r-chunks):
+  Phase                     Total    Per-chunk      %
+  --------------------------------------------------
+  Load chunk                 2.32s      193.1ms   33.5%
+  Pair density               0.04s        2.9ms    0.5%
+  ZCT (FFT pipeline)         0.69s       57.2ms    9.9%
+  Solve (L^-1 Z)             1.32s      109.7ms   19.0%
+  H5 write                   2.33s      194.0ms   33.6%
+  --------------------------------------------------
+  Chunk loop total           6.92s      576.7ms
+  Per r-point                          150.2us
+  Peak GPU memory            0.94 GB
+    V_q budget:    0.65 GB
+    V_q mu chunks: 293
+    V_q bare cutoff: 30.0 Ry
+  q-point 1/9: q=(0,0,0)
+  q-point 2/9: q=(0,1,0)
+  q-point 3/9: q=(0,2,0)
+  q-point 4/9: q=(1,0,0)
+  q-point 5/9: q=(1,1,0)
+  q-point 6/9: q=(1,2,0)
+  q-point 7/9: q=(2,0,0)
+  q-point 8/9: q=(2,1,0)
+  q-point 9/9: q=(2,2,0)
+
+
+  V_q computed:
+    Shape: (1, 1, 1, 3, 3, 1, 640, 640)
+    V_q=0 trace: 612960301.2747
+  Wavefunctions built (b0:b4=80 bands, 4 sharded copies: xn/xr/yr/yn)
+  Chunked ISDF path complete
+  [TIMING-BOOT] prepare_isdf_and_wavefunctions: 20.083s
+  Minimax static window: x=[1.249525e-01, 6.336172e+00] Ry, R=50.71, nodes=10, fit_err~2.561e-06
+  |χ(0)|_max = 1.673150e-04  (minimax, 10 nodes)
+
+------------------------------------------------------------------------
+  FINITE-SIZE CORRECTIONS
+------------------------------------------------------------------------
+  Head source: s_tensor
+  v(q→0)  =     1655.335 a.u.  (bare Coulomb head)
+  W(q→0)  =      343.785 a.u.  (screened Coulomb head)
+  ΔW      =    -1311.550 a.u.  (screening correction)
+
+------------------------------------------------------------------------
+  STATIC HEAD TERMS (exact COHSEX / BGW-style)
+------------------------------------------------------------------------
+  Head source: s_tensor
+  v_h(q→0)           =  1655.334970 a.u.
+  W_h(q→0, ω=0)      =   343.784715 a.u.
+  W_h^c              = -1311.550255 a.u.
+  Σ^X head (occ)     = -2.619279e-01 Ry
+  Σ^SX head (occ)    = -5.439795e-02 Ry
+  Σ^(SX-X) head(occ) = 2.075300e-01 Ry
+  Σ^COH head (all)   = -1.037650e-01 Ry
+
+  Output: /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/04_lorrax_cohsex_barecut_headnk/eqp0.dat
+  Restart:  /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/04_lorrax_cohsex_barecut_headnk/tmp/isdf_tensors_640.h5
+
+--- Timing ---
+Total recorded: 22.028 s
+Section                                            Count    Total[s]     Self[s]      %
+gw_jax.zeta_fit_chunked                                1      14.201       2.440   64.5
+  zeta_fit.load_wfns                                   1       2.765       2.684   12.6
+    load_wfns.precompute_owned                         2       0.000       0.000    0.0
+    load_wfns.k_loop                                   2       0.014       0.014    0.1
+    load_wfns.scatter                                  2       0.024       0.024    0.1
+    load_wfns.make_global_array                        2       0.043       0.043    0.2
+  zeta_fit.CCT                                         1       0.682       0.682    3.1
+  zeta_fit.cholesky                                    1       1.302       1.302    5.9
+  zeta_fit.cache_gspace                                1       0.092       0.001    0.4
+    load_wfns.precompute_owned                         2       0.000       0.000    0.0
+    load_wfns.k_loop                                   2       0.015       0.015    0.1
+    load_wfns.scatter                                  2       0.032       0.032    0.1
+    load_wfns.make_global_array                        2       0.044       0.044    0.2
+  zeta_fit.chunk_loop                                  1       6.920       0.238   31.4
+    zeta_fit.chunk.load                               12       2.317       2.317   10.5
+    zeta_fit.chunk.pair_density                       12       0.035       0.035    0.2
+    zeta_fit.chunk.ZCT                                12       0.686       0.686    3.1
+    zeta_fit.chunk.solve                              12       1.316       1.316    6.0
+    zeta_fit.chunk.h5_write                           12       2.328       2.328   10.6
+gw_jax.V_q_compute                                     1       3.970       0.776   18.0
+  compute_all_V_q                                      1       3.194       3.194   14.5
+gw_jax.wavefunction_setup                              1       0.989       0.989    4.5
+gw_jax.chi0_W                                          1       1.647       1.647    7.5
+gw_jax.sigma                                           1       1.221       1.221    5.5

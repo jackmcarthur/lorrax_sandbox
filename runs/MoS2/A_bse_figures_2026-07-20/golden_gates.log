@@ -1,0 +1,174 @@
+.................F.                                                      [100%]
+=================================== FAILURES ===================================
+_________________ test_gw_jax_matches_reference[si_cohsex_3d] __________________
+
+tmp_path = PosixPath('/tmp/pytest-of-jackm/pytest-0/test_gw_jax_matches_reference_1')
+case_id = 'si_cohsex_3d'
+case_dir = PosixPath('/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/tests/regression/si_cohsex_debug')
+input_name = 'cohsex_si_test.in', output_name = 'eqp_si_test.dat'
+ref_name = 'eqp_si_ref.dat', labels = ('sigSX', 'sigCOH', 'sigTOT')
+atol = 0.001
+
+    @pytest.mark.regression
+    @pytest.mark.parametrize(
+        "case_id,case_dir,input_name,output_name,ref_name,labels,atol",
+        _CASES,
+        ids=[c[0] for c in _CASES],
+    )
+    def test_gw_jax_matches_reference(
+        tmp_path, case_id, case_dir, input_name, output_name, ref_name, labels, atol
+    ):
+        skip_unless_gpu(pytest)
+        reference_file = case_dir / ref_name
+        assert (case_dir / input_name).exists(), f"missing input: {input_name}"
+        assert reference_file.exists(), f"missing reference: {reference_file}"
+    
+        run_dir = copy_fixture(case_dir, tmp_path / case_dir.name)
+        result = run_gw_jax(run_dir, input_name)
+        if result.returncode != 0:
+>           pytest.fail(
+                f"{case_id} regression run failed.\n"
+                f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}")
+E           Failed: si_cohsex_3d regression run failed.
+E           stdout:
+E           
+E           ========================================================================
+E             COHSEX-JAX: Self-Energy Calculation
+E           ========================================================================
+E             Backend: GPU       Devices: 1  Mesh: 1×1  Processes: 1
+E             Device type: NVIDIA A100-SXM4-40GB
+E             XLA preallocate: false  mem_fraction: 0.95
+E             XLA pool: limit=40.28 GB, in_use=0.00 GB, avail=40.28 GB
+E           ========================================================================
+E           
+E             ISDF basis: 960 centroids
+E             FFT grid: 24×24×24   Cell volume: 270.11 a.u.³
+E           
+E           
+E             ISDF memory model — chunk plan + HWM estimate
+E               band_chunk    = 16
+E               r_chunk       = 1650  (9 chunks)
+E               q_chunk       = 64
+E               gflat_cs      = 100
+E               P_min (floor) = 1
+E               budget        = 28.00 GB/dev  (util 0.85)
+E               persistent    = 2.70 GB/dev
+E               HWM estimate  = 23.79 GB/dev (85% of budget) [binder: C_fit_one_rchunk]
+E               per-stage peaks (persistent + transient, GB/dev):
+E                 C_fit_one_rchunk....   23.79 <=
+E                 B_cct_chol..........   11.20
+E                 A_centroid_load.....    4.51
+E                 D_accumulate........    4.37
+E                 E_v_q...............    2.26
+E           
+E             Chunked ISDF fitting:
+E               Band chunks: 16
+E               R chunks:    1650 (contiguous r-space)
+E               Q chunks:    64
+E               GFlat cs:    100
+E               Zeta output: /tmp/pytest-of-jackm/pytest-0/test_gw_jax_matches_reference_1/si_cohsex_debug/tmp/zeta_q.h5
+E               cutoffs: zeta = 25.0 Ry, bare-Coulomb = 25.0 Ry  (ecutwfc=25.0, ecutrho=100.0)
+E           
+E             Zeta fitting: 9 r-chunks x 1650 r-points, 60 bands (60 left + 60 right)
+E             Output: /tmp/pytest-of-jackm/pytest-0/test_gw_jax_matches_reference_1/si_cohsex_debug/tmp/zeta_q.h5
+E             Left wfns:  (64, 60, 2, 960)
+E             Right wfns: (64, 60, 2, 960)
+E             q-IBZ reduction: centroid orbit closure failed — falling back to full-BZ on disk.  Reason: compute_centroid_sym_perm: centroid orbit closure failed.  sym 1 maps centroid μ=0 (at fft_idx [0, 0, 2]) to fft_idx [10, 2, 0], which is NOT in the centroid table.  Total failures: 41303 / 46080.  Regenerate centroids with orbit-aware kmeans or fall back to identity-only sym.
+E             Computing C_q via shard_map pipeline (open-spin, charge γ̃^0=I)
+E             Computing L_q = chol(C_q)  [PSD, charge channel, path=sharded_cholesky]
+E             L_q: (64, 960, 960)
+E             q axis on disk: full BZ (64 q-points) (write_ibz_only=False or closure check failed)
+E             G-flat ζ sphere: ngkmax=588, min ngk=537, max ngk=588 (4.253% of n_rtot)
+E             ψ(G-flat) host cache: 0.07 GB/process resident
+E             G-flat ζ accumulator: N=61440 rows/rank (n_q=64 × n_mu_local=960); chunk_size=100 → per-iter FFT box 0.02 GB/rank
+E           
+E           stderr:
+E           /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/file_io/_slab_io_ffi.py:457: UserWarning: FFI backend: chunks/attrs on create_dataset currently no-op; pre-create with h5py if you need explicit chunking or attrs.
+E             warnings.warn(
+E           2026-07-20 20:48:29.255404: W external/xla/xla/tsl/framework/bfc_allocator.cc:501] Allocator (GPU_0_bfc) ran out of memory trying to allocate 18.13GiB (rounded to 19464193536)requested by op 
+E           2026-07-20 20:48:29.255594: W external/xla/xla/tsl/framework/bfc_allocator.cc:512] ______________________________________________________________________________**********************
+E           E0720 20:48:29.255620  641294 pjrt_stream_executor_client.cc:3077] Execution of replica 0 failed: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 19464193400 bytes. [tf-allocator-allocation-error='']
+E           Traceback (most recent call last):
+E             File "<frozen runpy>", line 198, in _run_module_as_main
+E             File "<frozen runpy>", line 88, in _run_code
+E             File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/gw/gw_jax.py", line 524, in <module>
+E               raise SystemExit(main())
+E                                ^^^^^^
+E             File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/gw/gw_jax.py", line 238, in main
+E               isdf = prepare_isdf_and_wavefunctions(
+E                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E             File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/gw/gw_init.py", line 621, in prepare_isdf_and_wavefunctions
+E               zeta_path, mem_est, transverse_wfn_data = fit_zeta(
+E                                                         ^^^^^^^^^
+E             File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/gw/gw_init.py", line 112, in fit_zeta
+E               peak_bytes = fit_zeta_to_h5(
+E                            ^^^^^^^^^^^^^^^
+E             File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/gw/isdf_fitting.py", line 851, in fit_zeta_to_h5
+E               zeta_chunk = fit_one_rchunk(
+E                            ^^^^^^^^^^^^^^^
+E             File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/isdf/core.py", line 1900, in fit_one_rchunk
+E               Z_q = fn.z_q_phase(
+E                     ^^^^^^^^^^^^^
+E             File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/isdf/core.py", line 1748, in z_q_phase
+E               return z_q_from_psi_sm(
+E                      ^^^^^^^^^^^^^^^^
+E             File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/isdf/core.py", line 756, in z_q_from_psi_sm
+E               return _pair_pipeline_sm_cache[cache_key](
+E                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           jaxlib.xla_extension.XlaRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 19464193400 bytes.
+E           --------------------
+E           For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+
+tests/test_gw_jax_regression.py:93: Failed
+=============================== warnings summary ===============================
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+  /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/exciton_bands.py:375: DeprecationWarning: Input key 'output_file' is no longer supported and will be ignored.  ``output_file`` (LORRAX-native eqp0) is now ``sigma_diag_file`` (defaults to ``sigma_diag.dat``); BGW-format ``eqp0.dat`` and ``eqp1.dat`` (with Z-linearization) are written automatically.  Remove 'output_file' from your input file.
+    params = read_lorrax_input(args.input)
+
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+  /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/exciton_bands.py:375: DeprecationWarning: Input key 'self_consistent' is deprecated; it is honored via ``qp_solver = auto`` resolution.  Set 'qp_solver = self_consistent' instead.
+    params = read_lorrax_input(args.input)
+
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+  /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/exciton_bands.py:375: DeprecationWarning: Input key 'sigma_at_dft_energies' is deprecated; it is honored via ``qp_solver = auto`` resolution.  Set 'qp_solver = one_shot_dft (the default)' instead.
+    params = read_lorrax_input(args.input)
+
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+  /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/bse_io.py:581: DeprecationWarning: Input key 'output_file' is no longer supported and will be ignored.  ``output_file`` (LORRAX-native eqp0) is now ``sigma_diag_file`` (defaults to ``sigma_diag.dat``); BGW-format ``eqp0.dat`` and ``eqp1.dat`` (with Z-linearization) are written automatically.  Remove 'output_file' from your input file.
+    return _parse_grid_spec(read_lorrax_input(input_file).get("bse_k_grid"))
+
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+  /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/bse_io.py:581: DeprecationWarning: Input key 'self_consistent' is deprecated; it is honored via ``qp_solver = auto`` resolution.  Set 'qp_solver = self_consistent' instead.
+    return _parse_grid_spec(read_lorrax_input(input_file).get("bse_k_grid"))
+
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+tests/test_bse_kgrid.py::test_on_grid_identity_byte_equal
+tests/test_bse_kgrid.py::test_densify_3to6_shapes_and_solvable
+  /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/bse_io.py:581: DeprecationWarning: Input key 'sigma_at_dft_energies' is deprecated; it is honored via ``qp_solver = auto`` resolution.  Set 'qp_solver = one_shot_dft (the default)' instead.
+    return _parse_grid_spec(read_lorrax_input(input_file).get("bse_k_grid"))
+
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+  /opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[9,64,2,46080]).
+  See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+    warnings.warn("Some donated buffers were not usable:"
+
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+  /opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[9,16,2,46080]).
+  See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+    warnings.warn("Some donated buffers were not usable:"
+
+tests/test_bse_kgrid.py::test_densify_3to6_shapes_and_solvable
+  /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/bse_io.py:644: DeprecationWarning: Input key 'sigma_at_dft_energies' is deprecated; it is honored via ``qp_solver = auto`` resolution.  Set 'qp_solver = one_shot_dft (the default)' instead.
+    params = read_lorrax_input(input_file)
+
+tests/test_bse_kgrid.py::test_densify_3to6_shapes_and_solvable
+  /opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[9,40,2,46080]).
+  See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+    warnings.warn("Some donated buffers were not usable:"
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_gw_jax_regression.py::test_gw_jax_matches_reference[si_cohsex_3d]
+1 failed, 18 passed, 1 deselected, 12 warnings in 100.26s (0:01:40)
+srun: error: nid001008: task 0: Exited with exit code 1
+srun: Terminating StepId=56238206.38

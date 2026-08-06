@@ -1,0 +1,81 @@
+.................................F...................................... [ 29%]
+......sssssssssss.s..................................................... [ 58%]
+........................................................................ [ 87%]
+..............................                                           [100%]
+=================================== FAILURES ===================================
+______________________ test_eval_on_grid_is_stencil_exact ______________________
+
+vq_state = {'coeffs': {-3: array([[ 9.41794136e+01-4.89234619e+00j,  6.68449832e+01+6.56715570e+00j,
+         7.16140749e+01-1.71...j,
+          1.12194864e+03-1.69153877e+02j,
+          1.40920491e+05-2.19156527e-11j]]], dtype=complex128), ...}, ...}
+
+    @pytest.mark.gpu
+    def test_eval_on_grid_is_stencil_exact(vq_state):
+        """At a TRAINING q with full training, the trig stencil is a delta:
+        the SR part returns that q's own cleaned tile exactly (null-level)."""
+        vqi, zx = vq_state["vqi"], vq_state["zx"]
+        prep, des, coeffs = vq_state["prep"], vq_state["des"], vq_state["coeffs"]
+        q0 = 2
+        V = vqi.eval_vq_host(zx, prep, des, coeffs, zx["qfr"][q0])
+        # subtract the model LR: what remains must be V_SRc[q0] to stencil
+        # exactness (the model LR is smooth — identical arithmetic both sides)
+        R7 = vqi.stencil_r7(zx)
+        pinvF = vqi.stencil_pinv(zx["qfr"], R7)
+        w = np.exp(-2j * np.pi * (zx["qfr"][q0] @ R7.T)) @ pinvF
+        V_SR = np.tensordot(w, prep["V_SRc_np"], axes=(0, 0))
+>       assert vqi.relF(V_SR, prep["V_SRc_np"][q0]) <= 1e-9
+E       AssertionError: assert 0.10904014363200869 <= 1e-09
+E        +  where 0.10904014363200869 = <function relF at 0x7f6536d08a40>(array([[ 2.19335493e+04-2.13663397e-11j, -7.90530670e+01-7.78089249e+01j,\n         5.76415174e+03+2.60363224e+02j, ......6048e+03-1.39879283e+02j, -1.05017252e+03-3.43342028e+02j,\n         1.46216328e+05-5.88033320e-11j]], shape=(640, 640)), array([[ 2.19875955e+04-3.76993429e-11j,  1.03466151e+01-3.89790680e+01j,\n         5.80259828e+03+2.60249793e+02j, ......1402e+02+2.19777504e+02j, -1.25477473e+03+8.14471783e+02j,\n         1.46069982e+05-6.90366853e-11j]], shape=(640, 640)))
+E        +    where <function relF at 0x7f6536d08a40> = <module 'bse.vq_interp' from '/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_exciton_bands/src/bse/vq_interp.py'>.relF
+
+tests/test_bse_vq_interp.py:120: AssertionError
+=============================== warnings summary ===============================
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+  /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_exciton_bands/src/bse/exciton_bands.py:260: DeprecationWarning: Input key 'output_file' is no longer supported and will be ignored.  ``output_file`` (LORRAX-native eqp0) is now ``sigma_diag_file`` (defaults to ``sigma_diag.dat``); BGW-format ``eqp0.dat`` and ``eqp1.dat`` (with Z-linearization) are written automatically.  Remove 'output_file' from your input file.
+    params = read_lorrax_input(args.input)
+
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+  /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_exciton_bands/src/bse/exciton_bands.py:260: DeprecationWarning: Input key 'self_consistent' is deprecated; it is honored via ``qp_solver = auto`` resolution.  Set 'qp_solver = self_consistent' instead.
+    params = read_lorrax_input(args.input)
+
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+  /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_exciton_bands/src/bse/exciton_bands.py:260: DeprecationWarning: Input key 'sigma_at_dft_energies' is deprecated; it is honored via ``qp_solver = auto`` resolution.  Set 'qp_solver = one_shot_dft (the default)' instead.
+    params = read_lorrax_input(args.input)
+
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+  /opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[9,64,2,46080]).
+  See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+    warnings.warn("Some donated buffers were not usable:"
+
+tests/test_exciton_bands.py::test_exciton_bands_3pt_smoke
+  /opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[9,16,2,46080]).
+  See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+    warnings.warn("Some donated buffers were not usable:"
+
+tests/test_ffi_linalg_contract.py::test_cusolvermp_solve_lu_hermitian_indefinite[complex128]
+  /opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[2,32,32]).
+  See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+    warnings.warn("Some donated buffers were not usable:"
+
+tests/test_ffi_linalg_contract.py::test_cusolvermp_solve_lu_hermitian_indefinite[float64]
+  /opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(float64[2,32,32]).
+  See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+    warnings.warn("Some donated buffers were not usable:"
+
+tests/test_ffi_linalg_contract.py::test_padding_solve_at_logical_through_ffi
+  /opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[2,13,13]).
+  See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+    warnings.warn("Some donated buffers were not usable:"
+
+tests/test_file_io.py::test_load_q_full_bz_unfold_path_exists
+  /pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_exciton_bands/src/common/symmetry_maps.py:1177: UserWarning: WFN symmetry data incomplete: 24 k-points could not be mapped via stored symmetries (ntran=16). Using identity fallback. First unmatched: [0. 0. 0.]
+    warnings.warn(f"WFN symmetry data incomplete: {len(unmatched_kpts)} k-points could not be "
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_bse_vq_interp.py::test_eval_on_grid_is_stencil_exact - Asse...
+1 failed, 233 passed, 12 skipped, 25 deselected, 9 warnings in 541.61s (0:09:01)
+NVSHMEM v3.2.5
+srun: error: nid002989: task 0: Exited with exit code 1
+srun: Terminating StepId=56075918.2

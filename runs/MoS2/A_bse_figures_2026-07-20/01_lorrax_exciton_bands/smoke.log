@@ -1,0 +1,50 @@
+[dist] jax.device_count()=1 process_count()=1 local_device_count()=1; mesh_xy.shape={'x': 1, 'y': 1} (px=1, py=1)
+BSE-sharded: q=0 head injected (rank-1, dual-sharded G0, V_cell=702.20): vhead=4104.113, whead[0]=1126.351
+[bse_k_grid] coarse 6x6x1 → fine 12x12x1 (144 k-pts); interpolating ψ/ε (htransform), V_Q (vq_interp), W (zero-pad in R)
+  Streaming Galerkin: nk=36, nb=48, nr=46080, n_mu=1600, mesh=(1x1)
+  load_centroids_band_chunked: 1.65s
+  SVD of (1728, 3200): rank=1728, σ_max=3.280e+00, σ_min/1e-08=6.408e-06 (1.15s)
+/opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[36,48,2,46080]).
+See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+  warnings.warn("Some donated buffers were not usable:"
+  G accumulation: 1 chunk(s), 0.93s
+  Cholesky of G: 0.24s
+  ctilde[0] orthogonality error: 1.524e-14
+  Total Galerkin: 4.87s
+Loaded wavefunctions: nk=36, nb=48, rank=1728
+  bse_setup: (6, 6, 1) → (12, 12, 1) (144 q-pts), bands [18, 34) of 1728, batch=32
+  f-transform: a=0.462573 Ry, n=3.00, shift=0.612135 Ry
+  bundle: psi_rmu_Y=(144, 16, 2, 1600), psi_rmuT_X=(144, 1600, 16, 2)
+  [wrapfix] 2 of 36 q relabeled to the sphere-derived center
+  [gates] vq_interp coarse data:
+    [gate] recon_roundtrip_sphere_Gamma                 2.476e-16  OK
+    [gate] sphere_max|q+G|^2_minus_cutoff               0.000e+00  OK
+    [gate] makeVq_vs_disk_Vqmunu_allq_max               2.128e-09  OK
+2026-07-20 14:38:57.663745: W external/xla/xla/hlo/transforms/simplifiers/hlo_rematerialization.cc:3021] Can't reduce memory use below 35.30GiB (37907677686 bytes) by rematerialization; only reduced to 57.80GiB (62064230400 bytes), down from 57.80GiB (62064230400 bytes) originally
+2026-07-20 14:39:07.827129: W external/xla/xla/tsl/framework/bfc_allocator.cc:501] Allocator (GPU_0_bfc) ran out of memory trying to allocate 57.76GiB (rounded to 62023270912)requested by op 
+2026-07-20 14:39:07.827339: W external/xla/xla/tsl/framework/bfc_allocator.cc:512] ________________________________________________________________________________________********__**
+E0720 14:39:07.827360 1977286 pjrt_stream_executor_client.cc:3077] Execution of replica 0 failed: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 62023270784 bytes. [tf-allocator-allocation-error='']
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/exciton_bands.py", line 705, in <module>
+    main()
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/exciton_bands.py", line 384, in main
+    data = load_bse_data_from_restart_sharded(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/bse_io.py", line 1001, in load_bse_data_from_restart_sharded
+    data = _interpolate_bse_data_to_grid(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/bse_io.py", line 697, in _interpolate_bse_data_to_grid
+    vqm = vq_interp.build_vq_evaluator(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/vq_interp.py", line 959, in build_vq_evaluator
+    run_gates(zx, C_q)
+  File "/pscratch/sd/j/jackm/lorrax_sandbox/sources/worktrees/lorrax_A_figures/src/bse/vq_interp.py", line 437, in run_gates
+    G = _xhx_acc(G, jnp.asarray(zx["psi"][kqs[sl]]),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+jaxlib.xla_extension.XlaRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 62023270784 bytes.
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+srun: error: nid001277: task 0: Exited with exit code 1
+srun: Terminating StepId=56222279.20

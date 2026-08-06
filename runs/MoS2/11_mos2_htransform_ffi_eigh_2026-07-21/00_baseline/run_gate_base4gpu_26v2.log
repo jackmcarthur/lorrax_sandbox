@@ -1,0 +1,84 @@
+[run_shifter] nodes=nid008400 coordinator=nid008400:38184 alloc=bfc
+[dist] devices=4 processes=4 mesh={'x': 2, 'y': 2}  eigh_backend=off
+[gpu] BFC bytes_limit = 80.8 GB (clean 80 GB card at MEM_FRACTION 0.95 ~= 77-78 GB; much less means a co-tenant holds VRAM and an OOM here is contention, not a ceiling)
+  Streaming Galerkin: nk=144, nb=28, nr=174960, n_mu=2412, mesh=(2x2), band_chunk=7 (5.26 GB/chunk)
+  load_centroids_band_chunked: 7.41s
+  SVD of (4032, 4824): rank=3892, σ_max=2.045e+00, σ_min/1e-08=2.080e-08 (8.05s)
+  [warn] ψ-at-centroids is RANK-DEFICIENT: 4032 states vs numerical rank 3892 (nspinor·n_μ = 4824).  The Galerkin basis cannot span the band window — fH energy recovery will degrade.  Capacity rule: nk·nb < rank(ψ_μ) ≤ nspinor·n_μ, i.e. nb < 27.03 here.
+/opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[144,7,2,87480]).
+See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+  warnings.warn("Some donated buffers were not usable:"
+/opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[144,7,2,87480]).
+See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+  warnings.warn("Some donated buffers were not usable:"
+/opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[144,7,2,87480]).
+See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+  warnings.warn("Some donated buffers were not usable:"
+/opt/jax/jax/_src/interpreters/mlir.py:1178: UserWarning: Some donated buffers were not usable: ShapedArray(complex128[144,7,2,87480]).
+See an explanation at https://jax.readthedocs.io/en/latest/faq.html#buffer-donation.
+  warnings.warn("Some donated buffers were not usable:"
+2026-07-21 22:51:18.944388: W external/xla/xla/tsl/framework/bfc_allocator.cc:501] Allocator (GPU_0_bfc) ran out of memory trying to allocate 25.37GiB (rounded to 27237773568)requested by op 
+2026-07-21 22:51:18.944493: W external/xla/xla/tsl/framework/bfc_allocator.cc:512] ________________________________________________________________________******************___*******
+E0721 22:51:18.944510 1688460 pjrt_stream_executor_client.cc:3077] Execution of replica 0 failed: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 27237773456 bytes. [tf-allocator-allocation-error='']
+2026-07-21 22:51:18.950364: W external/xla/xla/tsl/framework/bfc_allocator.cc:501] Allocator (GPU_0_bfc) ran out of memory trying to allocate 25.37GiB (rounded to 27237773568)requested by op 
+2026-07-21 22:51:18.950468: W external/xla/xla/tsl/framework/bfc_allocator.cc:512] ________________________________________________________________________******************___*******
+E0721 22:51:18.950482 1688462 pjrt_stream_executor_client.cc:3077] Execution of replica 0 failed: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 27237773456 bytes. [tf-allocator-allocation-error='']
+2026-07-21 22:56:19.645703: E external/xla/xla/tsl/distributed_runtime/coordination/coordination_service.cc:2139] Shutdown barrier in coordination service has failed:
+DEADLINE_EXCEEDED: Barrier timed out. Id: Shutdown::3822335560084190248::0. This usually happens because a task triggered the barrier too early or too slowly. Please look at the task logs (both timed out and first task) to debug further.
+# of tasks that reached the barrier: 2/4.
+The first task at the barrier: /job:jax_worker/replica:0/task:2. Some timed out task names:
+/job:jax_worker/replica:0/task:0
+/job:jax_worker/replica:0/task:3
+ [type.googleapis.com/tensorflow.BarrierError='\n\x1dShutdown::3822335560084190248'] [type.googleapis.com/tensorflow.CoordinationServiceError='']
+This suggests that the workers are out of sync. Either at least one worker (a) crashed early due to program error or scheduler events (e.g. preemption, eviction), (b) was too fast in its execution, or (c) too slow / hanging. Check the logs (both the program and scheduler events) for an earlier error to identify the root cause.
+2026-07-21 22:56:19.645740: E external/xla/xla/tsl/distributed_runtime/coordination/coordination_service.cc:2188] Use error polling to propagate the following error to all tasks: INTERNAL: Shutdown barrier has failed.
+Barrier result: 'DEADLINE_EXCEEDED: Barrier timed out. Id: Shutdown::3822335560084190248::0. This usually happens because a task triggered the barrier too early or too slowly. Please look at the task logs (both timed out and first task) to debug further.
+# of tasks that reached the barrier: 2/4.
+The first task at the barrier: /job:jax_worker/replica:0/task:2. Some timed out task names:
+/job:jax_worker/replica:0/task:0
+/job:jax_worker/replica:0/task:3
+ [type.googleapis.com/tensorflow.BarrierError='\n\x1dShutdown::3822335560084190248'] [type.googleapis.com/tensorflow.CoordinationServiceError=''] [type.googleapis.com/tensorflow.CoordinationServiceError='']
+E0721 22:56:19.645848 1689424 coordination_service_agent.cc:567] Polled an error from coordination service (this can be an error from this or another task).
+2026-07-21 22:56:19.645997: F external/xla/xla/pjrt/distributed/client.h:80] Terminating process because the JAX distributed service detected fatal errors. This most likely indicates that another task died; see the other task logs for more details. Disable Python buffering, i.e. `python -u`, to be sure to see all the previous output. absl::Status: INTERNAL: Shutdown barrier has failed.
+Barrier result: 'DEADLINE_EXCEEDED: Barrier timed out. Id: Shutdown::3822335560084190248::0. This usually happens because a task triggered the barrier too early or too slowly. Please look at the task logs (both timed out and first task) to debug further.
+# of tasks that reached the barrier: 2/4.
+The first task at the barrier: /job:jax_worker/replica:0/task:2. Some timed out task names:
+/job:jax_worker/replica:0/task:0
+/job:jax_worker/replica:0/task:3
+ [type.googleapis.com/tensorflow.BarrierError='\n\x1dShutdown::3822335560084190248'] [type.googleapis.com/tensorflow.CoordinationServiceError='']
+
+RPC: /tensorflow.CoordinationService/PollForError [type.googleapis.com/tensorflow.CoordinationServiceError='']
+E0721 22:56:19.645860 1689406 coordination_service_agent.cc:567] Polled an error from coordination service (this can be an error from this or another task).
+2026-07-21 22:56:19.646000: F external/xla/xla/pjrt/distributed/client.h:80] Terminating process because the JAX distributed service detected fatal errors. This most likely indicates that another task died; see the other task logs for more details. Disable Python buffering, i.e. `python -u`, to be sure to see all the previous output. absl::Status: INTERNAL: Shutdown barrier has failed.
+Barrier result: 'DEADLINE_EXCEEDED: Barrier timed out. Id: Shutdown::3822335560084190248::0. This usually happens because a task triggered the barrier too early or too slowly. Please look at the task logs (both timed out and first task) to debug further.
+# of tasks that reached the barrier: 2/4.
+The first task at the barrier: /job:jax_worker/replica:0/task:2. Some timed out task names:
+/job:jax_worker/replica:0/task:0
+/job:jax_worker/replica:0/task:3
+ [type.googleapis.com/tensorflow.BarrierError='\n\x1dShutdown::3822335560084190248'] [type.googleapis.com/tensorflow.CoordinationServiceError='']
+
+RPC: /tensorflow.CoordinationService/PollForError [type.googleapis.com/tensorflow.CoordinationServiceError='']
+E0721 22:56:19.646222 1689416 coordination_service_agent.cc:567] Polled an error from coordination service (this can be an error from this or another task).
+E0721 22:56:19.646263 1689420 coordination_service_agent.cc:567] Polled an error from coordination service (this can be an error from this or another task).
+2026-07-21 22:56:19.646369: F external/xla/xla/pjrt/distributed/client.h:80] Terminating process because the JAX distributed service detected fatal errors. This most likely indicates that another task died; see the other task logs for more details. Disable Python buffering, i.e. `python -u`, to be sure to see all the previous output. absl::Status: INTERNAL: Shutdown barrier has failed.
+Barrier result: 'DEADLINE_EXCEEDED: Barrier timed out. Id: Shutdown::3822335560084190248::0. This usually happens because a task triggered the barrier too early or too slowly. Please look at the task logs (both timed out and first task) to debug further.
+# of tasks that reached the barrier: 2/4.
+The first task at the barrier: /job:jax_worker/replica:0/task:2. Some timed out task names:
+/job:jax_worker/replica:0/task:0
+/job:jax_worker/replica:0/task:3
+ [type.googleapis.com/tensorflow.BarrierError='\n\x1dShutdown::3822335560084190248'] [type.googleapis.com/tensorflow.CoordinationServiceError='']
+
+RPC: /tensorflow.CoordinationService/PollForError [type.googleapis.com/tensorflow.CoordinationServiceError='']
+2026-07-21 22:56:19.646441: F external/xla/xla/pjrt/distributed/client.h:80] Terminating process because the JAX distributed service detected fatal errors. This most likely indicates that another task died; see the other task logs for more details. Disable Python buffering, i.e. `python -u`, to be sure to see all the previous output. absl::Status: INTERNAL: Shutdown barrier has failed.
+Barrier result: 'DEADLINE_EXCEEDED: Barrier timed out. Id: Shutdown::3822335560084190248::0. This usually happens because a task triggered the barrier too early or too slowly. Please look at the task logs (both timed out and first task) to debug further.
+# of tasks that reached the barrier: 2/4.
+The first task at the barrier: /job:jax_worker/replica:0/task:2. Some timed out task names:
+/job:jax_worker/replica:0/task:0
+/job:jax_worker/replica:0/task:3
+ [type.googleapis.com/tensorflow.BarrierError='\n\x1dShutdown::3822335560084190248'] [type.googleapis.com/tensorflow.CoordinationServiceError='']
+
+RPC: /tensorflow.CoordinationService/PollForError [type.googleapis.com/tensorflow.CoordinationServiceError='']
+srun: error: nid008400: task 1: Aborted
+srun: Terminating StepId=56301922.95
+[2026-07-22T05:56:21.148] error: *** STEP 56301922.95 ON nid008400 CANCELLED AT 2026-07-22T05:56:21 DUE TO TASK FAILURE ***
+srun: error: nid008400: tasks 0,2-3: Aborted

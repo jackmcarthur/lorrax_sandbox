@@ -1,0 +1,116 @@
+BufferAssignment:
+allocation 0: size 382205952, output shape is |c128[8,432,6912]|, maybe-live-out:
+ value: <12 all-gather @0> (size=23887872,offset=0): c128[8,432,432]{1,0,2}
+ value: <19 copy.10 @0> (size=382205952,offset=0): c128[8,432,6912]{2,1,0}
+allocation 1: size 382205952, parameter 1, shape |c128[8,432,6912]| at ShapeIndex {}:
+ value: <15 param.3 @0> (size=382205952,offset=0): c128[8,432,6912]{2,1,0}
+allocation 2: size 11943936, parameter 0, shape |c128[8,432,216]| at ShapeIndex {}:
+ value: <10 param.2 @0> (size=11943936,offset=0): c128[8,432,216]{2,1,0}
+allocation 3: size 429981696, preallocated-temp:
+ value: <11 copy.5 @0> (size=11943936,offset=382205952): c128[8,432,216]{1,0,2}
+ value: <13 complex_transpose_fusion @0> (size=23887872,offset=382205952): c128[8,432,432]{1,2,0}
+ value: <14 copy.9 @0> (size=23887872,offset=406093824): c128[8,432,432]{1,2,0}
+ value: <16 copy_copy_fusion @0> (size=382205952,offset=0): c128[8,432,6912]{1,2,0}
+ value: <17 triangular_solve.8 @0> (size=382205952,offset=0): c128[8,432,6912]{1,2,0}
+ value: <18 triangular_solve.9 @0> (size=382205952,offset=0): c128[8,432,6912]{1,2,0}
+
+Total bytes used: 1206337536 (1.12GiB)
+
+Used values:
+<10 param.2 @0>
+ positions:
+  param.2
+ uses:
+  copy.5, operand 0
+ from instruction: %param.2 = c128[8,432,216]{2,1,0} parameter(0), sharding={devices=[1,1,2]<=[2]}, metadata={op_name="L_q_sharded"}
+<11 copy.5 @0>
+ positions:
+  copy.5
+ uses:
+  all-gather, operand 0
+ from instruction: %copy.5 = c128[8,432,216]{1,0,2} copy(%param.2), sharding={devices=[1,1,2]<=[2]}, metadata={op_name="L_q_sharded"}, backend_config={"outer_dimension_partitions":["3"]}
+<12 all-gather @0>
+ positions:
+  all-gather
+ uses:
+  complex_transpose_fusion, operand 0
+  copy.9, operand 0
+ from instruction: %all-gather = c128[8,432,432]{1,0,2} all-gather(%copy.5), channel_id=1, replica_groups=[1,2]<=[2], dimensions={2}, use_global_device_ids=true, metadata={op_name="jit(_solve_all_at_once)/sharding_constraint" stack_frame_id=10}
+<13 complex_transpose_fusion @0>
+ positions:
+  complex_transpose_fusion
+ uses:
+  triangular_solve.9, operand 0
+ from instruction: %complex_transpose_fusion = c128[8,432,432]{1,2,0} fusion(%all-gather), kind=kLoop, calls=%fused_computation.1, metadata={op_name="jit(_solve_all_at_once)/shard_map/vmap()/transpose" stack_frame_id=13}, backend_config={"outer_dimension_partitions":["3"]}
+<14 copy.9 @0>
+ positions:
+  copy.9
+ uses:
+  triangular_solve.8, operand 0
+ from instruction: %copy.9 = c128[8,432,432]{1,2,0} copy(%all-gather), metadata={op_name="jit(_solve_all_at_once)/sharding_constraint" stack_frame_id=10}, backend_config={"outer_dimension_partitions":["3"]}
+<15 param.3 @0>
+ positions:
+  param.3
+ uses:
+  copy_copy_fusion, operand 0
+ from instruction: %param.3 = c128[8,432,6912]{2,1,0} parameter(1), sharding={devices=[1,1,2]<=[2]}, metadata={op_name="Z_col"}
+<16 copy_copy_fusion @0>
+ positions:
+  copy_copy_fusion
+ uses:
+  triangular_solve.8, operand 1
+ from instruction: %copy_copy_fusion = c128[8,432,6912]{1,2,0} fusion(%param.3), kind=kLoop, calls=%fused_computation, sharding={devices=[1,1,2]<=[2]}, metadata={op_name="Z_col"}, backend_config={"outer_dimension_partitions":["3"]}
+<17 triangular_solve.8 @0>
+ positions:
+  triangular_solve.8
+ uses:
+  triangular_solve.9, operand 1
+ from instruction: %triangular_solve.8 = c128[8,432,6912]{1,2,0} custom-call(%copy.9, %copy_copy_fusion), custom_call_target="lapack_ztrsm_ffi", operand_layout_constraints={c128[8,432,432]{1,2,0}, c128[8,432,6912]{1,2,0}}, output_to_operand_aliasing={{}: (1, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(_solve_all_at_once)/shard_map/vmap(jit(_solve_triangular))/triangular_solve"}, backend_config={diag = 78 : ui8, side = 76 : ui8, trans_x = 78 : ui8, uplo = 76 : ui8}
+<18 triangular_solve.9 @0>
+ positions:
+  triangular_solve.9
+ uses:
+  copy.10, operand 0
+ from instruction: %triangular_solve.9 = c128[8,432,6912]{1,2,0} custom-call(%complex_transpose_fusion, %triangular_solve.8), custom_call_target="lapack_ztrsm_ffi", operand_layout_constraints={c128[8,432,432]{1,2,0}, c128[8,432,6912]{1,2,0}}, output_to_operand_aliasing={{}: (1, {})}, api_version=API_VERSION_TYPED_FFI, frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(_solve_all_at_once)/shard_map/vmap(jit(_solve_triangular))/triangular_solve"}, backend_config={diag = 78 : ui8, side = 76 : ui8, trans_x = 78 : ui8, uplo = 85 : ui8}
+<19 copy.10 @0>
+ positions:
+  copy.10
+ uses:
+ from instruction: %copy.10 = c128[8,432,6912]{2,1,0} copy(%triangular_solve.9), frontend_attributes={num_batch_dims="1"}, metadata={op_name="jit(_solve_all_at_once)/shard_map/vmap(jit(_solve_triangular))/triangular_solve"}, backend_config={"outer_dimension_partitions":["3"]}
+
+
+HloLiveRange (max 10):
+  InstructionSequence:
+    0:param.2
+    1:param.3
+    2:copy.5
+    3:copy_copy_fusion
+    4:all-gather
+    5:complex_transpose_fusion
+    6:copy.9
+    7:triangular_solve.8
+    8:triangular_solve.9
+    9:copy.10
+  BufferLiveRange:
+    param.2{}:0-10
+    copy.5{}:2-4
+    all-gather{}:4-6
+    complex_transpose_fusion{}:5-8
+    copy.9{}:6-7
+    param.3{}:0-10
+    copy_copy_fusion{}:3-7
+    triangular_solve.8{}:7-8
+    triangular_solve.9{}:8-9
+    copy.10{}:9-10
+  Live ranges at 8 (peak):
+    param.3{}: 382205952 bytes (cumulative: 382205952 bytes)
+    triangular_solve.8{}: 382205952 bytes (cumulative: 764411904 bytes)
+    triangular_solve.9{}: 382205952 bytes (cumulative: 1146617856 bytes)
+    complex_transpose_fusion{}: 23887872 bytes (cumulative: 1170505728 bytes)
+    param.2{}: 11943936 bytes (cumulative: 1182449664 bytes)
+  Stack trace breakdown for peak usage: 1 182 449 664 bytes
+    main.2_spmd (100.0%, total: 1 182 449 664 bytes, current: 0 bytes, remaining: 1 182 449 664 bytes)
+      ├── jit(_solve_all_at_once)/shard_map/vmap(jit(_solve_triangular))/triangular_solve (64.6%, total: 764 411 904 bytes, current: 764 411 904 bytes, remaining: 418 037 760 bytes)
+      ├── Z_col (32.3%, total: 382 205 952 bytes, current: 382 205 952 bytes, remaining: 35 831 808 bytes)
+      ├── jit(_solve_all_at_once)/shard_map/vmap()/transpose (2.0%, total: 23 887 872 bytes, current: 23 887 872 bytes, remaining: 11 943 936 bytes)
+      └── L_q_sharded (1.0%, total: 11 943 936 bytes, current: 11 943 936 bytes, remaining: 0 bytes)

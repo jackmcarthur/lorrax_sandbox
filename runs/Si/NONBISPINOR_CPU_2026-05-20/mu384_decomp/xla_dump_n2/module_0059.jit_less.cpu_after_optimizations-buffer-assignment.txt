@@ -1,0 +1,48 @@
+BufferAssignment:
+allocation 0: size 1728, parameter 0, shape |s32[432]| at ShapeIndex {}:
+ value: <5 x.1 @0> (size=1728,offset=0): s32[432]{0}
+allocation 1: size 432, output shape is |pred[432]|, maybe-live-out:
+ value: <7 broadcast_compare_fusion @0> (size=432,offset=0): pred[432]{0}
+allocation 2: size 8, parameter 1, shape |s64[]| at ShapeIndex {}:
+ value: <6 y.1 @0> (size=8,offset=0): s64[]
+
+Total bytes used: 2168 (2.1KiB)
+
+Used values:
+<5 x.1 @0>
+ positions:
+  x.1
+ uses:
+  broadcast_compare_fusion, operand 0
+ from instruction: %x.1 = s32[432]{0} parameter(0), metadata={op_name="x"}
+<6 y.1 @0>
+ positions:
+  y.1
+ uses:
+  broadcast_compare_fusion, operand 1
+ from instruction: %y.1 = s64[] parameter(1), metadata={op_name="y"}
+<7 broadcast_compare_fusion @0>
+ positions:
+  broadcast_compare_fusion
+ uses:
+ from instruction: %broadcast_compare_fusion = pred[432]{0} fusion(%x.1, %y.1), kind=kLoop, calls=%fused_computation, metadata={op_name="jit(less)/lt" stack_frame_id=10}
+
+
+HloLiveRange (max 3):
+  InstructionSequence:
+    0:x.1
+    1:y.1
+    2:broadcast_compare_fusion
+  BufferLiveRange:
+    x.1{}:0-3
+    y.1{}:0-3
+    broadcast_compare_fusion{}:2-3
+  Live ranges at 2 (peak):
+    x.1{}: 1728 bytes (cumulative: 1728 bytes)
+    broadcast_compare_fusion{}: 432 bytes (cumulative: 2160 bytes)
+    y.1{}: 8 bytes (cumulative: 2168 bytes)
+  Stack trace breakdown for peak usage: 2 168 bytes
+    main.1 (100.0%, total: 2 168 bytes, current: 0 bytes, remaining: 2 168 bytes)
+      ├── x (79.7%, total: 1 728 bytes, current: 1 728 bytes, remaining: 440 bytes)
+      ├── jit(less)/lt (19.9%, total: 432 bytes, current: 432 bytes, remaining: 8 bytes)
+      └── y (0.4%, total: 8 bytes, current: 8 bytes, remaining: 0 bytes)

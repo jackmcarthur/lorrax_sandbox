@@ -1,0 +1,46 @@
+✓ JAX initialized: 1 device(s) (local: 1, proc 0/1)
+Over-sampling: k-means M = 10500, prune to N_c = 7000 (ratio 1.5)
+[charge_density] source='auto' → reading /pscratch/sd/j/jackm/lorrax_sandbox/runs/CrI3/6x6_80Ry_gnppm_maxbands_2026-06-15/qe/scf/CrI3.save/charge-density.hdf5
+Charge density shape: (75, 75, 200)
+Lattice lengths: [ 6.867       6.86699961 17.99999999] Å
+Orbit-aware mode: n_sym = 6, running kmeans for M_rep = 1750 representatives (unfolded ≈ 10500 centroids)
+PBC min-image offsets: 5 (1 ⇒ orthorhombic); orbit mode: on (n_sym=6)
+Grid: 75×75×200 = 1125000 points; N_c = 1750
+Lloyd: 96 steps, max movement = 0.004848
+
+Unfolded 1750 reps → 10480 distinct centroids (n_sym=6)
+
+Pivoted-Cholesky prune: 10480 → 7000 (target 1169 orbits)
+  prune window: v×(v+c)  left=(0,70) right=(0,140)  [covers |ψ_v|² + v×c]
+[pivoted_cholesky] M=10480, n_keep=1169, left=(0, 70), right=(0, 140), norms=off (load_wfns 2-D, mesh axes ('x', 'y'))
+  [gpu_utils] WARNING: bytes_limit=None, falling back to nvidia-smi (pid=1990415)
+[pivoted_cholesky] 2-D Gram build via load_wfns: nk_tot=36, left=(0, 70) (nb=70), right=(0, 140) (nb=140), M=10480, norms=off, backend=WFNReader, budget=70.926 GB/device, band_chunk_size=64
+2026-06-15 22:17:18.843743: E external/xla/xla/service/gpu/gpu_hlo_schedule.cc:654] The byte size of input/output arguments (254739456000) exceeds the base limit (68075021926). This indicates an error in the calculation!
+2026-06-15 22:17:18.844107: W external/xla/xla/hlo/transforms/simplifiers/hlo_rematerialization.cc:3021] Can't reduce memory use below 0B (0 bytes) by rematerialization; only reduced to 472.92GiB (507792891920 bytes), down from 472.92GiB (507792891920 bytes) originally
+srun: forcing job termination
+E0615 22:17:20.504350 1990415 pjrt_stream_executor_client.cc:3077] Execution of replica 0 failed: RESOURCE_EXHAUSTED: Failed to allocate request for 235.67GiB (253049241600B) on device ordinal 0
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/global/u2/j/jackm/software/lorrax_A/src/centroid/kmeans_cli.py", line 427, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/global/u2/j/jackm/software/lorrax_A/src/centroid/kmeans_cli.py", line 384, in main
+    keep_idx, rank, *_ = prune_candidates_by_pivoted_cholesky(
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/u2/j/jackm/software/lorrax_A/src/centroid/pivoted_cholesky.py", line 386, in prune_candidates_by_pivoted_cholesky
+    G = build_gram_q0_via_loadwfns(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/u2/j/jackm/software/lorrax_A/src/centroid/pivoted_cholesky.py", line 969, in build_gram_q0_via_loadwfns
+    P_l_k = pair_density(psi_l_rmuT_X, psi_l_rmu_Y, mesh_xy)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/u2/j/jackm/software/lorrax_A/src/common/isdf_fitting.py", line 209, in pair_density
+    return _pair_density_cache[cache_key](psi_rmuT_X, psi_rcol_Y)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+jaxlib.xla_extension.XlaRuntimeError: RESOURCE_EXHAUSTED: Failed to allocate request for 235.67GiB (253049241600B) on device ordinal 0
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+[2026-06-16T05:17:20.745] error: *** STEP 54541850.6 ON nid008529 CANCELLED AT 2026-06-16T05:17:20 DUE to SIGNAL Killed ***
+srun: error: nid008529: task 0: Killed
+srun: Terminating StepId=54541850.6

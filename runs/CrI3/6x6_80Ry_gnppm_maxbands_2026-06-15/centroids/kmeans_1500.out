@@ -1,0 +1,95 @@
+✓ JAX initialized: 1 device(s) (local: 1, proc 0/1)
+Over-sampling: k-means M = 2250, prune to N_c = 1500 (ratio 1.5)
+[charge_density] source='auto' → reading /pscratch/sd/j/jackm/lorrax_sandbox/runs/CrI3/6x6_80Ry_gnppm_maxbands_2026-06-15/qe/scf/CrI3.save/charge-density.hdf5
+Charge density shape: (75, 75, 200)
+Lattice lengths: [ 6.867       6.86699961 17.99999999] Å
+Orbit-aware mode: n_sym = 6, running kmeans for M_rep = 375 representatives (unfolded ≈ 2250 centroids)
+PBC min-image offsets: 5 (1 ⇒ orthorhombic); orbit mode: on (n_sym=6)
+Grid: 75×75×200 = 1125000 points; N_c = 375
+Lloyd: 48 steps, max movement = 0.004883
+
+Unfolded 375 reps → 2246 distinct centroids (n_sym=6)
+
+Pivoted-Cholesky prune: 2246 → 1500 (target 251 orbits)
+  prune window: v×(v+c)  left=(0,70) right=(0,140)  [covers |ψ_v|² + v×c]
+[pivoted_cholesky] M=2246, n_keep=251, left=(0, 70), right=(0, 140), norms=off (load_wfns 2-D, mesh axes ('x', 'y'))
+  [gpu_utils] WARNING: bytes_limit=None, falling back to nvidia-smi (pid=21754)
+[pivoted_cholesky] 2-D Gram build via load_wfns: nk_tot=36, left=(0, 70) (nb=70), right=(0, 140) (nb=140), M=2246, norms=off, backend=WFNReader, budget=70.926 GB/device, band_chunk_size=64
+2026-06-15 22:14:16.839218: E external/xla/xla/stream_executor/cuda/cuda_fft.cc:269] Failed to allocate work area.
+2026-06-15 22:14:16.839251: E external/xla/xla/stream_executor/cuda/cuda_fft.cc:320] Initialize Params: rank: 3 elem_count: 75 input_embed: 75 input_stride: 1 input_distance: 1125000 output_embed: 75 output_stride: 1 output_distance: 1125000 batch_count: 984
+2026-06-15 22:14:16.839255: E external/xla/xla/stream_executor/cuda/cuda_fft.cc:329] Failed to initialize batched cufft plan with customized allocator: Failed to allocate request for 16.50GiB (17712000000B) on device ordinal 0
+E0615 22:14:16.845099   21754 status_macros.cc:57] INTERNAL: RET_CHECK failure (external/xla/xla/backends/gpu/runtime/fft_thunk.cc:176) fft_plan != nullptr Failed to create cuFFT batched plan with scratch allocator
+*** Begin stack trace ***
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	PyObject_Vectorcall
+	_PyEval_EvalFrameDefault
+	_PyObject_Call_Prepend
+	
+	PyObject_Call
+	_PyEval_EvalFrameDefault
+	PyObject_Vectorcall
+	
+	
+	PyObject_Vectorcall
+	_PyEval_EvalFrameDefault
+	PyEval_EvalCode
+	
+	
+	PyObject_Vectorcall
+	_PyEval_EvalFrameDefault
+	
+	Py_RunMain
+	Py_BytesMain
+	
+	__libc_start_main
+	_start
+*** End stack trace ***
+
+E0615 22:14:16.845481   21754 pjrt_stream_executor_client.cc:3077] Execution of replica 0 failed: INTERNAL: RET_CHECK failure (external/xla/xla/backends/gpu/runtime/fft_thunk.cc:176) fft_plan != nullptr Failed to create cuFFT batched plan with scratch allocator
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/global/u2/j/jackm/software/lorrax_A/src/centroid/kmeans_cli.py", line 427, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/global/u2/j/jackm/software/lorrax_A/src/centroid/kmeans_cli.py", line 384, in main
+    keep_idx, rank, *_ = prune_candidates_by_pivoted_cholesky(
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/u2/j/jackm/software/lorrax_A/src/centroid/pivoted_cholesky.py", line 386, in prune_candidates_by_pivoted_cholesky
+    G = build_gram_q0_via_loadwfns(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/u2/j/jackm/software/lorrax_A/src/centroid/pivoted_cholesky.py", line 975, in build_gram_q0_via_loadwfns
+    psi_r_rmu_Y, psi_r_rmuT_X = load_centroids_band_chunked(
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/global/u2/j/jackm/software/lorrax_A/src/common/load_wfns.py", line 485, in load_centroids_band_chunked
+    psi_rmu_band = gflat_to_rmu(
+                   ^^^^^^^^^^^^^
+  File "/global/u2/j/jackm/software/lorrax_A/src/common/wfn_transforms.py", line 970, in gflat_to_rmu
+    return fn(psi_G, g_index_dev_canonical)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+jaxlib.xla_extension.XlaRuntimeError: INTERNAL: RET_CHECK failure (external/xla/xla/backends/gpu/runtime/fft_thunk.cc:176) fft_plan != nullptr Failed to create cuFFT batched plan with scratch allocator
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+srun: error: nid008525: task 0: Exited with exit code 1
+srun: Terminating StepId=54541850.5

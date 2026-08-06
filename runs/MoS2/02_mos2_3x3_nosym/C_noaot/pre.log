@@ -1,0 +1,87 @@
+=== [1/3] ISDF centroids (n=640) ===
+✓ JAX initialized: 1 device(s) (local: 1, proc 0/1)
+Over-sampling: running k-means for M = 960 candidates, will prune to N_c = 640 via pivoted Cholesky (ratio 1.5)
+[charge_density] source='auto' → reading /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/qe/scf/MoS2.save/charge-density.hdf5
+Charge density shape: (24, 24, 80)
+Lattice lengths: [ 3.164292    3.16428978 11.99999999] Å (spacing: [0.1318455  0.13184541 0.15      ] Å)
+Starting weighted k-means with 960 clusters (mesh=single-device)...
+Grid size: 24x24x80 = 46080 points
+C-chunk size for distance scan: 32 (30 chunks)
+K-means++ initialization (on-device fori_loop)...
+K-means++ initialization complete.
+Starting k-means iterations...
+  Step 0: max movement = 0.209330 (avec units)
+  Step 20: max movement = 0.020825 (avec units)
+Converged in 36 steps (max movement = 0.002966 (avec units))
+
+Snapping 960 centroids to FFT grid [24 24 80]...
+✓ All 960 centroids map to unique grid points.
+
+Pivoted-Cholesky pruning: 960 candidates → 640 final centroids...
+[pivoted_cholesky] M=960 candidates, n_keep=640, n_val=26, n_cond=26, nk_irr=9 (IBZ via host-gather)
+[pivoted_cholesky] G built, shape=(960, 960), diag range [4.891e-10, 6.561e-05]
+[pivoted_cholesky] rank=640/640
+[pivoted_cholesky] picked-pivot residuals: first=6.561e-05, mid=7.175e-10, last=6.848e-11
+[pivoted_cholesky] tr(R_k)/tr(G): first=9.464e-01, mid=3.450e-05, last=2.134e-06
+[pivoted_cholesky] leftover residuals: max=6.771e-11, mean(>0)=4.711e-11
+  ⚠ last picked / biggest leftover = 1.01: k_keep cuts in a region where picked and leftover residuals are similar — try increasing k_keep or shrinking the candidate pool.
+After pivoted-Cholesky: 640 centroids (rank=640)
+Saved centroids to centroids_frac_640.txt
+=== [2/3] Dipole matrix elements ===
+JAX: 1 gpu devices
+
+Creating system metadata...
+
+Loading wavefunction coefficients to devices...
+  Loaded 80 bands in G-space, shape: (9, 80, 2, 24, 24, 80)
+
+Scanning for pseudopotential files...
+No pseudopotentials (*.upf) found in /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/C_noaot
+Found pseudopotentials in /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/C_noaot/../qe/scf
+
+Structure: nat=3, volume=702.2012 bohr³, alat=5.979645 bohr
+Pseudopotentials:
+  Elem   Z_val n_proj  file
+  Mo      14.0     10  Mo.upf
+  S        6.0     10  S.upf
+
+
+Wrote dipole data to /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/C_noaot/dipole.h5
+=== [3/3] Kinetic + ionic Hamiltonian ===
+JAX: 1 gpu devices
+== Chunked kin_ion_io ==
+Loading WFN: WFN.h5
+Bands: 80, FFT grid: (24, 24, 80), k-points: 9
+sys_dim: 3
+Devices: 1
+No pseudopotentials (*.upf) found in /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/C_noaot
+Found pseudopotentials in /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/C_noaot/../qe/scf
+Pseudopotentials: ['Mo', 'S']
+Coulomb truncation: 3D bulk
+Building V_loc...
+Building unified V_NL setup...
+
+Processing 9 k-points...
+  k=1/9...
+
+Writing to /pscratch/sd/j/jackm/lorrax_sandbox/runs/MoS2/02_mos2_3x3_nosym/C_noaot/kin_ion.h5...
+Wrote kin_ion.h5: shape (9, 80, 80), sys_dim=3
+--- Timing (seconds) ---
+Total recorded: 7.496 s
+Section                                            Count    Total[s]     Self[s]      %
+load_wfn                                               1       0.020       0.020    0.3
+build_V_loc                                            1       0.931       0.931   12.4
+k0                                                     1       2.609       2.609   34.8
+k1                                                     1       1.809       1.809   24.1
+k2                                                     1       0.062       0.062    0.8
+k3                                                     1       0.060       0.060    0.8
+k4                                                     1       1.758       1.758   23.5
+k5                                                     1       0.060       0.060    0.8
+k6                                                     1       0.064       0.064    0.8
+k7                                                     1       0.057       0.057    0.8
+k8                                                     1       0.061       0.061    0.8
+write_h5                                               1       0.005       0.005    0.1
+=== Preprocessing complete ===
+-rw-r----- 1 jackm jackm  17K Apr 21 23:42 centroids_frac_640.txt
+-rw-r--r-- 1 jackm jackm 3.1M Apr 21 23:42 dipole.h5
+-rw-r--r-- 1 jackm jackm 906K Apr 21 23:43 kin_ion.h5

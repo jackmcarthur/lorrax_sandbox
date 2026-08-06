@@ -1,0 +1,141 @@
+Warning: requested 1000000000 valence bands but only 26 available; using 26
+Warning: requested 1000000000 conduction bands but only 20 available; using 20
+FWarning: requested 1000000000 valence bands but only 26 available; using 26
+Warning: requested 1000000000 conduction bands but only 20 available; using 20
+F
+=================================== FAILURES ===================================
+_____________________ test_w_omega_chain_matches_oracle_q0 _____________________
+
+gnppm_session = namespace(run_dir=PosixPath('/tmp/pytest-of-jackm/pytest-0/gnppm_debug_session0/gnppm_debug'), input_name='gnppm_test....  0.160       0.160    1.7\n    sigma.exec                                         1       2.220       2.220   24.1\n')
+
+    @pytest.mark.gpu
+    def test_w_omega_chain_matches_oracle_q0(gnppm_session):
+        input_path = str(gnppm_session.run_dir / gnppm_session.input_name)
+        restart = bse_io._find_restart_file(input_path)
+        mesh = Mesh(np.array(jax.devices()[:1]).reshape(1, 1), axis_names=("x", "y"))
+        data = bse_io.load_bse_data_from_restart_sharded(
+            restart, n_val=10**9, n_cond=10**9, mesh_xy=mesh,
+            input_file=input_path, inject_head=False)
+        nlog = int(data["n_rmu"])
+        T = (np.asarray(jax.device_get(data["W_q"][:, :, 0, 0, 0]))
+             - np.asarray(jax.device_get(data["V_q0"])))
+    
+        res = _build_rpa_resolvent(mesh, data)
+        matvec, diag_h, gen, snapshot, sh = res
+        cols, _ = _select_compare_cols(T, nlog, 3, seed=0)
+        chain = build_w_omega_chain(data, matvec, gen, sh, cols, CHAIN_LEN)
+    
+        # static: the chain evaluator reproduces the W(0) closure through the chain.
+        z0 = 0.0 + 0.0j
+        w_or, resid = _oracle_tile(cols, z0, data, res, len(cols))
+        assert resid.max() < 1e-6, f"oracle GMRES not converged (resid={resid.max():.2e})"
+>       rel0 = _chain_rel(chain, data, snapshot, sh, z0, w_or, cols, nlog)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_bse_w_omega_chain.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+chain = {'D_half': Array([[[[2.14826308+0.j, 2.14047523+0.j, 2.14047523+0.j, ...,
+          2.14047529+0.j, 2.14047518+0.j, 2....91768e-01+2.84841335e-08j,
+          2.05242802e+00-1.44862496e-08j,
+          1.91425830e+01-6.33629349e-17j]]]), ...}
+data = {'M_X': Array([[[[-6.46696695e-04-3.37018850e-04j,
+          -2.64368657e-04+2.10107550e-04j,
+           2.69835190e-0... -20057.43536   +3.45826197e-14j,
+          49645.23431962-1.37404745e-13j]], dtype=complex128), 'V_q_full': None, ...}
+snapshot = <PjitFunction of <function build_density_snapshot_operator.<locals>._map at 0x7f22705a5f80>>
+sh = namespace(X=NamedSharding(mesh=Mesh('x': 1, 'y': 1, axis_types=(Auto, Auto)), spec=PartitionSpec(None, 'x', 'y', None)...u=NamedSharding(mesh=Mesh('x': 1, 'y': 1, axis_types=(Auto, Auto)), spec=PartitionSpec(None, 'x'), memory_kind=device))
+z = 0j
+w_oracle = array([[-1579719.94364699+1.66245854e-07j,
+         1568655.72423584+1.43075908e-06j,
+         -264865.35277721-8.4441....96935410e-07j,
+         -656336.40736581+3.17927174e-07j,
+          111536.134391  -1.09901990e-07j]], shape=(399, 3))
+cols = array([179, 375, 338]), nlog = 399, m_use = None
+
+    def _chain_rel(chain, data, snapshot, sh, z, w_oracle, cols, nlog, m_use=None):
+        (W_tile,) = eval_w_omega_chain(chain, data, snapshot, sh, z, m_use=m_use)
+>       assert W_tile.sharding.spec == P("x", "y"), (
+            f"chain W tile carries {W_tile.sharding.spec}, expected P('x','y')")
+E       AssertionError: chain W tile carries PartitionSpec(), expected P('x','y')
+E       assert PartitionSpec() == PartitionSpec('x', 'y')
+E         
+E         Right contains 2 more items, first extra item: 'x'
+E         Use -v to get more diff
+
+tests/test_bse_w_omega_chain.py:40: AssertionError
+__________________ test_w_omega_chain_matches_oracle_finite_q __________________
+
+gnppm_session = namespace(run_dir=PosixPath('/tmp/pytest-of-jackm/pytest-0/gnppm_debug_session0/gnppm_debug'), input_name='gnppm_test....  0.160       0.160    1.7\n    sigma.exec                                         1       2.220       2.220   24.1\n')
+
+    @pytest.mark.gpu
+    def test_w_omega_chain_matches_oracle_finite_q(gnppm_session):
+        input_path = str(gnppm_session.run_dir / gnppm_session.input_name)
+        restart = bse_io._find_restart_file(input_path)
+        mesh = Mesh(np.array(jax.devices()[:1]).reshape(1, 1), axis_names=("x", "y"))
+        data = bse_io.load_bse_data_from_restart_sharded(
+            restart, n_val=10**9, n_cond=10**9, mesh_xy=mesh,
+            input_file=input_path, inject_head=False, load_v_full=True)
+        nlog = int(data["n_rmu"])
+    
+        q_list = _symmetry_reduced_q_list(input_path)
+        nz = q_list[np.any(q_list != 0, axis=1)]
+        q = nz[int(np.argmin((nz.astype(np.int64) ** 2).sum(axis=1)))]
+        qx, qy, qz = int(q[0]), int(q[1]), int(q[2])
+        assert (qx, qy, qz) != (0, 0, 0), "no nonzero symmetry-reduced q on this fixture"
+    
+        dq = build_finite_q_data(data, (qx, qy, qz), mesh)
+        res = _build_rpa_resolvent(mesh, dq)
+        matvec, diag_h, gen, snapshot, sh = res
+        T = (np.asarray(jax.device_get(data["W_q"][:, :, qx, qy, qz]))
+             - np.asarray(jax.device_get(data["V_q_full"][:, :, qx, qy, qz])))
+        cols, _ = _select_compare_cols(T, nlog, 3, seed=0)
+        chain = build_w_omega_chain(dq, matvec, gen, sh, cols, CHAIN_LEN)
+    
+        # static + imaginary-axis closure vs the per-q oracle (finite-q floor is ~10x
+        # above q=0, so tolerances are looser — still well inside a convergence check).
+        z0 = 0.0 + 0.0j
+        w_or, resid = _oracle_tile(cols, z0, dq, res, len(cols))
+        assert resid.max() < 1e-6, f"q={(qx,qy,qz)} oracle not converged ({resid.max():.2e})"
+>       rel0 = _chain_rel(chain, dq, snapshot, sh, z0, w_or, cols, nlog)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_bse_w_omega_chain.py:126: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+chain = {'D_half': Array([[[[2.14012244+0.j, 2.14861453+0.j, 2.14047523+0.j, ...,
+          2.13295789+0.j, 2.14047528+0.j, 2....67332e-01-1.65177093e+00j,
+         -8.88898207e-02+6.59893792e-02j,
+          1.49686704e+01+9.36479626e-18j]]]), ...}
+data = {'M_X': Array([[[[ 6.33381618e-06+8.52620534e-05j,
+          -1.45264866e-04+1.37770982e-04j,
+           3.48374890e-0...,
+          [ 5.35183400e+04-1.89455435e-12j],
+          [ 4.36811330e+04-7.13772751e-13j]]]]], dtype=complex128), ...}
+snapshot = <PjitFunction of <function build_density_snapshot_operator.<locals>._map at 0x7f22306ee340>>
+sh = namespace(X=NamedSharding(mesh=Mesh('x': 1, 'y': 1, axis_types=(Auto, Auto)), spec=PartitionSpec(None, 'x', 'y', None)...u=NamedSharding(mesh=Mesh('x': 1, 'y': 1, axis_types=(Auto, Auto)), spec=PartitionSpec(None, 'x'), memory_kind=device))
+z = 0j
+w_oracle = array([[   5313.49757904+10874.10646584j,
+          33444.33461861+19603.36748373j,
+           -949.0117223   -527.671... +9264.57085424j,
+         -19778.2853556 -98767.09940419j,
+           3792.60214215 +1047.22895172j]], shape=(399, 3))
+cols = array([179, 375, 338]), nlog = 399, m_use = None
+
+    def _chain_rel(chain, data, snapshot, sh, z, w_oracle, cols, nlog, m_use=None):
+        (W_tile,) = eval_w_omega_chain(chain, data, snapshot, sh, z, m_use=m_use)
+>       assert W_tile.sharding.spec == P("x", "y"), (
+            f"chain W tile carries {W_tile.sharding.spec}, expected P('x','y')")
+E       AssertionError: chain W tile carries PartitionSpec(), expected P('x','y')
+E       assert PartitionSpec() == PartitionSpec('x', 'y')
+E         
+E         Right contains 2 more items, first extra item: 'x'
+E         Use -v to get more diff
+
+tests/test_bse_w_omega_chain.py:40: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_bse_w_omega_chain.py::test_w_omega_chain_matches_oracle_q0
+FAILED tests/test_bse_w_omega_chain.py::test_w_omega_chain_matches_oracle_finite_q
+2 failed in 39.83s
+srun: error: nid001109: task 0: Exited with exit code 1
+srun: Terminating StepId=56014096.5
